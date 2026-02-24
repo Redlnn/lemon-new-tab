@@ -47,6 +47,7 @@ onMounted(async () => {
   bottom: 100px;
   display: flex;
   justify-content: center;
+  transition: bottom var(--el-transition-duration-fast) ease;
 
   &__main {
     width: 530px;
