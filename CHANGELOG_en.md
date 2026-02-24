@@ -1,6 +1,19 @@
 # Changelog
 
-> Translated by ChatGPT from Chinese.
+> Translated by AI from Chinese.
+
+## 3.2.0 (WIP)
+
+### New Features✨
+
+- Full keyboard navigation support (`Tab` + arrow keys)
+- Support for saving the currently displayed online wallpaper
+
+### Improvements⚡️
+
+- Minor adjustments to UI elements and translations
+- Disabled the search bar expansion animation on startup by default due to performance issues on most devices
+- When caching is enabled, cached wallpapers will continue to be used even after expiration if new wallpapers cannot be fetched
 
 ## 3.1.0 (Feb 14, 2026)
 
@@ -22,7 +35,7 @@ Wishing you a happy Chinese New Year! May your days be as fresh and wonderful as
 - **Clock:** Added support for setting AM/PM font size to follow time font size
 - **Clock:** Added support for setting clock font size (small, medium, large)
 - **Search:** The search bar now supports closing with the Esc key.
-- **Online Wallpaper:** Added support for caching online wallpapers.
+- **Online Wallpaper:** Added support for caching and manual refresh.
   ([#69](https://github.com/Redlnn/lemon-new-tab/issues/69))
 
 ### Improvements⚡️
