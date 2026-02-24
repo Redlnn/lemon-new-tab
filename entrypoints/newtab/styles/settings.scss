@@ -57,9 +57,22 @@
     transition: var(--el-transition-duration-fast) ease-in-out;
 
     &:hover,
-    &:focus {
+    &:focus-visible {
       color: var(--el-text-color-primary);
       background-color: var(--el-fill-color-blank);
+    }
+
+    &:focus-visible {
+      outline: none;
+
+      &::after {
+        position: absolute;
+        inset: -4px;
+        pointer-events: none;
+        content: '';
+        border: 2px solid var(--el-color-primary);
+        border-radius: 50%;
+      }
     }
   }
 }
@@ -245,6 +258,7 @@
     --el-menu-active-color: var(--el-color-primary);
     --el-menu-hover-bg-color: var(--le-fill-color-dark-opacity-20);
     position: relative;
+    border-radius: 12px;
     transition:
       border-color var(--el-transition-duration-fast),
       background-color var(--el-transition-duration-fast),
@@ -254,13 +268,26 @@
       --el-menu-base-level-padding: 30px;
     }
 
-    &:focus {
-      background-color: var(--el-menu-hover-bg-color);
+    &:focus-visible {
+      outline: none;
+
+      .is-mobile & {
+        background-color: var(--el-menu-hover-bg-color);
+      }
+
+      &::after {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        content: '';
+        border: 2px solid var(--el-color-primary);
+        border-radius: 10px;
+      }
     }
 
     &.is-active,
     html.colorful &:hover,
-    html.colorful &:focus {
+    html.colorful &:focus-visible {
       background-color: var(--el-color-primary-light-9);
     }
 

@@ -202,10 +202,23 @@ const dialogId = computed(() => {
     transition: var(--el-transition-duration-fast) ease-in-out;
 
     &:hover,
-    &:focus {
+    &:focus-visible {
       color: var(--el-text-color-primary);
       background-color: var(--el-fill-color-blank);
-      transform: rotate(180deg);
+      transform: rotate(90deg);
+    }
+
+    &:focus-visible {
+      outline: none;
+
+      &::after {
+        position: absolute;
+        inset: -4px;
+        pointer-events: none;
+        content: '';
+        border: 2px solid var(--el-color-primary);
+        border-radius: 50%;
+      }
     }
 
     svg {

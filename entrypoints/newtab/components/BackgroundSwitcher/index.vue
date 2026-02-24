@@ -189,9 +189,9 @@ function beforeLocalBgSwitch() {
           </template>
           <el-icon v-else class="bg-switcher-preview__placeholder"><plus /></el-icon>
         </el-upload>
-        <div v-if="isShowDeleteIcon" class="bg-switcher-uploader-delete" @click="deleteLocalBg">
+        <button v-if="isShowDeleteIcon" class="bg-switcher-uploader-delete" @click="deleteLocalBg">
           <el-icon><close-round /></el-icon>
-        </div>
+        </button>
         <div v-if="metaLight && !isDarkBg" class="bg-switcher-uploader-meta">
           <div>
             {{ metaLight.size ? formatBytes(metaLight.size) : '' }}

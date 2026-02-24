@@ -278,6 +278,19 @@ watch(
   .el-scrollbar__view {
     padding-bottom: 20px;
   }
+
+  .el-drawer__close-btn {
+    .el-drawer__close {
+      transition: transform var(--el-transition-duration-fast) ease;
+    }
+
+    &:hover,
+    &:focus-visible {
+      .el-drawer__close {
+        transform: rotate(90deg);
+      }
+    }
+  }
 }
 
 @media (width <= 600px) {
@@ -363,8 +376,23 @@ watch(
       background-color: var(--el-color-primary-light-8);
     }
 
+    .bookmark-link-item:focus-visible,
+    .el-collapse-item__header:focus-visible {
+      position: relative;
+      outline: none;
+
+      &::after {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        content: '';
+        border: 2px solid var(--el-color-primary);
+        border-radius: 10px;
+      }
+    }
+
     .bookmark-drag-handle:hover {
-      background-color: var(--el-color-primary-light-5);
+      background-color: var(--el-color-primary-light-9);
       opacity: 1;
     }
   }
@@ -416,6 +444,12 @@ watch(
     color: inherit;
     overflow-wrap: anywhere;
   }
+
+  &.is-no-drag {
+    .bookmark-drag-handle {
+      display: none;
+    }
+  }
 }
 
 .bookmark__menu-popper.el-dropdown__popper.el-popper {
@@ -465,14 +499,6 @@ watch(
     flex-direction: row-reverse;
     align-items: center;
     height: 100%;
-  }
-}
-
-.bookmark-link-item {
-  &.is-no-drag {
-    .bookmark-drag-handle {
-      display: none;
-    }
   }
 }
 </style>

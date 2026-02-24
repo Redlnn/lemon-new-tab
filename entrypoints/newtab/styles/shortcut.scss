@@ -54,7 +54,8 @@
       box-shadow 0.2s ease,
       transform 0.2s ease;
 
-    .shortcut:hover & {
+    .shortcut:hover &,
+    &:focus-visible {
       opacity: 1;
 
       &--next {
@@ -63,6 +64,20 @@
 
       &--prev {
         transform: translateX(5px);
+      }
+    }
+
+    &:focus-visible {
+      outline: none;
+
+      &::after {
+        position: absolute;
+        inset: -4px;
+        pointer-events: none;
+        content: '';
+        border: 2px solid var(--el-color-primary);
+        border-radius: 50%;
+        box-shadow: 0 0 0 2px var(--el-border-color-extra-light);
       }
     }
 
@@ -240,6 +255,21 @@
 
   &__item {
     position: relative;
+    border-radius: 5px;
+
+    &:focus-visible {
+      outline: none;
+
+      &::after {
+        position: absolute;
+        inset: -6px;
+        pointer-events: none;
+        content: '';
+        border: 2px solid var(--el-color-primary);
+        border-radius: 10px;
+        box-shadow: 0 0 0 2px var(--el-border-color-extra-light);
+      }
+    }
 
     &-link {
       display: flex;

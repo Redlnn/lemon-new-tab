@@ -180,7 +180,7 @@ defineExpose({ hide })
     border-radius: 10px;
 
     &:hover,
-    &:focus {
+    &:focus-visible {
       background: var(--le-bg-color-overlay-opacity-30);
     }
 

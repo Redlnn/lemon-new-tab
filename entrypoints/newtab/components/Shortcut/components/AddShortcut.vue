@@ -128,10 +128,13 @@ const iconPerfClass = perf('shortcut__icon')
 </script>
 
 <template>
-  <div v-if="props.showButton" class="shortcut__item shortcut__item--add-shortcut noselect">
+  <div
+    v-if="props.showButton"
+    role="button"
+    :tabindex="tabindex ? '0' : '-1'"
+    class="shortcut__item shortcut__item--add-shortcut noselect"
+  >
     <div
-      role="button"
-      :tabindex="tabindex ? '0' : '-1'"
       class="shortcut__item-link"
       style="cursor: pointer"
       @click="openAddDialog"
@@ -330,7 +333,7 @@ const iconPerfClass = perf('shortcut__icon')
     transition: var(--el-transition-duration-fast);
 
     &:hover,
-    &:focus {
+    &:focus-visible {
       border-color: var(--el-color-primary);
 
       .shortcut__favicon-uploader-icon {

@@ -10,6 +10,7 @@
 }
 
 .action-btn {
+  position: relative;
   width: 37px;
   height: 37px;
   padding: 6px;
@@ -22,15 +23,29 @@
   transition: var(--el-transition-duration-fast) ease-in-out;
 
   &:hover,
-  &:focus {
+  &:focus-visible {
     border-radius: 50%;
     box-shadow: var(--el-box-shadow-lighter);
   }
 
   &:not(.action-btn--tran):hover,
-  &:not(.action-btn--tran):focus {
+  &:not(.action-btn--tran):focus-visible {
     color: var(--el-color-primary);
     background-color: var(--el-color-primary-light-8);
+  }
+
+  &:focus-visible {
+    outline: none;
+
+    &::after {
+      position: absolute;
+      inset: -4px;
+      pointer-events: none;
+      content: '';
+      border: 2px solid var(--el-color-primary);
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px var(--el-border-color-extra-light);
+    }
   }
 
   &--tran {
@@ -39,7 +54,7 @@
     border-radius: 50%;
 
     &:hover,
-    &:focus {
+    &:focus-visible {
       color: rgb(from var(--el-text-color-primary) r g b / 60%);
       background-color: rgb(from var(--el-bg-color-overlay) r g b / 30%);
 
@@ -56,7 +71,7 @@
 
 .bookmark-btn {
   &:hover,
-  &:focus {
+  &:focus-visible {
     .el-icon {
       transform: scaleX(-1);
     }
@@ -65,7 +80,7 @@
 
 .refresh-btn {
   &:hover,
-  &:focus {
+  &:focus-visible {
     .el-icon {
       transform: rotate(360deg);
     }
@@ -74,9 +89,9 @@
 
 .setting-btn {
   &:hover,
-  &:focus {
+  &:focus-visible {
     .el-icon {
-      transform: rotate(180deg);
+      transform: rotate(90deg);
     }
   }
 

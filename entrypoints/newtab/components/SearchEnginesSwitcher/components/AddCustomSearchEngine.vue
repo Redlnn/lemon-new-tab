@@ -236,7 +236,7 @@ defineExpose({
     transition: var(--el-transition-duration-fast);
 
     &:hover,
-    &:focus {
+    &:focus-visible {
       border-color: var(--el-color-primary);
 
       .search-engine-icon-uploader-icon {
