@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import { useSettingsStore } from '@/shared/settings'
 
-import { getCachedOnlineWallpaper } from '@newtab/shared/wallpaper'
+import { bingWallpaperURLGetter, getCachedOnlineWallpaper } from '@newtab/shared/wallpaper'
 
 defineProps<{
   btnClass: Record<string, boolean>
@@ -60,12 +60,13 @@ function downloadImageBlob(blob: Blob) {
 
   a.href = url
   a.download = finalName
+  a.target = '_blank'
   a.click()
 
   URL.revokeObjectURL(url)
 }
 
-async function download() {
+async function downloadOnline() {
   if (!settings.background.online.cacheEnable) {
     ElMessage.warning('需要开启「在线壁纸缓存」后才能下载壁纸')
     return
@@ -73,6 +74,18 @@ async function download() {
   const cached = await getCachedOnlineWallpaper(settings.background.online.url)
   if (!cached) return
   downloadImageBlob(cached.blob)
+}
+
+function downloadBing() {
+  window.open(bingWallpaperURLGetter.uhdUrl.value, '_blank')
+}
+
+async function download() {
+  if (settings.background.bgType === 'online') {
+    await downloadOnline()
+  } else if (settings.background.bgType === 'bing') {
+    downloadBing()
+  }
 }
 </script>
 

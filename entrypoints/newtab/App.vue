@@ -251,7 +251,10 @@ const actionClass = computed(() => {
         :btn-class="actionClass"
         @refresh-background="BackgroundRef?.refreshBackground"
       ></refresh-bg-btn>
-      <download-bg-btn :btn-class="actionClass"></download-bg-btn>
+      <download-bg-btn
+        v-if="([BgType.Bing, BgType.Online] as BgType[]).includes(settings.background.bgType)"
+        :btn-class="actionClass"
+      ></download-bg-btn>
     </div>
     <settings-page ref="SettingsPageRef" />
     <changelog ref="ChangelogRef" />
