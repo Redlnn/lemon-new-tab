@@ -86,9 +86,15 @@ const isShowDeleteIcon = computed(() =>
 )
 const bingWallpaperSrc = bingWallpaperURLGetter.getBgUrl()
 const bingWallpaperInfo = bingWallpaperURLGetter.getInfo()
-const switchToBing = () => {
+
+function switchToBing() {
   bingWallpaperURLGetter.refresh(true)
   settings.background.bgType = BgType.Bing
+}
+
+function beforeLocalBgSwitch() {
+  if (isDarkBg.value) return true
+  return settings.background.local.id.length > 0
 }
 </script>
 
@@ -201,15 +207,12 @@ const switchToBing = () => {
           </div>
         </div>
         <div class="bg-switcher-theme-switch">
-          <el-icon :class="{ active: !isDarkBg }" @click="isDarkBg = false">
-            <LightModeTwotone />
-          </el-icon>
-          <el-icon
-            :class="{ active: isDarkBg }"
-            @click="isDarkBg = settings.background.local.id.length > 0"
-          >
-            <DarkModeTwotone />
-          </el-icon>
+          <el-switch
+            v-model="isDarkBg"
+            :active-icon="DarkModeTwotone"
+            :inactive-icon="LightModeTwotone"
+            :before-change="beforeLocalBgSwitch"
+          />
         </div>
       </div>
       <div class="bg-switcher--local-previews" v-else-if="isOnlineBg">

@@ -77,37 +77,14 @@
 }
 
 .bg-switcher-theme-switch {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-  justify-content: center;
-  margin-top: 5px;
-  color: var(--el-fill-color);
-  border-radius: 20px;
+  text-align: center;
 
-  html.dark & {
-    color: var(--el-text-color-placeholder);
+  .el-switch__label * {
+    font-size: 18px;
   }
 
-  .el-icon {
-    padding: 3px;
-    font-size: 20px;
-    background-color: var(--el-color-info-light-5);
-    border-radius: 50%;
-
-    &:not(.active) {
-      cursor: pointer;
-    }
-
-    &.active,
-    &:not(.active):hover {
-      color: var(--el-color-primary);
-      background-color: var(--el-color-primary-light-9);
-
-      html.colorful & {
-        background-color: var(--el-color-primary-light-8);
-      }
-    }
+  .el-switch__label .el-icon {
+    display: flex;
   }
 }
 
