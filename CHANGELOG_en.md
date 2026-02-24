@@ -18,6 +18,7 @@
 ### Bug Fixes🐛
 
 - Fixed an issue where clicking the quote widget would cause the search bar to lose focus
+- **Quote:** Fixed an issue where it would not display in certain cases when "Always Show" was enabled
 
 ## 3.1.0 (Feb 14, 2026)
 
