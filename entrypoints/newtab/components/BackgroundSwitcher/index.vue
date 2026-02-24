@@ -47,7 +47,7 @@ const { height: customLocalContentHeight } = useElementSize(customLocalContentRe
 
 function open(url: string) {
   if (url.length === 0) return
-  window.open(url, '_blank', 'noopener noreferrer')
+  window.open(url, '_blank')
 }
 
 const isLocalBg = computed(() => settings.background.bgType === BgType.Local)
