@@ -15,6 +15,10 @@
 - Disabled the search bar expansion animation on startup by default due to performance issues on most devices
 - When caching is enabled, cached wallpapers will continue to be used even after expiration if new wallpapers cannot be fetched
 
+### Bug Fixes🐛
+
+- Fixed an issue where clicking the quote widget would cause the search bar to lose focus
+
 ## 3.1.0 (Feb 14, 2026)
 
 ### Happy Chinese New Year🧨

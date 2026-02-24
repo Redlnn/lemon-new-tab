@@ -89,8 +89,7 @@ onClickOutside(searchBox, (e) => {
     return
   }
 
-  const target = e.target as HTMLElement
-  if (target.classList.contains('yiyan__main')) {
+  if ((e.target as HTMLElement | null)?.className.includes('yiyan')) {
     return
   }
   resetSearch()
