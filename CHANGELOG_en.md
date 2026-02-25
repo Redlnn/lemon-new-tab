@@ -14,6 +14,7 @@
 - Minor adjustments to UI elements and translations
 - Disabled the search bar expansion animation on startup by default due to performance issues on most devices
 - When caching is enabled, cached wallpapers will continue to be used even after expiration if new wallpapers cannot be fetched
+- **Quote:** Added click animation to the widget
 
 ### Bug Fixes🐛
 
