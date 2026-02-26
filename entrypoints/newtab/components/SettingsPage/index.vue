@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
 
-import { ArrowBackRound, CloseRound } from '@vicons/material'
+import { CloseRound, KeyboardArrowLeftRound } from '@vicons/material'
 import { useTranslation } from 'i18next-vue'
 
 import { useDialog } from '@newtab/composables/useDialog'
@@ -20,9 +20,6 @@ const router = useSettingsRouter()
 const { width: windowWidth } = useWindowSize({ type: 'visual' })
 const { opened, show, hide, toggle } = useDialog()
 
-const detailViewRef = ref<InstanceType<typeof SettingsDetailView>>()
-const isTransitioning = ref(false)
-
 const isMobile = computed(() => windowWidth.value < MOBILE_BREAKPOINT)
 const isCollapse = computed(() => windowWidth.value < COLLAPSE_BREAKPOINT && !isMobile.value)
 
@@ -33,8 +30,6 @@ const currentPageTitle = computed(() => {
   const item = MENU_ITEMS.find((i) => i.key === router.currentRoute.value)
   return item?.titleKey ? t(item.titleKey) : t('title')
 })
-
-const titleIsVisible = computed(() => detailViewRef.value?.titleIsVisible ?? false)
 
 const slideTransitionName = computed(() =>
   isMobile.value ? (router.isForward.value ? 'settings-slide-left' : 'settings-slide-right') : ''
@@ -56,18 +51,15 @@ function customToggle() {
 
 const handleMenuSelect = (key: string) => router.push(key as SettingsRoute)
 
-const handleMobileBack = () => {
+const handleBack = () => {
   // 使用 back() 来触发正确的后退动画（isForward = false）
   if (router.canGoBack.value) {
     router.back()
-  } else {
+  } else if (isMobile.value) {
     // 边缘情况：如果没有历史记录（如从桌面端切换到移动端），直接重置到 menu
     router.reset(SettingsRoute.MENU)
   }
 }
-
-const handleTransitionStart = () => (isTransitioning.value = true)
-const handleTransitionEnd = () => (isTransitioning.value = false)
 
 watch(windowWidth, (newWidth, oldWidth) => {
   if (oldWidth) {
@@ -96,26 +88,21 @@ defineExpose({ show: customShow, hide, toggle: customToggle })
     @closed="resetRouter"
   >
     <template #header="{ close, titleId }">
-      <div
-        v-show="!(isMobile && (router.isAtMenu.value || isTransitioning))"
-        :id="titleId"
-        class="base-dialog-title"
-        :style="{ opacity: titleIsVisible ? 0 : 1 }"
-      >
-        {{ currentPageTitle }}
-      </div>
-      <div
-        role="button"
-        tabindex="0"
-        v-show="isMobile && !router.isAtMenu.value"
+      <button
+        v-if="isMobile ? router.canGoBack.value : true"
         class="mobile-back-btn"
-        @click="handleMobileBack"
-        @keydown.enter="handleMobileBack"
+        :disabled="!isMobile && !router.canGoBack.value"
+        @click="handleBack"
+        @keydown.enter="handleBack"
       >
         <el-icon color="currentColor" :size="20">
-          <component :is="ArrowBackRound" />
+          <component :is="KeyboardArrowLeftRound" />
         </el-icon>
+      </button>
+      <div v-if="!(isMobile && router.isAtMenu.value)" :id="titleId" class="base-dialog-title">
+        {{ currentPageTitle }}
       </div>
+      <div v-else style="flex-grow: 1"></div>
       <div
         role="button"
         tabindex="0"
@@ -136,12 +123,7 @@ defineExpose({ show: customShow, hide, toggle: customToggle })
       />
     </template>
 
-    <Transition
-      v-if="isMobile"
-      :name="slideTransitionName"
-      @before-leave="handleTransitionStart"
-      @after-enter="handleTransitionEnd"
-    >
+    <Transition v-if="isMobile" :name="slideTransitionName">
       <settings-menu-view
         v-if="router.isAtMenu.value"
         key="menu"

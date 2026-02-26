@@ -35,7 +35,7 @@ function handleMenuSelect(key: string) {
       @select="handleMenuSelect"
     >
       <div class="settings-menu__icon">
-        <el-icon v-if="!isMobile" :size="36">
+        <el-icon v-if="!isMobile">
           <Icon />
         </el-icon>
         <span v-else>{{ t('title') }}</span>

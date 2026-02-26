@@ -5,7 +5,7 @@
   height: 500px;
   padding: 0;
   overflow: hidden;
-  background-color: transparent;
+  background-color: var(--el-bg-color-page);
   border-radius: 20px;
   box-shadow: 0 0 15px 0 var(--le-bg-color-page-opacity-60);
   transition: box-shadow var(--el-transition-duration-fast) ease;
@@ -14,52 +14,73 @@
     @include acrylic.acrylic;
   }
 
+  html.colorful & {
+    background-color: var(--el-color-primary-light-9);
+  }
+
+  html.dialog-transparent & {
+    background-color: var(--le-bg-color-overlay-opacity-20);
+  }
+
   .el-dialog__body {
+    position: relative;
     display: flex;
     flex: 1;
     flex-direction: column;
-    background-color: var(--el-bg-color-page);
     transition:
       background-color var(--el-transition-duration-fast) ease,
       color var(--el-transition-duration-fast) ease;
-
-    html.colorful & {
-      background-color: var(--el-color-primary-light-9);
-    }
-
-    html.dialog-transparent & {
-      background-color: var(--le-bg-color-overlay-opacity-20);
-    }
   }
 }
 
 .settings-header {
-  position: relative;
+  z-index: 1;
+  display: flex;
   flex-shrink: 0;
+  align-items: center;
+  width: 100%;
   height: 50px;
+  padding: 0 30px;
   font-weight: bold;
   line-height: 50px;
   color: var(--el-text-color-primary);
-  text-align: center;
   cursor: move;
 
+  .base-dialog-close-btn {
+    position: static;
+
+    &:hover {
+      box-shadow: var(--el-box-shadow-light);
+    }
+  }
+
+  .base-dialog-title {
+    flex-grow: 1;
+    font-size: 16px;
+  }
+
   .mobile-back-btn {
-    position: absolute;
-    top: 15px;
-    left: 20px;
-    width: 24px;
-    height: 24px;
-    padding: 2px;
-    line-height: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 30px;
+    margin-right: 20px;
     color: var(--el-text-color-regular);
     cursor: pointer;
-    border-radius: 50%;
-    transition: var(--el-transition-duration-fast) ease-in-out;
+    background-color: var(--el-fill-color-blank);
+    border: none;
+    border-radius: 15px;
+    box-shadow: var(--el-box-shadow-light);
+    transition: var(--el-transition-duration-fast) ease-in-oute;
 
-    &:hover,
+    &:disabled {
+      cursor: auto;
+    }
+
+    &:not(:disabled):hover,
     &:focus-visible {
       color: var(--el-text-color-primary);
-      background-color: var(--el-fill-color-blank);
     }
 
     &:focus-visible {
@@ -79,7 +100,7 @@
 
 .settings__items-container {
   padding: 14px 25px;
-  margin-bottom: 30px;
+  margin-bottom: 10px;
   background-color: var(--el-bg-color);
   border-radius: 20px;
   transition: background-color var(--el-transition-duration-fast) ease;
@@ -190,16 +211,23 @@
 
 .settings-aside {
   flex-shrink: 0;
-  min-width: 64px;
-  height: 100%;
+  height: calc(100% - 20px);
+  padding: 10px;
+  margin: 10px 0 10px 10px;
   background-color: #e9e9e9;
+  border-radius: 14px;
+  box-shadow: var(--el-box-shadow);
   transition:
     background-color var(--el-transition-duration-fast) ease,
     border-color var(--el-transition-duration-fast) ease;
 
   .is-mobile & {
     min-width: 100%;
+    height: calc(100% - 50px);
+    padding: 0;
+    margin: 0;
     background-color: initial !important;
+    box-shadow: none;
   }
 
   html.colorful & {
@@ -224,17 +252,20 @@
 }
 
 .settings-menu.el-menu {
+  --el-menu-base-level-padding: 5px;
+
   height: 100%;
   background-color: transparent;
   border: initial;
 
   &:not(.el-menu--collapse) {
-    width: 230px;
+    width: 200px;
   }
 
   .settings-menu__icon {
     &:has(.el-icon) {
-      padding: 16px 20px 25px;
+      padding: 16px 10px 25px;
+      font-size: 34px;
     }
 
     .is-mobile & {
@@ -246,7 +277,7 @@
   }
 
   &.el-menu--collapse .settings-menu__icon:has(.el-icon) {
-    padding: 16px 14px 25px;
+    padding: 16px 0 25px;
   }
 
   .is-mobile & {
@@ -254,11 +285,11 @@
   }
 
   .settings-menu-item {
-    --el-menu-item-height: 36px;
+    --el-menu-item-height: 32px;
     --el-menu-active-color: var(--el-color-primary);
     --el-menu-hover-bg-color: var(--le-fill-color-dark-opacity-20);
     position: relative;
-    border-radius: 12px;
+    border-radius: 10px;
     transition:
       border-color var(--el-transition-duration-fast),
       background-color var(--el-transition-duration-fast),
@@ -320,20 +351,6 @@
 
     .el-scrollbar__wrap {
       padding-right: 10px;
-    }
-
-    &__title {
-      padding: 0 10px;
-      margin: 25px 0 20px;
-      font-size: 28px;
-      font-weight: 600;
-      color: var(--el-text-color-primary);
-      transition: color var(--el-transition-duration-fast) ease;
-    }
-
-    .is-mobile & &__title {
-      margin: 20px 0 15px;
-      font-size: 24px;
     }
   }
 }

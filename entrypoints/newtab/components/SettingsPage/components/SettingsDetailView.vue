@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useElementVisibility, useTimeoutFn } from '@vueuse/core'
+import { useTimeoutFn } from '@vueuse/core'
 
 import { getSettingsView } from '../composables/SettingsAsyncViews'
 import { SettingsRoute } from '../composables/useSettingsRouter'
@@ -13,9 +13,6 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-
-const titleRef = useTemplateRef('titleRef')
-const titleIsVisible = useElementVisibility(titleRef)
 
 const shouldRenderActiveView = ref(false)
 
@@ -75,17 +72,11 @@ const activeView = computed(() => {
   if (!shouldRenderActiveView.value) return null
   return getSettingsView(props.currentRoute)
 })
-
-defineExpose({
-  titleRef,
-  titleIsVisible
-})
 </script>
 
 <template>
   <el-main class="settings-main noselect">
     <el-scrollbar class="settings-content">
-      <h2 ref="titleRef" class="settings-content__title">{{ title }}</h2>
       <Transition :name="disableTransition ? undefined : 'settings-fade'" mode="out-in">
         <KeepAlive>
           <component v-if="activeView" :is="activeView" :key="currentRoute" />
