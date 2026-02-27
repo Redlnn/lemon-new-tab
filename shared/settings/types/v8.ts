@@ -15,6 +15,8 @@ export interface SettingsInterfaceVer8 {
   // 时钟/时间显示
   clock: {
     enabled: boolean
+    colorfulNum: boolean
+    newStyle: boolean
     isMeridiem: boolean
     showMeridiem: boolean
     showDate: boolean
@@ -22,6 +24,7 @@ export interface SettingsInterfaceVer8 {
     showSeconds: boolean
     size: ClockSize
     weight: ClockWeight
+    calcWeight: ClockWeight
     meridiemFollowSize: boolean
     shadow: boolean
     blink: boolean

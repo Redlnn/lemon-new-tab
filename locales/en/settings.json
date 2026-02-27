@@ -11,8 +11,8 @@
     },
     "cache": {
       "duration": "Cache expiration duration",
-      "noExpires": "Cache never expires",
-      "nextStartup": "Effective on next startup"
+      "nextStartup": "Effective on next startup",
+      "noExpires": "Cache never expires"
     },
     "change": "Change background",
     "chooseImageOrVideo": "Choose an image or video to use as wallpaper",
@@ -95,7 +95,7 @@
     "invertColorDark": "[Clock] Use dark text in dark mode",
     "invertColorLight": "[Clock] Use dark text in light mode",
     "largeLabel": "Large AM/PM Label",
-    "secondsTip": "This increases performance usage. Consider enabling “Smaller time” for a better look.",
+    "secondsTip": "This increases performance usage.",
     "showAMPM": "Show AM/PM",
     "showDate": "Show date",
     "showLunar": "Show Chinese lunar calendar",

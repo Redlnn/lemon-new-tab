@@ -77,7 +77,9 @@ const formattedDate = computed(() => {
 const sizeMap = {
   [ClockSize.Small]: 'clock__time-container-small',
   [ClockSize.Medium]: 'clock__time-container-medium',
-  [ClockSize.Large]: undefined
+  [ClockSize.Large]: undefined,
+  [ClockSize.EvenLarge]: 'clock__time-container-even-large',
+  [ClockSize.ExtraLarge]: 'clock__time-container-extra-large'
 }
 
 const weightMap = {
@@ -89,10 +91,18 @@ const weightMap = {
   [ClockWeight.Black]: 900
 }
 
-const clockClass = computed(() => [sizeMap[settings.clock.size]])
+const clockClass = computed(() => [
+  sizeMap[settings.clock.size],
+  settings.clock.newStyle ? 'clock__new' : undefined
+])
 const clockStyle = computed(() => {
   return {
     fontWeight: weightMap[settings.clock.weight]
+  }
+})
+const calcStyle = computed(() => {
+  return {
+    fontWeight: weightMap[settings.clock.calcWeight]
   }
 })
 </script>
@@ -108,30 +118,52 @@ const clockStyle = computed(() => {
     ]"
   >
     <div class="clock__time-container" :class="clockClass" :style="clockStyle">
-      <span
-        v-if="settings.clock.showMeridiem"
-        class="clock__meridiem"
-        :class="[settings.clock.meridiemFollowSize ? undefined : 'clock__meridiem-small']"
+      <div
+        :style="[settings.clock.newStyle ? { display: 'flex', alignItems: 'center' } : undefined]"
       >
-        {{ isChinese ? formattedDate.meridiemZH : formattedTime.meridiem }}
-      </span>
-      <span class="clock__time">
-        <span class="clock__hour">
-          {{ settings.clock.isMeridiem ? formattedTime.hourMeridiem : formattedTime.hour }}
-        </span>
-        <span class="clock__colon" :class="{ 'clock__colon--blinking': settings.clock.blink }"
-          >:</span
+        <span
+          v-if="settings.clock.showMeridiem && !settings.clock.newStyle"
+          class="clock__meridiem"
+          :class="[settings.clock.meridiemFollowSize ? undefined : 'clock__meridiem-small']"
         >
-        <span class="clock__minute">{{ formattedTime.minute }}</span>
-        <template v-if="settings.clock.showSeconds">
+          {{ isChinese ? formattedDate.meridiemZH : formattedTime.meridiem }}
+        </span>
+        <span class="clock__time">
+          <span class="clock__hour">
+            {{ settings.clock.isMeridiem ? formattedTime.hourMeridiem : formattedTime.hour }}
+          </span>
           <span class="clock__colon" :class="{ 'clock__colon--blinking': settings.clock.blink }"
             >:</span
           >
-          <span class="clock__second">{{ formattedTime.second }}</span>
-        </template>
-      </span>
+          <span
+            class="clock__minute"
+            :class="[
+              settings.clock.colorfulNum && (!settings.clock.showSeconds || settings.clock.newStyle)
+                ? 'colorful'
+                : undefined
+            ]"
+            >{{ formattedTime.minute }}</span
+          >
+          <template v-if="settings.clock.showSeconds && !settings.clock.newStyle">
+            <span class="clock__colon" :class="{ 'clock__colon--blinking': settings.clock.blink }"
+              >:</span
+            >
+            <span
+              class="clock__second"
+              :class="[settings.clock.colorfulNum ? 'colorful' : undefined]"
+              >{{ formattedTime.second }}</span
+            >
+          </template>
+        </span>
+      </div>
+      <div class="clock__new-container" v-if="settings.clock.newStyle">
+        <span>{{ formattedTime.second }}</span>
+        <span style="grid-area: meridiem">{{
+          isChinese ? formattedDate.meridiemZH : formattedTime.meridiem
+        }}</span>
+      </div>
     </div>
-    <div v-if="settings.clock.showDate" class="clock__date">
+    <div v-if="settings.clock.showDate" class="clock__date" :style="calcStyle">
       <span>
         {{ formattedDate.date }}
         {{ formattedDate.weekday }}

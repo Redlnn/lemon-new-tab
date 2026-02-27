@@ -11,8 +11,8 @@
     },
     "cache": {
       "duration": "快取有效期",
-      "noExpires": "快取永不過期",
-      "nextStartup": "將於下次啟動時生效"
+      "nextStartup": "將於下次啟動時生效",
+      "noExpires": "快取永不過期"
     },
     "change": "更改背景",
     "chooseImageOrVideo": "選擇你喜歡的圖片或影片作為壁紙",
@@ -95,7 +95,7 @@
     "invertColorDark": "【時鐘】深色模式下使用深色文字",
     "invertColorLight": "【時鐘】淺色模式下使用深色文字",
     "largeLabel": "「上午 / 下午」大字顯示",
-    "secondsTip": "開啟會增加性能消耗，建議同時開啟「時間小字」以取得更佳效果",
+    "secondsTip": "開啟會增加性能消耗",
     "showAMPM": "顯示「上午／下午」",
     "showDate": "顯示日期",
     "showLunar": "顯示農曆",

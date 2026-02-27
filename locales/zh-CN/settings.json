@@ -11,8 +11,8 @@
     },
     "cache": {
       "duration": "缓存有效期",
-      "noExpires": "缓存永不过期",
-      "nextStartup": "下次启动生效"
+      "nextStartup": "下次启动生效",
+      "noExpires": "缓存永不过期"
     },
     "change": "更改背景",
     "chooseImageOrVideo": "选择你喜欢的图片或视频作为壁纸",
@@ -95,7 +95,7 @@
     "invertColorDark": "【时钟】深色模式下使用深色文字",
     "invertColorLight": "【时钟】浅色模式下使用深色文字",
     "largeLabel": "「上午 / 下午」大字号",
-    "secondsTip": "开启会增加性能消耗，建议同时开启「小号时间」以获得更佳效果",
+    "secondsTip": "开启会增加性能消耗",
     "showAMPM": "显示「上午 / 下午」",
     "showDate": "显示日期",
     "showLunar": "显示农历",

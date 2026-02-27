@@ -13,6 +13,8 @@ export function migrateFromVer7To8(oldSettings: SettingsInterfaceVer7): Settings
     },
     clock: {
       enabled: oldSettings.time.enabled,
+      colorfulNum: defaultSettings.clock.colorfulNum,
+      newStyle: defaultSettings.clock.newStyle,
       isMeridiem: oldSettings.time.isMeridiem,
       showMeridiem: oldSettings.time.showMeridiem,
       showDate: oldSettings.time.showDate,
@@ -20,6 +22,7 @@ export function migrateFromVer7To8(oldSettings: SettingsInterfaceVer7): Settings
       showSeconds: oldSettings.time.showSeconds,
       size: oldSettings.time.small ? ClockSize.Small : ClockSize.Medium,
       weight: defaultSettings.clock.weight,
+      calcWeight: defaultSettings.clock.calcWeight,
       meridiemFollowSize: defaultSettings.clock.meridiemFollowSize,
       shadow: oldSettings.time.enableShadow,
       blink: oldSettings.time.blinkingColon,
