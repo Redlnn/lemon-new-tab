@@ -1,13 +1,11 @@
 <script lang="ts" setup>
 import type { CSSProperties } from 'vue'
 
-import type { Language } from 'element-plus/es/locale'
 import { useTranslation } from 'i18next-vue'
 
 import { version } from '@/package.json'
 
 import { BgType } from '@/shared/enums'
-import { getLang } from '@/shared/i18n'
 import { useSettingsStore } from '@/shared/settings'
 import { setSyncEventCallback } from '@/shared/sync/syncDataStore'
 import { changeTheme, toggleDocumentClass } from '@/shared/theme'
@@ -24,45 +22,9 @@ import Clock from './components/Clock.vue'
 import SearchBox from './components/SearchBox/index.vue'
 import Shortcut from './components/Shortcut/index.vue'
 import YiYan from './components/YiYan.vue'
+import { useElementLang } from './composables/useElementLang'
 import { usePermission } from './composables/usePermission'
-
-const { t, i18next } = useTranslation('sync')
-
-const elementZhLocales = import.meta.glob<{ default: Language }>(
-  '/node_modules/element-plus/es/locale/lang/zh*.mjs'
-)
-
-// 由于考虑面向用户群体，只包含中文、英文
-async function loadElementLocale(): Promise<Language> {
-  const formattedLocale = getLang().toLowerCase()
-  const loader =
-    elementZhLocales[`/node_modules/element-plus/es/locale/lang/${formattedLocale}.mjs`]
-
-  if (loader) {
-    return (await loader()).default
-  }
-
-  // 当遇到不支持的 zh 语言时，回退到 zh-cn
-  return (await import('element-plus/es/locale/lang/zh-cn.mjs')).default
-}
-
-const elLocale = ref<Language>()
-
-onBeforeMount(async () => {
-  if (getLang().startsWith('zh')) {
-    elLocale.value = await loadElementLocale()
-  }
-})
-
-// 在语言切换时同步 Element Plus 语言包（仅中文按需加载，英文使用默认）
-const onLngChanged = async (lng: string) => {
-  if (lng?.startsWith('zh')) {
-    elLocale.value = await loadElementLocale()
-  } else {
-    elLocale.value = undefined
-  }
-}
-i18next.on('languageChanged', onLngChanged)
+import { shouldShowChangelog } from './shared/utils'
 
 const SettingsPage = defineAsyncComponent(() => import('./components/SettingsPage/index.vue'))
 const Changelog = defineAsyncComponent(() => import('./components/Changelog.vue'))
@@ -85,26 +47,9 @@ const BGSwticherRef = ref<InstanceType<typeof BackgroundSwitcher>>()
 const BookmarkRef = ref<InstanceType<typeof Bookmark>>()
 const BackgroundRef = ref<InstanceType<typeof Background>>()
 
+const { t } = useTranslation('sync')
+const elLocale = useElementLang()
 const settings = useSettingsStore()
-
-function parseMajorMinor(value: string): [number, number] | null {
-  const [majorStr, minorStr] = value.split('.')
-  if (majorStr == null || minorStr == null) return null
-  const major = Number(majorStr)
-  const minor = Number(minorStr)
-  if (Number.isNaN(major) || Number.isNaN(minor)) return null
-  return [major, minor]
-}
-
-function shouldShowChangelog(previousVersion: string, nextVersion: string): boolean {
-  const nextMajorMinor = parseMajorMinor(nextVersion)
-  if (!nextMajorMinor) return false
-  const previousMajorMinor = parseMajorMinor(previousVersion)
-  if (!previousMajorMinor) return true
-  if (previousMajorMinor[0] < nextMajorMinor[0]) return true
-  if (previousMajorMinor[0] > nextMajorMinor[0]) return false
-  return previousMajorMinor[1] < nextMajorMinor[1]
-}
 
 onMounted(async () => {
   if (settings.pluginVersion !== version) {
