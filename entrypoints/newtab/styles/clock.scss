@@ -60,6 +60,10 @@
     .clock__time {
       & .colorful {
         color: var(--el-color-primary-light-5);
+
+        html.dark & {
+          color: var(--el-color-primary-light-3);
+        }
       }
     }
 
