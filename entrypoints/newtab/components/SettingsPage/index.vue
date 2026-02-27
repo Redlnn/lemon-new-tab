@@ -11,9 +11,9 @@ import SettingsDialog from './components/SettingsDialog.vue'
 import SettingsMenuView from './components/SettingsMenuView.vue'
 import { MENU_ITEMS, SettingsRoute, useSettingsRouter } from './composables/useSettingsRouter'
 
-const MOBILE_BREAKPOINT = 650
+const MOBILE_BREAKPOINT = 600
 const COLLAPSE_BREAKPOINT = 900
-const DESKTOP_DIALOG_WIDTH = 900
+const DESKTOP_DIALOG_WIDTH = 850
 
 const { t } = useTranslation('settings')
 const router = useSettingsRouter()
@@ -22,8 +22,6 @@ const { opened, show, hide, toggle } = useDialog()
 
 const isMobile = computed(() => windowWidth.value < MOBILE_BREAKPOINT)
 const isCollapse = computed(() => windowWidth.value < COLLAPSE_BREAKPOINT && !isMobile.value)
-
-const dialogWidth = computed(() => (windowWidth.value < 950 ? '93%' : DESKTOP_DIALOG_WIDTH))
 
 const currentPageTitle = computed(() => {
   if (router.isAtMenu.value) return t('title')
@@ -75,7 +73,7 @@ defineExpose({ show: customShow, hide, toggle: customToggle })
 <template>
   <SettingsDialog
     v-model="opened"
-    :width="dialogWidth"
+    :width="DESKTOP_DIALOG_WIDTH"
     class="settings__dialog settings-container--two-column"
     :class="[
       { 'is-mobile': isMobile },
@@ -90,7 +88,7 @@ defineExpose({ show: customShow, hide, toggle: customToggle })
     <template #header="{ close, titleId }">
       <button
         v-if="isMobile ? router.canGoBack.value : true"
-        class="mobile-back-btn"
+        class="settings-back-btn"
         :disabled="!isMobile && !router.canGoBack.value"
         @click="handleBack"
         @keydown.enter="handleBack"
