@@ -1,10 +1,6 @@
 <script lang="ts" setup>
 import { RefreshRound } from '@vicons/material'
 
-defineProps<{
-  btnClass: Record<string, boolean>
-}>()
-
 const emit = defineEmits<{
   (e: 'refresh-background'): void
 }>()
@@ -15,7 +11,6 @@ const emit = defineEmits<{
     role="button"
     tabindex="0"
     class="action-btn refresh-btn"
-    :class="btnClass"
     @click="emit('refresh-background')"
     @keydown.enter="emit('refresh-background')"
   >

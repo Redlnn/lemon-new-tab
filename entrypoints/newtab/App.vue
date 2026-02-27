@@ -156,8 +156,8 @@ const actionClass = computed(() => {
   const enableBlur = !db && enableTransparent
 
   return {
-    'action-btn--tran': enableTransparent,
-    'action-btn--blur': enableBlur
+    'action-btn-container--tran': enableTransparent,
+    'action-btn-container--blur': enableBlur
   }
 })
 </script>
@@ -189,9 +189,8 @@ const actionClass = computed(() => {
       <yi-yan v-if="settings.yiyan.enabled" @contextmenu.stop />
     </main>
     <background ref="BackgroundRef" />
-    <div class="action-btn-container">
+    <div class="action-btn-container" :class="actionClass">
       <settings-btn
-        :btn-class="actionClass"
         @open-settings="SettingsPageRef?.toggle"
         @open-changelog="ChangelogRef?.show"
         @open-about="AboutRef?.toggle"
@@ -199,19 +198,13 @@ const actionClass = computed(() => {
         @open-faq="FaqRef?.show"
         @open-background-switcher="BGSwticherRef?.show"
       />
-      <bookmark-btn
-        v-if="!settings.bookmark.hideBtn"
-        :btn-class="actionClass"
-        @open-bookmark-sidebar="BookmarkRef?.show"
-      />
+      <bookmark-btn v-if="!settings.bookmark.hideBtn" @open-bookmark-sidebar="BookmarkRef?.show" />
       <refresh-bg-btn
         v-if="settings.background.bgType === BgType.Online"
-        :btn-class="actionClass"
         @refresh-background="BackgroundRef?.refreshBackground"
       ></refresh-bg-btn>
       <download-bg-btn
         v-if="([BgType.Bing, BgType.Online] as BgType[]).includes(settings.background.bgType)"
-        :btn-class="actionClass"
       ></download-bg-btn>
     </div>
     <settings-page ref="SettingsPageRef" />

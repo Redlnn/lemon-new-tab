@@ -5,10 +5,6 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { bingWallpaperURLGetter, getCachedOnlineWallpaper } from '@newtab/shared/wallpaper'
 
-defineProps<{
-  btnClass: Record<string, boolean>
-}>()
-
 const playing = ref(false)
 const canAnimation = ref(true)
 
@@ -94,7 +90,6 @@ async function download() {
     role="button"
     tabindex="0"
     class="action-btn"
-    :class="btnClass"
     @mouseenter="play"
     @mouseleave="play"
     @click="download"

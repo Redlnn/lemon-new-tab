@@ -6,32 +6,54 @@
   bottom: 20px;
   display: flex;
   flex-direction: row-reverse;
-  gap: 5px;
+  padding: 5px;
+  color: var(--el-text-color-secondary);
+  background-color: var(--el-bg-color-overlay);
+  border-radius: 100px;
+  transition: var(--el-transition-duration-fast) ease-in-out;
+
+  html.colorful &:not(.action-btn-container--tran) {
+    background-color: var(--el-color-primary-light-9);
+  }
+
+  &:hover,
+  &:focus-within {
+    box-shadow: var(--el-box-shadow-lighter);
+  }
+
+  &--tran {
+    color: rgb(from var(--el-text-color-secondary) r g b / 30%);
+    background-color: var(--le-bg-color-overlay-opacity-90);
+
+    &:hover,
+    &:focus-within {
+      color: var(--el-text-color-regular);
+      background-color: var(--le-bg-color-overlay-opacity-60);
+    }
+
+    &.action-btn-container--blur {
+      @include acrylic.acrylic(5px, 1.4, 1);
+    }
+  }
+
+  .el-dropdown {
+    color: inherit;
+  }
 }
 
 .action-btn {
   position: relative;
-  width: 37px;
-  height: 37px;
-  padding: 6px;
+  width: 33px;
+  height: 33px;
+  padding: 4px;
   font-size: 25px;
   line-height: 1em;
-  color: var(--el-text-color-secondary);
   cursor: pointer;
-  background-color: var(--el-bg-color-overlay);
-  border-radius: 12px;
   transition: var(--el-transition-duration-fast) ease-in-out;
 
   &:hover,
   &:focus-visible {
-    border-radius: 50%;
-    box-shadow: var(--el-box-shadow-lighter);
-  }
-
-  &:not(.action-btn--tran):hover,
-  &:not(.action-btn--tran):focus-visible {
     color: var(--el-color-primary);
-    background-color: var(--el-color-primary-light-8);
   }
 
   &:focus-visible {
@@ -39,28 +61,11 @@
 
     &::after {
       position: absolute;
-      inset: -4px;
+      inset: -2px;
       pointer-events: none;
       content: '';
       border: 2px solid var(--el-color-primary);
       border-radius: 50%;
-      box-shadow: 0 0 0 2px var(--el-border-color-extra-light);
-    }
-  }
-
-  &--tran {
-    color: rgb(from var(--el-text-color-primary) r g b / 35%);
-    background-color: transparent;
-    border-radius: 50%;
-
-    &:hover,
-    &:focus-visible {
-      color: rgb(from var(--el-text-color-primary) r g b / 60%);
-      background-color: rgb(from var(--el-bg-color-overlay) r g b / 30%);
-
-      &.action-btn--blur {
-        @include acrylic.acrylic;
-      }
     }
   }
 

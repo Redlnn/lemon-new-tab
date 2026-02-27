@@ -1,10 +1,6 @@
 <script lang="ts" setup>
 import { BookmarkTwotone } from '@vicons/material'
 
-defineProps<{
-  btnClass: Record<string, boolean>
-}>()
-
 const emit = defineEmits<{
   (e: 'open-bookmark-sidebar'): void
 }>()
@@ -15,7 +11,6 @@ const emit = defineEmits<{
     role="button"
     tabindex="0"
     class="action-btn bookmark-btn"
-    :class="btnClass"
     @click="emit('open-bookmark-sidebar')"
     @keydown.enter="emit('open-bookmark-sidebar')"
   >
