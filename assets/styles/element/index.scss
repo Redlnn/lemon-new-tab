@@ -16,7 +16,10 @@ $--backtop: (
   'bg-color': color-mix(in oklch, var(--el-color-primary), transparent 90%),
   'hover-bg-color': color-mix(in oklch, var(--el-color-primary-light-5), transparent 60%)
 );
-$--custom-font-family: #{$font-apple} #{$font-common} #{$font-fallback};
+$--custom-font-family:
+  #{$font-apple},
+  #{$font-common},
+  #{$font-fallback};
 $--font-family: (
   '': $--custom-font-family
 );
