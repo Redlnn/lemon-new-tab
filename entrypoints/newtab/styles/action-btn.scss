@@ -54,6 +54,10 @@
   &:hover,
   &:focus-visible {
     color: var(--el-color-primary);
+
+    svg {
+      filter: drop-shadow(0 0 3px rgb(255 255 255 / 60%));
+    }
   }
 
   &:focus-visible {
