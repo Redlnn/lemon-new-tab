@@ -2,13 +2,8 @@
  * Acrylic (毛玻璃) 效果 mixin 与工具类
  * 用法：
  *  - 直接 mixin：  @include acrylic(10px, 1.4, 1.1);
- *  - 工具类：      .u-acrylic, .u-acrylic--light, .u-acrylic--strong
  */
 
 @mixin acrylic($blur: 10px, $saturate: 1.4, $brightness: 1.1) {
   backdrop-filter: blur($blur) saturate($saturate) brightness($brightness);
-}
-
-.u-acrylic {
-  @include acrylic;
 }
