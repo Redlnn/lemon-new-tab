@@ -4,7 +4,6 @@ import './bg-switcher.scss'
 import { storeToRefs } from 'pinia'
 import { useDark, useElementSize } from '@vueuse/core'
 
-import { Plus } from '@vicons/fa'
 import {
   Brightness6Twotone,
   CloseRound,
@@ -16,7 +15,8 @@ import {
   InsertLinkRound,
   LaunchRound,
   LightModeTwotone,
-  TripOriginRound
+  TripOriginRound,
+  UploadRound
 } from '@vicons/material'
 import type { UploadRequestOptions } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
@@ -166,7 +166,7 @@ function beforeLocalBgSwitch() {
               <img v-else :src="localBgUrl" />
             </div>
           </template>
-          <el-icon v-else class="bg-switcher-preview__placeholder"><plus /></el-icon>
+          <el-icon v-else class="bg-switcher-preview__placeholder"><upload-round /></el-icon>
         </el-upload>
         <el-upload
           v-if="isDarkBg && settings.background.local.id"
@@ -187,7 +187,7 @@ function beforeLocalBgSwitch() {
               <img v-else :src="localDarkBgUrl" />
             </div>
           </template>
-          <el-icon v-else class="bg-switcher-preview__placeholder"><plus /></el-icon>
+          <el-icon v-else class="bg-switcher-preview__placeholder"><upload-round /></el-icon>
         </el-upload>
         <button v-if="isShowDeleteIcon" class="bg-switcher-uploader-delete" @click="deleteLocalBg">
           <el-icon><close-round /></el-icon>

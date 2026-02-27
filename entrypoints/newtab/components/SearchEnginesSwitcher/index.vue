@@ -157,7 +157,7 @@ function getCustomEngineFavicon(engine: { id: string; url: string; icon?: string
             @keydown.enter="addCustomSearchEngineRef?.openAddDialog"
           >
             <el-icon size="16" class="se-switcher-item__icon">
-              <Plus />
+              <plus />
             </el-icon>
             <div class="se-switcher-item__content">
               <div class="se-switcher-item__label" style="font-weight: var(--el-font-size-base)">
