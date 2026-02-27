@@ -18,7 +18,7 @@ export const defaultSettings = {
     showDate: true,
     showLunar: true,
     showSeconds: false,
-    size: ClockSize.Large,
+    size: ClockSize.Medium,
     weight: ClockWeight.Black,
     calcWeight: ClockWeight.Medium,
     meridiemFollowSize: false,
