@@ -1,6 +1,6 @@
-import type MarkdownIt from 'markdown-it'
+import MarkdownExit from 'markdown-exit'
 
-export function removeH1Plugin(md: MarkdownIt) {
+export function removeH1Plugin(md: MarkdownExit) {
   md.core.ruler.push('remove_h1', (state) => {
     const tokens: typeof state.tokens = []
     let skip = false

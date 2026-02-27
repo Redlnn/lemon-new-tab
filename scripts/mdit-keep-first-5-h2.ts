@@ -1,10 +1,10 @@
-import type MarkdownIt from 'markdown-it'
+import MarkdownExit from 'markdown-exit'
 
 /**
  * 保留 Markdown 文档中前 5 个 H2 标签及其子内容
  * H2 的子内容定义为：从 H2 开始到下一个同级或更高级标题（H1/H2）之前的所有内容
  */
-export function keepFirst5H2Plugin(md: MarkdownIt) {
+export function keepFirst5H2Plugin(md: MarkdownExit) {
   md.core.ruler.push('keep_first_5_h2', (state) => {
     const tokens: typeof state.tokens = []
     let h2Count = 0
