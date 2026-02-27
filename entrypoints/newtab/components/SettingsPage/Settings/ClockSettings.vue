@@ -174,6 +174,10 @@ function handleTakeNewStyleOff(val: string | number | boolean) {
       </div>
     </div>
     <div class="settings__item settings__item--horizontal">
+      <div class="settings__label">多彩时钟</div>
+      <el-switch v-model="settings.clock.colorfulNum" />
+    </div>
+    <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('clock.enableShadow') }}</div>
       <el-switch v-model="settings.clock.shadow" />
     </div>
