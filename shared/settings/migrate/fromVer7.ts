@@ -9,7 +9,8 @@ export function migrateFromVer7To8(oldSettings: SettingsInterfaceVer7): Settings
     theme: {
       primaryColor: oldSettings.primaryColor,
       colorfulMode: oldSettings.colorfulMode,
-      monetColor: oldSettings.monetColor
+      monetColor: oldSettings.monetColor,
+      idleHide: defaultSettings.theme.idleHide
     },
     clock: {
       enabled: oldSettings.time.enabled,

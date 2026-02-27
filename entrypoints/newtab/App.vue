@@ -23,6 +23,7 @@ import SearchBox from './components/SearchBox/index.vue'
 import Shortcut from './components/Shortcut/index.vue'
 import YiYan from './components/YiYan.vue'
 import { useElementLang } from './composables/useElementLang'
+import { useIdleHide } from './composables/useIdle'
 import { usePermission } from './composables/usePermission'
 import { shouldShowChangelog } from './shared/utils'
 
@@ -47,9 +48,12 @@ const BGSwticherRef = ref<InstanceType<typeof BackgroundSwitcher>>()
 const BookmarkRef = ref<InstanceType<typeof Bookmark>>()
 const BackgroundRef = ref<InstanceType<typeof Background>>()
 
+const appRef = useTemplateRef('appRef')
+
 const { t } = useTranslation('sync')
 const elLocale = useElementLang()
 const settings = useSettingsStore()
+const idle = useIdleHide()
 
 onMounted(async () => {
   if (settings.pluginVersion !== version) {
@@ -88,6 +92,14 @@ onMounted(async () => {
       })
     }
   })
+})
+
+watch(idle, (v) => {
+  if (v) {
+    if (appRef.value) appRef.value.style.opacity = '0.2'
+  } else {
+    appRef.value?.style.removeProperty('opacity')
+  }
 })
 
 watch(
@@ -168,6 +180,7 @@ const actionClass = computed(() => {
           : ({ paddingTop: ['30vh', '30dvh'] } as unknown as CSSProperties)
       "
       class="app"
+      ref="appRef"
       @contextmenu.prevent="openBookmarkSidebar"
     >
       <clock v-if="settings.clock.enabled" @contextmenu.stop />

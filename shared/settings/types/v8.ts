@@ -10,6 +10,7 @@ export interface SettingsInterfaceVer8 {
     primaryColor: string
     colorfulMode: boolean
     monetColor: boolean
+    idleHide: boolean
   }
 
   // 时钟/时间显示

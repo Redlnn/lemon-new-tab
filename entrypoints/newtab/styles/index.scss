@@ -83,6 +83,7 @@ html.dialog-acrylic {
   height: 100%;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
     env(safe-area-inset-left); // 移动端安全区
+  transition: opacity var(--el-transition-duration) ease-in-out;
 }
 
 .noselect {

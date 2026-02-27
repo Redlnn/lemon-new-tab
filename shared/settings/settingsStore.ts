@@ -34,6 +34,6 @@ export async function saveSettings(
 
 export const useSettingsStore = defineStore('option', {
   state: () => {
-    return structuredClone(defaultSettings)
+    return structuredClone(defaultSettings as CURRENT_CONFIG_INTERFACE)
   }
 })

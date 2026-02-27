@@ -2,11 +2,12 @@ import { BgType, ClockSize, ClockWeight, DrawerDirection, SortMode } from '@/sha
 
 import { type CURRENT_CONFIG_INTERFACE, CURRENT_CONFIG_VERSION } from './current'
 
-export const defaultSettings: CURRENT_CONFIG_INTERFACE = {
+export const defaultSettings = {
   theme: {
     primaryColor: '#f5b800',
     colorfulMode: false,
-    monetColor: false
+    monetColor: false,
+    idleHide: false
   },
   clock: {
     enabled: true,
@@ -134,4 +135,4 @@ export const defaultSettings: CURRENT_CONFIG_INTERFACE = {
   readChangeLog: false,
   pluginVersion: '',
   version: CURRENT_CONFIG_VERSION
-}
+} satisfies CURRENT_CONFIG_INTERFACE
