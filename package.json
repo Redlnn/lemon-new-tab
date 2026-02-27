@@ -48,7 +48,6 @@
     "@tsconfig/node24": "^24.0.4",
     "@types/chrome": "^0.1.37",
     "@types/lodash": "^4.17.24",
-    "@types/markdown-it": "^14.1.2",
     "@types/node": "^25.3.2",
     "@types/webextension-polyfill": "^0.12.5",
     "@vitejs/plugin-vue": "^6.0.4",
