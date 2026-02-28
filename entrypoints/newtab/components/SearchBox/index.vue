@@ -194,6 +194,7 @@ function handleTabNavigation(direction: 1 | -1) {
 
   const newIndex = (currentIndex + direction + allEngineKeys.length) % allEngineKeys.length
   settings.search.engine = allEngineKeys[newIndex]!
+  searchEngineMenuRef.value?.showEngineToast()
 }
 
 function handlePrevTab() {

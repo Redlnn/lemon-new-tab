@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useTimeoutFn } from '@vueuse/core'
+
 import type { TooltipInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 
@@ -48,6 +50,31 @@ function hide() {
   searchEngineMenu.value?.hide()
 }
 
+let stop: () => void
+const showingToast = ref(false)
+const currentEngineName = ref('')
+
+function showEngineToast() {
+  if (stop) stop()
+
+  // 获取当前搜索引擎的名字
+  if (isBuiltInEngine.value) {
+    const engine = searchEngines[settings.search.engine as keyof typeof searchEngines]
+    currentEngineName.value = t(engine.nameKey)
+  } else {
+    const customEngine = customSearchEngineStore.items.find((e) => e.id === settings.search.engine)
+    currentEngineName.value = customEngine?.name || ''
+  }
+
+  // 显示提示
+  showingToast.value = true
+  // 3秒后自动隐藏
+  const { stop: timeoutStop } = useTimeoutFn(() => {
+    showingToast.value = false
+  }, 1000)
+  stop = timeoutStop
+}
+
 const perf = usePerfClasses(() => ({
   transparentOff: settings.perf.disableSearchBarTransparent,
   blurOff: settings.perf.disableSearchBarBlur
@@ -55,94 +82,93 @@ const perf = usePerfClasses(() => ({
 
 const popperPerfClass = perf('search-engine-menu')
 
-defineExpose({ hide })
+defineExpose({ hide, showEngineToast })
 </script>
 
 <template>
-  <el-tooltip
-    ref="searchEngineMenu"
-    trigger="click"
-    :disabled="!focusStore.isFocused && !settings.search.showIconAlways"
-    :show-arrow="false"
-    :popper-class="popperPerfClass"
-    placement="bottom-start"
-    effect="customized"
-  >
-    <template #content>
-      <!-- 内置搜索引擎 -->
-      <div
-        v-for="key in Object.keys(searchEngines) as (keyof typeof searchEngines)[]"
-        :key="key"
-        class="search-engine-menu-item"
-        :class="{
-          'search-engine-menu-item--active': settings.search.engine === key
-        }"
-        @click="settings.search.engine = key"
-      >
-        <div style="display: flex; align-items: center">
-          <el-icon class="search-engine-menu-item__icon"
-            ><component :is="searchEngines[key].icon"
-          /></el-icon>
-          <span>{{ t(searchEngines[key].nameKey) }}</span>
-        </div>
+  <div :style="{ opacity: focusStore.isFocused || settings.search.showIconAlways ? 1 : 0 }">
+    <el-tooltip
+      ref="searchEngineMenu"
+      trigger="click"
+      :disabled="!focusStore.isFocused && !settings.search.showIconAlways"
+      :show-arrow="false"
+      :popper-class="popperPerfClass"
+      placement="bottom-start"
+      effect="customized"
+    >
+      <template #content>
+        <!-- 内置搜索引擎 -->
         <div
-          v-if="key === settings.search.engine"
-          style="font-size: 11px; color: var(--el-text-color-secondary)"
-        >
-          {{ t('search.searchEngineMenu.current') }}
-        </div>
-      </div>
-
-      <!-- 自定义搜索引擎 -->
-      <template v-if="customSearchEngineStore.items.length > 0">
-        <el-divider />
-        <div
-          v-for="engine in customSearchEngineStore.items"
-          :key="engine.id"
+          v-for="key in Object.keys(searchEngines) as (keyof typeof searchEngines)[]"
+          :key="key"
           class="search-engine-menu-item"
           :class="{
-            'search-engine-menu-item--active': settings.search.engine === engine.id
+            'search-engine-menu-item--active': settings.search.engine === key
           }"
-          @click="settings.search.engine = engine.id"
+          @click="settings.search.engine = key"
         >
           <div style="display: flex; align-items: center">
-            <div
-              class="search-engine-menu-item__icon search-engine-menu-item__icon--custom"
-              :style="{
-                backgroundImage: `url(${getCustomEngineFavicon(engine)})`
-              }"
-            ></div>
-            <span>{{ engine.name }}</span>
+            <el-icon class="search-engine-menu-item__icon"
+              ><component :is="searchEngines[key].icon"
+            /></el-icon>
+            <span>{{ t(searchEngines[key].nameKey) }}</span>
           </div>
           <div
-            v-if="engine.id === settings.search.engine"
+            v-if="key === settings.search.engine"
             style="font-size: 11px; color: var(--el-text-color-secondary)"
           >
             {{ t('search.searchEngineMenu.current') }}
           </div>
         </div>
+
+        <!-- 自定义搜索引擎 -->
+        <template v-if="customSearchEngineStore.items.length > 0">
+          <el-divider />
+          <div
+            v-for="engine in customSearchEngineStore.items"
+            :key="engine.id"
+            class="search-engine-menu-item"
+            :class="{
+              'search-engine-menu-item--active': settings.search.engine === engine.id
+            }"
+            @click="settings.search.engine = engine.id"
+          >
+            <div style="display: flex; align-items: center">
+              <div
+                class="search-engine-menu-item__icon search-engine-menu-item__icon--custom"
+                :style="{
+                  backgroundImage: `url(${getCustomEngineFavicon(engine)})`
+                }"
+              ></div>
+              <span>{{ engine.name }}</span>
+            </div>
+            <div
+              v-if="engine.id === settings.search.engine"
+              style="font-size: 11px; color: var(--el-text-color-secondary)"
+            >
+              {{ t('search.searchEngineMenu.current') }}
+            </div>
+          </div>
+        </template>
+        <div class="search-engine-menu__tip">
+          <span>{{ t('search.searchEngineMenu.tipPrefix') }}</span>
+          <kbd class="search-engine-menu__kbd">Tab</kbd>
+          <span>{{ t('search.searchEngineMenu.tipSuffix') }}</span>
+        </div>
       </template>
-      <div class="search-engine-menu__tip">
-        <span>{{ t('search.searchEngineMenu.tipPrefix') }}</span>
-        <kbd class="search-engine-menu__kbd">Tab</kbd>
-        <span>{{ t('search.searchEngineMenu.tipSuffix') }}</span>
+      <el-icon v-if="isBuiltInEngine" class="search-engine-menu__icon">
+        <component :is="searchEngines[settings.search.engine as keyof typeof searchEngines].icon" />
+      </el-icon>
+      <div v-else class="search-engine-menu__icon search-engine-menu__icon--custom">
+        <img :src="getCustomEngineFavicon(currentCustomEngine!)" />
       </div>
-    </template>
-    <el-icon
-      v-if="isBuiltInEngine"
-      class="search-engine-menu__icon"
-      :style="{ opacity: focusStore.isFocused || settings.search.showIconAlways ? 1 : 0 }"
-    >
-      <component :is="searchEngines[settings.search.engine as keyof typeof searchEngines].icon" />
-    </el-icon>
-    <div
-      v-else
-      class="search-engine-menu__icon search-engine-menu__icon--custom"
-      :style="{ opacity: focusStore.isFocused || settings.search.showIconAlways ? 1 : 0 }"
-    >
-      <img :src="getCustomEngineFavicon(currentCustomEngine!)" />
-    </div>
-  </el-tooltip>
+    </el-tooltip>
+    <transition name="engine-toast" mode="out-in">
+      <div v-if="showingToast" :key="currentEngineName" class="search-engine-menu__toast">
+        {{ currentEngineName }}
+      </div>
+    </transition>
+  </div>
 </template>
 
 <style lang="scss">
@@ -228,5 +254,32 @@ defineExpose({ hide })
     width: calc(100% - 36px);
     margin: 5px 18px;
   }
+
+  &__toast {
+    position: absolute;
+    top: 50%;
+    left: 40px;
+    font-size: var(--el-font-size-small);
+    color: var(--el-text-color-regular);
+    transform: translateY(-50%);
+  }
+}
+
+.engine-toast-enter-active {
+  transition: all 0.1s ease-out;
+}
+
+.engine-toast-leave-active {
+  transition: all 0.1s ease-in;
+}
+
+.engine-toast-enter-from {
+  opacity: 0;
+  transform: translateY(-10%);
+}
+
+.engine-toast-leave-to {
+  opacity: 0;
+  transform: translateY(-70%);
 }
 </style>
