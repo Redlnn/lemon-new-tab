@@ -103,8 +103,7 @@ async function copyToClipboard() {
   try {
     await navigator.clipboard.writeText(yiyan.value || '')
     ElMessage.success(i18next.t('yiyan.copied'))
-  } catch {
-  }
+  } catch {}
 }
 </script>
 
@@ -197,7 +196,7 @@ async function copyToClipboard() {
   }
 
   &.yiyan--opacity .yiyan__copy-btn {
-    color: #aaa;
+    color: #eee;
 
     &:hover {
       color: #fff;
@@ -287,7 +286,6 @@ async function copyToClipboard() {
   will-change: transform, opacity;
 }
 
-/* 👇 enter 触发 */
 .ripple-enter-from {
   opacity: 0;
   transform: scale(0);
@@ -297,7 +295,6 @@ async function copyToClipboard() {
   transform: scale(1);
 }
 
-/* 👇 离场 */
 .ripple.leaving {
   opacity: 0;
 }
