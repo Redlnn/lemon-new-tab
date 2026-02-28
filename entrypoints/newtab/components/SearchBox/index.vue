@@ -89,7 +89,8 @@ onClickOutside(searchBox, (e) => {
     return
   }
 
-  if ((e.target as HTMLElement | null)?.className.includes('yiyan')) {
+  const target = e.target as Element | null
+  if (target?.closest('.yiyan')) {
     return
   }
   resetSearch()
