@@ -5,18 +5,18 @@
   opacity: 0;
 }
 
-.opacity-fade-enter-active,
-.opacity-fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.15s;
 }
 
-.opacity-fade-enter-from,
-.opacity-fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 
-.opacity-fade-enter-to,
-.opacity-fade-leave-from {
+.fade-enter-to,
+.fade-leave-from {
   opacity: 1;
 }
 

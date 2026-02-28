@@ -96,7 +96,7 @@ function onPointerDown(e: PointerEvent) {
 </script>
 
 <template>
-  <Transition name="opacity-fade">
+  <Transition name="fade">
     <div
       v-if="isEnabled"
       class="yiyan noselect"

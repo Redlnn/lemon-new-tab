@@ -168,7 +168,7 @@ watch(
     close-on-press-escape
     destroy-on-close
   >
-    <Transition name="opacity-fade" mode="out-in">
+    <Transition name="fade" mode="out-in">
       <section style="height: 100%" v-if="drawerWidth >= 360">
         <div class="bookmark-search">
           <el-input
