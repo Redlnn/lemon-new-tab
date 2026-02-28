@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { CSSProperties } from 'vue'
+import { useIdle } from '@vueuse/core'
 
 import { useTranslation } from 'i18next-vue'
 
@@ -23,7 +24,6 @@ import SearchBox from './components/SearchBox/index.vue'
 import Shortcut from './components/Shortcut/index.vue'
 import YiYan from './components/YiYan.vue'
 import { useElementLang } from './composables/useElementLang'
-import { useIdleHide } from './composables/useIdle'
 import { usePermission } from './composables/usePermission'
 import { shouldShowChangelog } from './shared/utils'
 
@@ -53,7 +53,6 @@ const appRef = useTemplateRef('appRef')
 const { t } = useTranslation('sync')
 const elLocale = useElementLang()
 const settings = useSettingsStore()
-const idle = useIdleHide()
 
 onMounted(async () => {
   if (settings.pluginVersion !== version) {
@@ -94,7 +93,13 @@ onMounted(async () => {
   })
 })
 
+const { idle } = useIdle(5_000, {
+  events: ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel'],
+  listenForVisibilityChange: false
+})
+
 watch(idle, (v) => {
+  if (!settings.theme.idleHide) return
   if (v) {
     if (appRef.value) appRef.value.style.opacity = '0.2'
   } else {
