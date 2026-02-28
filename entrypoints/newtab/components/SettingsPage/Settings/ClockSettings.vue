@@ -67,12 +67,6 @@ function handleNewStyleChange(val: string | number | boolean) {
     settings.clock.isMeridiem = true
   }
 }
-
-function handleTakeNewStyleOff(val: string | number | boolean) {
-  if (!(val as boolean)) {
-    settings.clock.newStyle = false
-  }
-}
 </script>
 <!-- TODO: i18n -->
 <template>
@@ -89,10 +83,12 @@ function handleTakeNewStyleOff(val: string | number | boolean) {
       <div class="settings__label">新风格</div>
       <el-switch v-model="settings.clock.newStyle" @change="handleNewStyleChange" />
     </div>
-    <p class="settings__item--note">若开启将会同时开启“显示「上午 / 下午」”以及“显示秒钟”</p>
+    <p class="settings__item--note">
+      若开启将同时开启“显示「上午 / 下午」”以及“显示秒钟”且不可关闭
+    </p>
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('clock.showAMPM') }}</div>
-      <el-switch v-model="settings.clock.showMeridiem" @change="handleTakeNewStyleOff" />
+      <el-switch v-model="settings.clock.showMeridiem" :disabled="settings.clock.newStyle" />
     </div>
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('clock.largeLabel') }}</div>
@@ -114,7 +110,7 @@ function handleTakeNewStyleOff(val: string | number | boolean) {
     </div>
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('clock.showSeconds') }}</div>
-      <el-switch v-model="settings.clock.showSeconds" @change="handleTakeNewStyleOff" />
+      <el-switch v-model="settings.clock.showSeconds" :disabled="settings.clock.newStyle" />
     </div>
     <p class="settings__item--note">
       {{ t('clock.secondsTip') }}
