@@ -104,6 +104,8 @@
       "large": "大",
       "medium": "中",
       "small": "小",
+      "evgnlarge": "超大",
+      "extralarge": "特大",
       "title": "時鐘大小"
     },
     "title": "時鐘",
@@ -116,7 +118,11 @@
       "medium": "稍粗（500）",
       "normal": "標準（400）",
       "title": "時鐘字重"
-    }
+    },
+    "calcWeightTitle": "日期粗細",
+    "colorfulClock": "多彩時鐘",
+    "newStyle": "新風格",
+    "newStyleDesc": "若開啟將同時開啟「顯示「上午／下午」”以及「顯示秒數」且不可關閉"
   },
   "common": {
     "copyLink": "複製連結網址",
@@ -267,6 +273,7 @@
     },
     "primaryColor": "主題顏色",
     "systemMode": "跟隨系統設定 / 瀏覽器",
+    "idleHide": "不活動時淡出頁面元素",
     "title": "主題"
   },
   "title": "設定",

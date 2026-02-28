@@ -9,6 +9,8 @@ import {
   useWindowFocus
 } from '@vueuse/core'
 
+import i18next from 'i18next'
+
 import { browser } from '#imports'
 
 import { BgType } from '@/shared/enums'
@@ -157,9 +159,8 @@ const bgTypeProviders: Record<
       blob = await res.blob()
     } catch (e) {
       ElNotification.error({
-        title: '缓存在线壁纸失败',
-        message: `无法缓存在线壁纸：${e}`
-        // TODO: i18n
+        title: i18next.t('newtab:notification.onlineWallpaperCache.error.title'),
+        message: i18next.t('newtab:notification.onlineWallpaperCache.error.message', { error: e })
       })
       if (cached)
         return URL.createObjectURL(cached.blob) // 如果下载失败，不管缓存是否过期都继续使用缓存

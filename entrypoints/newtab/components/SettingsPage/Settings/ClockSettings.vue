@@ -68,7 +68,6 @@ function handleNewStyleChange(val: string | number | boolean) {
   }
 }
 </script>
-<!-- TODO: i18n -->
 <template>
   <div class="settings__items-container">
     <div class="settings__item settings__item--horizontal">
@@ -80,11 +79,11 @@ function handleNewStyleChange(val: string | number | boolean) {
       <el-switch v-model="settings.clock.isMeridiem" />
     </div>
     <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">新风格</div>
+      <div class="settings__label">{{ t('clock.newStyle') }}</div>
       <el-switch v-model="settings.clock.newStyle" @change="handleNewStyleChange" />
     </div>
     <p class="settings__item--note">
-      若开启将同时开启“显示「上午 / 下午」”以及“显示秒钟”且不可关闭
+      {{ t('clock.newStyleDesc') }}
     </p>
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('clock.showAMPM') }}</div>
@@ -152,7 +151,7 @@ function handleNewStyleChange(val: string | number | boolean) {
       </div>
     </div>
     <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">日期粗细</div>
+      <div class="settings__label">{{ t('clock.calcWeightTitle') }}</div>
       <div class="settings__theme">
         <el-select
           v-model="settings.clock.calcWeight"
@@ -170,7 +169,7 @@ function handleNewStyleChange(val: string | number | boolean) {
       </div>
     </div>
     <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">多彩时钟</div>
+      <div class="settings__label">{{ t('clock.colorfulClock') }}</div>
       <el-switch v-model="settings.clock.colorfulNum" />
     </div>
     <div class="settings__item settings__item--horizontal">

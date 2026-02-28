@@ -85,6 +85,12 @@
         "message": "请检查开发者工具中的控制台提示。",
         "title": "获取 Bing 壁纸失败"
       }
+    },
+    "onlineWallpaperCache": {
+      "error": {
+        "message": "无法缓存在线壁纸：${error}",
+        "title": "缓存在线壁纸失败"
+      }
     }
   },
   "search": {

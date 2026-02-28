@@ -85,6 +85,12 @@
         "message": "Please check the console output in developer tools.",
         "title": "Failed to get Bing wallpaper"
       }
+    },
+    "onlineWallpaperCache": {
+      "error": {
+        "message": "Unable to cache online wallpaper: ${error}",
+        "title": "Failed to cache online wallpaper"
+      }
     }
   },
   "search": {

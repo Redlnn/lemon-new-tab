@@ -104,6 +104,8 @@
       "large": "大",
       "medium": "中",
       "small": "小",
+      "evgnlarge": "超大",
+      "extralarge": "特大",
       "title": "时钟大小"
     },
     "title": "时钟",
@@ -116,7 +118,11 @@
       "medium": "准粗（500）",
       "normal": "标准（400）",
       "title": "时钟粗细"
-    }
+    },
+    "calcWeightTitle": "日期粗细",
+    "colorfulClock": "多彩时钟",
+    "newStyle": "新风格",
+    "newStyleDesc": "若开启将同时开启“显示「上午 / 下午」以及「显示秒钟」且不可关闭"
   },
   "common": {
     "copyLink": "复制链接地址",
@@ -267,6 +273,7 @@
     },
     "primaryColor": "主题色",
     "systemMode": "跟随系统 / 浏览器",
+    "idleHide": "不活动时淡出页面元素",
     "title": "主题"
   },
   "title": "设置",

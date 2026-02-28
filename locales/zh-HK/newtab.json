@@ -85,6 +85,12 @@
         "message": "請查看開發者工具中的主控台提示。",
         "title": "無法取得 Bing 壁紙"
       }
+    },
+    "onlineWallpaperCache": {
+      "error": {
+        "message": "無法快取線上壁紙：${error}",
+        "title": "快取線上壁紙失敗"
+      }
     }
   },
   "search": {

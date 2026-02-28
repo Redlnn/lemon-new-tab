@@ -85,6 +85,12 @@
         "message": "請查看開發人員工具的主控台訊息。",
         "title": "無法取得 Bing 每日圖片"
       }
+    },
+    "onlineWallpaperCache": {
+      "error": {
+        "message": "無法快取線上桌布：${error}",
+        "title": "快取線上桌布失敗"
+      }
     }
   },
   "search": {

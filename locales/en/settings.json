@@ -104,6 +104,8 @@
       "large": "Large",
       "medium": "Medium",
       "small": "Small",
+      "evgnlarge": "X-Large",
+      "extralarge": "XX-Large",
       "title": "Clock size"
     },
     "title": "Clock",
@@ -116,7 +118,11 @@
       "medium": "Slightly Bold (500)",
       "normal": "Normal (400)",
       "title": "Clock weight"
-    }
+    },
+    "calcWeightTitle": "Date weight",
+    "colorfulClock": "Colorful clock numbers",
+    "newStyle": "New style",
+    "newStyleDesc": "When enabled, will simultaneously enable “Show AM/PM” and “Show seconds” and cannot be disabled"
   },
   "common": {
     "copyLink": "Copy Link Address",
@@ -267,6 +273,7 @@
     },
     "primaryColor": "Primary color",
     "systemMode": "Follow system / browser",
+    "idleHide": "Fade out page elements when inactive",
     "title": "Theme"
   },
   "title": "Settings",

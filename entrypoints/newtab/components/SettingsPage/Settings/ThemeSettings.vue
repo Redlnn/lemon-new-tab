@@ -241,13 +241,12 @@ const beforeMonetChange = async () => {
       <el-switch v-model="settings.theme.colorfulMode" />
     </div>
     <p class="settings__item--note">{{ t('theme.colorful.desc') }}</p>
-    <!-- TODO: i18n -->
     <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">多彩时钟</div>
+      <div class="settings__label">{{ t('clock.colorfulClock') }}</div>
       <el-switch v-model="settings.clock.colorfulNum" />
     </div>
     <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">不活动时淡出页面元素</div>
+      <div class="settings__label">{{ t('theme.idleHide') }}</div>
       <el-switch v-model="settings.theme.idleHide" />
     </div>
     <div class="settings__item settings__item--horizontal">
