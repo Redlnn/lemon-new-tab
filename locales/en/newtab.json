@@ -2,6 +2,9 @@
   "about": {
     "yiyanProvider": "Chinese poetry API provided by {api}"
   },
+  "yiyan": {
+    "copied": "Copied to clipboard"
+  },
   "bookmark": {
     "404": "Nothing found",
     "addToShortcut": "Add to Shortcuts",

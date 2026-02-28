@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { useElementBounding, useElementHover, useEventListener } from '@vueuse/core'
 
+import { ContentCopyTwotone } from '@vicons/material'
+import { ElMessage } from 'element-plus'
+import i18next from 'i18next'
+
 import { useSettingsStore } from '@/shared/settings'
 
 import usePerfClasses from '@newtab/composables/usePerfClasses'
@@ -93,6 +97,15 @@ function onPointerDown(e: PointerEvent) {
   // 如果鼠标离开一言区域也触发消失
   watch(isHovered, handleLeave, { once: true })
 }
+
+async function copyToClipboard() {
+  if (!yiyan.value) return
+  try {
+    await navigator.clipboard.writeText(yiyan.value || '')
+    ElMessage.success(i18next.t('yiyan.copied'))
+  } catch {
+  }
+}
 </script>
 
 <template>
@@ -111,6 +124,11 @@ function onPointerDown(e: PointerEvent) {
       ref="yiyan"
       @pointerdown="onPointerDown"
     >
+      <button class="yiyan__copy-btn" @click="copyToClipboard">
+        <el-icon>
+          <content-copy-twotone />
+        </el-icon>
+      </button>
       <div class="yiyan__content">「 {{ yiyan }} 」</div>
       <div v-if="yiyanOrigin" class="yiyan__extra">—— {{ yiyanOrigin }}</div>
       <TransitionGroup name="ripple">
@@ -150,6 +168,43 @@ function onPointerDown(e: PointerEvent) {
     backdrop-filter var(--el-transition-duration-fast) ease,
     color var(--el-transition-duration-fast) ease;
 
+  .yiyan__copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 25px;
+    height: 25px;
+    padding: 0;
+    color: var(--el-text-color-secondary);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    opacity: 0;
+    transition: all var(--el-transition-duration-fast) ease;
+
+    &:hover {
+      color: var(--el-text-color-primary);
+      background-color: var(--el-fill-color-darker);
+    }
+  }
+
+  &:hover .yiyan__copy-btn {
+    opacity: 1;
+  }
+
+  &.yiyan--opacity .yiyan__copy-btn {
+    color: #aaa;
+
+    &:hover {
+      color: #fff;
+      background-color: var(--le-bg-color-overlay-opacity-60);
+    }
+  }
+
   .yiyan__extra {
     margin-top: 8px;
     font-size: 0.95em;
@@ -179,11 +234,11 @@ function onPointerDown(e: PointerEvent) {
 
     &.yiyan--opacity {
       color: var(--el-fill-color-blank);
-      background-color: var(--le-bg-color-overlay-opacity-50);
+      background-color: var(--le-bg-color-overlay-opacity-80);
     }
 
     &.yiyan--blur {
-      @include acrylic.acrylic;
+      @include acrylic.acrylic(10px, 1.2, 1.1);
     }
 
     .yiyan__extra {

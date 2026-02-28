@@ -2,6 +2,9 @@
   "about": {
     "yiyanProvider": "一言API由 {api} 提供"
   },
+  "yiyan": {
+    "copied": "已复制到剪贴板"
+  },
   "bookmark": {
     "404": "什么都没找到",
     "addToShortcut": "添加到快捷方式",
