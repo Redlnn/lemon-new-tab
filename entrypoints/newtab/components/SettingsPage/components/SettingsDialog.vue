@@ -12,7 +12,6 @@ import {
 } from 'element-plus'
 import { dialogPropsDefaults } from 'element-plus/es/components/dialog/src/dialog'
 import ElFocusTrap from 'element-plus/es/components/focus-trap/src/focus-trap.mjs'
-import ElTeleport from 'element-plus/es/components/teleport/src/teleport2.mjs'
 
 import SettingsDialogContent from './SettingsDialogContent.vue'
 
@@ -79,7 +78,7 @@ defineExpose({
 </script>
 
 <template>
-  <el-teleport :to="appendTo" :disabled="appendTo !== 'body' ? false : !appendToBody">
+  <Teleport :to="appendTo" :disabled="appendTo !== 'body' ? false : !appendToBody">
     <transition v-bind="transitionConfig as TransitionProps">
       <el-overlay
         v-show="visible"
@@ -153,5 +152,5 @@ defineExpose({
         </div>
       </el-overlay>
     </transition>
-  </el-teleport>
+  </Teleport>
 </template>

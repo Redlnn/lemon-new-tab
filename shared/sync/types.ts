@@ -72,7 +72,6 @@ export const isSyncEnvelopeV1 = (value: unknown): value is SyncEnvelopeV1 => {
   )
 }
 
-
 export interface LocalSyncMeta {
   deviceId: string
   deviceName: string

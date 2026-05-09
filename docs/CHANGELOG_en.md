@@ -2,23 +2,35 @@
 
 > Translated by AI from Chinese.
 
-## 3.2.2 (Apr 19, 2026)
+## 3.2.2 (May 9, 2026)
 
 ### New Features✨
 
 - Add a welcome message for new users and enable icon cache prompts.
 - Brand new icon caching mechanism that attempts to fetch higher-quality website icons and caches them to improve loading speed and visual experience on subsequent visits.
   ([#71](https://github.com/Redlnn/lemon-new-tab/issues/71))
+- **Experimental:** Refactored cloud synchronization to avoid configuration overwrite issues caused by synchronization as much as possible.
+  ([#74](https://github.com/Redlnn/lemon-new-tab/issues/74))
+  > PS:
+  >
+  > 1. Due to the complexity and uncertainty of browser synchronization strategies, this is an experimental feature. Please enable it with caution and make sure to back up your data.
+  > 2. Due to significant changes in the data structure, enabling this will clear the original cloud data and re-upload the current configuration.
 
 ### Improvements⚡️
 
 - Performance optimizations.
+- Added terms of service and privacy policy to the repository and official website.
 
 ### Bug Fixes🐛
 
+- Fixed an issue where wallpapers were loading slowly, now the wallpaper loading speed has been greatly improved.
+- Fixed an issue where the icons for added quick access were too small.
+- Fixed an issue where errors appeared in the console every time the new tab page was opened.
+- Fixed an issue where notification animations disappeared.
 - Fixed white edges appearing at the edges when wallpaper parallax is enabled.
 - Fixed white flash on Linux + Chromium when starting in dark mode.
   ([#72](https://github.com/Redlnn/lemon-new-tab/issues/72))
+- Fixed potential bugs.
 
 ## 3.2.0 (Mar 15, 2026)
 

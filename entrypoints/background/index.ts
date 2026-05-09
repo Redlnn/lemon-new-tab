@@ -4,10 +4,7 @@ import { browser } from 'wxt/browser'
 import { CURRENT_CONFIG_VERSION, defaultSettings } from '@/shared/settings'
 import { defaultShortcuts } from '@/shared/shortcut/shortcutStorage'
 import { localSyncMetaStorage, syncDataStorage } from '@/shared/sync/syncDataStorage'
-import {
-  defaultSyncedCustomSearchEngines,
-  isSyncEnvelopeV1,
-} from '@/shared/sync/types'
+import { defaultSyncedCustomSearchEngines, isSyncEnvelopeV1 } from '@/shared/sync/types'
 import type {
   SyncApplyDataMessage,
   SyncConflictMessage,
@@ -82,8 +79,7 @@ const initPromise = (async () => {
 
   // Check if cloud is empty (never written to) to decide startup window length
   const cloudSnapshot = await syncDataStorage.getValue()
-  const isCloudEmpty =
-    !isSyncEnvelopeV1(cloudSnapshot) || cloudSnapshot.fromDeviceId === ''
+  const isCloudEmpty = !isSyncEnvelopeV1(cloudSnapshot) || cloudSnapshot.fromDeviceId === ''
 
   const timeoutMs = isCloudEmpty ? 30_000 : 5_000
   startupTimer = setTimeout(() => {
@@ -150,7 +146,9 @@ async function processCloudChange(cloudRaw: unknown): Promise<void> {
     // Legacy format (no _v: 1)
     debugLog('legacy data detected')
     if (isInited) {
-      const delivered = await sendToNewtab({ type: 'SYNC_LEGACY_DETECTED' } as SyncLegacyDetectedMessage)
+      const delivered = await sendToNewtab({
+        type: 'SYNC_LEGACY_DETECTED',
+      } as SyncLegacyDetectedMessage)
       if (!delivered) {
         pendingLegacyDetected = true
         isInited = false
@@ -233,7 +231,10 @@ async function processCloudChange(cloudRaw: unknown): Promise<void> {
       localModifiedAt: cloud.lastUpdate,
     })
     if (isInited) {
-      const delivered = await sendToNewtab({ type: 'SYNC_APPLY_DATA', data: cloudRaw } as SyncApplyDataMessage)
+      const delivered = await sendToNewtab({
+        type: 'SYNC_APPLY_DATA',
+        data: cloudRaw,
+      } as SyncApplyDataMessage)
       if (!delivered) {
         // Newtab closed before we could deliver; queue for next init
         pendingApplyData = cloudRaw
@@ -257,7 +258,10 @@ async function processCloudChange(cloudRaw: unknown): Promise<void> {
       local: { localModifiedAt },
     }
     if (isInited) {
-      const delivered = await sendToNewtab({ type: 'SYNC_CONFLICT', payload: conflictPayload } as SyncConflictMessage)
+      const delivered = await sendToNewtab({
+        type: 'SYNC_CONFLICT',
+        payload: conflictPayload,
+      } as SyncConflictMessage)
       if (!delivered) {
         pendingConflict = conflictPayload
         isInited = false
@@ -357,17 +361,20 @@ function scheduleLocalTick(delay = SYNC_INTERVAL) {
     localTimerExpiry = 0
   }
 
-  localTimer = setTimeout(async () => {
-    localTimer = null
-    localTimerExpiry = 0
-    if (isRunning) return
-    isRunning = true
-    try {
-      await processSyncQueue()
-    } finally {
-      isRunning = false
-    }
-  }, Math.max(0, delay))
+  localTimer = setTimeout(
+    async () => {
+      localTimer = null
+      localTimerExpiry = 0
+      if (isRunning) return
+      isRunning = true
+      try {
+        await processSyncQueue()
+      } finally {
+        isRunning = false
+      }
+    },
+    Math.max(0, delay),
+  )
   localTimerExpiry = desiredExpiry
 }
 

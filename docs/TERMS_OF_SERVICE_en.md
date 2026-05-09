@@ -132,4 +132,3 @@ If any provision of these Terms is held invalid, unlawful, or unenforceable, the
 ## 16. Entire Agreement
 
 To the extent applicable, these Terms, the Privacy Policy, the open-source license text, and any applicable distribution channel requirements constitute the entire agreement between you and the developer regarding use of the extension.
-
