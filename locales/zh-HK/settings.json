@@ -269,6 +269,7 @@
     "border": "顯示搜尋框邊框",
     "clickToChange": "點擊更改",
     "defaultSearchEngine": "預設搜尋引擎",
+    "expandWidth": "展開後寬度",
     "launchAnim": "啟動時搜索框展開動效",
     "placeholder": "搜尋框占位文字",
     "recordSearchHistory": "記錄搜尋歷史",

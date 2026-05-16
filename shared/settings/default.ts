@@ -60,6 +60,7 @@ export const defaultSettings = {
     },
 
     placeholder: '',
+    expandWidth: 500,
   },
   background: {
     bgType: BgType.Bing,

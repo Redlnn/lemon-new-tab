@@ -97,6 +97,18 @@ const openSearchEnginePreference = inject(OPEN_SEARCH_ENGINE_PREFERENCE)
         <div class="settings__label">{{ t('search.launchAnim') }}</div>
         <el-switch v-model="settings.perf.searchBar.launchAnim" />
       </div>
+      <div class="settings__item settings__item--vertical">
+        <div class="settings__label">{{ t('search.expandWidth') }}</div>
+        <el-slider
+          v-model="settings.search.expandWidth"
+          :min="200"
+          :max="900"
+          :step="10"
+          show-input
+          :show-input-controls="false"
+          :show-tooltip="false"
+        />
+      </div>
     </template>
   </div>
 </template>

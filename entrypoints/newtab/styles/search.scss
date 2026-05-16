@@ -43,7 +43,7 @@
     }
 
     &:hover:not(.search-box__form--focus) {
-      --width: 500px;
+      --width: var(--search-expand-width, 500px);
       --search-form-placeholder-color: var(--el-text-color-primary);
     }
 
@@ -118,7 +118,7 @@
 
     &--focus,
     &--expand {
-      --width: 500px;
+      --width: var(--search-expand-width, 500px);
     }
 
     html.light:not(.colorful) &.search-box__form--dark {

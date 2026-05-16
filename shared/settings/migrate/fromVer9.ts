@@ -4,6 +4,10 @@ import { defaultSettings } from '..'
 export function migrateFromVer9To10(old: SettingsSchemaV9): SettingsSchemaV10 {
   return {
     ...old,
+    search: {
+      ...old.search,
+      expandWidth: defaultSettings.search.expandWidth,
+    },
     layout: {
       mainPosition: {
         type: old.shortcut.enabled ? 'center' : 'dvh',
