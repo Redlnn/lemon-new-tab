@@ -13,6 +13,10 @@ interface UseTopSitesMergeOptions {
 
 const WWW_RE = /^www\./
 
+function normalizeUrlForDedup(url: string): string {
+  return url.replace(/\/+$/, '')
+}
+
 function getFallbackTitle(url: string): string {
   try {
     let host = new URL(url).hostname
@@ -36,13 +40,13 @@ export async function useTopSitesMerge(
   const { shortcuts } = options
   const shortcutUrlsSet = new Set<string>()
   for (let i = 0, len = shortcuts.length; i < len; i++) {
-    shortcutUrlsSet.add(shortcuts[i]!.url)
+    shortcutUrlsSet.add(normalizeUrlForDedup(shortcuts[i]!.url))
   }
 
   const dedup: TopSites.MostVisitedURL[] = []
   for (let i = 0, len = topSites.length; i < len; i++) {
     const site = topSites[i]
-    if (!site?.url || shortcutUrlsSet.has(site.url)) continue
+    if (!site?.url || shortcutUrlsSet.has(normalizeUrlForDedup(site.url))) continue
     const rawTitle = site.title
     // 仅当 title 为空或全空白时才计算 fallback
     const title = rawTitle?.trim() ? rawTitle : getFallbackTitle(site.url)
