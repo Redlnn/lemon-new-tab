@@ -23,6 +23,20 @@ const emit = defineEmits<{
 
 const { t } = useTranslation()
 const settings = useSettingsStore()
+
+// Derive dropdown placement from the effective button corner position.
+// Dock forces top; left/right preference is preserved.
+const dropdownPlacement = computed(() => {
+  const pos = settings.layout.actionBtnPosition
+  const effectivePos =
+    settings.dock.enabled && pos.startsWith('bottom')
+      ? (pos.replace('bottom', 'top') as typeof pos)
+      : pos
+  const vertical = effectivePos.startsWith('top') ? 'bottom' : 'top'
+  const horizontal = effectivePos.endsWith('left') ? 'start' : 'end'
+  return `${vertical}-${horizontal}` as const
+})
+
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.actionBtns.transparent,
   blur: settings.perf.actionBtns.blur,
@@ -42,7 +56,7 @@ function sponsorMessage() {
     style="display: block"
     :popper-class="popperPerfClass"
     :show-arrow="false"
-    :placement="settings.dock.enabled ? 'bottom-end' : 'top-end'"
+    :placement="dropdownPlacement"
     trigger="click"
     @contextmenu.prevent.stop
   >
