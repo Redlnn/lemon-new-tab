@@ -101,7 +101,7 @@ const openSearchEnginePreference = inject(OPEN_SEARCH_ENGINE_PREFERENCE)
         <div class="settings__label">{{ t('search.expandWidth') }}</div>
         <el-slider
           v-model="settings.search.expandWidth"
-          :min="200"
+          :min="300"
           :max="900"
           :step="10"
           show-input
