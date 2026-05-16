@@ -259,6 +259,7 @@ onMounted(() => {
       :class="formPerfClass"
       :style="{
         '--width': settings.perf.searchBar.launchAnim ? (mounted ? undefined : '0') : undefined,
+        '--search-expand-width': `${settings.search.expandWidth}px`,
       }"
       @submit.prevent="doSearch"
     >

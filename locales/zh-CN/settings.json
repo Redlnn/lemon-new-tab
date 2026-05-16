@@ -269,6 +269,7 @@
     "border": "显示搜索框边框",
     "clickToChange": "点击更改",
     "defaultSearchEngine": "搜索引擎",
+    "expandWidth": "展开后宽度",
     "launchAnim": "启动时搜索框展开动画",
     "placeholder": "搜索框占位文字",
     "recordSearchHistory": "记录搜索历史",

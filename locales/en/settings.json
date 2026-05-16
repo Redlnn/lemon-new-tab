@@ -269,6 +269,7 @@
     "border": "Show search box border",
     "clickToChange": "Click to change",
     "defaultSearchEngine": "Search engine",
+    "expandWidth": "Expanded width",
     "launchAnim": "Search box expand animation on startup",
     "placeholder": "Search placeholder",
     "recordSearchHistory": "Record search history",
