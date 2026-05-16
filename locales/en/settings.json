@@ -138,6 +138,7 @@
     "openInNewWindow": "Open in New Window"
   },
   "dock": {
+    "actionBtnNote": "When Dock is enabled, the button bar can only be placed at the top (choose left/right in Layout settings)",
     "launchpad": {
       "show": "Show Launchpad in Dock",
       "title": "Launchpad"
@@ -145,6 +146,25 @@
     "limitCount": "Limit maximum count",
     "maxCount": "Maximum count",
     "title": "Dock"
+  },
+  "layout": {
+    "actionBtn": {
+      "bottomLeft": "Bottom Left",
+      "bottomRight": "Bottom Right",
+      "dockNote": "Dock is on — button bar is fixed to the top",
+      "label": "Button bar position",
+      "topLeft": "Top Left",
+      "topRight": "Top Right"
+    },
+    "mainPosition": {
+      "center": "Center",
+      "dvh": "From top (%)",
+      "dvhValue": "Distance from top (dvh)",
+      "label": "Main area position",
+      "px": "From top (px)",
+      "pxValue": "Distance from top (px)"
+    },
+    "title": "Layout"
   },
   "other": {
     "importExport": {

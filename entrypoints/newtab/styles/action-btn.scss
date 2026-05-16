@@ -12,11 +12,19 @@
   border-radius: 100px;
   transition: var(--el-transition-duration-fast) ease-in-out;
 
-  &--top {
-    top: 20px;
-    bottom: auto;
+  &--top-right {
+    inset: 20px 30px auto auto;
   }
 
+  &--top-left {
+    inset: 20px auto auto 30px;
+  }
+
+  &--bottom-left {
+    inset: auto auto 20px 30px;
+  }
+
+  /* bottom-right is the default — no modifier needed */
   html.colorful &:not(.action-btn-container--tran) {
     background-color: var(--el-color-primary-light-9);
   }

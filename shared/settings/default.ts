@@ -214,6 +214,14 @@ export const defaultSettings = {
     },
   },
 
+  layout: {
+    mainPosition: {
+      type: 'center',
+      value: 30,
+    },
+    actionBtnPosition: 'bottom-right',
+  },
+
   bookmark: {
     direction: DrawerDirection.rtl,
     rightClickToOpen: true,

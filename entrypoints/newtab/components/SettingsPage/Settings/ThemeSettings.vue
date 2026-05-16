@@ -240,10 +240,6 @@ const beforeMonetChange = async () => {
       <el-switch v-model="settings.clock.colorfulNum" />
     </div>
     <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('theme.idleHide') }}</div>
-      <el-switch v-model="settings.theme.idleHide" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('clock.invertColor.light') }}</div>
       <el-switch v-model="settings.clock.style.invertColor.light" />
     </div>

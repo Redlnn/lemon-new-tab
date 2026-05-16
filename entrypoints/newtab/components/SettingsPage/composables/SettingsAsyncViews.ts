@@ -4,6 +4,7 @@ import { SettingsRoute } from '../composables/useSettingsRouter'
 const settingsViewLoaders: Record<SettingsRoute, (() => Promise<{ default: Component }>) | null> = {
   [SettingsRoute.MENU]: null,
   [SettingsRoute.THEME]: () => import('../Settings/ThemeSettings.vue'),
+  [SettingsRoute.LAYOUT]: () => import('../Settings/LayoutSettings.vue'),
   [SettingsRoute.CLOCK]: () => import('../Settings/ClockSettings.vue'),
   [SettingsRoute.SEARCH]: () => import('../Settings/SearchSettings.vue'),
   [SettingsRoute.BACKGROUND]: () => import('../Settings/BackgroundSettings.vue'),

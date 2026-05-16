@@ -8,10 +8,12 @@ import ColorLensOutlined from '~icons/ic/outline-color-lens'
 import ApiRound from '~icons/ic/round-api'
 import BookmarkBorderRound from '~icons/ic/round-bookmark-border'
 import FormatQuoteRound from '~icons/ic/round-format-quote'
+import DashboardOutlined from '~icons/ic/round-dashboard'
 
 export const SettingsRoute = {
   MENU: 'menu',
   THEME: 'theme',
+  LAYOUT: 'layout',
   CLOCK: 'clock',
   SEARCH: 'search',
   BACKGROUND: 'background',
@@ -35,6 +37,11 @@ export const MENU_ITEMS: MenuItem[] = [
     key: SettingsRoute.THEME,
     icon: ColorLensOutlined,
     titleKey: 'theme.title',
+  },
+  {
+    key: SettingsRoute.LAYOUT,
+    icon: DashboardOutlined,
+    titleKey: 'layout.title',
   },
   {
     key: SettingsRoute.CLOCK,

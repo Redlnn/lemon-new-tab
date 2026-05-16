@@ -138,6 +138,7 @@
     "openInNewWindow": "在新窗口中打开"
   },
   "dock": {
+    "actionBtnNote": "开启 Dock 后，功能按钮只能放在顶部（可在「布局」中选择左/右）",
     "launchpad": {
       "show": "在 Dock 中启用启动台",
       "title": "启动台"
@@ -145,6 +146,25 @@
     "limitCount": "限制最大数量",
     "maxCount": "最大数量",
     "title": "Dock"
+  },
+  "layout": {
+    "actionBtn": {
+      "bottomLeft": "左下",
+      "bottomRight": "右下",
+      "dockNote": "开启 Dock 后功能按钮只能放在顶部",
+      "label": "功能按钮位置",
+      "topLeft": "左上",
+      "topRight": "右上"
+    },
+    "mainPosition": {
+      "center": "居中",
+      "dvh": "距顶部（%）",
+      "dvhValue": "距顶部距离（dvh）",
+      "label": "主区域位置",
+      "px": "距顶部（px）",
+      "pxValue": "距顶部距离（px）"
+    },
+    "title": "布局"
   },
   "other": {
     "importExport": {

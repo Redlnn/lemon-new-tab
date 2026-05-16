@@ -7,12 +7,13 @@ import { browser } from 'wxt/browser'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 
 import { BgType } from '../enums'
-import type { CURRENT_CONFIG_SCHEMA, SettingsSchemaV7, SettingsSchemaV8 } from '../settings'
+import type { CURRENT_CONFIG_SCHEMA, SettingsSchemaV7, SettingsSchemaV8, SettingsSchemaV9 } from '../settings'
 import {
   CURRENT_CONFIG_VERSION,
   defaultSettings,
   migrateFromVer7To8,
   migrateFromVer8To9,
+  migrateFromVer9To10,
   useSettingsStore,
 } from '../settings'
 import { defaultShortcuts, useShortcutStore } from '../shortcut'
@@ -80,7 +81,7 @@ const emitSyncError = (err: unknown) => {
   emitSyncEvent('sync-error', toError(err))
 }
 
-type MigratableSettings = SettingsSchemaV7 | SettingsSchemaV8 | CURRENT_CONFIG_SCHEMA
+type MigratableSettings = SettingsSchemaV7 | SettingsSchemaV8 | SettingsSchemaV9 | CURRENT_CONFIG_SCHEMA
 
 const migrations: Partial<
   Record<
@@ -90,6 +91,7 @@ const migrations: Partial<
 > = {
   7: (s) => (s.version === 7 ? migrateFromVer7To8(s) : s),
   8: (s) => (s.version === 8 ? migrateFromVer8To9(s) : s),
+  9: (s) => (s.version === 9 ? migrateFromVer9To10(s) : s),
 }
 
 const BUILTIN_SEARCH_ENGINES = new Set(['google', 'baidu', 'bing', 'yandex', 'duckduckgo'])

@@ -109,10 +109,15 @@ const actionClass = computed(() => {
   const enableTransparent = perf.actionBtns.transparent
   const enableBlur = perf.actionBtns.blur && enableTransparent
 
+  let pos = settings.layout.actionBtnPosition
+  if (settings.dock.enabled && pos.startsWith('bottom')) {
+    pos = pos.replace('bottom', 'top') as typeof pos
+  }
+
   return {
     'action-btn-container--tran': enableTransparent,
     'action-btn-container--blur': enableBlur,
-    'action-btn-container--top': settings.dock.enabled,
+    [`action-btn-container--${pos}`]: true,
   }
 })
 
@@ -136,9 +141,12 @@ const handleDisableSyncConflict = () => syncStore.disableSyncAndDismissConflict(
   >
     <main
       :style="
-        settings.shortcut.enabled
-          ? { justifyContent: 'center' }
-          : ({ paddingTop: ['30vh', '30dvh'] } as unknown as CSSProperties)
+        (() => {
+          const pos = settings.layout.mainPosition
+          if (pos.type === 'center') return { justifyContent: 'center' }
+          if (pos.type === 'dvh') return { paddingTop: [`${pos.value}vh`, `${pos.value}dvh`] } as unknown as CSSProperties
+          return { paddingTop: `${pos.value}px` } as CSSProperties
+        })()
       "
       class="app"
       ref="appRef"

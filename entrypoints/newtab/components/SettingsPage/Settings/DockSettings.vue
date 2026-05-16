@@ -25,6 +25,7 @@ async function restoreDefaultTopSites() {
       <div class="settings__label">{{ t('newtab:common.enable') }}</div>
       <el-switch v-model="settings.dock.enabled" />
     </div>
+    <p class="settings__item--note">{{ t('dock.actionBtnNote') }}</p>
     <template v-if="settings.dock.enabled">
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('shortcut.showOnSearchFocus') }}</div>
