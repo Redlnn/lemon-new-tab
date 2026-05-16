@@ -37,7 +37,7 @@ function selectActionBtn(pos: ActionBtnPosition) {
       <div class="settings__label">{{ t('layout.mainPosition.label') }}</div>
       <el-select
         v-model="settings.layout.mainPosition.type"
-        style="width: 130px"
+        style="width: 150px"
         popper-class="settings-item-popper"
         :show-arrow="false"
         fit-input-width
@@ -64,7 +64,7 @@ function selectActionBtn(pos: ActionBtnPosition) {
       <el-slider
         v-model="settings.layout.mainPosition.value"
         :min="0"
-        :max="settings.layout.mainPosition.type === 'dvh' ? 80 : 600"
+        :max="settings.layout.mainPosition.type === 'dvh' ? 80 : 500"
         :step="settings.layout.mainPosition.type === 'dvh' ? 1 : 10"
         show-input
         :show-input-controls="false"
@@ -91,7 +91,7 @@ function selectActionBtn(pos: ActionBtnPosition) {
         {{ t(opt.label) }}
       </button>
     </div>
-    <p v-if="dockEnabled" class="settings__item--note">
+    <p v-if="dockEnabled" class="settings__item--note" style="margin-top: 8px">
       {{ t('layout.actionBtn.dockNote') }}
     </p>
 
@@ -112,7 +112,7 @@ function selectActionBtn(pos: ActionBtnPosition) {
 }
 
 .layout-corner-btn {
-  padding: 10px 8px;
+  padding: 12px 8px;
   font-size: var(--el-font-size-extra-small);
   color: var(--el-text-color-regular);
   cursor: pointer;
@@ -147,7 +147,6 @@ function selectActionBtn(pos: ActionBtnPosition) {
     color: var(--el-text-color-disabled);
     cursor: not-allowed;
     background-color: var(--el-bg-color-page);
-    border-color: var(--el-border-color-lighter);
     opacity: 0.6;
   }
 }
