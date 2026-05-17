@@ -67,6 +67,22 @@ const openSearchEnginePreference = inject(OPEN_SEARCH_ENGINE_PREFERENCE)
         />
       </div>
       <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('search.launchAnim') }}</div>
+        <el-switch v-model="settings.perf.searchBar.launchAnim" />
+      </div>
+      <div class="settings__item settings__item--vertical">
+        <div class="settings__label">{{ t('search.expandWidth') }}</div>
+        <el-slider
+          v-model="settings.search.expandWidth"
+          :min="300"
+          :max="900"
+          :step="10"
+          show-input
+          :show-input-controls="false"
+          :show-tooltip="false"
+        />
+      </div>
+      <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('search.alwaysShowIcon') }}</div>
         <el-switch
           :disabled="!settings.search.expandAlways"
@@ -91,22 +107,6 @@ const openSearchEnginePreference = inject(OPEN_SEARCH_ENGINE_PREFERENCE)
           v-model="settings.search.placeholder"
           :placeholder="t('newtab:search.placeholder')"
           style="width: 240px"
-        />
-      </div>
-      <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('search.launchAnim') }}</div>
-        <el-switch v-model="settings.perf.searchBar.launchAnim" />
-      </div>
-      <div class="settings__item settings__item--vertical">
-        <div class="settings__label">{{ t('search.expandWidth') }}</div>
-        <el-slider
-          v-model="settings.search.expandWidth"
-          :min="300"
-          :max="900"
-          :step="10"
-          show-input
-          :show-input-controls="false"
-          :show-tooltip="false"
         />
       </div>
     </template>
