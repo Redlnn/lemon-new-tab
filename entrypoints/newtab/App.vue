@@ -144,7 +144,8 @@ const handleDisableSyncConflict = () => syncStore.disableSyncAndDismissConflict(
         (() => {
           const pos = settings.layout.mainPosition
           if (pos.type === 'center') return { justifyContent: 'center' }
-          if (pos.type === 'dvh') return { paddingTop: [`${pos.value}vh`, `${pos.value}dvh`] } as unknown as CSSProperties
+          if (pos.type === 'dvh')
+            return { paddingTop: [`${pos.value}vh`, `${pos.value}dvh`] } as unknown as CSSProperties
           return { paddingTop: `${pos.value}px` } as CSSProperties
         })()
       "

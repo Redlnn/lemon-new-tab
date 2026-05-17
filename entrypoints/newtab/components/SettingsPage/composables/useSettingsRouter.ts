@@ -7,8 +7,8 @@ import ExtendedDock24Regular from '~icons/fluent/extended-dock-24-regular'
 import ColorLensOutlined from '~icons/ic/outline-color-lens'
 import ApiRound from '~icons/ic/round-api'
 import BookmarkBorderRound from '~icons/ic/round-bookmark-border'
-import FormatQuoteRound from '~icons/ic/round-format-quote'
 import DashboardOutlined from '~icons/ic/round-dashboard'
+import FormatQuoteRound from '~icons/ic/round-format-quote'
 
 export const SettingsRoute = {
   MENU: 'menu',

@@ -7,7 +7,12 @@ import { browser } from 'wxt/browser'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 
 import { BgType } from '../enums'
-import type { CURRENT_CONFIG_SCHEMA, SettingsSchemaV7, SettingsSchemaV8, SettingsSchemaV9 } from '../settings'
+import type {
+  CURRENT_CONFIG_SCHEMA,
+  SettingsSchemaV7,
+  SettingsSchemaV8,
+  SettingsSchemaV9,
+} from '../settings'
 import {
   CURRENT_CONFIG_VERSION,
   defaultSettings,
@@ -81,7 +86,11 @@ const emitSyncError = (err: unknown) => {
   emitSyncEvent('sync-error', toError(err))
 }
 
-type MigratableSettings = SettingsSchemaV7 | SettingsSchemaV8 | SettingsSchemaV9 | CURRENT_CONFIG_SCHEMA
+type MigratableSettings =
+  | SettingsSchemaV7
+  | SettingsSchemaV8
+  | SettingsSchemaV9
+  | CURRENT_CONFIG_SCHEMA
 
 const migrations: Partial<
   Record<
