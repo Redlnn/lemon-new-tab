@@ -3,7 +3,8 @@ import { searchHistoriesStorage } from '@newtab/shared/storages/searchHistoriesS
 const historiesRef: Ref<string[]> = shallowRef([])
 let loaded = false
 let loadingPromise: Promise<void> | null = null
-let watching = false
+let activeConsumers = 0
+let stopWatching: (() => void) | null = null
 let suppressNextWatch = false
 
 async function loadFromStorage() {
@@ -27,19 +28,29 @@ async function ensureLoaded(force = false) {
   await loadingPromise
 }
 
-function ensureWatching() {
-  if (watching) {
-    return
+function retainWatcher() {
+  activeConsumers += 1
+
+  if (!stopWatching) {
+    stopWatching = searchHistoriesStorage.watch(async () => {
+      if (suppressNextWatch) {
+        suppressNextWatch = false
+        return
+      }
+      await loadFromStorage()
+      loaded = true
+    })
   }
-  watching = true
-  searchHistoriesStorage.watch(async () => {
-    if (suppressNextWatch) {
-      suppressNextWatch = false
+
+  return () => {
+    activeConsumers = Math.max(0, activeConsumers - 1)
+    if (activeConsumers > 0) {
       return
     }
-    await loadFromStorage()
-    loaded = true
-  })
+
+    stopWatching?.()
+    stopWatching = null
+  }
 }
 
 async function updateStorage(list: string[]) {
@@ -74,7 +85,11 @@ async function clearHistories() {
 }
 
 export function useSearchHistoryCache() {
-  ensureWatching()
+  const releaseWatcher = retainWatcher()
+
+  if (getCurrentScope()) {
+    onScopeDispose(releaseWatcher)
+  }
 
   return {
     histories: readonly(historiesRef),

@@ -196,6 +196,11 @@ const bgTypeProviders: Record<
       }
     }
 
+    // Cancel any in-flight fetch from a previous call before starting async work.
+    onlineFetchController?.abort()
+    onlineFetchController = new AbortController()
+    const { signal } = onlineFetchController
+
     const now = Date.now()
     const useCache = settings.background.online.cache.enabled
     // 如果开启了缓存，则尝试从缓存中获取
@@ -211,6 +216,7 @@ const bgTypeProviders: Record<
     }
 
     if (isCacheValid) {
+      // Blob URL ownership transfers to updateBackgroundURL (tracked and revoked via lastBlobUrl).
       return URL.createObjectURL(cached!.blob)
     }
 
@@ -219,17 +225,26 @@ const bgTypeProviders: Record<
     // 如果没有命中缓存或没有开启缓存
     try {
       // 下载新的图像
-      const res = await fetch(rawUrl)
+      const res = await fetch(rawUrl, { signal })
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
       blob = await res.blob()
     } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        // This request was invalidated by a newer request or component teardown.
+        // updateBackgroundURL's version guard will discard the aborted result.
+        return ''
+      }
       ElNotification.error({
         title: i18next.t('newtab:notification.wallpaperCache.title'),
         message: i18next.t('newtab:notification.wallpaperCache.message', { error: e }),
       })
       if (cached) {
+        // Blob URL ownership transfers to updateBackgroundURL (tracked and revoked via lastBlobUrl).
         return URL.createObjectURL(cached.blob) // 如果下载失败，不管缓存是否过期都继续使用缓存
-      } else return rawUrl // 假如开了莫奈，这里会有未定义行为，也许在应用莫奈的时候会出错
+      }
+      // Download failed and no cache is available. Return the raw URL as explicit degraded
+      // behavior: Monet will not be applied (onImgLoaded already guards against HTTP URLs).
+      return rawUrl
     }
 
     const newCache = { blob, timestamp: now }
@@ -239,6 +254,7 @@ const bgTypeProviders: Record<
       await cacheOnlineWallpaper(rawUrl, newCache)
     }
 
+    // Blob URL ownership transfers to updateBackgroundURL (tracked and revoked via lastBlobUrl).
     return URL.createObjectURL(blob)
   },
   [BgType.None]: () => Promise.resolve(''),
@@ -278,6 +294,7 @@ watch(
 let stopBgWatch: (() => void) | undefined
 let stopBgTypeWatch: (() => void) | null = null
 let backgroundRequestVersion = 0
+let onlineFetchController: AbortController | null = null
 
 async function updateBackgroundURL(type: BgType): Promise<void> {
   const requestVersion = ++backgroundRequestVersion
@@ -415,7 +432,9 @@ async function refreshBackground() {
       await bingWallpaperURLGetter.refresh(true)
       await updateBackgroundURL(BgType.Bing)
     } else if (type === BgType.Online) {
-      await clearAllOnlineWallpaperCache(bgURL.value)
+      // Clear IDB cache only; the current blob URL is revoked through
+      // updateBackgroundURL's normal revokeLastBlobUrl() path.
+      await clearAllOnlineWallpaperCache()
       await updateBackgroundURL(BgType.Online)
     }
   } catch (error) {
@@ -436,6 +455,11 @@ onUnmounted(() => {
   stopBgTypeWatch?.()
   // 卸载时释放 Blob URL
   revokeLastBlobUrl()
+  // 使所有在途背景更新立即过期，避免卸载后继续写入响应式状态。
+  backgroundRequestVersion += 1
+  // 卸载时取消正在进行的在线壁纸网络请求
+  onlineFetchController?.abort()
+  onlineFetchController = null
 })
 
 async function onImgLoaded() {

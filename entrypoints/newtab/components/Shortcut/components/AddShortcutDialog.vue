@@ -3,7 +3,7 @@ import type { FormInstance, UploadRequestOptions } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import Plus from '~icons/fa6-solid/plus'
 
-import { acquireFaviconRef, fetchFaviconWithCache, releaseFaviconRef } from '@/shared/media'
+import { fetchFaviconWithCache } from '@/shared/media'
 import { useShortcutStore, type Shortcut } from '@/shared/shortcut'
 
 import { formatUrl, isValidUrl } from '@newtab/shared/utils'
@@ -61,11 +61,6 @@ async function submit() {
     return
   }
 
-  const oldUrl =
-    isEditing.value && editingIndex.value !== null
-      ? shortcutStore.items[editingIndex.value]?.url
-      : undefined
-
   const shortcut = {
     url: formatUrl(data.url),
     title: data.title.trim(),
@@ -74,13 +69,8 @@ async function submit() {
 
   if (isEditing.value && editingIndex.value !== null) {
     shortcutStore.items.splice(editingIndex.value, 1, shortcut)
-    if (oldUrl && oldUrl !== shortcut.url) {
-      releaseFaviconRef(oldUrl)
-      acquireFaviconRef(shortcut.url)
-    }
   } else {
     shortcutStore.items.push(shortcut)
-    acquireFaviconRef(shortcut.url)
   }
 
   await shortcutStore.save()

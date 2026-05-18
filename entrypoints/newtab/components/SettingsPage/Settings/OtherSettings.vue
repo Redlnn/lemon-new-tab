@@ -263,6 +263,8 @@ function handleFileChange(event: Event) {
     }
 
     const originalSyncState = settings.$state.sync.enabled
+    const nextSyncEnabled = data.settings.sync.enabled
+    const syncStore = useSyncDataStore()
 
     data.settings.background.local = settings.$state.background.local
     data.settings.background.localDark = data.settings.background.localDark || {
@@ -274,13 +276,8 @@ function handleFileChange(event: Event) {
     data.settings.background.online.url = settings.$state.background.online.url
 
     settings.$patch(data.settings)
-    if (originalSyncState !== data.settings.sync.enabled) {
-      const syncStore = useSyncDataStore()
-      if (data.settings.sync.enabled) {
-        syncStore.init()
-      } else {
-        syncStore.deinit()
-      }
+    if (originalSyncState && !nextSyncEnabled) {
+      syncStore.deinit()
     }
 
     // shortcuts 部分
@@ -293,8 +290,8 @@ function handleFileChange(event: Event) {
       await customSearchEngineStore.save(data.customSearchEngines)
     }
 
-    if (settings.sync.enabled) {
-      useSyncDataStore().init()
+    if (!originalSyncState && nextSyncEnabled) {
+      await syncStore.init()
     }
   })
 }

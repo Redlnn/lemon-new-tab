@@ -1,6 +1,15 @@
 import { idbClear, idbGet, idbSet } from '@/shared/storage/idb'
 import type { CachedImage } from '@/shared/storage/idb'
 
+function logOnlineWallpaperCacheFailure(
+  operation: 'read' | 'write' | 'clear',
+  error: unknown,
+  url?: string,
+) {
+  const target = url ? ` for ${url}` : ''
+  console.warn(`[wallpaper-cache] ${operation} failure${target}:`, error)
+}
+
 /**
  * 获取缓存的在线壁纸
  * @param url 壁纸URL
@@ -9,7 +18,8 @@ import type { CachedImage } from '@/shared/storage/idb'
 export async function getCachedOnlineWallpaper(url: string): Promise<CachedImage | null> {
   try {
     return (await idbGet('onlineWallpaperCache', url)) ?? null
-  } catch {
+  } catch (error) {
+    logOnlineWallpaperCacheFailure('read', error, url)
     return null
   }
 }
@@ -22,8 +32,8 @@ export async function getCachedOnlineWallpaper(url: string): Promise<CachedImage
 export async function cacheOnlineWallpaper(url: string, cacheData: CachedImage): Promise<void> {
   try {
     await idbSet('onlineWallpaperCache', url, cacheData)
-  } catch {
-    // 缓存失败时静默处理
+  } catch (error) {
+    logOnlineWallpaperCacheFailure('write', error, url)
   }
 }
 
@@ -34,7 +44,7 @@ export async function clearAllOnlineWallpaperCache(url?: string): Promise<void> 
   try {
     if (url) URL.revokeObjectURL(url)
     await idbClear('onlineWallpaperCache')
-  } catch {
-    // 清除失败时静默处理
+  } catch (error) {
+    logOnlineWallpaperCacheFailure('clear', error, url)
   }
 }

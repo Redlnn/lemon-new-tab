@@ -62,7 +62,7 @@ async function probeExistingDB(): Promise<{ version: number; needsUpgrade: boole
     req.onsuccess = () => {
       const db = req.result
       const needsUpgrade = !REQUIRED_STORES.every((s) => db.objectStoreNames.contains(s))
-      const version = db.version
+      const { version } = db
       db.close()
       resolve({ version, needsUpgrade })
     }

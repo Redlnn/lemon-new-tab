@@ -150,7 +150,9 @@ async function tryFetchIconFromDiscoveredLinkTags(
 ): Promise<string | null> {
   LINK_TAG_RE.lastIndex = state.processedIndex
 
-  const nonAppleCandidates: string[] = []
+  const fluidIconCandidates: string[] = []
+  const appleTouchCandidates: string[] = []
+  const genericIconCandidates: string[] = []
 
   let match: RegExpExecArray | null
   while ((match = LINK_TAG_RE.exec(html)) !== null) {
@@ -174,23 +176,26 @@ async function tryFetchIconFromDiscoveredLinkTags(
     if (!iconUrl || state.attemptedIconUrls.has(iconUrl)) continue
     state.attemptedIconUrls.add(iconUrl)
 
-    // 优先尝试 apple-touch-icon
-    if (rel.includes('apple-touch-icon')) {
-      const data = await fetchIconAsDataUrl(iconUrl)
-      if (data) return data
+    if (rel.includes('fluid-icon')) {
+      fluidIconCandidates.push(iconUrl)
       continue
     }
 
-    // 非 apple-touch-icon，先缓存候选，稍后按顺序尝试
+    if (rel.includes('apple-touch-icon')) {
+      appleTouchCandidates.push(iconUrl)
+      continue
+    }
+
     if (rel.includes('icon')) {
-      nonAppleCandidates.push(iconUrl)
+      genericIconCandidates.push(iconUrl)
     }
   }
 
-  // 先尝试非 apple 候选（保持出现顺序）
-  for (const iconUrl of nonAppleCandidates) {
-    const data = await fetchIconAsDataUrl(iconUrl)
-    if (data) return data
+  for (const candidateGroup of [fluidIconCandidates, appleTouchCandidates, genericIconCandidates]) {
+    for (const iconUrl of candidateGroup) {
+      const data = await fetchIconAsDataUrl(iconUrl)
+      if (data) return data
+    }
   }
 
   return null

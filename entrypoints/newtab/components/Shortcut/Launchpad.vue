@@ -17,6 +17,7 @@ import { OPEN_SETTINGS } from '@newtab/shared/keys'
 import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
 
 import ShortcutContextMenu from './components/ShortcutContextMenu.vue'
+import { buildShortcutDisplayItems } from './composables/shortcutDisplayItems'
 import { useShortcutData } from './composables/useShortcutData'
 import { useTopSitesMerge } from './composables/useTopSitesMerge'
 
@@ -71,30 +72,7 @@ const ROWS = computed(() => {
 
 const pageSize = computed(() => COLS.value * ROWS.value)
 
-const allItems = computed(() => {
-  const items: {
-    url: string
-    title: string
-    favicon?: string
-    isPinned: boolean
-    originalIndex: number
-  }[] = []
-  for (let i = 0; i < shortcuts.value.length; i++) {
-    const s = shortcuts.value[i]!
-    items.push({ ...s, isPinned: true, originalIndex: i })
-  }
-  for (let i = 0; i < topSites.value.length; i++) {
-    const s = topSites.value[i]!
-    items.push({
-      url: s.url,
-      title: s.title || '',
-      favicon: s.favicon,
-      isPinned: false,
-      originalIndex: i,
-    })
-  }
-  return items
-})
+const allItems = computed(() => buildShortcutDisplayItems(shortcuts.value, topSites.value))
 
 const isSearching = computed(() => query.value.trim().length > 0)
 

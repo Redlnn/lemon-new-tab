@@ -52,6 +52,10 @@ const toError = (err: unknown): Error => (err instanceof Error ? err : new Error
 
 const debouncedSend = useDebounceFn(async (data: SyncEnvelopeV1) => {
   try {
+    const localSettings = useSettingsStore()
+    if (!initialized || !localSettings.sync.enabled) {
+      return
+    }
     const msg: SyncLocalChangedMessage = { type: 'SYNC_LOCAL_CHANGED', data }
     await browser.runtime.sendMessage(msg)
   } catch (err) {
@@ -67,6 +71,9 @@ let isProcessing = false
 // 已初始化标志及清理句柄，防止重复 init
 let initialized = false
 let cleanupFns: (() => void)[] = []
+let initPromise: Promise<void> | null = null
+let initGeneration = 0
+let lastSyncHash: string | null = null
 
 // 事件回调，用于通知 UI 层
 export type SyncEventCallback = <T extends SyncEventType>(
@@ -150,20 +157,35 @@ export const useSyncDataStore = defineStore('sync', () => {
   }
 
   const sanitizeSettingsForCloud = (input: CURRENT_CONFIG_SCHEMA): CURRENT_CONFIG_SCHEMA => {
-    const sanitized = structuredClone(input)
-    if (
-      sanitized.background.bgType === BgType.Local ||
-      sanitized.background.bgType === BgType.Online
-    ) {
-      sanitized.background.bgType = BgType.Bing
+    const sanitized: CURRENT_CONFIG_SCHEMA = {
+      ...input,
+      background: {
+        ...input.background,
+        bgType:
+          input.background.bgType === BgType.Local || input.background.bgType === BgType.Online
+            ? BgType.Bing
+            : input.background.bgType,
+        local: structuredClone(defaultSettings.background.local),
+        localDark: structuredClone(defaultSettings.background.localDark),
+        bing: structuredClone(defaultSettings.background.bing),
+        online: { ...input.background.online, url: defaultSettings.background.online.url },
+      },
+      pluginVersion: defaultSettings.pluginVersion,
+      readChangeLog: defaultSettings.readChangeLog,
     }
-    sanitized.background.local = structuredClone(defaultSettings.background.local)
-    sanitized.background.localDark = structuredClone(defaultSettings.background.localDark)
-    sanitized.background.bing = structuredClone(defaultSettings.background.bing)
-    sanitized.background.online.url = defaultSettings.background.online.url
-    sanitized.pluginVersion = defaultSettings.pluginVersion
-    sanitized.readChangeLog = defaultSettings.readChangeLog
     return sanitized
+  }
+
+  const computeSyncHash = (
+    localSettings: ReturnType<typeof useSettingsStore>,
+    shortcutStore: ReturnType<typeof useShortcutStore>,
+    customSearchEngineStore: ReturnType<typeof useCustomSearchEngineStore>,
+  ): string => {
+    const rawSettings = localSettings.getRawState()
+    const sanitizedSettings = sanitizeSettingsForCloud(rawSettings)
+    const bookmarksData = toRaw(shortcutStore.items)
+    const customEnginesData = toRaw(customSearchEngineStore.items)
+    return JSON.stringify({ s: sanitizedSettings, b: bookmarksData, e: customEnginesData })
   }
 
   const restoreDeviceLocalFields = (
@@ -225,7 +247,8 @@ export const useSyncDataStore = defineStore('sync', () => {
     const shortcutStore = useShortcutStore()
     const customSearchEngineStore = useCustomSearchEngineStore()
 
-    const settingsSnapshot = structuredClone(localSettings.getRawState())
+    const rawSettings = localSettings.getRawState()
+    const sanitizedSettings = sanitizeSettingsForCloud(rawSettings)
     const bookmarksSnapshot: Shortcuts = { items: structuredClone(toRaw(shortcutStore.items)) }
     const customSearchEngineSnapshot = normalizeCustomSearchEngines({
       items: structuredClone(toRaw(customSearchEngineStore.items)),
@@ -233,14 +256,13 @@ export const useSyncDataStore = defineStore('sync', () => {
 
     return {
       _v: 1,
-      configVersion: settingsSnapshot.version,
+      configVersion: rawSettings.version,
       fromDeviceId: meta.deviceId,
       fromDeviceName: meta.deviceName,
       lastUpdate: timestamp,
-      settings: sanitizeSettingsForCloud(settingsSnapshot),
+      settings: sanitizedSettings,
       bookmarks: bookmarksSnapshot,
       customSearchEngines: customSearchEngineSnapshot,
-      // version and baseVersion are placeholders; background fills in the real values
       version: 0,
       baseVersion: 0,
     }
@@ -287,6 +309,7 @@ export const useSyncDataStore = defineStore('sync', () => {
       )
       await customSearchEngineStore.save(normalizedCustomSearchEngines)
       ensureSearchEngineAvailable(localSettings, normalizedCustomSearchEngines)
+      lastSyncHash = computeSyncHash(localSettings, shortcutStore, customSearchEngineStore)
 
       const cloudVersion = cloudData.version ?? 0
       await setLocalSyncMeta({
@@ -309,141 +332,165 @@ export const useSyncDataStore = defineStore('sync', () => {
   }
 
   const init = async () => {
-    // 幂等：如已初始化，先清理再重新初始化
-    if (initialized) {
-      deinit()
+    if (initPromise) {
+      await initPromise
+      if (initialized) {
+        return
+      }
     }
 
-    const localSettings = useSettingsStore()
-    const shortcutStore = useShortcutStore()
-    const customSearchEngineStore = useCustomSearchEngineStore()
-    isProcessing = true
-    // Handle messages from background; hoisted so the catch block can remove it on error.
-    let handleBackgroundMessage: ((message: unknown) => Promise<void>) | undefined
+    if (initialized) {
+      return
+    }
 
-    try {
-      const meta = await ensureDeviceMeta()
+    const generation = ++initGeneration
 
-      // Initialise sync store refs from *local* state — never from the browser's potentially
-      // stale cloud cache.  applyCloudData() will update these once background decides to apply.
-      settings.value = structuredClone(localSettings.getRawState())
-      bookmarks.value = { items: structuredClone(toRaw(shortcutStore.items)) }
-      lastUpdate.value = meta.lastSyncedAt
+    const currentInit = (async () => {
+      const localSettings = useSettingsStore()
+      const shortcutStore = useShortcutStore()
+      const customSearchEngineStore = useCustomSearchEngineStore()
+      isProcessing = true
+      // Handle messages from background; hoisted so the catch block can remove it on error.
+      let handleBackgroundMessage: ((message: unknown) => Promise<void>) | undefined
 
-      // Send SYNC_INITED with the current local snapshot so background can run
-      // processSyncQueue immediately (covers SW-restart + watch()-missed-update cases).
-      const initPayload = buildPayload(meta.localModifiedAt, meta)
-      const syncInitedMessage: SyncInitedMessage = { type: 'SYNC_INITED', payload: initPayload }
+      try {
+        const meta = await ensureDeviceMeta()
 
-      handleBackgroundMessage = async (message: unknown) => {
-        if (!hasStringType(message)) return
+        // Initialise sync store refs from *local* state — never from the browser's potentially
+        // stale cloud cache. applyCloudData() will update these once background decides to apply.
+        settings.value = structuredClone(localSettings.getRawState())
+        bookmarks.value = { items: structuredClone(toRaw(shortcutStore.items)) }
+        lastUpdate.value = meta.lastSyncedAt
 
-        if (message.type === 'SYNC_APPLY_DATA' && 'data' in message) {
-          const { data } = message as SyncApplyDataMessage
-          if (isSyncEnvelopeV1(data)) {
-            await applyCloudData(data)
+        // Send SYNC_INITED with the current local snapshot so background can run
+        // processSyncQueue immediately (covers SW-restart + watch()-missed-update cases).
+        const initPayload = buildPayload(meta.localModifiedAt, meta)
+        const syncInitedMessage: SyncInitedMessage = { type: 'SYNC_INITED', payload: initPayload }
+
+        handleBackgroundMessage = async (message: unknown) => {
+          if (!hasStringType(message)) return
+
+          if (message.type === 'SYNC_APPLY_DATA' && 'data' in message) {
+            const { data } = message as SyncApplyDataMessage
+            if (isSyncEnvelopeV1(data)) {
+              await applyCloudData(data)
+            }
+          } else if (message.type === 'SYNC_CONFLICT' && 'payload' in message) {
+            const { payload } = message as SyncConflictMessage
+            conflictPayload.value = payload
+            conflictDialogVisible.value = true
+            emitSyncEvent('conflict', payload)
+          } else if (message.type === 'SYNC_LEGACY_DETECTED') {
+            handleLegacyDetected()
+          } else if (message.type === 'SYNC_VERSION_TOO_NEW') {
+            const msg = message as SyncVersionTooNewMessage
+            localSettings.sync.enabled = false
+            emitSyncEvent('version-too-new', { cloud: msg.cloud, local: msg.local })
           }
-        } else if (message.type === 'SYNC_CONFLICT' && 'payload' in message) {
-          const { payload } = message as SyncConflictMessage
-          conflictPayload.value = payload
-          conflictDialogVisible.value = true
-          emitSyncEvent('conflict', payload)
-        } else if (message.type === 'SYNC_LEGACY_DETECTED') {
-          handleLegacyDetected()
-        } else if (message.type === 'SYNC_VERSION_TOO_NEW') {
-          const msg = message as SyncVersionTooNewMessage
-          localSettings.sync.enabled = false
-          emitSyncEvent('version-too-new', { cloud: msg.cloud, local: msg.local })
         }
-      }
 
-      // Register BEFORE awaiting sendMessage: background may flush pendingApplyData/pendingConflict
-      // during the SYNC_INITED response, and newtab must already be listening when those arrive.
-      browser.runtime.onMessage.addListener(handleBackgroundMessage)
-      await browser.runtime.sendMessage(syncInitedMessage)
-
-      // Sanitized snapshot comparison: only trigger sync when meaningful data changes
-      // (ignores local-only fields like readChangeLog, pluginVersion, local background)
-      let lastSanitizedSnapshot: string | null = null
-      let prevSyncEnabled = localSettings.sync.enabled
-
-      const computeSnapshot = (): string => {
-        const sanitizedSettings = sanitizeSettingsForCloud(
-          structuredClone(localSettings.getRawState()),
-        )
-        const bookmarksData = { items: toRaw(shortcutStore.items) }
-        const customEnginesData = toRaw(customSearchEngineStore.items)
-        return JSON.stringify({ s: sanitizedSettings, b: bookmarksData, e: customEnginesData })
-      }
-
-      const subChange = async () => {
-        const nowEnabled = localSettings.sync.enabled
-
-        // 如果正在处理（静默中），先同步 prevSyncEnabled 再早退，避免状态滞后
-        if (isProcessing) {
-          prevSyncEnabled = nowEnabled
+        if (generation !== initGeneration) {
           return
         }
 
-        if (!nowEnabled) return
+        // Register BEFORE awaiting sendMessage: background may flush pendingApplyData/pendingConflict
+        // during the SYNC_INITED response, and newtab must already be listening when those arrive.
+        browser.runtime.onMessage.addListener(handleBackgroundMessage)
 
-        const snapshot = computeSnapshot()
+        if (generation !== initGeneration) {
+          browser.runtime.onMessage.removeListener(handleBackgroundMessage)
+          return
+        }
 
-        // 刚刚从未启用变为启用：发送当前数据并返回
-        if (!prevSyncEnabled && nowEnabled) {
-          prevSyncEnabled = true
-          lastSanitizedSnapshot = snapshot
+        await browser.runtime.sendMessage(syncInitedMessage)
+
+        // Cheap change-detection: only serialize sync-relevant data when checking for changes
+        let prevSyncEnabled = localSettings.sync.enabled
+        lastSyncHash = computeSyncHash(localSettings, shortcutStore, customSearchEngineStore)
+
+        const subChange = async () => {
+          const nowEnabled = localSettings.sync.enabled
+
+          if (isProcessing) {
+            prevSyncEnabled = nowEnabled
+            return
+          }
+
+          if (!nowEnabled) return
+
+          const syncHash = computeSyncHash(localSettings, shortcutStore, customSearchEngineStore)
+
+          if (!prevSyncEnabled && nowEnabled) {
+            prevSyncEnabled = true
+            lastSyncHash = syncHash
+            const timestamp = Date.now()
+            const meta = await setLocalSyncMeta({ localModifiedAt: timestamp })
+            debouncedSend(buildPayload(timestamp, meta))
+            return
+          }
+
+          prevSyncEnabled = nowEnabled
+
+          if (syncHash === lastSyncHash) {
+            return
+          }
+
+          lastSyncHash = syncHash
           const timestamp = Date.now()
           const meta = await setLocalSyncMeta({ localModifiedAt: timestamp })
           debouncedSend(buildPayload(timestamp, meta))
+        }
+
+        const unsubSettings = localSettings.$subscribe(subChange)
+
+        const onStateMutation = async (mutation: { type: MutationType }) => {
+          if (mutation.type !== MutationType.direct) {
+            // 防止刚开就认为数据过旧，只有 init 会整个替换 state
+            return
+          }
+          await subChange()
+        }
+
+        const unsubShortcut = shortcutStore.$subscribe(onStateMutation)
+        const unsubCustomSearchEngine = customSearchEngineStore.$subscribe(onStateMutation)
+
+        const nextCleanupFns = [
+          () => browser.runtime.onMessage.removeListener(handleBackgroundMessage!),
+          unsubSettings,
+          unsubShortcut,
+          unsubCustomSearchEngine,
+        ]
+
+        if (generation !== initGeneration) {
+          nextCleanupFns.forEach((fn) => fn())
           return
         }
 
-        prevSyncEnabled = nowEnabled
-
-        // 仅本地专属字段变更（如 readChangeLog、pluginVersion）时跳过
-        if (snapshot === lastSanitizedSnapshot) {
-          return
+        cleanupFns = nextCleanupFns
+        initialized = true
+      } catch (err) {
+        // Clean up the message listener if it was registered before the error
+        if (handleBackgroundMessage) {
+          browser.runtime.onMessage.removeListener(handleBackgroundMessage)
         }
-
-        lastSanitizedSnapshot = snapshot
-        const timestamp = Date.now()
-        const meta = await setLocalSyncMeta({ localModifiedAt: timestamp })
-        debouncedSend(buildPayload(timestamp, meta))
+        emitSyncError(err)
+      } finally {
+        isProcessing = false
       }
+    })()
 
-      const unsubSettings = localSettings.$subscribe(subChange)
-
-      const onStateMutation = async (mutation: { type: MutationType }) => {
-        if (mutation.type !== MutationType.direct) {
-          // 防止刚开就认为数据过旧，只有 init 会整个替换 state
-          return
-        }
-        await subChange()
-      }
-
-      const unsubShortcut = shortcutStore.$subscribe(onStateMutation)
-      const unsubCustomSearchEngine = customSearchEngineStore.$subscribe(onStateMutation)
-
-      cleanupFns = [
-        () => browser.runtime.onMessage.removeListener(handleBackgroundMessage!),
-        unsubSettings,
-        unsubShortcut,
-        unsubCustomSearchEngine,
-      ]
-      initialized = true
-    } catch (err) {
-      // Clean up the message listener if it was registered before the error
-      if (handleBackgroundMessage) {
-        browser.runtime.onMessage.removeListener(handleBackgroundMessage)
-      }
-      emitSyncError(err)
+    initPromise = currentInit
+    try {
+      await currentInit
     } finally {
-      isProcessing = false
+      if (initPromise === currentInit) {
+        initPromise = null
+      }
     }
   }
 
   const deinit = () => {
+    initGeneration += 1
     cleanupFns.forEach((fn) => fn())
     cleanupFns = []
     conflictDialogVisible.value = false

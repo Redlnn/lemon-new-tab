@@ -5,7 +5,7 @@ import ChevronLeft20Filled from '~icons/fluent/chevron-left-20-filled'
 import ChevronRight20Filled from '~icons/fluent/chevron-right-20-filled'
 
 import { useSettingsStore } from '@/shared/settings'
-import { useShortcutStore, type Shortcut } from '@/shared/shortcut'
+import { useShortcutStore } from '@/shared/shortcut'
 
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
@@ -16,6 +16,7 @@ import AddShortcut from './components/AddShortcut.vue'
 import ShortcutContextMenu from './components/ShortcutContextMenu.vue'
 import ShortcutItem from './components/ShortcutItem.vue'
 import ShortcutPaginationDots from './components/ShortcutPaginationDots.vue'
+import { buildShortcutDisplayItems } from './composables/shortcutDisplayItems'
 import { useShortcutData } from './composables/useShortcutData'
 import { useShortcutDrag } from './composables/useShortcutDrag'
 import { solveGridColumnFirst, usePagedGridLayout } from './composables/useShortcutLayout'
@@ -38,42 +39,7 @@ const refreshDebounced = useDebounceFn(refresh, 100)
 const { topSites, shortcuts, mounted, topSitesNeedsReload } = useShortcutData(refreshDebounced)
 
 // 合并后的完整项目列表（shortcuts + topSites）
-const allItems = computed(() => {
-  const shortcutsArr = shortcuts.value
-  const topSitesArr = topSites.value
-  const shortcutsLen = shortcutsArr.length
-  const topSitesLen = topSitesArr.length
-
-  // 预分配数组大小，避免动态扩容
-  const result: (Shortcut & {
-    isPinned: boolean
-    originalIndex: number
-  })[] = Array.from({ length: shortcutsLen + topSitesLen })
-
-  for (let i = 0; i < shortcutsLen; i++) {
-    const site = shortcutsArr[i]!
-    result[i] = {
-      url: site.url,
-      title: site.title,
-      favicon: site.favicon,
-      isPinned: true,
-      originalIndex: i,
-    }
-  }
-
-  for (let i = 0; i < topSitesLen; i++) {
-    const site = topSitesArr[i]!
-    result[shortcutsLen + i] = {
-      url: site.url,
-      title: site.title || '',
-      favicon: site.favicon,
-      isPinned: false,
-      originalIndex: i,
-    }
-  }
-
-  return result
-})
+const allItems = computed(() => buildShortcutDisplayItems(shortcuts.value, topSites.value))
 
 const { updateMaxCols, maxFitCols, maxFitRows } = usePagedGridLayout()
 const slotsPerPage = computed(() => maxFitCols.value * maxFitRows.value)

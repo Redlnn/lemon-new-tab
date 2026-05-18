@@ -7,7 +7,7 @@ import CloseRound from '~icons/ic/round-close'
 
 import { browser } from 'wxt/browser'
 
-import { acquireFaviconRef, fetchFaviconWithCache, warmFaviconCache } from '@/shared/media'
+import { fetchFaviconWithCache, warmFaviconCache } from '@/shared/media'
 import { useShortcutStore } from '@/shared/shortcut'
 
 const { t } = useTranslation('popup')
@@ -131,7 +131,6 @@ async function addCurrentPage() {
   let finalFavicon: string | null = null
   if (hasValidFavicon) {
     currentTab.value.favIconUrl = currentTabFaviconRef.value
-    acquireFaviconRef(currentTab.value.url)
     finalFavicon = await warmFaviconCache(currentTab.value.url, currentTabFaviconRef.value)
   }
 

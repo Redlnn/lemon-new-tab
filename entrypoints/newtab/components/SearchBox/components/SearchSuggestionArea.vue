@@ -22,10 +22,8 @@ const {
   clearHistories: clearHistoryCache,
 } = useSearchHistoryCache()
 
-const clearSearchHistory = useTemplateRef('clearSearchHistory')
 const isShowSearchHistories = ref(false)
 const currentActiveSuggest = ref<null | number>(null)
-const searchSuggestionArea = useTemplateRef('searchSuggestionArea')
 const searchSuggestions = shallowRef<string[]>([])
 // 用于追踪当前展示的结果是否仍然有效，避免旧请求覆盖新结果
 const latestLiveQuery = ref('')
@@ -162,6 +160,16 @@ function clearActiveSuggest() {
   currentActiveSuggest.value = null
 }
 
+function activateSuggest(index: number): string | null {
+  const nextText = searchSuggestions.value[index]
+  if (!nextText) {
+    return null
+  }
+
+  currentActiveSuggest.value = index
+  return nextText
+}
+
 function hideSearchHistories() {
   historyRequestVersion += 1
   isShowSearchHistories.value = false
@@ -180,6 +188,35 @@ async function clearSearchHistories() {
   clearSearchSuggestions()
 }
 
+function navigateActiveSuggest(direction: number, currentText: string, originText: string | null) {
+  const suggestionsLength = searchSuggestions.value.length
+  if (suggestionsLength <= 0) {
+    return null
+  }
+
+  const previousIndex = currentActiveSuggest.value
+  const nextOriginText = originText === null ? currentText : originText
+
+  clearActiveSuggest()
+
+  if (previousIndex === null) {
+    const nextIndex = direction > 0 ? direction - 1 : suggestionsLength + direction
+    const nextText = activateSuggest(nextIndex)
+    return nextText ? { searchText: nextText, originSearchText: nextOriginText } : null
+  }
+
+  const newIndex = previousIndex + direction
+  if (newIndex < 0 || newIndex >= suggestionsLength) {
+    return {
+      searchText: nextOriginText || '',
+      originSearchText: '',
+    }
+  }
+
+  const nextText = activateSuggest(newIndex)
+  return nextText ? { searchText: nextText, originSearchText: nextOriginText } : null
+}
+
 watch(
   () => cachedHistories.value,
   (list) => {
@@ -192,15 +229,9 @@ watch(
 defineExpose({
   clearSearchSuggestions,
   hideSearchHistories,
-  clearActiveSuggest,
-  showSuggestionsDebounced,
   showSearchHistories,
   handleInput,
-  clearSearchHistory,
-  currentActiveSuggest,
-  searchSuggestions,
-  isShowSearchHistories,
-  searchSuggestionArea,
+  navigateActiveSuggest,
 })
 </script>
 
@@ -225,7 +256,6 @@ defineExpose({
     />
     <div
       v-show="isShowSearchHistories"
-      ref="clearSearchHistory"
       class="search-suggestion-area__item search-suggestion-area__clear-history noselect"
       style="display: none"
       @click="clearSearchHistories()"

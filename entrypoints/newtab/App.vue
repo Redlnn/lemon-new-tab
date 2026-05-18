@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useIdle } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import type { CSSProperties } from 'vue'
+import type { StyleValue } from 'vue'
 
 import { BgType } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
@@ -121,6 +121,17 @@ const actionClass = computed(() => {
   }
 })
 
+const mainStyle = computed<StyleValue>(() => {
+  const pos = settings.layout.mainPosition
+  if (pos.type === 'center') {
+    return { justifyContent: 'center' }
+  }
+  if (pos.type === 'dvh') {
+    return [{ paddingTop: `${pos.value}vh` }, { paddingTop: `${pos.value}dvh` }]
+  }
+  return { paddingTop: `${pos.value}px` }
+})
+
 const handleLegacyConfirm = () => syncStore.clearLegacyAndReinitialize()
 const handleLegacyCancel = () => syncStore.dismissLegacyDialog()
 const handleUseCloudConflictData = () => syncStore.useCloudConflictData()
@@ -139,20 +150,7 @@ const handleDisableSyncConflict = () => syncStore.disableSyncAndDismissConflict(
       placement: 'bottom',
     }"
   >
-    <main
-      :style="
-        (() => {
-          const pos = settings.layout.mainPosition
-          if (pos.type === 'center') return { justifyContent: 'center' }
-          if (pos.type === 'dvh')
-            return { paddingTop: [`${pos.value}vh`, `${pos.value}dvh`] } as unknown as CSSProperties
-          return { paddingTop: `${pos.value}px` } as CSSProperties
-        })()
-      "
-      class="app"
-      ref="appRef"
-      @contextmenu.prevent="openBookmarkSidebar"
-    >
+    <main :style="mainStyle" class="app" ref="appRef" @contextmenu.prevent="openBookmarkSidebar">
       <clock v-if="settings.clock.enabled" @contextmenu.stop />
       <search-box v-if="settings.search.enabled" @contextmenu.stop />
       <shortcut

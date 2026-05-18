@@ -70,8 +70,8 @@ export const useWallpaperUrlStore = defineStore('wallpaperUrl', () => {
     const cachedUrl = cache[type]
     if (cachedUrl) {
       if (cachedUrl.startsWith('blob:')) {
-        // Blob URLs are context-specific and always stale when read from another tab.
-        // Skip fetch validation and silently clear the stale cache entry.
+        // Blob URL 特定于上下文，从另一个标签页读取时总是过期的。
+        // 跳过获取验证并静默清除过期的缓存条目。
         if (isLatest()) {
           await wallpaperUrlCache.setValue({ ...cache, [type]: '' })
         }
@@ -117,7 +117,7 @@ export const useWallpaperUrlStore = defineStore('wallpaperUrl', () => {
         background.mediaType = isVideoFile(file) ? 'video' : 'image'
       }
 
-      // Blob URLs are context-specific; do not store them in session cache.
+      // Blob URL 特定于上下文；不要将其存储在会话缓存中。
       updateRef(type, url)
       return targetRef
     }
@@ -159,10 +159,10 @@ export const useWallpaperUrlStore = defineStore('wallpaperUrl', () => {
       URL.revokeObjectURL(cachedUrl)
     }
 
-    // Only cache non-blob URLs (e.g., online HTTP URLs).
-    // Blob URLs are context-specific and would be stale for any other tab.
+    // 仅缓存非 blob URL（例如在线 HTTP URL）。
+    // Blob URL 特定于上下文，对任何其他标签页都会过期。
     if (url.startsWith('blob:')) {
-      // Clear any stale cache entry so the next tab won't attempt to validate it.
+      // 清除任何过期的缓存条目，以便下一个标签页不会尝试验证它。
       if (cachedUrl) {
         await wallpaperUrlCache.setValue({ ...cache, [type]: '' })
       }

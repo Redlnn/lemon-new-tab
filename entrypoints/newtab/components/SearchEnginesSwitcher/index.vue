@@ -3,7 +3,6 @@ import { useTranslation } from 'i18next-vue'
 import Plus from '~icons/fa6-solid/plus'
 import CheckmarkCircle12Filled from '~icons/fluent/checkmark-circle-12-filled'
 
-import { releaseFaviconRef } from '@/shared/media'
 import { useSettingsStore } from '@/shared/settings'
 
 import BaseDialog from '@newtab/components/BaseDialog.vue'
@@ -55,10 +54,8 @@ async function deleteCustomEngine(index: number) {
       settings.search.engine = 'bing'
     }
 
-    const deletedUrl = engine.url
     customSearchEngineStore.items.splice(index, 1)
     await customSearchEngineStore.save()
-    releaseFaviconRef(deletedUrl)
   } catch {
     // 用户取消删除
   }

@@ -1,6 +1,5 @@
 import i18next from 'i18next'
 
-import { acquireFaviconRef, releaseFaviconRef } from '@/shared/media'
 import { useShortcutStore } from '@/shared/shortcut'
 
 export async function removeShortcut(
@@ -11,7 +10,6 @@ export async function removeShortcut(
   const { url, title, favicon } = store.items[index]!
   store.items.splice(index, 1)
   await store.save()
-  releaseFaviconRef(url)
   await refresh()
   ElMessage.success({
     message: h('p', null, [
@@ -30,7 +28,6 @@ export async function removeShortcut(
               title,
               favicon,
             })
-            acquireFaviconRef(url)
             await store.save()
             await refresh()
           },
@@ -53,7 +50,6 @@ export async function pinShortcut(
     title,
     favicon,
   })
-  acquireFaviconRef(url)
   await store.save()
   await refresh()
 }

@@ -22,10 +22,21 @@ import { getSearchEngineUrl, searchEngines } from '@newtab/shared/search'
 import SearchEngineMenu from './components/SearchEngineMenu.vue'
 import SearchSuggestionArea from './components/SearchSuggestionArea.vue'
 
+type SearchSuggestionAreaController = {
+  clearSearchSuggestions: () => void
+  showSearchHistories: () => Promise<void>
+  handleInput: () => void
+  navigateActiveSuggest: (
+    direction: number,
+    currentText: string,
+    originText: string | null,
+  ) => { searchText: string; originSearchText: string } | null
+}
+
 const searchBox = useTemplateRef('searchBox')
 const searchForm = useTemplateRef('searchForm')
 const searchInput = useTemplateRef('searchInput')
-const suggedtionArea = ref<InstanceType<typeof SearchSuggestionArea>>()
+const suggestionArea = ref<SearchSuggestionAreaController>()
 const searchEngineMenuRef = ref<typeof SearchEngineMenu>()
 
 const { t } = useTranslation()
@@ -67,7 +78,7 @@ const searchPlaceholder = computed(() =>
 function resetSearch() {
   searchText.value = ''
   originSearchText.value = ''
-  suggedtionArea.value?.clearSearchSuggestions()
+  suggestionArea.value?.clearSearchSuggestions()
   searchForm.value?.classList.remove('search-box__form--focus')
   focusStore.blur()
 }
@@ -105,7 +116,7 @@ function handleEsc() {
 function handleFocus() {
   searchForm.value?.classList.add('search-box__form--focus')
   focusStore.focus()
-  suggedtionArea.value?.showSearchHistories()
+  suggestionArea.value?.showSearchHistories()
 }
 
 // 处理输入法组合输入开始
@@ -126,33 +137,21 @@ function handleInput() {
   if (isComposing.value) {
     return
   }
-  suggedtionArea.value?.handleInput()
+  suggestionArea.value?.handleInput()
 }
 
 function navigateSuggestions(direction: number) {
-  const suggestionsLength = suggedtionArea.value!.searchSuggestions.length
-  if (suggestionsLength <= 0) {
+  const result = suggestionArea.value?.navigateActiveSuggest(
+    direction,
+    searchText.value,
+    originSearchText.value,
+  )
+  if (!result) {
     return
   }
-  const _current = suggedtionArea.value!.currentActiveSuggest
-  suggedtionArea.value!.clearActiveSuggest()
 
-  if (originSearchText.value === null) {
-    originSearchText.value = searchText.value
-  }
-
-  if (_current === null) {
-    activeOneSuggest(direction > 0 ? direction - 1 : suggestionsLength + direction)
-  } else {
-    const newIndex = _current + direction
-    if (newIndex < 0 || newIndex >= suggestionsLength) {
-      searchText.value = originSearchText.value || ''
-      originSearchText.value = ''
-      suggedtionArea.value!.currentActiveSuggest = null
-    } else {
-      activeOneSuggest(newIndex)
-    }
-  }
+  searchText.value = result.searchText
+  originSearchText.value = result.originSearchText
 }
 
 function handleUp() {
@@ -161,16 +160,6 @@ function handleUp() {
 
 function handleDown() {
   navigateSuggestions(1)
-}
-
-function activeOneSuggest(index: number) {
-  const suggestions = suggedtionArea.value!.searchSuggestionArea?.children
-  if (!suggestions) {
-    return
-  }
-  suggestions[index]?.classList.add('active')
-  suggedtionArea.value!.currentActiveSuggest = index
-  searchText.value = suggedtionArea.value!.searchSuggestions[index]!
 }
 
 function handleTabNavigation(direction: 1 | -1) {
@@ -234,7 +223,7 @@ const doSearchWithText = async (text: string, newtab: boolean = false) => {
     newtab || settings.search.openInNewTab ? '_blank' : '_self',
     'noopener noreferrer',
   )
-  suggedtionArea.value!.clearSearchSuggestions()
+  suggestionArea.value?.clearSearchSuggestions()
 }
 
 function doSearch() {
@@ -289,9 +278,8 @@ onMounted(() => {
       </div>
     </form>
     <search-suggestion-area
-      ref="suggedtionArea"
+      ref="suggestionArea"
       :search-text="searchText"
-      :origin-search-text="originSearchText"
       :search-form-width="searchFormWidth"
       @do-search-with-text="doSearchWithText"
     />

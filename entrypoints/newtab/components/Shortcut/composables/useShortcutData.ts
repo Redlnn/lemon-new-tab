@@ -6,6 +6,47 @@ import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
 import { invalidateTopSitesCache } from '../utils/topSites'
 
+const refreshListeners = new Set<() => void>()
+const topSitesReloadRefs = new Set<Ref<boolean>>()
+let stopShortcutStorageWatch: (() => void) | null = null
+let stopBlockedTopSitesWatch: (() => void) | null = null
+
+function notifyShortcutConsumers() {
+  refreshListeners.forEach((listener) => listener())
+}
+
+function ensureShortcutWatchers(store: ReturnType<typeof useShortcutStore>) {
+  if (!stopShortcutStorageWatch) {
+    stopShortcutStorageWatch = shortcutStorage.watch(async (newValue) => {
+      if (newValue) {
+        store.replace(newValue)
+      }
+      notifyShortcutConsumers()
+    })
+  }
+
+  if (!stopBlockedTopSitesWatch) {
+    stopBlockedTopSitesWatch = blockedTopSitesStorage.watch(() => {
+      topSitesReloadRefs.forEach((needsReload) => {
+        needsReload.value = true
+      })
+      invalidateTopSitesCache()
+      notifyShortcutConsumers()
+    })
+  }
+}
+
+function maybeStopShortcutWatchers() {
+  if (refreshListeners.size > 0 || topSitesReloadRefs.size > 0) {
+    return
+  }
+
+  stopShortcutStorageWatch?.()
+  stopShortcutStorageWatch = null
+  stopBlockedTopSitesWatch?.()
+  stopBlockedTopSitesWatch = null
+}
+
 /**
  * 快捷方式数据层：
  * - 维护 topSites / shortcuts / mounted / topSitesNeedsReload 状态
@@ -20,19 +61,17 @@ export function useShortcutData(refreshDebounced: () => void) {
   const mounted = ref(false)
   const topSitesNeedsReload = ref(true)
 
-  // 云同步或 popup 添加书签导致 storage 变动时刷新
-  shortcutStorage.watch(async (newValue) => {
-    if (newValue) {
-      shortcutStore.$patch(newValue)
-    }
-    refreshDebounced()
-  })
+  refreshListeners.add(refreshDebounced)
+  topSitesReloadRefs.add(topSitesNeedsReload)
+  ensureShortcutWatchers(shortcutStore)
 
-  blockedTopSitesStorage.watch(() => {
-    topSitesNeedsReload.value = true
-    invalidateTopSitesCache()
-    refreshDebounced()
-  })
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      refreshListeners.delete(refreshDebounced)
+      topSitesReloadRefs.delete(topSitesNeedsReload)
+      maybeStopShortcutWatchers()
+    })
+  }
 
   return {
     topSites,
