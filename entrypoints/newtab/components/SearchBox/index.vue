@@ -104,8 +104,8 @@ function handleEsc() {
 
 function handleFocus() {
   searchForm.value?.classList.add('search-box__form--focus')
-  suggedtionArea.value?.showSearchHistories()
   focusStore.focus()
+  suggedtionArea.value?.showSearchHistories()
 }
 
 // 处理输入法组合输入开始
