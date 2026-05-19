@@ -15,6 +15,18 @@ export function useYiYan() {
 
   const load = async () => {
     try {
+      if (settings.yiyan.provider === 'custom') {
+        const lines = settings.yiyan.customLines
+          .split('\n')
+          .map((l) => l.trim())
+          .filter((l) => l.length > 0)
+        if (lines.length === 0) return
+        const line = lines[Math.floor(Math.random() * lines.length)]
+        yiyan.value = line.replace(/\\n/g, '\n')
+        yiyanOrigin.value = undefined
+        return
+      }
+
       const cache = await getYiyanCache()
       if (isCacheFresh(cache) && cache?.provider === settings.yiyan.provider) {
         const { res } = cache

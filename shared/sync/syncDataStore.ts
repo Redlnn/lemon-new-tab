@@ -170,6 +170,10 @@ export const useSyncDataStore = defineStore('sync', () => {
         bing: structuredClone(defaultSettings.background.bing),
         online: { ...input.background.online, url: defaultSettings.background.online.url },
       },
+      yiyan: {
+        ...input.yiyan,
+        customLines: defaultSettings.yiyan.customLines,
+      },
       pluginVersion: defaultSettings.pluginVersion,
       readChangeLog: defaultSettings.readChangeLog,
     }
@@ -198,6 +202,7 @@ export const useSyncDataStore = defineStore('sync', () => {
     merged.background.localDark = structuredClone(localSettings.background.localDark)
     merged.background.bing = structuredClone(localSettings.background.bing)
     merged.background.online.url = localSettings.background.online.url
+    merged.yiyan.customLines = localSettings.yiyan.customLines
     merged.pluginVersion = localSettings.pluginVersion
     merged.readChangeLog = localSettings.readChangeLog
     return merged

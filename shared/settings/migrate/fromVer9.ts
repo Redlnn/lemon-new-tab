@@ -8,6 +8,10 @@ export function migrateFromVer9To10(old: SettingsSchemaV9): SettingsSchemaV10 {
       ...old.search,
       expandWidth: defaultSettings.search.expandWidth,
     },
+    yiyan: {
+      ...old.yiyan,
+      customLines: defaultSettings.yiyan.customLines,
+    },
     layout: {
       mainPosition: {
         type: old.shortcut.enabled ? 'center' : 'dvh',

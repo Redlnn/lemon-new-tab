@@ -170,6 +170,7 @@ export const defaultSettings = {
     alwaysShow: true,
 
     provider: 'jinrishici',
+    customLines: '',
 
     style: {
       shadow: true,

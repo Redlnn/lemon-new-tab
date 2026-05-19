@@ -34,7 +34,7 @@ export type YiyanResult = {
   yiyanOrigin?: string
 }
 
-export type YiyanProviderKey = keyof typeof yiyanProviders
+export type YiyanProviderKey = keyof typeof yiyanProviders | 'custom'
 export const yiyanProviders = {
   jinrishici: {
     nameKey: 'settings:yiyan.providers.jinrishici.name',
@@ -75,3 +75,7 @@ export const yiyanProviders = {
     },
   },
 } as const
+
+export function isProviderKey(key: YiyanProviderKey): key is keyof typeof yiyanProviders {
+  return key in yiyanProviders
+}

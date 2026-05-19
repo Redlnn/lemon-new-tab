@@ -217,6 +217,10 @@ async function copyToClipboard() {
     transition: opacity var(--el-transition-duration-fast) ease;
   }
 
+  .yiyan__content {
+    white-space: pre-wrap;
+  }
+
   &.yiyan--shadow {
     text-shadow: 1px 1px 3px rgb(0 0 0 / 40%);
 

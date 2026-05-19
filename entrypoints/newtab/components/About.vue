@@ -16,7 +16,7 @@ import { useSettingsStore } from '@/shared/settings'
 import BiliBili from '@newtab/assets/bili.svg?component'
 import BaseDialog from '@newtab/components/BaseDialog.vue'
 import { useDialog } from '@newtab/composables/useDialog'
-import { yiyanProviders } from '@newtab/shared/yiyan'
+import { isProviderKey, yiyanProviders } from '@newtab/shared/yiyan'
 
 const { t } = useTranslation()
 
@@ -26,7 +26,14 @@ const { opened, show, hide, toggle } = useDialog()
 defineExpose({ show, hide, toggle })
 
 const settings = useSettingsStore()
-const currentYiyanProvider = computed(() => yiyanProviders[settings.yiyan.provider])
+
+const currentYiyanProvider = computed(() => {
+  if (isProviderKey(settings.yiyan.provider)) {
+    return yiyanProviders[settings.yiyan.provider]
+  } else {
+    return null
+  }
+})
 </script>
 
 <template>
@@ -39,7 +46,7 @@ const currentYiyanProvider = computed(() => yiyanProviders[settings.yiyan.provid
       </div>
       <h1 class="ext-name">{{ browser.i18n.getMessage('extension_name') }}</h1>
       <div class="ext-version">{{ version }}</div>
-      <div class="yiyan-links">
+      <div v-if="currentYiyanProvider" class="yiyan-links">
         <i18next :translation="t('newtab:about.yiyanProvider')">
           <template #api>
             <el-link

@@ -167,6 +167,11 @@
     "title": "Layout"
   },
   "other": {
+    "faviconCache": {
+      "description": "Cache favicons locally for faster loading; requires the \"Access all sites\" permission",
+      "label": "Favicon Cache",
+      "permissionDenied": "Permission \"Access all sites\" was not granted; favicon cache remains disabled"
+    },
     "importExport": {
       "backup": "Back up extension settings",
       "export": "Export",
@@ -208,11 +213,6 @@
       "data": "Purge all data",
       "icon": "Purge favicon cache",
       "wallpaper": "Purge wallpaper cache"
-    },
-    "faviconCache": {
-      "description": "Cache favicons locally for faster loading; requires the \"Access all sites\" permission",
-      "label": "Favicon Cache",
-      "permissionDenied": "Permission \"Access all sites\" was not granted; favicon cache remains disabled"
     },
     "sync": "Cloud Sync (Experimental)",
     "syncWarning": "Cloud Sync may overwrite local settings and cannot sync the following items: background images, most visited sites, dark mode state, etc. Items that do not support syncing will be marked with an indicator as shown on the right:",
@@ -280,6 +280,7 @@
   },
   "shortcut": {
     "border": "Show icon border",
+    "iconCacheTip": "Tip: Consider enabling Settings → Other → Icon cache to attempt fetching higher-resolution icons.",
     "iconRatio": "Icon ratio",
     "iconSize": "Icon size",
     "marginTop": "Area top margin",
@@ -299,7 +300,6 @@
       "itemGapY": "Vertical icon spacing"
     },
     "tip": "Tip: You can drag the settings window to see changes in the shortcut area.",
-    "iconCacheTip": "Tip: Consider enabling Settings → Other → Icon cache to attempt fetching higher-resolution icons.",
     "title": "Shortcut",
     "titleExtraWidth": "Title expand width",
     "titleWhiteInLight": "[Shortcut] Use white text in light mode",
@@ -355,6 +355,9 @@
   "title": "Settings",
   "yiyan": {
     "alwaysShow": "Always show",
+    "customLinesLabel": "Custom content",
+    "customLinesNote": "Each line represents one quote. Use \"\\n\" within a line to indicate a line break.",
+    "customLinesPlaceholder": "One quote per line; use \\n within a line for line breaks",
     "description": "Display a random Chinese quote below the search bar. Give it a try — you can always turn it off later!",
     "invertColor": {
       "dark": "[Quote] Use dark text in dark mode",
@@ -363,6 +366,9 @@
     "normalyShowTip": "When disabled, only show when the search box is focused.",
     "provider": "Provider",
     "providers": {
+      "custom": {
+        "name": "Custom"
+      },
       "hitokoto": {
         "name": "Hitokoto.cn",
         "note": "Please note that Hitokoto.cn has a very strict QPS (queries per second) limit. This extension uses caching, but multiple requests from different sites in a short period may still cause your IP to be temporarily banned."

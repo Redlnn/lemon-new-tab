@@ -5,6 +5,7 @@ import { useTranslation } from 'i18next-vue'
 import CloseRound from '~icons/ic/round-close'
 import KeyboardArrowLeftRound from '~icons/ic/round-keyboard-arrow-left'
 
+import { useSettingsStore } from '@/shared/settings'
 import { useDialog } from '@newtab/composables/useDialog'
 
 import SettingsDetailView from './components/SettingsDetailView.vue'
@@ -18,6 +19,7 @@ const DESKTOP_DIALOG_WIDTH = 850
 
 const { t } = useTranslation('settings')
 const router = useSettingsRouter()
+const settings = useSettingsStore()
 const { width: windowWidth } = useWindowSize({ type: 'visual' })
 const { opened, show, hide, toggle } = useDialog()
 
@@ -35,6 +37,16 @@ const slideTransitionName = computed(() =>
 )
 
 const resetRouter = () => router.reset(isMobile.value ? SettingsRoute.MENU : SettingsRoute.THEME)
+
+async function handleClose() {
+  if (settings.yiyan.provider === 'custom') {
+    settings.yiyan.customLines = settings.yiyan.customLines
+      .split('\n')
+      .filter((line) => line.trim().length > 0)
+      .join('\n')
+  }
+  await settings.save()
+}
 
 function customShow() {
   resetRouter()
@@ -83,6 +95,7 @@ defineExpose({ show: customShow, hide, toggle: customToggle })
     draggable
     :show-close="false"
     header-class="settings-header noselect"
+    @close="handleClose"
     @closed="resetRouter"
   >
     <template #header="{ close, titleId }">

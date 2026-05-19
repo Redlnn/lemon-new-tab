@@ -167,6 +167,11 @@
     "title": "佈局"
   },
   "other": {
+    "faviconCache": {
+      "description": "開啟後將圖示快取至本地，加快載入速度；需要「存取所有網站」權限",
+      "label": "圖示快取",
+      "permissionDenied": "未獲得「存取所有網站」權限，圖示快取已保持關閉"
+    },
     "importExport": {
       "backup": "備份擴充功能設定",
       "export": "匯出",
@@ -208,11 +213,6 @@
       "data": "清除本擴充功能的資料",
       "icon": "清除圖示快取",
       "wallpaper": "清除壁紙快取"
-    },
-    "faviconCache": {
-      "description": "開啟後將圖示快取至本地，加快載入速度；需要「存取所有網站」權限",
-      "label": "圖示快取",
-      "permissionDenied": "未獲得「存取所有網站」權限，圖示快取已保持關閉"
     },
     "sync": "雲端同步（實驗功能）",
     "syncWarning": "雲端同步可能會覆蓋本機設定，且無法同步以下內容：背景圖片、最常瀏覽網站、深色模式狀態等。未支援同步的項目後方會顯示如右側所示的標示：",
@@ -280,6 +280,7 @@
   },
   "shortcut": {
     "border": "顯示圖示邊框",
+    "iconCacheTip": "Tip：建議開啟「設定-其他-圖示快取」以嘗試獲取更高清晰度的圖示。",
     "iconRatio": "圖示填充比例",
     "iconSize": "圖示大小",
     "marginTop": "區域上邊距",
@@ -299,7 +300,6 @@
       "itemGapY": "連結上下間距"
     },
     "tip": "Tip：可以拖動設定視窗來觀察快速存取區域的變化",
-    "iconCacheTip": "Tip：建議開啟「設定-其他-圖示快取」以嘗試獲取更高清晰度的圖示。",
     "title": "快速存取",
     "titleExtraWidth": "標題擴展寬度",
     "titleWhiteInLight": "【快速存取】淺色模式下使用白色文字",
@@ -355,6 +355,9 @@
   "title": "設定",
   "yiyan": {
     "alwaysShow": "總是顯示",
+    "customLinesLabel": "自定義內容",
+    "customLinesNote": "每一行為一條，行內使用「\\n」表示換行",
+    "customLinesPlaceholder": "每行一條，行內使用 \\n 表示換行",
     "description": "",
     "invertColor": {
       "dark": "【一言】深色模式下使用深色文字",
@@ -363,6 +366,9 @@
     "normalyShowTip": "關閉時僅在搜尋框聚焦時顯示",
     "provider": "一言來源",
     "providers": {
+      "custom": {
+        "name": "自定義"
+      },
       "hitokoto": {
         "name": "一言（Hitokoto）",
         "note": "請注意，Hitokoto.cn 的 QPS（每秒請求數）非常嚴格，本擴充功能已做快取，但短時間內來自不同站點請求仍會導致你的 IP 短時間被 Ban"

@@ -167,6 +167,11 @@
     "title": "布局"
   },
   "other": {
+    "faviconCache": {
+      "description": "开启后将图标缓存至本地，加快加载速度；需要「访问所有网站」权限",
+      "label": "图标缓存",
+      "permissionDenied": "未获得「访问所有网站」权限，图标缓存已保持关闭"
+    },
     "importExport": {
       "backup": "备份扩展设置",
       "export": "导出",
@@ -208,11 +213,6 @@
       "data": "清除扩展数据",
       "icon": "清除图标缓存",
       "wallpaper": "清除壁纸缓存"
-    },
-    "faviconCache": {
-      "description": "开启后将图标缓存至本地，加快加载速度；需要「访问所有网站」权限",
-      "label": "图标缓存",
-      "permissionDenied": "未获得「访问所有网站」权限，图标缓存已保持关闭"
     },
     "sync": "云同步（实验性）",
     "syncWarning": "云同步可能会导致本地设置被覆盖，且不能同步以下内容：背景图片、最常访问网站、深色模式状态等。不支持同步的项目后面会有如右侧的标识：",
@@ -280,6 +280,7 @@
   },
   "shortcut": {
     "border": "显示图标边框",
+    "iconCacheTip": "Tip：建议打开「设置-其他-图标缓存」以尝试获取更高清晰度的图标。",
     "iconRatio": "图标填充比例",
     "iconSize": "图标大小",
     "marginTop": "区域上边距",
@@ -299,7 +300,6 @@
       "itemGapY": "链接上下间距"
     },
     "tip": "Tip：可以拖动设置窗口以观察快速访问区域变化噢~",
-    "iconCacheTip": "Tip：建议打开「设置-其他-图标缓存」以尝试获取更高清晰度的图标。",
     "title": "快速访问",
     "titleExtraWidth": "标题扩展宽度",
     "titleWhiteInLight": "【快速访问】浅色模式下使用白色文字",
@@ -355,6 +355,9 @@
   "title": "设置",
   "yiyan": {
     "alwaysShow": "总是显示",
+    "customLinesLabel": "自定义内容",
+    "customLinesNote": "每行为一条，行内使用「\\n」表示换行",
+    "customLinesPlaceholder": "每行一条，行内使用 \\n 表示换行",
     "description": "",
     "invertColor": {
       "dark": "【一言】深色模式下使用深色文字",
@@ -363,6 +366,9 @@
     "normalyShowTip": "关闭时仅在搜索框聚焦时显示",
     "provider": "一言来源",
     "providers": {
+      "custom": {
+        "name": "自定义"
+      },
       "hitokoto": {
         "name": "一言（Hitokoto）",
         "note": "请注意，Hitokoto.cn 的 QPS（每秒请求数）十分严格，本扩展已做缓存，但短时间来自不同站点请求仍会导致你的 IP 短时间被 Ban"

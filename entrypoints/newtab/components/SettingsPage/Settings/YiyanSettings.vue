@@ -4,13 +4,18 @@ import { useTranslation } from 'i18next-vue'
 import { isChinese } from '@/shared/i18n'
 import { useSettingsStore } from '@/shared/settings'
 
-import { yiyanProviders } from '@newtab/shared/yiyan'
+import { isProviderKey, yiyanProviders } from '@newtab/shared/yiyan'
 
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
 
-const currentProviderNote = computed(() => yiyanProviders[settings.yiyan.provider]?.note)
+const currentProviderNote = computed(() => {
+  if (isProviderKey(settings.yiyan.provider)) {
+    return yiyanProviders[settings.yiyan.provider].note
+  }
+  return null
+})
 </script>
 
 <template>
@@ -48,11 +53,37 @@ const currentProviderNote = computed(() => yiyanProviders[settings.yiyan.provide
             :label="t(provider.nameKey)"
             :value="key"
           />
+          <el-option :label="t('yiyan.providers.custom.name')" value="custom" />
         </el-select>
       </div>
       <p v-if="currentProviderNote" class="settings__item--note">
         {{ t(currentProviderNote) }}
       </p>
+      <template v-if="settings.yiyan.provider === 'custom'">
+        <div class="settings__item">
+          <div class="settings__label">{{ t('yiyan.customLinesLabel') }}</div>
+          <el-input
+            class="yiyan-textarea"
+            v-model="settings.yiyan.customLines"
+            type="textarea"
+            :rows="6"
+            :placeholder="t('yiyan.customLinesPlaceholder')"
+          />
+        </div>
+        <p class="settings__item--note">
+          {{ t('yiyan.customLinesNote') }}
+        </p>
+      </template>
     </template>
   </div>
 </template>
+
+<style lang="scss">
+.yiyan-textarea {
+  .el-textarea__inner {
+    padding: 10px 15px;
+    margin: 8px 0;
+    white-space: nowrap;
+  }
+}
+</style>
