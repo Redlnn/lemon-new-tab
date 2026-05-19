@@ -60,7 +60,7 @@ const currentProviderNote = computed(() => {
         {{ t(currentProviderNote) }}
       </p>
       <template v-if="settings.yiyan.provider === 'custom'">
-        <div class="settings__item">
+        <div class="settings__item settings__item--vertical">
           <div class="settings__label">{{ t('yiyan.customLinesLabel') }}</div>
           <el-input
             class="yiyan-textarea"
