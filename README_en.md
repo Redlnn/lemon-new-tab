@@ -124,4 +124,6 @@ pnpm zip:firefox    # Package Firefox extension
 
 ## License
 
-This project is open-sourced under the MIT License, except for trademark-related images in `entrypoints/newtab/assets`.
+This project is open-sourced under the AGPL-3.0 License, except for trademark-related images in `entrypoints/newtab/assets`.
+
+> This project has been open-sourced under the AGPL-3.0 License since version v3.2.3 (commit 65a894c0d8009d274618c5004a634d7359b2b0a6). Previous versions were open-sourced under the MIT License.

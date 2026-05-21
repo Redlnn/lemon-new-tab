@@ -157,4 +157,6 @@ pnpm zip:firefox  # 打包 Firefox 扩展
 
 ## License
 
-本项目以 MIT 协议开源，`entrypoints/newtab/assets` 中的涉及到商标的图片除外
+本项目以 AGPL-3.0 许可证开源，`entrypoints/newtab/assets` 中的涉及到商标的图片除外
+
+> 本项目自 v3.2.3 版本（commit 65a894c0d8009d274618c5004a634d7359b2b0a6）起采用 AGPL-3.0 许可证开源，之前版本采用 MIT 许可证开源

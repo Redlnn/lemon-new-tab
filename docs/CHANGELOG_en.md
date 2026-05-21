@@ -4,6 +4,8 @@
 
 ## 3.2.3 (May 21, 2026)
 
+📄 Starting from this version (commit 65a894c), this project has switched to the AGPL-3.0 License. Previous versions under the MIT License still apply to the versions released at that time.
+
 ### New Features✨
 
 - Added a new layout settings page, with support for adjusting the positions of the main area and action buttons.
