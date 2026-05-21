@@ -1,6 +1,6 @@
 {
   "name": "lemon-new-tab",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -85,7 +85,7 @@
       "markdown-it": "npm:markdown-exit@latest",
       "uuid": "^14.0.0",
       "sass": "npm:sass-embedded@^1.99.0",
-      "vite": "^8.0.13"
+      "vite": "^8.0.14"
     },
     "peerDependencyRules": {
       "ignoreMissing": [

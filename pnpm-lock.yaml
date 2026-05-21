@@ -9,7 +9,7 @@ overrides:
   markdown-it: npm:markdown-exit@latest
   uuid: ^14.0.0
   sass: npm:sass-embedded@^1.99.0
-  vite: ^8.0.13
+  vite: ^8.0.14
 
 importers:
 
@@ -1099,7 +1099,7 @@ packages:
     resolution: {integrity: sha512-km+p+XdSz9Sxm5rqUbqcSfZYaAniKxWBj1KURl+Jr7UaPvvX7BmaWMdP69I5rrFDeQGyxAG7NXdc57vz+snhWg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
-      vite: ^8.0.13
+      vite: ^8.0.14
       vue: ^3.2.25
 
   '@volar/language-core@2.4.28':
@@ -3452,7 +3452,7 @@ packages:
     resolution: {integrity: sha512-FVdKAb7jmZslfdkOCfm6jxHaUafltBpOXdoLvKY+0I0EeMmhxXTSzeDldwXFJeV0IH8LyIXIiU29E6gv02WJFQ==}
     engines: {node: '>=20'}
     peerDependencies:
-      vite: ^8.0.13
+      vite: ^8.0.14
 
   unplugin@2.3.11:
     resolution: {integrity: sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==}
@@ -3488,7 +3488,7 @@ packages:
     resolution: {integrity: sha512-RZCUkQYa9UUq7VlWWq24zqKTR7KjU5TY8ESwHlcfn89Tmbre5QH09DJxB6mFnEp32Y05lePNkzyFm+RSKBEErQ==}
     engines: {node: '>=20'}
     peerDependencies:
-      vite: ^8.0.13
+      vite: ^8.0.14
 
   vite-svg-loader@5.1.1:
     resolution: {integrity: sha512-RPzcXA/EpKJA0585x58DBgs7my2VfeJ+j2j1EoHY4Zh82Y7hV4cR1fElgy2aZi85+QSrcLLoTStQ5uZjD68u+Q==}
