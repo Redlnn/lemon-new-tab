@@ -2,6 +2,29 @@
 
 > Translated by AI from Chinese.
 
+## 3.2.3 (May 21, 2026)
+
+### New Features✨
+
+- Added a new layout settings page, with support for adjusting the positions of the main area and action buttons.
+  ([#790](https://github.com/Redlnn/lemon-new-tab/issues/790))
+- Added a new "Expanded Width After Activation" setting for the search box, so you can adjust its width to your preference.
+  ([#80](https://github.com/Redlnn/lemon-new-tab/issues/80))
+- The quote widget now supports custom sources, allowing you to add your own favorite text.
+  ([#85](https://github.com/Redlnn/lemon-new-tab/issues/85))
+
+### Improvements⚡️
+
+- Improved Top Sites deduplication logic: the same URL will no longer appear twice just because of a trailing `/`.
+- Improved styles for parts of the page.
+- Improved performance and reduced memory usage.
+
+### Bug Fixes🐛
+
+- Fixed an issue where search history could not be displayed correctly in the previous version.
+  ([#82](https://github.com/Redlnn/lemon-new-tab/issues/82))
+- Fixed some style issues.
+
 ## 3.2.2 (May 9, 2026)
 
 ### New Features✨
