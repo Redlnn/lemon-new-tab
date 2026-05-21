@@ -6,6 +6,7 @@ import CloseRound from '~icons/ic/round-close'
 import KeyboardArrowLeftRound from '~icons/ic/round-keyboard-arrow-left'
 
 import { useSettingsStore } from '@/shared/settings'
+
 import { useDialog } from '@newtab/composables/useDialog'
 
 import SettingsDetailView from './components/SettingsDetailView.vue'
