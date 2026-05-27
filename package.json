@@ -24,10 +24,10 @@
   "dependencies": {
     "@vueuse/components": "^14.3.0",
     "@vueuse/core": "^14.3.0",
-    "dayjs": "^1.11.20",
+    "dayjs": "^1.11.21",
     "dayjs-plugin-lunar": "^1.4.1",
     "element-plus": "^2.14.0",
-    "i18next": "^26.2.0",
+    "i18next": "^26.3.0",
     "i18next-browser-languagedetector": "^8.2.1",
     "i18next-vue": "^5.4.0",
     "idb": "^8.0.3",
@@ -39,7 +39,7 @@
     "@iconify-json/ant-design": "^1.2.5",
     "@iconify-json/fa6-brands": "^1.2.6",
     "@iconify-json/fa6-solid": "^1.2.4",
-    "@iconify-json/fluent": "^1.2.47",
+    "@iconify-json/fluent": "^1.2.48",
     "@iconify-json/ic": "^1.2.4",
     "@material/material-color-utilities": "^0.4.0",
     "@tsconfig/node24": "^24.0.4",
@@ -52,14 +52,14 @@
     "@wxt-dev/webextension-polyfill": "^1.0.0",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-oxlint": "^1.66.0",
+    "eslint-plugin-oxlint": "^1.67.0",
     "eslint-plugin-vue": "^10.9.1",
     "markdown-exit": "latest",
-    "npm-run-all2": "^9.0.0",
-    "oxfmt": "^0.51.0",
-    "oxlint": "^1.66.0",
+    "npm-run-all2": "^9.0.1",
+    "oxfmt": "^0.52.0",
+    "oxlint": "^1.67.0",
     "postcss": "^8.5.15",
-    "sass-embedded": "^1.99.0",
+    "sass-embedded": "^1.100.0",
     "stylelint": "^17.12.0",
     "stylelint-config-recess-order": "^7.7.0",
     "stylelint-config-standard": "^40.0.0",
@@ -71,29 +71,12 @@
     "unplugin-auto-import": "^21.0.0",
     "unplugin-icons": "^23.0.1",
     "unplugin-vue-components": "^32.1.0",
-    "unplugin-vue-markdown": "^30.0.0",
+    "unplugin-vue-markdown": "^32.0.0",
     "vite": "^8.0.14",
     "vite-plugin-i18next-loader": "^3.1.3",
     "vite-svg-loader": "^5.1.1",
-    "vue-tsc": "^3.3.1",
+    "vue-tsc": "^3.3.2",
     "webextension-polyfill": "^0.12.0",
     "wxt": "^0.20.26"
-  },
-  "pnpm": {
-    "overrides": {
-      "glob": "^13.0.6",
-      "markdown-it": "npm:markdown-exit@latest",
-      "uuid": "^14.0.0",
-      "sass": "npm:sass-embedded@^1.99.0",
-      "vite": "^8.0.14"
-    },
-    "peerDependencyRules": {
-      "ignoreMissing": [
-        "eslint"
-      ],
-      "allowAny": [
-        "eslint"
-      ]
-    }
   }
 }
