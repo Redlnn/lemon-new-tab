@@ -2,9 +2,11 @@ import { useTranslation } from 'i18next-vue'
 
 import { browser } from '#imports'
 
-import { useShortcutStore } from '@/shared/shortcut'
+import { useShortcutStore, type ShortcutTarget } from '@/shared/shortcut'
 
-import { pinShortcut, removeShortcut } from '../utils/shortcut'
+import { isSafeUrl } from '@newtab/shared/utils'
+
+import { openShortcutUrl, pinShortcut, removeShortcut } from '../utils/shortcut'
 import { blockSite } from '../utils/topSites'
 
 export type CtxShortcutItem = {
@@ -12,11 +14,14 @@ export type CtxShortcutItem = {
   title: string
   isPinned: boolean
   originalIndex: number
+  groupId?: string
 }
 
 export function useShortcutContextMenu(options: {
   refreshFn: () => Promise<void>
-  onOpenEditDialog?: (index: number) => void
+  onOpenEditDialog?: (target: ShortcutTarget) => void
+  onPin?: (item: CtxShortcutItem) => Promise<void> | void
+  onMove?: (item: CtxShortcutItem) => Promise<void> | void
 }) {
   const { t } = useTranslation()
   const shortcutStore = useShortcutStore()
@@ -44,11 +49,12 @@ export function useShortcutContextMenu(options: {
   }
 
   const ctxOpenInNewTab = (): void => {
-    if (ctxItem.value) window.open(ctxItem.value.url, '_blank')
+    if (ctxItem.value) openShortcutUrl(ctxItem.value.url, '_blank')
   }
 
   const ctxOpenInNewWindow = (): void => {
-    if (ctxItem.value) browser.windows.create({ url: ctxItem.value.url })
+    if (ctxItem.value && isSafeUrl(ctxItem.value.url))
+      browser.windows.create({ url: ctxItem.value.url })
   }
 
   const ctxCopyLink = (): void => {
@@ -58,6 +64,7 @@ export function useShortcutContextMenu(options: {
   const ctxCreateBookmark = async (): Promise<void> => {
     if (!ctxItem.value) return
     const { url, title } = ctxItem.value
+    if (!isSafeUrl(url)) return
     const res = await browser.bookmarks.search({ url })
     if (res.length !== 0) {
       ElMessage.info(t('shortcut.bookmark.existing'))
@@ -74,12 +81,27 @@ export function useShortcutContextMenu(options: {
 
   const ctxUnpin = async (): Promise<void> => {
     if (!ctxItem.value?.isPinned) return
-    await removeShortcut(ctxItem.value.originalIndex, shortcutStore, refreshFn)
+    await removeShortcut(
+      ctxItem.value.groupId
+        ? { groupId: ctxItem.value.groupId, index: ctxItem.value.originalIndex }
+        : ctxItem.value.originalIndex,
+      shortcutStore,
+      refreshFn,
+    )
   }
 
   const ctxPin = async (): Promise<void> => {
     if (!ctxItem.value || ctxItem.value.isPinned) return
+    if (options.onPin) {
+      await options.onPin(ctxItem.value)
+      return
+    }
     await pinShortcut(shortcutStore, refreshFn, ctxItem.value.url, ctxItem.value.title)
+  }
+
+  const ctxMove = async (): Promise<void> => {
+    if (!ctxItem.value?.isPinned || !ctxItem.value.groupId || !options.onMove) return
+    await options.onMove(ctxItem.value)
   }
 
   const ctxBlockSite = async (): Promise<void> => {
@@ -90,7 +112,11 @@ export function useShortcutContextMenu(options: {
 
   const ctxEdit = (): void => {
     if (!ctxItem.value?.isPinned) return
-    onOpenEditDialog?.(ctxItem.value.originalIndex)
+    onOpenEditDialog?.(
+      ctxItem.value.groupId
+        ? { groupId: ctxItem.value.groupId, index: ctxItem.value.originalIndex }
+        : ctxItem.value.originalIndex,
+    )
   }
 
   return {
@@ -103,6 +129,7 @@ export function useShortcutContextMenu(options: {
     ctxCreateBookmark,
     ctxUnpin,
     ctxPin,
+    ctxMove,
     ctxBlockSite,
     ctxEdit,
   }

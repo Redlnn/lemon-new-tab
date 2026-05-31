@@ -137,6 +137,17 @@
       "success": "已加入「{{folder}}」"
     },
     "editShortcut": "編輯捷徑",
+    "groups": {
+      "default": "預設",
+      "deleteConfirm": "確定要刪除分組「{{name}}」及其中所有捷徑嗎？",
+      "moveTo": "移動到分組",
+      "selectAddTarget": "選擇要新增到哪個分組",
+      "selectMoveTarget": "選擇要移動到哪個分組",
+      "selectPinTarget": "選擇要釘選到哪個分組",
+      "selectTitle": "選擇分組",
+      "topSites": "最常造訪",
+      "untitled": "分組 {{index}}"
+    },
     "hide": "隱藏",
     "hideTopMessage": {
       "content": "已隱藏該最常訪問網站",

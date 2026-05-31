@@ -6,11 +6,21 @@ export interface Shortcut {
   favicon?: string
 }
 
-export interface Shortcuts {
+export interface ShortcutGroup {
+  id: string
+  name: string
   items: Shortcut[]
 }
 
-export const defaultShortcuts: Shortcuts = { items: [] }
+export interface Shortcuts {
+  items: Shortcut[]
+  groups?: ShortcutGroup[]
+}
+
+export const DEFAULT_SHORTCUT_GROUP_ID = 'default'
+export const MAX_SHORTCUT_GROUP_NAME_LENGTH = 24
+
+export const defaultShortcuts: Shortcuts = { items: [], groups: [] }
 
 export const shortcutStorage = storage.defineItem<Shortcuts>('local:bookmark', {
   fallback: structuredClone(defaultShortcuts),

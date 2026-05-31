@@ -26,6 +26,11 @@ export const OPEN_BOOKMARK_EDIT_DIALOG: InjectionKey<
   (node: Browser.bookmarks.BookmarkTreeNode) => void
 > = Symbol('openBookmarkEditDialog')
 
+// 打开快捷方式分组选择弹窗
+export const OPEN_SHORTCUT_GROUP_SELECT_DIALOG: InjectionKey<
+  (options?: { title?: string; currentGroupId?: string }) => Promise<string | null>
+> = Symbol('openShortcutGroupSelectDialog')
+
 // 书签激活状态映射：depth -> 激活节点 id 列表
 export const BOOKMARK_ACTIVE_MAP: InjectionKey<Ref<Record<number, string[]>>> =
   Symbol('bookmarkActiveMap')

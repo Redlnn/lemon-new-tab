@@ -214,6 +214,10 @@
   }
 
   html.colorful &.active {
+    background-color: var(--el-color-primary-light-9);
+  }
+
+  html.colorful.dialog-transparent &.active {
     background-color: var(--el-color-primary-light-8);
   }
 }

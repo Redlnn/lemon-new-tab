@@ -6,10 +6,13 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
+import { useShortcutGroupingChange } from '../composables/useShortcutGroupingChange'
+
 const { t } = useTranslation('settings')
 
 const isChromium = import.meta.env.CHROME || import.meta.env.EDGE || import.meta.env.OPERA
 const settings = useSettingsStore()
+const { handleGroupingChange } = useShortcutGroupingChange()
 
 async function restoreDefaultTopSites() {
   await blockedTopSitesStorage.setValue([])
@@ -40,6 +43,13 @@ async function restoreDefaultTopSites() {
           <el-switch v-model="settings.shortcut.topSites" />
         </div>
         <div class="settings__item settings__item--horizontal">
+          <div class="settings__label">{{ t('shortcut.grouping') }}</div>
+          <el-switch :model-value="settings.shortcut.grouping" @change="handleGroupingChange" />
+        </div>
+        <p v-if="settings.shortcut.grouping" class="settings__item--note">
+          {{ t('shortcut.groupingTip') }}
+        </p>
+        <div class="settings__item settings__item--horizontal">
           <div class="settings__label">{{ t('shortcut.shadow') }}</div>
           <el-switch v-model="settings.shortcut.style.shadow" />
         </div>
@@ -57,6 +67,10 @@ async function restoreDefaultTopSites() {
         <div class="settings__item settings__item--horizontal">
           <div class="settings__label">{{ t('shortcut.paging') }}</div>
           <el-switch v-model="settings.shortcut.paging" />
+        </div>
+        <div v-if="settings.shortcut.paging" class="settings__item settings__item--horizontal">
+          <div class="settings__label">{{ t('shortcut.pagingLoop') }}</div>
+          <el-switch v-model="settings.shortcut.pagingLoop" />
         </div>
         <div class="settings__item settings__item--horizontal">
           <div class="settings__label">{{ t('shortcut.showTitle') }}</div>

@@ -31,6 +31,24 @@ export function isValidUrl(url: string) {
 }
 
 /**
+ * 校验是否为安全 URL（http/https/ftp/ftps），用于书签、窗口创建等浏览器敏感 API。
+ */
+export function isSafeUrl(url: string) {
+  try {
+    const urlToCheck = url.includes('://') ? url : `http://${url}`
+    const parsed = new URL(urlToCheck)
+    return (
+      parsed.protocol === 'http:' ||
+      parsed.protocol === 'https:' ||
+      parsed.protocol === 'ftp:' ||
+      parsed.protocol === 'ftps:'
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
  * 格式化 URL，如果没有协议则自动补全 https://
  */
 export function formatUrl(url: string) {

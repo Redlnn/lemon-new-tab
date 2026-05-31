@@ -4,7 +4,13 @@ import { useTranslation } from 'i18next-vue'
 import Plus from '~icons/fa6-solid/plus'
 
 import { fetchFaviconWithCache } from '@/shared/media'
-import { useShortcutStore, type Shortcut } from '@/shared/shortcut'
+import { useSettingsStore } from '@/shared/settings'
+import {
+  DEFAULT_SHORTCUT_GROUP_ID,
+  useShortcutStore,
+  type Shortcut,
+  type ShortcutTarget,
+} from '@/shared/shortcut'
 
 import { formatUrl, isValidUrl } from '@newtab/shared/utils'
 
@@ -13,10 +19,12 @@ import { useFaviconUpload } from '../composables/useFaviconUpload'
 const { t } = useTranslation()
 
 const shortcutStore = useShortcutStore()
+const settings = useSettingsStore()
 const modelForm = ref<FormInstance>()
 
 const showDialog = ref(false)
-const editingIndex = ref<number | null>(null)
+const editingTarget = ref<ShortcutTarget | null>(null)
+const addingGroupId = ref<string | null>(null)
 const data: Shortcut = reactive({
   url: '',
   title: '',
@@ -25,7 +33,7 @@ const data: Shortcut = reactive({
 
 const { beforeFaviconUpload, httpRequest } = useFaviconUpload()
 
-const isEditing = computed(() => editingIndex.value !== null)
+const isEditing = computed(() => editingTarget.value !== null)
 const dialogTitle = computed(() =>
   t(isEditing.value ? 'shortcut.editShortcut' : 'shortcut.addShortcut'),
 )
@@ -34,19 +42,21 @@ const confirmLabel = computed(() => t(isEditing.value ? 'common.save' : 'common.
 function resetFields() {
   modelForm.value?.resetFields()
   Object.assign(data, { url: '', title: '', favicon: '' })
-  editingIndex.value = null
+  editingTarget.value = null
+  addingGroupId.value = null
 }
 
-function openAddDialog() {
+function openAddDialog(groupId?: string) {
   resetFields()
+  addingGroupId.value = groupId ?? null
   showDialog.value = true
 }
 
-function openEditDialog(index: number) {
-  const target = shortcutStore.items[index]
+function openEditDialog(targetRef: ShortcutTarget) {
+  const target = shortcutStore.getShortcut(targetRef)
   if (!target) return
   modelForm.value?.resetFields()
-  editingIndex.value = index
+  editingTarget.value = targetRef
   Object.assign(data, {
     url: target.url,
     title: target.title,
@@ -67,13 +77,26 @@ async function submit() {
     ...(!data.favicon ? {} : { favicon: data.favicon }),
   }
 
-  if (isEditing.value && editingIndex.value !== null) {
-    shortcutStore.items.splice(editingIndex.value, 1, shortcut)
+  if (isEditing.value && editingTarget.value !== null) {
+    if (typeof editingTarget.value === 'number') {
+      shortcutStore.items.splice(editingTarget.value, 1, shortcut)
+      await shortcutStore.save()
+    } else {
+      await shortcutStore.updateShortcutInGroup(
+        editingTarget.value.groupId,
+        editingTarget.value.index,
+        shortcut,
+      )
+    }
+  } else if (addingGroupId.value) {
+    await shortcutStore.addShortcutToGroup(addingGroupId.value, shortcut)
+  } else if (settings.shortcut.grouping) {
+    await shortcutStore.addShortcutToGroup(DEFAULT_SHORTCUT_GROUP_ID, shortcut)
   } else {
     shortcutStore.items.push(shortcut)
+    await shortcutStore.save()
   }
 
-  await shortcutStore.save()
   showDialog.value = false
   resetFields()
 

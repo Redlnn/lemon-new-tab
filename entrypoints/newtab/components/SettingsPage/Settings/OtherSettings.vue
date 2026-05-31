@@ -255,7 +255,7 @@ function backupValidator(data: unknown): data is Backup {
 function handleFileChange(event: Event) {
   return handleFileImport<Backup>(event, fileInput, backupValidator, async (data) => {
     // settings 部分（沿用之前的逻辑）
-    if (settings.version !== data.settings.version) {
+    if (data.settings && settings.version !== data.settings.version) {
       ElMessage.error(
         t('other.importExport.importFailed', { reason: t('other.importExport.versionMismatch') }),
       )
@@ -263,26 +263,28 @@ function handleFileChange(event: Event) {
     }
 
     const originalSyncState = settings.$state.sync.enabled
-    const nextSyncEnabled = data.settings.sync.enabled
+    const nextSyncEnabled = data.settings?.sync.enabled ?? originalSyncState
     const syncStore = useSyncDataStore()
 
-    data.settings.background.local = settings.$state.background.local
-    data.settings.background.localDark = data.settings.background.localDark || {
-      id: '',
-      url: '',
-      mediaType: undefined,
-    }
-    data.settings.background.bing = settings.$state.background.bing
-    data.settings.background.online.url = settings.$state.background.online.url
+    if (data.settings) {
+      data.settings.background.local = settings.$state.background.local
+      data.settings.background.localDark = data.settings.background.localDark || {
+        id: '',
+        url: '',
+        mediaType: undefined,
+      }
+      data.settings.background.bing = settings.$state.background.bing
+      data.settings.background.online.url = settings.$state.background.online.url
 
-    settings.$patch(data.settings)
-    if (originalSyncState && !nextSyncEnabled) {
-      syncStore.deinit()
+      settings.$patch(data.settings)
+      if (originalSyncState && !nextSyncEnabled) {
+        syncStore.deinit()
+      }
     }
 
     // shortcuts 部分
     if (data.shortcuts) {
-      await shortcuts.save(data.shortcuts)
+      await shortcuts.save(data.shortcuts, { groupingEnabled: settings.shortcut.grouping })
     }
 
     // custom search engines 部分

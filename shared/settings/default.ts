@@ -111,6 +111,8 @@ export const defaultSettings = {
     pinnedIcon: true,
     openInNewTab: false,
     paging: true,
+    grouping: false,
+    pagingLoop: false,
     showOnSearchFocus: false,
 
     iconSize: 50,

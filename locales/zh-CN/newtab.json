@@ -137,6 +137,17 @@
       "success": "已收藏到「{{folder}}」"
     },
     "editShortcut": "编辑快速访问",
+    "groups": {
+      "default": "默认",
+      "deleteConfirm": "确定要删除分组「{{name}}」及其中的所有快捷方式吗？",
+      "moveTo": "移动到分组",
+      "selectAddTarget": "选择添加到哪个分组",
+      "selectMoveTarget": "选择移动到哪个分组",
+      "selectPinTarget": "选择置顶到哪个分组",
+      "selectTitle": "选择分组",
+      "topSites": "最常访问",
+      "untitled": "分组 {{index}}"
+    },
     "hide": "隐藏",
     "hideTopMessage": {
       "content": "已隐藏该最常访问网站",

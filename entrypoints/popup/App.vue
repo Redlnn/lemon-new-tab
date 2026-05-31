@@ -8,7 +8,10 @@ import CloseRound from '~icons/ic/round-close'
 import { browser } from 'wxt/browser'
 
 import { fetchFaviconWithCache, warmFaviconCache } from '@/shared/media'
-import { useShortcutStore } from '@/shared/shortcut'
+import { settingsStorage } from '@/shared/settings'
+import { DEFAULT_SHORTCUT_GROUP_ID, useShortcutStore } from '@/shared/shortcut'
+
+import { isValidUrl } from '@newtab/shared/utils'
 
 const { t } = useTranslation('popup')
 const shortcutStore = useShortcutStore()
@@ -36,6 +39,7 @@ const currentTab = shallowRef<{
 const isLoading = ref(true)
 const isAdded = ref(false)
 const isAlreadyExists = ref(false)
+const groupingEnabled = ref(false)
 
 /** 从激活页的 DOM 中读取 favicon href（通过注入 content script）。 */
 async function getFaviconFromTabDOM(tabId: number): Promise<string | null> {
@@ -96,12 +100,16 @@ watchEffect(async () => {
 })
 
 onMounted(async () => {
-  await shortcutStore.init({ acquire: false })
+  const [settings] = await Promise.all([
+    settingsStorage.getValue(),
+    shortcutStore.init({ acquire: false }),
+  ])
+  groupingEnabled.value = settings.shortcut.grouping ?? false
 
   try {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true })
     const tab = tabs[0]
-    if (tab && tab.url) {
+    if (tab?.url && isValidUrl(tab.url)) {
       currentTab.value = {
         url: tab.url,
         title: tab.title || tab.url,
@@ -134,15 +142,22 @@ async function addCurrentPage() {
     finalFavicon = await warmFaviconCache(currentTab.value.url, currentTabFaviconRef.value)
   }
 
-  shortcutStore.items.push({
+  const shortcut = {
     url: currentTab.value.url,
     title: currentTab.value.title,
     // 此处若获取到图标则同时把缓存的base64结果存储到shortcutStore
     // 后续ShortcutItem组件优先使用该字段，避免每次都调用getFaviconURL函数获取图标
     favicon: finalFavicon ?? undefined,
-  })
+  }
 
-  await shortcutStore.save()
+  if (groupingEnabled.value) {
+    await shortcutStore.addShortcutToGroup(DEFAULT_SHORTCUT_GROUP_ID, shortcut, {
+      groupingEnabled: true,
+    })
+  } else {
+    shortcutStore.items.push(shortcut)
+    await shortcutStore.save()
+  }
   isAdded.value = true
 }
 </script>

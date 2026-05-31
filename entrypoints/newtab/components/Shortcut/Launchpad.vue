@@ -3,22 +3,35 @@ import { OnLongPress } from '@vueuse/components'
 import { onKeyStroke, useDebounceFn, useElementSize, useSwipe, useWindowSize } from '@vueuse/core'
 
 import { useTranslation } from 'i18next-vue'
-import { useDraggable } from 'vue-draggable-plus'
+import { VueDraggable } from 'vue-draggable-plus'
+import ChevronDown20Filled from '~icons/fluent/chevron-down-20-filled'
+import ChevronUp20Filled from '~icons/fluent/chevron-up-20-filled'
 import Pin12Regular from '~icons/fluent/pin-12-regular'
 import AddRound from '~icons/ic/round-add'
+import DeleteRound from '~icons/ic/round-delete'
 import SettingsRound from '~icons/ic/round-settings'
 
 import { getFaviconURL } from '@/shared/media'
 import { useSettingsStore } from '@/shared/settings'
-import { useShortcutStore } from '@/shared/shortcut'
+import {
+  DEFAULT_SHORTCUT_GROUP_ID,
+  useShortcutStore,
+  type Shortcut,
+  type ShortcutGroup,
+  type ShortcutTarget,
+} from '@/shared/shortcut'
 
 import { usePerfClasses } from '@newtab/composables/usePerfClasses'
 import { OPEN_SETTINGS } from '@newtab/shared/keys'
 import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
 
 import ShortcutContextMenu from './components/ShortcutContextMenu.vue'
+import ShortcutGroupName from './components/ShortcutGroupName.vue'
+import ShortcutGroupSelectDialog from './components/ShortcutGroupSelectDialog.vue'
 import { buildShortcutDisplayItems } from './composables/shortcutDisplayItems'
+import { useGroupNameRefs } from './composables/useGroupNameRefs'
 import { useShortcutData } from './composables/useShortcutData'
+import { useShortcutGroupActions } from './composables/useShortcutGroupActions'
 import { useTopSitesMerge } from './composables/useTopSitesMerge'
 
 // Stable Ref map so we don't re-create Refs on every render
@@ -37,9 +50,14 @@ const { topSites, shortcuts, topSitesNeedsReload } = useShortcutData(refreshDebo
 const model = defineModel<boolean>({ required: true })
 
 const props = defineProps<{
-  onOpenAddDialog?: () => void
-  onOpenEditDialog?: (index: number) => void
+  onOpenAddDialog?: (groupId?: string) => void
+  onOpenEditDialog?: (target: ShortcutTarget) => void
 }>()
+
+type IndexedShortcut = {
+  item: Shortcut
+  index: number
+}
 
 const { t } = useTranslation()
 const settings = useSettingsStore()
@@ -73,6 +91,29 @@ const ROWS = computed(() => {
 const pageSize = computed(() => COLS.value * ROWS.value)
 
 const allItems = computed(() => buildShortcutDisplayItems(shortcuts.value, topSites.value))
+const userGroups = computed(() =>
+  settings.shortcut.grouping
+    ? shortcutStore.groups.filter(
+        (group) => group.id !== DEFAULT_SHORTCUT_GROUP_ID || group.items.length > 0,
+      )
+    : [],
+)
+const topSitesItems = computed(() =>
+  topSites.value.map((item, index) => ({
+    url: item.url,
+    title: item.title || '',
+    favicon: item.favicon,
+    isPinned: false,
+    originalIndex: index,
+  })),
+)
+const filteredTopSitesItems = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return topSitesItems.value
+  return topSitesItems.value.filter(
+    (item) => item.title.toLowerCase().includes(q) || item.url.toLowerCase().includes(q),
+  )
+})
 
 const isSearching = computed(() => query.value.trim().length > 0)
 
@@ -101,17 +142,22 @@ const currentItems = computed(() => {
 
 // ---- 数据获取 ----
 async function refresh() {
+  if (
+    settings.shortcut.grouping &&
+    !shortcutStore.groups.some((group) => group.id === DEFAULT_SHORTCUT_GROUP_ID)
+  ) {
+    await shortcutStore.enableGroupingFromItems()
+  }
   shortcuts.value = shortcutStore.items.slice()
 
   // 合并最常访问
   if (settings.dock.launchpad.topSites) {
     topSites.value = await useTopSitesMerge({
-      shortcuts: shortcuts.value,
+      shortcuts: settings.shortcut.grouping ? [] : shortcuts.value,
       force: topSitesNeedsReload.value,
       noCap: true, // 不截断，获取所有可用的 top sites
     })
     topSitesNeedsReload.value = false
-    // topSites.value = sites.map((s) => ({ url: s.url, title: s.title ?? '', favicon: s.favicon }))
   } else {
     topSites.value = []
   }
@@ -209,11 +255,6 @@ watch(
   },
 )
 
-// ---- 点击打开 ----
-function openItem(url: string) {
-  window.open(url, settings.dock.launchpad.openInNewTab ? '_blank' : '_self')
-}
-
 // ---- 右键菜单 ----
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.shortcut.transparent,
@@ -227,29 +268,71 @@ const ctxMenuOpen = ref(false)
 
 function openCtxMenu(
   event: MouseEvent | PointerEvent,
-  item: { url: string; title: string; isPinned: boolean; originalIndex: number },
+  item: { url: string; title: string; isPinned: boolean; originalIndex: number; groupId?: string },
 ): void {
   ctxMenuRef.value?.open(event, item)
   ctxMenuOpen.value = true
 }
 
-// ---- 拖动排序（仅置顶项目）----
-const gridRef = useTemplateRef<HTMLElement>('gridRef')
+const groupSelectDialogRef =
+  useTemplateRef<InstanceType<typeof ShortcutGroupSelectDialog>>('groupSelectDialogRef')
+const { groupNameRefs, setGroupNameRef } = useGroupNameRefs()
 
-useDraggable(gridRef, shortcuts, {
-  animation: 150,
-  delayOnTouchOnly: true,
-  touchStartThreshold: 10,
-  delay: 100,
-  handle: '.launchpad-item--pined',
-  onStart() {
-    ctxMenuRef.value?.close()
-  },
-  onUpdate() {
-    shortcutStore.items = shortcuts.value
-    shortcutStore.save()
-    refreshDebounced()
-  },
+function getFilteredGroupItems(group: ShortcutGroup): IndexedShortcut[] {
+  const q = query.value.trim().toLowerCase()
+  return group.items
+    .map((item, index) => ({ item, index }))
+    .filter(
+      ({ item }) =>
+        !q || item.title.toLowerCase().includes(q) || item.url.toLowerCase().includes(q),
+    )
+}
+
+function toGroupedDisplayItem(item: Shortcut, index: number, groupId: string) {
+  return {
+    url: item.url,
+    title: item.title,
+    favicon: item.favicon,
+    isPinned: true,
+    originalIndex: index,
+    groupId,
+  }
+}
+
+async function updateGroupItems(group: ShortcutGroup, items: Shortcut[]) {
+  if (isSearching.value || items.length !== group.items.length) return
+  await shortcutStore.setGroupItems(group.id, items)
+  await refreshDebounced()
+}
+
+async function createGroupInline() {
+  const group = await shortcutStore.createGroup('')
+  await refreshDebounced()
+  nextTick(() => groupNameRefs.get(group.id)?.beginEdit())
+}
+
+async function moveGroup(groupId: string, direction: -1 | 1) {
+  const visibleGroups = userGroups.value
+  const index = visibleGroups.findIndex((group) => group.id === groupId)
+  const targetIndex = index + direction
+  if (index < 0 || targetIndex < 0 || targetIndex >= visibleGroups.length) return
+  const nextGroups = visibleGroups.slice()
+  const [group] = nextGroups.splice(index, 1)
+  if (!group) return
+  nextGroups.splice(targetIndex, 0, group)
+  const changed = await shortcutStore.reorderGroups(nextGroups)
+  if (!changed) return
+  await refreshDebounced()
+}
+
+function openAddShortcut(groupId?: string) {
+  props.onOpenAddDialog?.(groupId ?? DEFAULT_SHORTCUT_GROUP_ID)
+}
+
+const { pinToGroup, moveToGroup, renameGroup, confirmDeleteGroup } = useShortcutGroupActions({
+  groupSelectDialogRef,
+  refresh: refreshDebounced,
+  t,
 })
 </script>
 
@@ -284,6 +367,16 @@ useDraggable(gridRef, shortcuts, {
               </template>
             </el-input>
 
+            <div
+              v-if="settings.shortcut.grouping"
+              role="button"
+              tabindex="0"
+              class="launchpad-group-add action-btn setting-btn"
+              @click="createGroupInline"
+            >
+              <el-icon><add-round /></el-icon>
+            </div>
+
             <!-- 设置按钮 -->
             <div
               role="button"
@@ -296,13 +389,138 @@ useDraggable(gridRef, shortcuts, {
           </div>
 
           <!-- 图标网格 -->
+          <div v-if="settings.shortcut.grouping" class="launchpad-grouped" @click.self="close">
+            <el-scrollbar>
+              <section v-for="group in userGroups" :key="group.id" class="launchpad-group">
+                <div class="launchpad-group__header">
+                  <shortcut-group-name
+                    :ref="(el) => setGroupNameRef(group.id, el)"
+                    :name="group.name"
+                    class="launchpad-group__title"
+                    editable
+                    plain
+                    @rename="(name) => renameGroup(group.id, name)"
+                  />
+                  <div class="launchpad-group__actions">
+                    <button
+                      type="button"
+                      class="launchpad-group__sort-btn"
+                      :disabled="userGroups[0]?.id === group.id"
+                      @click="moveGroup(group.id, -1)"
+                    >
+                      <el-icon><chevron-up20-filled /></el-icon>
+                    </button>
+                    <button
+                      type="button"
+                      class="launchpad-group__sort-btn"
+                      :disabled="userGroups[userGroups.length - 1]?.id === group.id"
+                      @click="moveGroup(group.id, 1)"
+                    >
+                      <el-icon><chevron-down20-filled /></el-icon>
+                    </button>
+                    <button
+                      v-if="group.id !== DEFAULT_SHORTCUT_GROUP_ID"
+                      type="button"
+                      class="launchpad-group__sort-btn"
+                      @click="confirmDeleteGroup(group)"
+                    >
+                      <el-icon><delete-round /></el-icon>
+                    </button>
+                  </div>
+                </div>
+                <vue-draggable
+                  :model-value="group.items"
+                  class="launchpad-grid"
+                  :style="{ '--lp-cols': COLS }"
+                  handle=".launchpad-item--pined"
+                  :animation="150"
+                  :disabled="isSearching"
+                  @update:model-value="(items: Shortcut[]) => updateGroupItems(group, items)"
+                >
+                  <OnLongPress
+                    v-for="{ item, index } in getFilteredGroupItems(group)"
+                    :key="`${group.id}-${item.url}-${index}`"
+                    as="a"
+                    class="launchpad-item launchpad-item--pined"
+                    :href="item.url"
+                    :target="settings.shortcut.openInNewTab ? '_blank' : '_self'"
+                    @contextmenu.prevent="
+                      openCtxMenu($event, toGroupedDisplayItem(item, index, group.id))
+                    "
+                    @trigger="
+                      (e: PointerEvent) => {
+                        if (isHasTouchDevice && isTouchEvent(e))
+                          openCtxMenu(e, toGroupedDisplayItem(item, index, group.id))
+                      }
+                    "
+                  >
+                    <div class="launchpad-item__icon">
+                      <img
+                        :src="item.favicon || getOrCreateFaviconRef(item.url)"
+                        :alt="item.title"
+                      />
+                    </div>
+                    <el-text :line-clamp="1" truncated class="launchpad-item__label">
+                      {{ item.title }}
+                    </el-text>
+                  </OnLongPress>
+                  <div
+                    v-if="!isSearching"
+                    class="launchpad-item"
+                    @click="openAddShortcut(group.id)"
+                  >
+                    <el-icon class="launchpad-item__icon launchpad-item__icon--add">
+                      <add-round />
+                    </el-icon>
+                    <el-text :line-clamp="1" truncated class="launchpad-item__label">
+                      {{ t('dock.launchpad.add') }}
+                    </el-text>
+                  </div>
+                </vue-draggable>
+              </section>
+
+              <section
+                v-if="settings.dock.launchpad.topSites && filteredTopSitesItems.length > 0"
+                class="launchpad-group"
+              >
+                <h2 class="launchpad-group__system-title">{{ t('shortcut.groups.topSites') }}</h2>
+                <div class="launchpad-grid" :style="{ '--lp-cols': COLS }">
+                  <OnLongPress
+                    v-for="item in filteredTopSitesItems"
+                    :key="`top-${item.originalIndex}`"
+                    as="a"
+                    class="launchpad-item"
+                    :href="item.url"
+                    :target="settings.shortcut.openInNewTab ? '_blank' : '_self'"
+                    @contextmenu.prevent="openCtxMenu($event, item)"
+                    @trigger="
+                      (e: PointerEvent) => {
+                        if (isHasTouchDevice && isTouchEvent(e)) openCtxMenu(e, item)
+                      }
+                    "
+                  >
+                    <div class="launchpad-item__icon">
+                      <img
+                        :src="item.favicon || getOrCreateFaviconRef(item.url)"
+                        :alt="item.title"
+                      />
+                    </div>
+                    <el-text :line-clamp="1" truncated class="launchpad-item__label">
+                      {{ item.title }}
+                    </el-text>
+                  </OnLongPress>
+                </div>
+              </section>
+            </el-scrollbar>
+          </div>
+
           <Transition
+            v-else
             :name="pageDirection === 'backward' ? 'launchpad-page-back' : 'launchpad-page'"
             mode="out-in"
           >
             <div
               :key="isSearching ? 'search' : page"
-              ref="gridRef"
               class="launchpad-grid"
               :style="{ '--lp-cols': COLS }"
               @click.self="close"
@@ -310,10 +528,11 @@ useDraggable(gridRef, shortcuts, {
               <OnLongPress
                 v-for="item in currentItems"
                 :key="item.url"
-                as="div"
+                as="a"
                 class="launchpad-item"
                 :class="{ 'launchpad-item--pined': item.isPinned }"
-                @click="openItem(item.url)"
+                :href="item.url"
+                :target="settings.shortcut.openInNewTab ? '_blank' : '_self'"
                 @contextmenu.prevent="openCtxMenu($event, item)"
                 @trigger="
                   (e: PointerEvent) => {
@@ -343,7 +562,7 @@ useDraggable(gridRef, shortcuts, {
               <div
                 v-if="!isSearching && page === pageCount - 1"
                 class="launchpad-item"
-                @click="props.onOpenAddDialog"
+                @click="props.onOpenAddDialog?.()"
               >
                 <el-icon class="launchpad-item__icon launchpad-item__icon--add">
                   <add-round />
@@ -356,7 +575,10 @@ useDraggable(gridRef, shortcuts, {
           </Transition>
 
           <!-- 分页控制（非搜索模式，多于1页时显示） -->
-          <div v-if="!isSearching && pageCount > 1" class="launchpad-pagination">
+          <div
+            v-if="!settings.shortcut.grouping && !isSearching && pageCount > 1"
+            class="launchpad-pagination"
+          >
             <button class="launchpad-arrow" :disabled="page === 0" @click="prevPage">
               <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
                 <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
@@ -388,8 +610,12 @@ useDraggable(gridRef, shortcuts, {
       :on-open-edit-dialog="props.onOpenEditDialog"
       :popper-class="popperClass"
       show-edit
+      show-move
+      :on-pin="pinToGroup"
+      :on-move="moveToGroup"
       @visible-change="(v: boolean) => (ctxMenuOpen = v)"
     />
+    <shortcut-group-select-dialog ref="groupSelectDialogRef" />
   </Teleport>
 </template>
 
@@ -451,6 +677,97 @@ useDraggable(gridRef, shortcuts, {
   }
 }
 
+.launchpad-group-add {
+  position: absolute;
+  top: 25px;
+  right: 82px;
+  color: rgb(255 255 255 / 30%);
+
+  @media (width <= 480px) {
+    position: static;
+  }
+}
+
+.launchpad-grouped {
+  flex: 1;
+  width: 100%;
+  max-width: 1000px;
+  overflow: auto;
+
+  .el-scrollbar__view {
+    padding-right: 10px;
+  }
+}
+
+.launchpad-group {
+  margin-bottom: 28px;
+}
+
+.launchpad-group__header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.launchpad-group__title {
+  --shortcut-group-title-color: rgb(255 255 255 / 82%);
+
+  display: inline-flex;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgb(255 255 255 / 82%);
+  background: transparent;
+}
+
+.launchpad-group__title.shortcut__category-item {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.launchpad-group__actions {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.launchpad-group__sort-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: rgb(255 255 255 / 70%);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+
+  &:hover:not(:disabled),
+  &:focus-visible:not(:disabled) {
+    color: #fff;
+    background: rgb(255 255 255 / 14%);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.3;
+  }
+}
+
+.launchpad-group__system-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgb(255 255 255 / 82%);
+}
+
 .launchpad-grid {
   display: grid;
   flex: 1;
@@ -472,14 +789,6 @@ useDraggable(gridRef, shortcuts, {
   transition:
     background-color 0.15s ease,
     transform 0.15s ease;
-
-  &--pined {
-    cursor: grab;
-
-    &:active {
-      cursor: grabbing;
-    }
-  }
 
   &:hover:not(:has(.launchpad-item__icon--add)),
   &:focus-visible {

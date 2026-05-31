@@ -191,11 +191,27 @@ async function tryFetchIconFromDiscoveredLinkTags(
     }
   }
 
-  for (const candidateGroup of [fluidIconCandidates, appleTouchCandidates, genericIconCandidates]) {
+  for (const candidateGroup of [fluidIconCandidates, appleTouchCandidates]) {
     for (const iconUrl of candidateGroup) {
       const data = await fetchIconAsDataUrl(iconUrl)
       if (data) return data
     }
+  }
+
+  const svgCandidates = genericIconCandidates.filter((str) => str.toLowerCase().endsWith('.svg'))
+  const genericFallbackCandidates =
+    svgCandidates.length > 0
+      ? genericIconCandidates.filter((str) => !str.toLowerCase().endsWith('.svg'))
+      : genericIconCandidates
+
+  for (const iconUrl of svgCandidates) {
+    const data = await fetchIconAsDataUrl(iconUrl)
+    if (data) return data
+  }
+
+  for (const iconUrl of genericFallbackCandidates) {
+    const data = await fetchIconAsDataUrl(iconUrl)
+    if (data) return data
   }
 
   return null
@@ -419,20 +435,43 @@ export async function fetchFaviconWithCache(pageUrl: string): Promise<string | n
   const origin = toOrigin(pageUrl)
   if (!origin) return null
 
-  // 缓存未启用 → 直接抓取但不存储
+  // 缓存未启用 → 直接抓取，结果仅写入 L1（会话级）以避免翻页时图标闪烁，不持久化到 L2
   if (!_cacheEnabled) {
-    let data: string | null = null
-    if (isChromium) {
-      data = await fetchViaChromeFaviconApi(pageUrl)
+    // L1 命中（会话内缓存）
+    const l1 = l1Cache.get(origin)
+    if (l1) return l1.data
+
+    // 去重：防止对同一 origin 发起多个并发请求
+    const existing = pendingFetches.get(origin)
+    if (existing) return existing
+
+    const promise = (async (): Promise<string | null> => {
+      let data: string | null = null
+      let type: FaviconCacheEntry['type'] = 'base64'
+      if (isChromium) {
+        data = await fetchViaChromeFaviconApi(pageUrl)
+      }
+      if (!data) {
+        data = await fetchViaThirdPartyServices(pageUrl)
+      }
+      // 最后回退到 Image 探测（仅返回 URL）
+      if (!data) {
+        data = await probeViaImageElement(pageUrl)
+        if (data) type = 'url'
+      }
+      // 写入 L1，供翻页等场景避免图标重复闪烁（不持久化到 L2）
+      if (data) {
+        l1Set(origin, { data, type, fetchedAt: Date.now() })
+      }
+      return data
+    })()
+
+    pendingFetches.set(origin, promise)
+    try {
+      return await promise
+    } finally {
+      pendingFetches.delete(origin)
     }
-    if (!data) {
-      data = await fetchViaThirdPartyServices(pageUrl)
-    }
-    // 最后回退到 Image 探测（仅返回 URL）
-    if (!data) {
-      data = await probeViaImageElement(pageUrl)
-    }
-    return data
   }
 
   // L1 hit
@@ -657,4 +696,14 @@ export function releaseFaviconRef(pageUrl: string): void {
   } else {
     refCounts.set(origin, next)
   }
+}
+
+/**
+ * 同步查询 L1 内存缓存，命中则返回已有数据，否则返回 null。
+ * 不检查过期时间，仅供「避免翻页闪烁」等需要快速同步取值的场景使用。
+ */
+export function peekFaviconFromL1(pageUrl: string): string | null {
+  const origin = toOrigin(pageUrl)
+  if (!origin) return null
+  return l1Cache.get(origin)?.data ?? null
 }

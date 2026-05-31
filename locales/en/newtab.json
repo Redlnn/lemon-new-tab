@@ -137,6 +137,17 @@
       "success": "Saved to “{{folder}}”"
     },
     "editShortcut": "Edit Shortcut",
+    "groups": {
+      "default": "Default",
+      "deleteConfirm": "Delete group “{{name}}” and all shortcuts inside it?",
+      "moveTo": "Move to Group",
+      "selectAddTarget": "Choose a group for the new shortcut",
+      "selectMoveTarget": "Choose a group to move to",
+      "selectPinTarget": "Choose a group to pin to",
+      "selectTitle": "Choose Group",
+      "topSites": "Most visited",
+      "untitled": "Group {{index}}"
+    },
     "hide": "Hide",
     "hideTopMessage": {
       "content": "Most visited site hidden.",

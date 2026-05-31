@@ -187,7 +187,10 @@ export const useSyncDataStore = defineStore('sync', () => {
   ): string => {
     const rawSettings = localSettings.getRawState()
     const sanitizedSettings = sanitizeSettingsForCloud(rawSettings)
-    const bookmarksData = toRaw(shortcutStore.items)
+    const bookmarksData = {
+      items: toRaw(shortcutStore.items),
+      groups: toRaw(shortcutStore.groups),
+    }
     const customEnginesData = toRaw(customSearchEngineStore.items)
     return JSON.stringify({ s: sanitizedSettings, b: bookmarksData, e: customEnginesData })
   }
@@ -241,8 +244,12 @@ export const useSyncDataStore = defineStore('sync', () => {
       throw new Error(`Unexpected cloud config version after migration: ${current.version}`)
     }
 
+    const normalized = current as CURRENT_CONFIG_SCHEMA
+    normalized.shortcut.grouping ??= defaultSettings.shortcut.grouping
+    normalized.shortcut.pagingLoop ??= defaultSettings.shortcut.pagingLoop
+
     return {
-      settings: current as CURRENT_CONFIG_SCHEMA,
+      settings: normalized,
       migrated,
     }
   }
@@ -254,7 +261,10 @@ export const useSyncDataStore = defineStore('sync', () => {
 
     const rawSettings = localSettings.getRawState()
     const sanitizedSettings = sanitizeSettingsForCloud(rawSettings)
-    const bookmarksSnapshot: Shortcuts = { items: structuredClone(toRaw(shortcutStore.items)) }
+    const bookmarksSnapshot: Shortcuts = {
+      items: structuredClone(toRaw(shortcutStore.items)),
+      groups: structuredClone(toRaw(shortcutStore.groups)),
+    }
     const customSearchEngineSnapshot = normalizeCustomSearchEngines({
       items: structuredClone(toRaw(customSearchEngineStore.items)),
     })
@@ -308,7 +318,9 @@ export const useSyncDataStore = defineStore('sync', () => {
       const mergedSettings = restoreDeviceLocalFields(migratedSettings, localState)
 
       localSettings.$patch(mergedSettings)
-      await shortcutStore.save(cloudData.bookmarks)
+      await shortcutStore.save(cloudData.bookmarks, {
+        groupingEnabled: mergedSettings.shortcut.grouping,
+      })
       const normalizedCustomSearchEngines = normalizeCustomSearchEngines(
         cloudData.customSearchEngines,
       )
@@ -364,7 +376,10 @@ export const useSyncDataStore = defineStore('sync', () => {
         // Initialise sync store refs from *local* state — never from the browser's potentially
         // stale cloud cache. applyCloudData() will update these once background decides to apply.
         settings.value = structuredClone(localSettings.getRawState())
-        bookmarks.value = { items: structuredClone(toRaw(shortcutStore.items)) }
+        bookmarks.value = {
+          items: structuredClone(toRaw(shortcutStore.items)),
+          groups: structuredClone(toRaw(shortcutStore.groups)),
+        }
         lastUpdate.value = meta.lastSyncedAt
 
         // Send SYNC_INITED with the current local snapshot so background can run

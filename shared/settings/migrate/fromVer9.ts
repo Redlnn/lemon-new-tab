@@ -8,6 +8,11 @@ export function migrateFromVer9To10(old: SettingsSchemaV9): SettingsSchemaV10 {
       ...old.search,
       expandWidth: defaultSettings.search.expandWidth,
     },
+    shortcut: {
+      ...old.shortcut,
+      grouping: defaultSettings.shortcut.grouping,
+      pagingLoop: defaultSettings.shortcut.pagingLoop,
+    },
     yiyan: {
       ...old.yiyan,
       customLines: defaultSettings.yiyan.customLines,

@@ -10,13 +10,18 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div v-if="totalPages > 1" class="shortcut__pagination">
+  <div
+    class="shortcut__pagination"
+    :class="{ 'shortcut__pagination--hidden': totalPages <= 1 }"
+    :aria-hidden="totalPages <= 1"
+  >
     <button
-      v-for="page in totalPages"
+      v-for="page in Math.max(totalPages, 1)"
       :key="page"
       class="shortcut__pagination-dot"
       :class="{ 'shortcut__pagination-dot--active': currentPage === page - 1 }"
       :aria-label="`Go to page ${page}`"
+      :tabindex="totalPages > 1 ? 0 : -1"
       @click="emit('goto', page - 1)"
     />
   </div>

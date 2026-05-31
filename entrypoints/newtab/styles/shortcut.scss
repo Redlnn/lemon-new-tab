@@ -132,6 +132,11 @@
     justify-content: center;
     width: 100%;
     margin-top: 16px;
+
+    &--hidden {
+      pointer-events: none;
+      opacity: 0;
+    }
   }
 
   &__pagination-dot {
@@ -430,5 +435,73 @@
     padding: 3px 30px 2px 10px;
     font-size: var(--el-font-size-extra-small);
     border-radius: 11px;
+  }
+}
+
+.shortcut__category {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+
+  .shortcut:hover &,
+  &:focus-visible {
+    opacity: 1;
+  }
+
+  &-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 22px;
+    padding: 2px 6px;
+    font-size: var(--el-font-size-extra-small);
+    color: var(--el-text-color-primary);
+    cursor: pointer;
+    background-color: var(--el-fill-color);
+    border: none;
+    border-radius: 10px;
+
+    &--active {
+      background-color: var(--el-color-primary-light-9);
+    }
+
+    svg,
+    .el-icon {
+      height: 1em;
+    }
+  }
+
+  &-input {
+    width: 92px;
+
+    .el-input__wrapper {
+      min-height: 22px;
+      border-radius: 10px;
+    }
+  }
+
+  &-groups {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  &--opacity .shortcut__category-item {
+    background-color: var(--le-bg-color-overlay-opacity-60);
+
+    &:hover {
+      background-color: var(--le-bg-color-overlay-opacity-30);
+    }
+
+    &--active {
+      background-color: var(--le-bg-color-overlay-opacity-30);
+    }
+  }
+
+  &--blur .shortcut__category-item {
+    @include acrylic.acrylic;
   }
 }

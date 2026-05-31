@@ -24,10 +24,13 @@ import {
   BOOKMARK_ACTIVE_MAP,
   BOOKMARK_OPENED_MENU_CLOSE_FN,
   OPEN_BOOKMARK_EDIT_DIALOG,
+  OPEN_SHORTCUT_GROUP_SELECT_DIALOG,
 } from '@newtab/shared/keys'
 import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
+import { isSafeUrl, isValidUrl } from '@newtab/shared/utils'
 
 const openBookmarkEditDialog = inject(OPEN_BOOKMARK_EDIT_DIALOG)
+const openShortcutGroupSelectDialog = inject(OPEN_SHORTCUT_GROUP_SELECT_DIALOG)
 
 const { t } = useTranslation()
 const settings = useSettingsStore()
@@ -137,7 +140,7 @@ function openInNewTab() {
 }
 
 function openInNewWindow() {
-  if (!props.node.url) return
+  if (!props.node.url || !isSafeUrl(props.node.url)) return
   browser.windows.create({ url: props.node.url })
 }
 
@@ -147,13 +150,22 @@ function copyLink() {
 }
 
 async function addToShortcut() {
-  if (!props.node.url) return
-  shortcutStore.items.push({
+  if (!props.node.url || !isValidUrl(props.node.url)) return
+  const shortcut = {
     url: props.node.url,
     title: props.node.title || '',
     favicon: faviconRef.value,
-  })
-  await shortcutStore.save()
+  }
+  if (settings.shortcut.grouping) {
+    const groupId = await openShortcutGroupSelectDialog?.({
+      title: t('shortcut.groups.selectPinTarget'),
+    })
+    if (!groupId) return
+    await shortcutStore.addShortcutToGroup(groupId, shortcut)
+  } else {
+    shortcutStore.items.push(shortcut)
+    await shortcutStore.save()
+  }
   ElMessage.success(t('bookmark.added'))
 }
 

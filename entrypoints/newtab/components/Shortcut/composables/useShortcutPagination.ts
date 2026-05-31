@@ -17,6 +17,7 @@ export interface UseShortcutPagination {
     currentPageRef: Ref<HTMLElement | undefined | null>,
     nextPageRef: Ref<HTMLElement | undefined | null>,
     isDragging?: Ref<boolean>,
+    canSwipe?: Ref<boolean> | ComputedRef<boolean>,
   ) => void
 }
 
@@ -25,6 +26,7 @@ const ANIMATION_DURATION = 300 // ms
 export function useShortcutPagination(
   totalItems: Ref<number>,
   itemsPerPage: Ref<number>,
+  allowLoop: Ref<boolean> | ComputedRef<boolean> = ref(false),
 ): UseShortcutPagination {
   const currentPage = ref(0)
   const isAnimating = ref(false)
@@ -76,15 +78,19 @@ export function useShortcutPagination(
   }
 
   const prevPage = () => {
-    if (currentPage.value > 0) {
-      animateToPage(currentPage.value - 1, 'right')
-    }
+    if (totalPages.value <= 1) return
+    if (!allowLoop.value && currentPage.value <= 0) return
+    const targetPage = currentPage.value > 0 ? currentPage.value - 1 : totalPages.value - 1
+    if (targetPage > currentPage.value) preloadTargetPage.value = targetPage
+    animateToPage(targetPage, 'right')
   }
 
   const nextPage = () => {
-    if (currentPage.value < totalPages.value - 1) {
-      animateToPage(currentPage.value + 1, 'left')
-    }
+    if (totalPages.value <= 1) return
+    if (!allowLoop.value && currentPage.value >= totalPages.value - 1) return
+    const targetPage = currentPage.value < totalPages.value - 1 ? currentPage.value + 1 : 0
+    if (targetPage < currentPage.value) preloadTargetPage.value = targetPage
+    animateToPage(targetPage, 'left')
   }
 
   const goToPage = (page: number) => {
@@ -120,6 +126,7 @@ export function useShortcutPagination(
     currentPageRef: Ref<HTMLElement | undefined | null>,
     nextPageRef: Ref<HTMLElement | undefined | null>,
     isDragging?: Ref<boolean>,
+    canSwipe?: Ref<boolean> | ComputedRef<boolean>,
   ) => {
     const SWIPE_PAGE_THRESHOLD = 50 // px
     const transX = ref(0)
@@ -136,7 +143,7 @@ export function useShortcutPagination(
     })
 
     watch([lengthX, isSwiping], () => {
-      if (isDragging?.value) {
+      if (isDragging?.value || canSwipe?.value === false) {
         transX.value = 0
         return
       }

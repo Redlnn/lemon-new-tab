@@ -9,19 +9,27 @@ import BlockRound from '~icons/ic/round-block'
 import ContentCopyRound from '~icons/ic/round-content-copy'
 import OpenInNewRound from '~icons/ic/round-open-in-new'
 
+import { useSettingsStore } from '@/shared/settings'
+import type { ShortcutTarget } from '@/shared/shortcut'
+
 import { useShortcutContextMenu } from '../composables/useShortcutContextMenu'
+import type { CtxShortcutItem } from '../composables/useShortcutContextMenu'
 
 const props = withDefaults(
   defineProps<{
     refreshFn: () => Promise<void>
-    onOpenEditDialog?: (index: number) => void
+    onOpenEditDialog?: (target: ShortcutTarget) => void
+    onPin?: (item: CtxShortcutItem) => Promise<void> | void
+    onMove?: (item: CtxShortcutItem) => Promise<void> | void
     placement?: 'bottom-start' | 'top-start'
     popperClass?: string
     showEdit?: boolean
+    showMove?: boolean
   }>(),
   {
     placement: 'bottom-start',
     showEdit: false,
+    showMove: false,
   },
 )
 
@@ -30,6 +38,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useTranslation()
+const settings = useSettingsStore()
 
 const dropdownRef = useTemplateRef<DropdownInstance>('dropdownRef')
 
@@ -43,11 +52,14 @@ const {
   ctxCreateBookmark,
   ctxUnpin,
   ctxPin,
+  ctxMove,
   ctxBlockSite,
   ctxEdit,
 } = useShortcutContextMenu({
   refreshFn: props.refreshFn,
   onOpenEditDialog: (index) => props.onOpenEditDialog?.(index),
+  onPin: (item) => props.onPin?.(item),
+  onMove: (item) => props.onMove?.(item),
 })
 
 function open(
@@ -96,6 +108,13 @@ defineExpose({ open, close })
         <template v-if="ctxItem?.isPinned">
           <el-dropdown-item v-if="showEdit" :icon="Edit16Regular" divided @click="ctxEdit">
             <span>{{ t('common.edit') }}</span>
+          </el-dropdown-item>
+          <el-dropdown-item
+            v-if="showMove && settings.shortcut.grouping && ctxItem?.groupId"
+            :divided="!showEdit"
+            @click="ctxMove"
+          >
+            <span>{{ t('shortcut.groups.moveTo') }}</span>
           </el-dropdown-item>
           <el-dropdown-item :icon="PinOff16Regular" :divided="!showEdit" @click="ctxUnpin">
             <span>{{ t('shortcut.unpin') }}</span>

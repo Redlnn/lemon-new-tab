@@ -19,6 +19,8 @@ export const useSettingsStore = defineStore('option', () => {
     if (settings.background.bing.url) settings.background.bing.url = ''
 
     Object.assign(state, settings)
+    state.shortcut.grouping ??= defaultSettings.shortcut.grouping
+    state.shortcut.pagingLoop ??= defaultSettings.shortcut.pagingLoop
 
     // 清理之前的 watcher（幂等性）
     unwatchStorage?.()
@@ -27,6 +29,8 @@ export const useSettingsStore = defineStore('option', () => {
     unwatchStorage = settingsStorage.watch((newSettings) => {
       if (!newSettings) return
       Object.assign(state, newSettings)
+      state.shortcut.grouping ??= defaultSettings.shortcut.grouping
+      state.shortcut.pagingLoop ??= defaultSettings.shortcut.pagingLoop
     })
   }
 

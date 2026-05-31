@@ -11,7 +11,7 @@ export {
   warmFaviconCache,
 } from './faviconFetch'
 
-import { fetchFaviconWithCache } from './faviconFetch'
+import { fetchFaviconWithCache, peekFaviconFromL1 } from './faviconFetch'
 
 export function getFaviconURL(url: string | Ref<string | null>): Ref<string> {
   const iconUrl = ref('/favicon.png')
@@ -23,7 +23,9 @@ export function getFaviconURL(url: string | Ref<string | null>): Ref<string> {
       return
     }
     const currentSeq = ++seq
-    iconUrl.value = '/favicon.png' // 立即重置，以避免在 URL 变更时显示过期图标
+    // 同步检查 L1 缓存：有则直接复用，避免翻页等场景中组件重建时出现图标闪烁；
+    // 无则重置为占位图，等待异步获取完成后再更新
+    iconUrl.value = peekFaviconFromL1(u) ?? '/favicon.png'
 
     fetchFaviconWithCache(u)
       .then((data) => {

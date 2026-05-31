@@ -6,9 +6,12 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
+import { useShortcutGroupingChange } from '../composables/useShortcutGroupingChange'
+
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
+const { handleGroupingChange } = useShortcutGroupingChange()
 
 async function restoreDefaultTopSites() {
   await blockedTopSitesStorage.setValue([])
@@ -35,6 +38,13 @@ async function restoreDefaultTopSites() {
         <div class="settings__label">{{ t('dock.launchpad.show') }}</div>
         <el-switch v-model="settings.dock.launchpad.enabled" />
       </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('shortcut.grouping') }}</div>
+        <el-switch :model-value="settings.shortcut.grouping" @change="handleGroupingChange" />
+      </div>
+      <p v-if="settings.shortcut.grouping" class="settings__item--note">
+        {{ t('shortcut.groupingTip') }}
+      </p>
       <div
         class="settings__item settings__group"
         :class="{ active: settings.dock.launchpad.enabled }"

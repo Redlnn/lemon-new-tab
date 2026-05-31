@@ -8,14 +8,16 @@ import AddRound from '~icons/ic/round-add'
 
 import { getFaviconURL } from '@/shared/media'
 import { useSettingsStore } from '@/shared/settings'
-import { useShortcutStore } from '@/shared/shortcut'
+import { DEFAULT_SHORTCUT_GROUP_ID, useShortcutStore, type ShortcutTarget } from '@/shared/shortcut'
 
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
 
 import ShortcutContextMenu from './components/ShortcutContextMenu.vue'
+import ShortcutGroupSelectDialog from './components/ShortcutGroupSelectDialog.vue'
 import { useShortcutData } from './composables/useShortcutData'
+import { useShortcutGroupActions } from './composables/useShortcutGroupActions'
 import { useDockLayout } from './composables/useShortcutLayout'
 import { useTopSitesMerge } from './composables/useTopSitesMerge'
 import Launchpad from './Launchpad.vue'
@@ -29,9 +31,9 @@ function getOrCreateFaviconRef(url: string): string {
   return faviconRefMap.get(url)!.value
 }
 
-defineProps<{
-  onOpenAddDialog?: () => void
-  onOpenEditDialog?: (index: number) => void
+const props = defineProps<{
+  onOpenAddDialog?: (groupId?: string) => void
+  onOpenEditDialog?: (target: ShortcutTarget) => void
 }>()
 
 const perf = usePerfClasses(() => ({
@@ -53,12 +55,22 @@ const refreshDebounced = useDebounceFn(refresh, 100)
 const { topSites, shortcuts, mounted, topSitesNeedsReload } = useShortcutData(refreshDebounced)
 
 async function refresh() {
-  shortcuts.value = shortcutStore.items.slice()
+  if (
+    settings.shortcut.grouping &&
+    !shortcutStore.groups.some((group) => group.id === DEFAULT_SHORTCUT_GROUP_ID)
+  ) {
+    await shortcutStore.enableGroupingFromItems()
+  }
+  shortcuts.value = settings.shortcut.grouping
+    ? (
+        shortcutStore.groups.find((group) => group.id === DEFAULT_SHORTCUT_GROUP_ID)?.items ?? []
+      ).slice()
+    : shortcutStore.items.slice()
 
   // 合并最常访问
   if (settings.dock.topSites) {
     topSites.value = await useTopSitesMerge({
-      shortcuts: shortcuts.value,
+      shortcuts: settings.shortcut.grouping ? [] : shortcuts.value,
       columns: 1,
       maxRows: 1,
       force: topSitesNeedsReload.value,
@@ -250,6 +262,8 @@ function setLaunchpadBtnRef(el: unknown): void {
 
 // ---- 右键上下文菜单 ----
 const ctxMenuRef = useTemplateRef<InstanceType<typeof ShortcutContextMenu>>('ctxMenuRef')
+const groupSelectDialogRef =
+  useTemplateRef<InstanceType<typeof ShortcutGroupSelectDialog>>('groupSelectDialogRef')
 
 function onItemContextmenu(
   event: MouseEvent | TouchEvent | PointerEvent,
@@ -257,7 +271,13 @@ function onItemContextmenu(
   isPinned: boolean,
   originalIndex: number,
 ): void {
-  ctxMenuRef.value?.open(event, { url: item.url, title: item.title || '', isPinned, originalIndex })
+  ctxMenuRef.value?.open(event, {
+    url: item.url,
+    title: item.title || '',
+    isPinned,
+    originalIndex,
+    groupId: isPinned && settings.shortcut.grouping ? DEFAULT_SHORTCUT_GROUP_ID : undefined,
+  })
 }
 
 function onItemLongPress(
@@ -272,8 +292,19 @@ function onItemLongPress(
       title: item.title || '',
       isPinned,
       originalIndex,
+      groupId: isPinned && settings.shortcut.grouping ? DEFAULT_SHORTCUT_GROUP_ID : undefined,
     })
   }
+}
+
+const { pinToGroup, moveToGroup } = useShortcutGroupActions({
+  groupSelectDialogRef,
+  refresh: refreshDebounced,
+  t,
+})
+
+function openAddShortcut() {
+  props.onOpenAddDialog?.(settings.shortcut.grouping ? DEFAULT_SHORTCUT_GROUP_ID : undefined)
 }
 </script>
 
@@ -383,7 +414,7 @@ function onItemLongPress(
       <div class="dock-gap" :ref="setScalableRef"></div>
     </template>
     <template v-if="!settings.dock.launchpad.enabled">
-      <div class="dock-item" :ref="setAddBtnRef" @click="onOpenAddDialog">
+      <div class="dock-item" :ref="setAddBtnRef" @click="openAddShortcut">
         <add-round />
       </div>
     </template>
@@ -391,8 +422,8 @@ function onItemLongPress(
     <!-- 启动台覆盖层 -->
     <Launchpad
       v-model="showLaunchpad"
-      :on-open-add-dialog="onOpenAddDialog"
-      :on-open-edit-dialog="onOpenEditDialog"
+      :on-open-add-dialog="props.onOpenAddDialog"
+      :on-open-edit-dialog="props.onOpenEditDialog"
     />
 
     <!-- 共享右键菜单 -->
@@ -401,9 +432,13 @@ function onItemLongPress(
       placement="top-start"
       :popper-class="popperClass"
       show-edit
+      :show-move="settings.shortcut.grouping"
       :refresh-fn="refreshDebounced"
-      :on-open-edit-dialog="onOpenEditDialog"
+      :on-open-edit-dialog="props.onOpenEditDialog"
+      :on-pin="pinToGroup"
+      :on-move="moveToGroup"
     />
+    <shortcut-group-select-dialog ref="groupSelectDialogRef" />
   </div>
 </template>
 

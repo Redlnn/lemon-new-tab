@@ -13,7 +13,10 @@ import {
   BOOKMARK_ACTIVE_MAP,
   BOOKMARK_OPENED_MENU_CLOSE_FN,
   OPEN_BOOKMARK_EDIT_DIALOG,
+  OPEN_SHORTCUT_GROUP_SELECT_DIALOG,
 } from '@newtab/shared/keys'
+
+import ShortcutGroupSelectDialog from '../Shortcut/components/ShortcutGroupSelectDialog.vue'
 
 import { useBookmarkStore } from './bookmarks'
 import BookmarkEditDialog from './components/BookmarkEditDialog.vue'
@@ -37,10 +40,15 @@ store._setSortMode(settings.bookmark.defaultSortMode)
 
 const drawerWidth = ref(400)
 const editDialogRef = ref<InstanceType<typeof BookmarkEditDialog>>()
+const groupSelectDialogRef = ref<InstanceType<typeof ShortcutGroupSelectDialog>>()
 
 provide(
   OPEN_BOOKMARK_EDIT_DIALOG,
   (node) => editDialogRef.value && editDialogRef.value.openEditDialog(node),
+)
+provide(
+  OPEN_SHORTCUT_GROUP_SELECT_DIALOG,
+  (options) => groupSelectDialogRef.value?.open(options) ?? Promise.resolve(null),
 )
 
 function onDrawerResize(evt: MouseEvent, size: number): void {
@@ -220,6 +228,7 @@ watch(
         </div>
       </section>
     </Transition>
+    <shortcut-group-select-dialog ref="groupSelectDialogRef" />
   </el-drawer>
 </template>
 

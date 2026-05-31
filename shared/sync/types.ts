@@ -55,6 +55,32 @@ const isValidCustomSearchEngineStorage = (
   })
 }
 
+const isValidShortcutItem = (value: unknown): value is Shortcuts['items'][number] => {
+  if (!isObjectRecord(value)) return false
+  return (
+    typeof value.url === 'string' &&
+    typeof value.title === 'string' &&
+    (value.favicon === undefined || typeof value.favicon === 'string')
+  )
+}
+
+const isValidShortcuts = (value: unknown): value is Shortcuts => {
+  if (!isObjectRecord(value) || !Array.isArray(value.items)) return false
+  if (!value.items.every(isValidShortcutItem)) return false
+  if (value.groups === undefined) return true
+  if (!Array.isArray(value.groups)) return false
+
+  return value.groups.every((group) => {
+    if (!isObjectRecord(group)) return false
+    return (
+      typeof group.id === 'string' &&
+      typeof group.name === 'string' &&
+      Array.isArray(group.items) &&
+      group.items.every(isValidShortcutItem)
+    )
+  })
+}
+
 export const isSyncEnvelopeV1 = (value: unknown): value is SyncEnvelopeV1 => {
   if (!isObjectRecord(value)) return false
 
@@ -65,7 +91,7 @@ export const isSyncEnvelopeV1 = (value: unknown): value is SyncEnvelopeV1 => {
     typeof value.fromDeviceName === 'string' &&
     isValidTimestamp(value.lastUpdate) &&
     isObjectRecord(value.settings) &&
-    isObjectRecord(value.bookmarks) &&
+    isValidShortcuts(value.bookmarks) &&
     isValidCustomSearchEngineStorage(value.customSearchEngines) &&
     typeof value.version === 'number' &&
     typeof value.baseVersion === 'number'
