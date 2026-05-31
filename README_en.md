@@ -27,7 +27,7 @@ The extension is now available on
 - Open Source ⚛️ – No worries about privacy leaks or malicious code
 - Internationalization 🌐 – Built-in multi-language support (Include Simplified / Traditional Chinese, Cantonese)
 - Bookmark 🔖 – Search and open the bookmark from the browser
-- Shortcuts 🪜 – Display/pin frequently visited sites and add your own custom shortcuts
+- Quick Links 🪜 – Display/pin frequently visited sites and add your own custom links
 - Dark Mode 🌓 – Support for dark mode, with an option to follow the system setting
 
 > [!NOTE]  

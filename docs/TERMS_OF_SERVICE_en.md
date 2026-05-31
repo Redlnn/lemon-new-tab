@@ -10,7 +10,7 @@ Contact email: <lemon@redlnn.top>
 
 ## 1. Service Description
 
-Lemon New Tab is a **local-first** browser new tab extension that provides page customization, shortcuts, bookmark display, frequently visited sites display, search, wallpapers, poetry/quote display, and related features. To support site display features, the extension may also locally read or process **page titles, page URLs / hostnames, and favicon information** from tabs you visit.
+Lemon New Tab is a **local-first** browser new tab extension that provides page customization, Quick Links, bookmark display, frequently visited sites display, search, wallpapers, poetry/quote display, and related features. To support site display features, the extension may also locally read or process **page titles, page URLs / hostnames, and favicon information** from tabs you visit.
 
 Some features depend on browser platform capabilities or third-party services, including without limitation search suggestions, Bing wallpapers, Jinrishici, Hitokoto, third-party favicon services, browser sync capabilities, and online resources configured by you. Those third-party services are not controlled by the developer and do not constitute services independently guaranteed by the developer under these Terms.
 
@@ -55,7 +55,7 @@ The developer does **not** own, control, or guarantee the availability, stabilit
 
 ## 6. Default Online Features and User Choice
 
-You understand and agree that some online features are **enabled by default or available by default**, such as search suggestions, Jinrishici content, and third-party favicon lookup, while other online features require your own activation or configuration, such as online wallpapers, custom media URLs, or browser sync. You also understand that, to display shortcuts, frequently visited sites, or related site cards, the extension may locally access tab titles, page URLs / hostnames, and favicon information.
+You understand and agree that some online features are **enabled by default or available by default**, such as search suggestions, Jinrishici content, and third-party favicon lookup, while other online features require your own activation or configuration, such as online wallpapers, custom media URLs, or browser sync. You also understand that, to display Quick Links, frequently visited sites, or related site cards, the extension may locally access tab titles, page URLs / hostnames, and favicon information.
 
 You may decide whether to continue using such online features through extension settings, browser permission settings, network blocking rules, or by uninstalling the extension. Disabling or blocking them may affect feature availability or user experience.
 

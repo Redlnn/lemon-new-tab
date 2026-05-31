@@ -246,8 +246,8 @@
       "transparent": "搜尋框透明"
     },
     "shortcut": {
-      "blur": "捷徑圖示模糊",
-      "transparent": "捷徑圖示透明"
+      "blur": "快速連結圖示模糊",
+      "transparent": "快速連結圖示透明"
     },
     "title": "效能",
     "toggleAll": {
@@ -284,8 +284,8 @@
     "iconRatio": "圖示填充比例",
     "iconSize": "圖示大小",
     "grouping": "啟用分組",
-    "groupingDisableConfirm": "關閉分組會合併所有捷徑分組，並移除重複 URL。不同分組中的重複捷徑將無法保留。",
-    "groupingTip": "雙擊捷徑或啟動台中的分組名稱即可重新命名。",
+    "groupingDisableConfirm": "關閉分組會合併所有快速連結分組，並移除重複 URL。不同分組中的重複連結將無法保留。",
+    "groupingTip": "雙擊快速連結區或啟動台中的分組名稱即可重新命名。",
     "marginTop": "區域上邊距",
     "maxColumns": "最大欄數",
     "maxItemsTipForChrome": "最常造訪最多只有 10 個喔～",
@@ -293,20 +293,20 @@
     "paging": "啟用翻頁",
     "pagingLoop": "翻頁循環",
     "pinnedIcon": "顯示釘選圖示",
-    "restoreDefault": "恢復隱藏的鏈接",
-    "restoreDefaultTitle": "確定要還原為預設捷徑嗎？",
+    "restoreDefault": "還原隱藏的連結",
+    "restoreDefaultTitle": "確定要還原為預設快速連結嗎？",
     "shadow": "顯示圖示陰影",
     "showOnSearchFocus": "搜尋框聚焦時顯示",
     "showTitle": "顯示標題",
     "spacing": {
-      "iconTitleGap": "圖標與標題間距",
-      "itemGapX": "捷徑左右間距",
-      "itemGapY": "捷徑上下間距"
+      "iconTitleGap": "圖示與標題間距",
+      "itemGapX": "連結左右間距",
+      "itemGapY": "連結上下間距"
     },
-    "tip": "Tip：可以拖曳設定視窗以觀察捷徑區域的變化噢~",
-    "title": "捷徑",
+    "tip": "提示：可以拖曳設定視窗以觀察快速連結區域的變化。",
+    "title": "快速連結",
     "titleExtraWidth": "標題擴展寬度",
-    "titleWhiteInLight": "【捷徑】淺色模式下使用白色文字",
+    "titleWhiteInLight": "【快速連結】淺色模式下使用白色文字",
     "topSites": "顯示最常造訪"
   },
   "theme": {

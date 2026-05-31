@@ -4,8 +4,8 @@
   },
   "bookmark": {
     "404": "乜都搵唔到",
-    "addToShortcut": "新增至捷徑",
-    "added": "已新增至捷徑",
+    "addToShortcut": "新增至快速連結",
+    "added": "已新增至快速連結",
     "collapse": {
       "all": "摺疊本層全部",
       "other": "摺疊同層其他"
@@ -125,38 +125,38 @@
   },
   "shortcut": {
     "addDialog": {
-      "extensionIconTip": "你亦可以透過點擊瀏覽器擴展選單中嘅圖示嘷將當前查看的頁面加入快速存取。",
+      "extensionIconTip": "你亦可以透過點擊瀏覽器擴充功能選單中的圖示，將目前頁面加入快速連結。",
       "invalidUrlError": "網址無效，請重新輸入",
       "tooLargeImageError": "圖片超過 100KiB，請重新選擇",
       "uploadFaviconAlert": "冇上載圖示時，建議開啟「設定-其他-圖示快取」以自動取得圖示"
     },
-    "addShortcut": "新增快速存取",
+    "addShortcut": "新增連結",
     "bookmark": {
       "add": "加入書籤",
       "existing": "此書籤已存在",
       "success": "已加入「{{folder}}」"
     },
-    "editShortcut": "編輯快速存取",
+    "editShortcut": "編輯連結",
     "groups": {
       "default": "預設",
-      "deleteConfirm": "確定要刪除分組「{{name}}」及其中所有快速存取？",
+      "deleteConfirm": "確定要刪除分組「{{name}}」及其中所有連結？",
       "moveTo": "移動到分組",
       "selectAddTarget": "選擇要新增到哪個分組",
       "selectMoveTarget": "選擇要移動到哪個分組",
-      "selectPinTarget": "選擇要釘選到哪個分組",
+      "selectPinTarget": "選擇要儲存到哪個分組",
       "selectTitle": "選擇分組",
       "topSites": "最常瀏覽",
       "untitled": "分組 {{index}}"
     },
     "hide": "隱藏",
     "hideTopMessage": {
-      "content": "已隱藏該最常訪問網站",
+      "content": "已隱藏該最常瀏覽網站",
       "restoreDefault": "還原預設",
-      "restoreSuccess": "已還原預設最常訪問網站"
+      "restoreSuccess": "已還原預設最常瀏覽網站"
     },
     "pin": "釘選",
     "unpin": "取消釘選",
-    "unpinMessage": "已取消釘選此快速存取",
+    "unpinMessage": "已取消釘選此連結",
     "fetchingFavicon": "正在後台獲取圖示..."
   },
   "sponsor": "呢個擴充功能是我利用業餘時間開發的小工具，好開心能幫到你！如果你鍾意佢嘅話，唔妨俾個 Star ⭐ 來支持一下，咁對我嚟講意義重大。如果有任何想法或建議，都歡迎透過郵箱聯繫我：redlnn@outlook.com。多謝你嘅信任！",

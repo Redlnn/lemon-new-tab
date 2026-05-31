@@ -1,7 +1,7 @@
 {
-  "title": "Add Shortcut",
+  "title": "Add Link",
   "addToShortcut": "Add",
-  "addSuccess": "Added to shortcuts",
-  "alreadyExists": "This page is already in shortcuts",
+  "addSuccess": "Added to Quick Links",
+  "alreadyExists": "This page is already in Quick Links",
   "cannotAdd": "Cannot add this page"
 }

@@ -4,8 +4,8 @@
   },
   "bookmark": {
     "404": "什么都没找到",
-    "addToShortcut": "添加到快捷方式",
-    "added": "已添加到快捷方式",
+    "addToShortcut": "添加到快速导航",
+    "added": "已添加到快速导航",
     "collapse": {
       "all": "折叠本层全部",
       "other": "折叠同级其他项"
@@ -125,25 +125,25 @@
   },
   "shortcut": {
     "addDialog": {
-      "extensionIconTip": "你也可以通过点击浏览器扩展菜单中的图标来添加当前浏览页面到快速访问。",
+      "extensionIconTip": "你也可以点击浏览器扩展菜单中的图标，将当前页面添加到快速导航。",
       "invalidUrlError": "无效的地址，请重新输入~",
       "tooLargeImageError": "图片大小超过 100KiB，请重新选择~",
       "uploadFaviconAlert": "没有上传图标时建议打开「设置-其他-图标缓存」以自动获取图标"
     },
-    "addShortcut": "添加快速访问",
+    "addShortcut": "添加链接",
     "bookmark": {
       "add": "收藏到书签",
       "existing": "该书签已存在",
       "success": "已收藏到「{{folder}}」"
     },
-    "editShortcut": "编辑快速访问",
+    "editShortcut": "编辑链接",
     "groups": {
       "default": "默认",
-      "deleteConfirm": "确定要删除分组「{{name}}」及其中的所有快捷方式吗？",
+      "deleteConfirm": "确定要删除分组「{{name}}」及其中的所有链接吗？",
       "moveTo": "移动到分组",
       "selectAddTarget": "选择添加到哪个分组",
       "selectMoveTarget": "选择移动到哪个分组",
-      "selectPinTarget": "选择置顶到哪个分组",
+      "selectPinTarget": "选择保存到哪个分组",
       "selectTitle": "选择分组",
       "topSites": "最常访问",
       "untitled": "分组 {{index}}"

@@ -32,12 +32,12 @@ This Policy covers four categories of processing:
 The extension store the following data locally on your device:
 
 - extension settings and UI preferences, such as theme, layout, search engine configuration, and background settings;
-- shortcuts, bookmark display settings, and local state related to frequently visited sites;
-- tab title, page URL, hostname, and favicon-related cache processed locally to display shortcuts, frequently visited sites, or related site cards;
+- Quick Links, bookmark display settings, and local state related to frequently visited sites;
+- tab title, page URL, hostname, and favicon-related cache processed locally to display Quick Links, frequently visited sites, or related site cards;
 - search history, if that local feature is enabled;
 - local wallpapers, video wallpapers, cached Bing wallpapers, and related metadata;
 - sync metadata such as device name, device identifier, sync timestamps, and sync version numbers;
-- custom search engine lists, synced settings snapshots, and synced shortcut data.
+- custom search engine lists, synced settings snapshots, and synced Quick Links data.
 
 This data is generally stored in your browser environment and is controlled by you or your browser. It is not automatically transmitted to the developer.
 
@@ -51,7 +51,7 @@ According to the extension manifest, the extension may access:
 - **tabs / activeTab / scripting** (depending on browser): to interact with tabs, the new tab page, and related pages;
 - **optional host permissions**: when you enable features that need access to website resources, such as fetching favicons or loading online media from arbitrary sites.
 
-These permissions are used to provide local functionality. For example, the extension may read **page titles, page URLs / hostnames, and favicon information** from tabs you visit or currently open in order to display shortcuts, frequently visited sites, or related site cards. Such information is generally processed locally in your browser and does not mean the developer receives that content.
+These permissions are used to provide local functionality. For example, the extension may read **page titles, page URLs / hostnames, and favicon information** from tabs you visit or currently open in order to display Quick Links, frequently visited sites, or related site cards. Such information is generally processed locally in your browser and does not mean the developer receives that content.
 
 ## 4. What We Do Not Do
 
@@ -61,7 +61,7 @@ Except as otherwise described in this Policy, the extension developer does **not
 - the contents of your bookmarks, browsing history, or search terms;
 - the contents of your local images, videos, or files;
 - copies of page titles, page URLs, site hostnames, or favicon data from your tabs, except where your browser sends the relevant request directly to a third-party service;
-- your extension settings, shortcuts, wallpaper files, or search history.
+- your extension settings, Quick Links, wallpaper files, or search history.
 
 If you enable browser sync or third-party online features, relevant data may instead be received and processed by the **browser vendor or the third-party service provider**.
 

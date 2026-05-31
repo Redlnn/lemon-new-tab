@@ -49,7 +49,7 @@
 ### Bug Fixes🐛
 
 - Fixed an issue where wallpapers were loading slowly, now the wallpaper loading speed has been greatly improved.
-- Fixed an issue where the icons for added quick access were too small.
+- Fixed an issue where icons were too small when adding links.
 - Fixed an issue where errors appeared in the console every time the new tab page was opened.
 - Fixed an issue where notification animations disappeared.
 - Fixed white edges appearing at the edges when wallpaper parallax is enabled.
@@ -64,7 +64,7 @@
 - Added a bottom Dock bar and Launchpad
 - Added idle fade-out for page elements
 - Full keyboard navigation support (`Tab` + arrow keys)
-- Support for adding borders to the search bar and shortcuts for better visual appearance
+- Support for adding borders to the search bar and Quick Links for better visual appearance
 - **Background:** Support for saving the currently displayed wallpaper
 - **Background:** Support for enabling parallax effect
 - **Quote:** Added one-click copy
@@ -100,9 +100,9 @@ Wishing you a happy Chinese New Year! May your days be as fresh and wonderful as
 
 ### New Features✨
 
-- **Shortcut:** Added "Title Expand Width" and "Icon and Title Spacing" settings
+- **Quick Links:** Added "Title Expand Width" and "Icon and Title Spacing" settings
   ([#65](https://github.com/Redlnn/lemon-new-tab/issues/65))
-- **Bookmarks Bar:** You can now bookmark shortcuts to browser bookmarks via the right-click menu
+- **Bookmarks Bar:** You can now bookmark Quick Links to browser bookmarks via the right-click menu
 - **Bookmarks Bar:** Added support for editing and deleting bookmarks
 - **Bookmarks Bar:** Added support for dragging to reorder bookmarks
 - **Bookmarks Bar:** Added support for collapsing other/all sibling directories
@@ -121,12 +121,12 @@ Wishing you a happy Chinese New Year! May your days be as fresh and wonderful as
 - Improved mobile layout stability (alignment, jitter, overlap)
 - Force refresh when switching to Bing wallpaper
 - Monet color extraction updated to the 2025 spec
-- **Shortcut:** Improve pagination logic
-- **Shortcut:** Optimized the trigger priority of swipe pagination and
-  drag sorting for quick access when touching
+- **Quick Links:** Improve pagination logic
+- **Quick Links:** Optimized the trigger priority of swipe pagination and
+  drag sorting for Quick Links when touching
   > Now pagination is less likely to trigger drag sorting
-- **Shortcut:** Adjust the order and icon thickness of the shortcut right-click menu options
-- **Shortcut:** Refactored shortcut layout logic for better performance and mobile support
+- **Quick Links:** Adjust the order and icon thickness of the link right-click menu options
+- **Quick Links:** Refactored Quick Links layout logic for better performance and mobile support
 - **Bookmarks Bar:** In the bookmark sidebar, folders are only placed at the front when not in original sorting
 - **Bookmarks Bar:** Changed the default sorting of the bookmark sidebar to original sorting
 - **Bookmarks Bar:** Allow multiple same-level directories to be expanded in the bookmark sidebar
@@ -136,7 +136,7 @@ Wishing you a happy Chinese New Year! May your days be as fresh and wonderful as
 ### Breaking Change💥
 
 - Compatibility with old version configurations has been removed. If unsupported configuration data is encountered, a prompt will appear to reset settings and clear data
-- **Shortcut:** Quick Access: Removed the “Show area background” option due to lack of maintenance and conflicts with the paginated layout style.
+- **Quick Links:** Removed the “Show area background” option due to lack of maintenance and conflicts with the paginated layout style.
 
 ### Bug Fixes🐛
 
@@ -148,9 +148,9 @@ Wishing you a happy Chinese New Year! May your days be as fresh and wonderful as
 - **Search:** Fixed issue where changes to bookmarks made elsewhere would not sync
   to already opened new tab pages
 - **Bookmarks Bar:** Fixed an issue where suggestions appeared after the search field lost focus
-- **Shortcut:** Fixed an issue where some shortcut titles were clipped when the window width was reduced
-- **Shortcut:** Fixed an issue where parts of shortcut titles from the previous and next pages were visible
-- **Shortcut:** Fixed issue where shortcut pagination flickered on Firefox
+- **Quick Links:** Fixed an issue where some link titles were clipped when the window width was reduced
+- **Quick Links:** Fixed an issue where parts of link titles from the previous and next pages were visible
+- **Quick Links:** Fixed issue where Quick Links pagination flickered on Firefox
   ([#64](https://github.com/Redlnn/lemon-new-tab/issues/64))
 - **Background:** Fixed issue where white background flickered briefly when first opening in dark mode
 - **Settings:** Fixed issue where dark mode button did not follow system changes when "Follow
@@ -159,32 +159,32 @@ Wishing you a happy Chinese New Year! May your days be as fresh and wonderful as
 
 ### Bug Fixes🐛
 
-- Fixed issue where shortcut icon background blur did not work on Firefox
+- Fixed issue where link icon background blur did not work on Firefox
   ([#64](https://github.com/Redlnn/lemon-new-tab/issues/64))
 
 ## 3.0.0 (Jan 01, 2026)
 
 ### Happy New Year🎇
 
-1. Now you can click the browser extension toolbar icon to quickly add the current page to shortcuts!
-2. Shortcuts can now be paginated!
+1. Now you can click the browser extension toolbar icon to quickly add the current page to Quick Links!
+2. Quick Links can now be paginated!
 3. Adjusted and unified corner radii across the board, ushering in the "Age of Big Corners"!
 
 ### New Features✨
 
-- Support setting shortcuts to open in a new tab by default
-- Support adding the current page to shortcuts from the browser toolbar button
-- Support adding pages to shortcuts from the bookmarks sidebar
+- Support setting Quick Links to open in a new tab by default
+- Support adding the current page to Quick Links from the browser toolbar button
+- Support adding pages to Quick Links from the bookmarks sidebar
   ([#55](https://github.com/Redlnn/lemon-new-tab/issues/55))
-- Shortcuts support pagination
+- Quick Links support pagination
   ([#57](https://github.com/Redlnn/lemon-new-tab/issues/57))
   > Pagination methods:
   >
   > 1. Click the pagination buttons to switch pages (for devices with a mouse only)
-  > 2. Scroll the mouse wheel in the shortcuts area to switch pages (for devices with a mouse only)
+  > 2. Scroll the mouse wheel in the Quick Links area to switch pages (for devices with a mouse only)
   > 3. Support touch swipe gestures to switch pages (for touch-enabled devices only)
-  > 4. Click the page indicators below the shortcuts area to switch pages
-- Support customizing the relative size of shortcut icons to their containers
+  > 4. Click the page indicators below the Quick Links area to switch pages
+- Support customizing the relative size of link icons to their containers
   ([#58](https://github.com/Redlnn/lemon-new-tab/issues/58))
 - When the search box is always expanded,
   support displaying the search engine icon and search button by default
@@ -192,15 +192,15 @@ Wishing you a happy Chinese New Year! May your days be as fresh and wonderful as
 - Support speeding up the display of the background at startup
   and disabling background transition animations
   ([#62](https://github.com/Redlnn/lemon-new-tab/issues/62))
-- Support not hiding quick access when the search box is focused
+- Support not hiding Quick Links when the search box is focused
   ([#63](https://github.com/Redlnn/lemon-new-tab/issues/63))
 - Right-click menu supports copying link address and opening in a new window
 
 ### Improvements⚡️
 
 - Cache Monet color extraction results for use on next startup to avoid abrupt changes
-- When adding shortcuts, allow omitting the protocol prefix (http:// or https://)
-- Optimize the styles of the "Add Shortcut" and "Add Search Engine" dialogs
+- When adding links, allow omitting the protocol prefix (http:// or https://)
+- Optimize the styles of the "Add Link" and "Add Search Engine" dialogs
 - Reduce the size of the pin icon for pinned links
   ([#61](https://github.com/Redlnn/lemon-new-tab/issues/61))
 - Comprehensively adjusted all corner radii for a better visual experience
@@ -209,16 +209,16 @@ Wishing you a happy Chinese New Year! May your days be as fresh and wonderful as
 
 ### Bug Fixes🐛
 
-- Fixed issue where shortcut drag-and-drop sorting UI did not update
+- Fixed issue where link drag-and-drop sorting UI did not update
   ([#53](https://github.com/Redlnn/lemon-new-tab/issues/53))
-- Fixed issue where changes to shortcuts on the new tab page
+- Fixed issue where changes to Quick Links on the new tab page
   were not promptly synced from cloud sync, popup menu, and other sources
-- Fixed shortcut title text shadow being cut off
+- Fixed link title text shadow being cut off
 - Fixed issue where pinned link icons were incorrect after using drag-and-drop sorting
 - Fixed style issues in the search engine selector
 - Fixed issue where the dark mode wallpaper would not immediately switch to the light mode wallpaper
   after deleting the dark mode wallpaper
-- Fixed issue where shortcuts were displayed before they were fully loaded at startup
+- Fixed issue where Quick Links were displayed before they were fully loaded at startup
 - Fixed issue where the left and right areas of quote could not trigger the bookmark sidebar with right-click
 - Fixed issue where the most visited page titles could not be obtained on Firefox
 - Fixed issue with quote appearance and disappearance animations
@@ -244,7 +244,7 @@ Monet colors from Material Design 3 — bring softer, more dynamic hues to your 
   - Optimized background image loading logic
   - Optimized bookmark loading logic
 - Resets bookmark sorting when switching languages
-- Optimized the style of the "Add New Shortcut" window on narrow screens
+- Optimized the style of the "Add New Link" window on narrow screens
 - Adjusted wallpaper fade-in animation duration for a more elegant experience
 - When searching bookmarks, if a folder name matches, all its children are displayed to avoid empty folders
 - Optimized bookmark search performance
@@ -258,7 +258,7 @@ Monet colors from Material Design 3 — bring softer, more dynamic hues to your 
 ### New Features✨
 
 - Brand new wallpaper selection page
-- Support showing browser bookmarks for quick access to favorite websites
+- Support showing browser bookmarks for easy access to favorite websites
 
 ### Improvements⚡️
 
@@ -286,7 +286,7 @@ Monet colors from Material Design 3 — bring softer, more dynamic hues to your 
 - Support for exporting and importing favorite/pinned websites
   ([#45](https://github.com/Redlnn/lemon-new-tab/issues/45))
 - Support for custom search engines (and import/export)
-- Right-click to open shortcut menu, removed the long-term display of the three-dot entry to optimize visual experience
+- Right-click to open link menu, removed the long-term display of the three-dot entry to optimize visual experience
 
 ### Improvements⚡️
 
@@ -300,7 +300,7 @@ Monet colors from Material Design 3 — bring softer, more dynamic hues to your 
 
 ### Bug Fixes🐛
 
-- Fixed incorrect background color in the "Add Shortcut" window
+- Fixed incorrect background color in the "Add Link" window
 - Fixed issue where global font overrides were not applied
 
 ## 2.5.3.1 (Oct 25, 2025)
@@ -350,7 +350,7 @@ Monet colors from Material Design 3 — bring softer, more dynamic hues to your 
 
 - Cached search history for smoother input
 - Cached search suggestions for smoother input
-- Cached quick access for smoother resizing or settings adjustments
+- Cached Quick Links for smoother resizing or settings adjustments
 - About page now uses SVG icons for improved clarity
 - Optimized performance when saving settings
 - Optimized wallpaper loading and switching performance
@@ -359,10 +359,10 @@ Monet colors from Material Design 3 — bring softer, more dynamic hues to your 
 ### Bug Fixes🐛
 
 - Fixed issue where search suggestions did not appear or were unrelated to input when using CJK input methods
-- Fixed issue where resizing the window did not refresh the quick access area
+- Fixed issue where resizing the window did not refresh the Quick Links area
 - Fixed issue where some styles were not applied
 - Fixed missing shadow display on settings items
-- Fixed missing rounded corners in the "Add Quick Access" dialog
+- Fixed missing rounded corners in the "Add Link" dialog
 - Fixed dark mode not following system changes
 - Fixed issue where color schemes were not reapplied in dark mode (26068c3)
 - Fixed style conflicts
@@ -398,8 +398,8 @@ Monet colors from Material Design 3 — bring softer, more dynamic hues to your 
 - Revised and expanded preset color schemes with added color names
 - For minor version updates, replaced changelog pop-up with a bottom notification message to avoid frequent interruptions
 - Added red dot indicator at the bottom-right corner to show unread changelog updates
-- Added automatic favicon fetching for shortcuts on Firefox (mostly ineffective due to cross-origin restrictions)
-- Support editing pinned shortcuts
+- Added automatic favicon fetching for Quick Links on Firefox (mostly ineffective due to cross-origin restrictions)
+- Support editing pinned links
 - Added automatic favicon fetching on Firefox (mostly defaults due to cross-origin restrictions)
 
 ### Improvements⚡️
@@ -416,20 +416,20 @@ Monet colors from Material Design 3 — bring softer, more dynamic hues to your 
 - Improved performance and code maintainability
 - Optimized configuration sync strategy
 - Expanded the effective scope of performance options
-- Input field no longer clears when adding a shortcut with an invalid URL
+- Input field no longer clears when adding a link with an invalid URL
 - Less frequently used pages have been changed to dynamic imports to reduce memory usage and speed up loading times
 
 ### Bug Fixes🐛
 
 - Fixed issue where dayjs i18n was not working
 - Fixed time alignment issue when "Small Clock Font" is disabled
-- Fixed incorrect style of the custom shortcut icon upload button
+- Fixed incorrect style of the custom link icon upload button
 - Fixed a missing translation
 - Fixed an issue where the config version might not update in time
-- Fixed issue where shortcuts could not be saved on Firefox
+- Fixed issue where Quick Links could not be saved on Firefox
   ([#37](https://github.com/Redlnn/lemon-new-tab/issues/37))
-- Fixed issue where dragging non-pinned shortcuts caused the shortcut area to disappear
-- Fixed misalignment issue when using SVG for custom shortcut icons
+- Fixed issue where dragging non-pinned links caused the Quick Links area to disappear
+- Fixed misalignment issue when using SVG for custom link icons
 
 ## 2.4.1 (Sep 30, 2025)
 
@@ -509,7 +509,7 @@ Monet colors from Material Design 3 — bring softer, more dynamic hues to your 
 ### Fixes🐛
 
 - Fixed an issue where resetting the extension data did not clear all caches
-- Fixed an issue where the "Add Shortcut" button's background blur was not applied
+- Fixed an issue where the "Add Link" button's background blur was not applied
 
 ## 2.3.1 (Sep 02, 2025)
 
@@ -521,7 +521,7 @@ Here’s to another year of making your browsing better!
 ### Fixes🐛
 
 - Fixed abnormal state and ineffective issues with icon shadow toggle
-- Fixed spacing issues on the quick access settings page
+- Fixed spacing issues on the Quick Links settings page
 
 ### Adjustments⚡️
 
@@ -545,7 +545,7 @@ Here’s to another year of making your browsing better!
 
 - Due to browser policy restrictions, auto-focus on the search box has never worked properly,
   so the description has been changed to “Expand search box by default”
-- Adjusted text and search box shadows, added shortcut shadows for better visual appearance
+- Adjusted text and search box shadows, added Quick Links shadows for better visual appearance
 - UI, UX, and animation refinements to enhance the user experience
 - Moved the About section from Settings to a new dedicated About page
 - The new About page and Search Engine Settings page share the bottom-right entry point with the main Settings page
@@ -592,7 +592,7 @@ Here’s to another year of making your browsing better!
 
 - Added toggle for switching between day and night mask colors.
 - Added reminder for items that do not support cloud synchronization.
-- Implemented cloud synchronization for settings and shortcuts. The following features
+- Implemented cloud synchronization for settings and Quick Links. The following features
   do not support synchronization:
   - Local or online background images
   - Most visited sites (including ignored sites)
@@ -616,8 +616,8 @@ Here’s to another year of making your browsing better!
 
 - Set the clock font to monospace for improved visual appearance.
 - Adjusted font selection order to enhance aesthetics.
-- When manually adding a shortcut, pressing Enter now submits it to improve user experience.
-- Reduced background opacity of the pin icon on pinned shortcuts to improve visual
+- When manually adding a link, pressing Enter now submits it to improve user experience.
+- Reduced background opacity of the pin icon on pinned links to improve visual
   appearance.
 - Adjusted CSS order and removed component restrictions to reduce extension size.
 - Refactored most of the JS and some CSS to improve performance.
@@ -648,14 +648,14 @@ Here’s to another year of making your browsing better!
 ### Features✨
 
 - Optimized performance to improve opening speed and avoid lag in certain situations.
-- Pinned quick access links can now be reordered by dragging.
-- Refactored the layout style of the quick access area for better compatibility.
+- Pinned links can now be reordered by dragging.
+- Refactored the layout style of the Quick Links area for better compatibility.
   Due to this refactoring, some existing settings may have been reset.
   We apologize for any inconvenience.
 - Refactored configuration storage and internal version iterations.
   Due to this, some existing settings may be misaligned during configuration upgrades.
   We apologize for any inconvenience.
-- Added options for “using white font in light mode for quick access” and “icon spacing”.
+- Added options for “using white font in light mode for Quick Links” and “icon spacing”.
   The original “icon width” setting has been changed to “icon size”.
 - "Adjust the page's responsive styles to prevent misalignment when shrinking the browser,
   thus supporting use on narrow-screen devices
@@ -665,7 +665,7 @@ Here’s to another year of making your browsing better!
 ### Fixes🐛
 
 - Fixed an issue where the search box could not lose focus by clicking the original
-  quick access area after expanding.
+  Quick Links area after expanding.
 - Applied clock font settings to the quote to improve
   page appearance in dark mode.
 - Fixed an issue where clicks on some areas of the quick launch submenu did not work.
@@ -700,7 +700,7 @@ Here’s to another year of making your browsing better!
   (when the background type is set to "None").
   - Clock font color now inverts on solid color backgrounds.
   - The search box background is now static pure white with an added outline.
-  - Added the option to disable shadows for the clock, search box, and quick access area.
+  - Added the option to disable shadows for the clock, search box, and Quick Links area.
 
 ### Improvements⚡️
 
@@ -723,7 +723,7 @@ Here’s to another year of making your browsing better!
 ### Fixes🐛
 
 - Fixed the issue where the Quick Start area would flicker when loading the new tab page.
-- Optimized the style of the "Add New Shortcut" button by reducing its opacity
+- Optimized the style of the "Add New Link" button by reducing its opacity
   when the mouse is not hovering over it.
 
 ## 1.6.0 (Oct 09, 2024)
@@ -751,8 +751,8 @@ Here’s to another year of making your browsing better!
 - Brand new settings window and changelog window.
 - Using <www.bing.com> instead of cn.bing.com to avoid redirection when using Bing.
 - Now you can change the background mask color.
-- Now you can disable the background of the quick access area.
-- Optimized the position of the search bar after closing the quick access area.
+- Now you can disable the background of the Quick Links area.
+- Optimized the position of the search bar after closing the Quick Links area.
 - **Firefox**: Now supports setting it as the homepage
   ([#12](https://github.com/Redlnn/lemon-new-tab/issues/12)).
 
@@ -780,7 +780,7 @@ Here’s to another year of making your browsing better!
 - Fixed the issue where frequently visited sites could not be deleted
   ([#8](https://github.com/Redlnn/lemon-new-tab/issues/8)).
 - Fixed the issue where the "Enable Most Visited" switch did not work.
-- Fixed the issue where duplicate shortcuts appeared after hiding most visited.
+- Fixed the issue where duplicate links appeared after hiding most visited.
 - Hid Chrome-specific hints in Firefox browser.
 - Fixed the issue where search suggestion API candidates and icons could not be displayed.
 - Remove Herobrine

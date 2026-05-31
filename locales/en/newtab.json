@@ -4,8 +4,8 @@
   },
   "bookmark": {
     "404": "Nothing found",
-    "addToShortcut": "Add to Shortcuts",
-    "added": "Added to shortcuts",
+    "addToShortcut": "Add to Quick Links",
+    "added": "Added to Quick Links",
     "collapse": {
       "all": "Collapse All at Level",
       "other": "Collapse Other at Level"
@@ -125,25 +125,25 @@
   },
   "shortcut": {
     "addDialog": {
-      "extensionIconTip": "You can also add the current page you are browsing by clicking the icon in the browser extensions menu.",
+      "extensionIconTip": "You can also add the current page to Quick Links by clicking the icon in the browser extensions menu.",
       "invalidUrlError": "Invalid URL. Please input a new one",
       "tooLargeImageError": "The image size exceeds 100KiB, please reselect a new one~",
       "uploadFaviconAlert": "If you don't upload an icon, consider enabling Settings → Other → Icon cache to automatically fetch icons."
     },
-    "addShortcut": "Add Shortcut",
+    "addShortcut": "Add Link",
     "bookmark": {
       "add": "Add to Bookmarks",
       "existing": "This bookmark already exists",
       "success": "Saved to “{{folder}}”"
     },
-    "editShortcut": "Edit Shortcut",
+    "editShortcut": "Edit Link",
     "groups": {
       "default": "Default",
-      "deleteConfirm": "Delete group “{{name}}” and all shortcuts inside it?",
+      "deleteConfirm": "Delete group “{{name}}” and all links inside it?",
       "moveTo": "Move to Group",
-      "selectAddTarget": "Choose a group for the new shortcut",
+      "selectAddTarget": "Choose a group for the new link",
       "selectMoveTarget": "Choose a group to move to",
-      "selectPinTarget": "Choose a group to pin to",
+      "selectPinTarget": "Choose a group to save to",
       "selectTitle": "Choose Group",
       "topSites": "Most visited",
       "untitled": "Group {{index}}"
@@ -156,7 +156,7 @@
     },
     "pin": "Pin",
     "unpin": "Unpin",
-    "unpinMessage": "Shortcut unpinned.",
+    "unpinMessage": "Link unpinned.",
     "fetchingFavicon": "Fetching icon in background..."
   },
   "sponsor": "This extension was created by me in my spare time to solve my own needs, and I'm thrilled it helps you too! If you enjoy it, please consider giving it a ⭐ on GitHub—it means a lot to me. Feel free to share your ideas or feedback at: redlnn@outlook.com. Thank you!",
