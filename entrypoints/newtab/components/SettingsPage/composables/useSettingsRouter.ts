@@ -17,7 +17,7 @@ export const SettingsRoute = {
   CLOCK: 'clock',
   SEARCH: 'search',
   BACKGROUND: 'background',
-  SHORTCUT: 'shortcut',
+  QUICK_LINKS: 'quickLinks',
   DOCK: 'dock',
   BOOKMARK_SIDEBAR: 'bookmarkSidebar',
   YIYAN: 'yiyan',
@@ -59,9 +59,9 @@ export const MENU_ITEMS: MenuItem[] = [
     titleKey: 'background.title',
   },
   {
-    key: SettingsRoute.SHORTCUT,
+    key: SettingsRoute.QUICK_LINKS,
     icon: DockRow24Regular,
-    titleKey: 'shortcut.title',
+    titleKey: 'quickLinks.title',
   },
   {
     key: SettingsRoute.DOCK,

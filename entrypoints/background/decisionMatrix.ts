@@ -1,6 +1,6 @@
 // 决策矩阵：处理云存储变化并确定适当的操作
 import { CURRENT_CONFIG_VERSION } from '@/shared/settings'
-import { isSyncEnvelopeV1 } from '@/shared/sync/types'
+import { normalizeSyncEnvelope } from '@/shared/sync/types'
 import type {
   SyncApplyDataMessage,
   SyncConflictMessage,
@@ -41,7 +41,8 @@ export async function evaluateCloudChange(
   ) => Promise<boolean>,
   openStartupWriteGate: () => void,
 ): Promise<DecisionResult> {
-  if (!isSyncEnvelopeV1(cloudRaw)) {
+  const cloud = normalizeSyncEnvelope(cloudRaw)
+  if (!cloud) {
     debugLog('legacy data detected')
     if (state.isInited) {
       const delivered = await sendToNewtab({ type: 'SYNC_LEGACY_DETECTED' })
@@ -53,8 +54,6 @@ export async function evaluateCloudChange(
     }
     return { action: 'legacy-detected' }
   }
-
-  const cloud = cloudRaw
 
   // 规则 1：自己的写入
   if (cloud.version === state.lastSelfWrittenVersion && cloud.fromDeviceId === state.deviceId) {
@@ -101,13 +100,13 @@ export async function evaluateCloudChange(
     if (state.isInited) {
       const delivered = await sendToNewtab({
         type: 'SYNC_APPLY_DATA',
-        data: cloudRaw,
+        data: cloud,
       } as SyncApplyDataMessage)
       if (!delivered) {
-        pending.applyData = cloudRaw
+        pending.applyData = cloud
       }
     } else {
-      pending.applyData = cloudRaw
+      pending.applyData = cloud
     }
     return { action: 'apply-cloud' }
   }

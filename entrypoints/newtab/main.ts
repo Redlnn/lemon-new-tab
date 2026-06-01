@@ -5,8 +5,8 @@ import { version } from '@/package.json'
 
 import { i18n } from '@/shared/i18n'
 import { setFaviconCacheEnabled } from '@/shared/media'
+import { useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
-import { useShortcutStore } from '@/shared/shortcut'
 import { useSyncDataStore } from '@/shared/sync'
 import { applyStoredMonetColors, getMonetColors } from '@/shared/theme'
 
@@ -73,11 +73,11 @@ export const main = async () => {
 
   setupAutoSaveSettings(settings)
 
-  // 尽早挂载以缩短白屏时间；快捷方式和自定义搜索引擎在挂载后异步加载
+  // 尽早挂载以缩短白屏时间；快速导航和自定义搜索引擎在挂载后异步加载
   app.mount('body')
 
-  // 快捷方式和搜索引擎读取不同的存储键且互不依赖，可并行初始化
-  await Promise.all([useCustomSearchEngineStore().init(), useShortcutStore().init()])
+  // 快速导航和搜索引擎读取不同的存储键且互不依赖，可并行初始化
+  await Promise.all([useCustomSearchEngineStore().init(), useQuickLinksStore().init()])
 
   if (settings.sync.enabled) {
     useSyncDataStore().init()

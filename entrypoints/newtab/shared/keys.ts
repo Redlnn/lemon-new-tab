@@ -26,10 +26,10 @@ export const OPEN_BOOKMARK_EDIT_DIALOG: InjectionKey<
   (node: Browser.bookmarks.BookmarkTreeNode) => void
 > = Symbol('openBookmarkEditDialog')
 
-// 打开快捷方式分组选择弹窗
-export const OPEN_SHORTCUT_GROUP_SELECT_DIALOG: InjectionKey<
+// 打开快速导航分组选择弹窗
+export const OPEN_QUICK_LINK_GROUP_SELECT_DIALOG: InjectionKey<
   (options?: { title?: string; currentGroupId?: string }) => Promise<string | null>
-> = Symbol('openShortcutGroupSelectDialog')
+> = Symbol('openQuickLinkGroupSelectDialog')
 
 // 书签激活状态映射：depth -> 激活节点 id 列表
 export const BOOKMARK_ACTIVE_MAP: InjectionKey<Ref<Record<number, string[]>>> =
@@ -40,9 +40,9 @@ export const BOOKMARK_OPENED_MENU_CLOSE_FN: InjectionKey<Ref<(() => void) | null
   'bookmarkOpenedMenuCloseFn',
 )
 
-// 关闭已打开的快捷方式菜单的函数
-export const SHORTCUT_OPENED_MENU_CLOSE_FN: InjectionKey<Ref<(() => void) | null>> = Symbol(
-  'shortcutOpenedMenuCloseFn',
+// 关闭已打开的快速导航菜单的函数
+export const QUICK_LINK_OPENED_MENU_CLOSE_FN: InjectionKey<Ref<(() => void) | null>> = Symbol(
+  'quickLinkOpenedMenuCloseFn',
 )
 
 // 关闭已打开的自定义搜索引擎菜单的函数

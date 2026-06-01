@@ -1,15 +1,15 @@
 import { defineBackground } from '#imports'
 import { browser } from 'wxt/browser'
 
+import { defaultQuickLinksData } from '@/shared/quickLinks/quickLinksStorage'
 import { CURRENT_CONFIG_VERSION, defaultSettings } from '@/shared/settings'
-import { defaultShortcuts } from '@/shared/shortcut/shortcutStorage'
 import { localSyncMetaStorage, syncDataStorage } from '@/shared/sync/syncDataStorage'
-import { defaultSyncedCustomSearchEngines, isSyncEnvelopeV1 } from '@/shared/sync/types'
+import { defaultSyncedCustomSearchEngines, normalizeSyncEnvelope } from '@/shared/sync/types'
 import type {
   SyncApplyDataMessage,
   SyncConflictMessage,
   SyncConflictResolveMessage,
-  SyncEnvelopeV1,
+  SyncEnvelopeV2,
   SyncInitedMessage,
   SyncLegacyDetectedMessage,
   SyncLocalChangedMessage,
@@ -92,9 +92,9 @@ async function sendToNewtab(message: SyncMessage): Promise<boolean> {
 
 // ─── Write to cloud ───────────────────────────────────────────────────────────
 
-async function writeToCloud(payload: SyncEnvelopeV1): Promise<void> {
+async function writeToCloud(payload: SyncEnvelopeV2): Promise<void> {
   const newVersion = state.localVersion + 1
-  const envelope: SyncEnvelopeV1 = {
+  const envelope: SyncEnvelopeV2 = {
     ...payload,
     version: newVersion,
     baseVersion: state.localVersion,
@@ -132,7 +132,8 @@ const initPromise = (async () => {
 
   // 检查云是否为空（从未写入）以确定启动时间窗口长度
   const cloudSnapshot = await syncDataStorage.getValue()
-  const isCloudEmpty = !isSyncEnvelopeV1(cloudSnapshot) || cloudSnapshot.fromDeviceId === ''
+  const normalizedCloudSnapshot = normalizeSyncEnvelope(cloudSnapshot)
+  const isCloudEmpty = !normalizedCloudSnapshot || normalizedCloudSnapshot.fromDeviceId === ''
 
   const timeoutMs = isCloudEmpty ? 30_000 : 5_000
   startupTimer = setTimeout(() => {
@@ -153,8 +154,9 @@ const initPromise = (async () => {
 // ─── Decision matrix & queue ──────────────────────────────────────────────────
 
 async function processCloudChange(cloudRaw: unknown): Promise<void> {
+  const cloud = normalizeSyncEnvelope(cloudRaw)
   const result = await evaluateCloudChange(
-    cloudRaw,
+    cloud ?? cloudRaw,
     state,
     pending,
     sendToNewtab,
@@ -176,11 +178,12 @@ async function processCloudChange(cloudRaw: unknown): Promise<void> {
   }
 
   if (result.action === 'apply-cloud') {
+    if (!cloud) return
     state.latestLocalPayload = null
     await updateLocalMeta({
-      localVersion: (cloudRaw as SyncEnvelopeV1).version,
-      lastSyncedAt: (cloudRaw as SyncEnvelopeV1).lastUpdate,
-      localModifiedAt: (cloudRaw as SyncEnvelopeV1).lastUpdate,
+      localVersion: cloud.version,
+      lastSyncedAt: cloud.lastUpdate,
+      localModifiedAt: cloud.lastUpdate,
     })
     return
   }
@@ -238,8 +241,9 @@ export default defineBackground(() => {
 
       // 接受来自 newtab 的初始本地快照（覆盖 SW 重启 + 漏掉的监听情况）
       const initMsg = message as SyncInitedMessage
-      if (initMsg.payload && isSyncEnvelopeV1(initMsg.payload)) {
-        const incoming = initMsg.payload
+      const initPayload = normalizeSyncEnvelope(initMsg.payload)
+      if (initPayload) {
+        const incoming = initPayload
         if (
           !state.latestLocalPayload ||
           incoming.lastUpdate >= (state.latestLocalPayload.lastUpdate ?? 0)
@@ -298,12 +302,12 @@ export default defineBackground(() => {
       if (!state.isInited) return
 
       const reqMsg = message as SyncLocalChangedMessage
-      if (!isSyncEnvelopeV1(reqMsg.data)) {
+      const incoming = normalizeSyncEnvelope(reqMsg.data)
+      if (!incoming) {
         debugLog('ignored invalid SYNC_LOCAL_CHANGED payload')
         return
       }
 
-      const incoming = reqMsg.data
       if (
         !state.latestLocalPayload ||
         incoming.lastUpdate >= (state.latestLocalPayload.lastUpdate ?? 0)
@@ -328,41 +332,44 @@ export default defineBackground(() => {
 
       if (resolveMsg.choice === 'cloud') {
         const cloudRaw = await syncDataStorage.getValue()
-        if (isSyncEnvelopeV1(cloudRaw)) {
-          await sendToNewtab({ type: 'SYNC_APPLY_DATA', data: cloudRaw } as SyncApplyDataMessage)
+        const cloud = normalizeSyncEnvelope(cloudRaw)
+        if (cloud) {
+          await sendToNewtab({ type: 'SYNC_APPLY_DATA', data: cloud } as SyncApplyDataMessage)
         }
       } else if (resolveMsg.choice === 'local' && state.latestLocalPayload !== null) {
         // 在写入前重新读取云：用户决策时可能有其他设备推送过数据
         const currentCloud = await syncDataStorage.getValue()
-        if (isSyncEnvelopeV1(currentCloud) && currentCloud.version > state.localVersion) {
+        const normalizedCloud = normalizeSyncEnvelope(currentCloud)
+        if (normalizedCloud && normalizedCloud.version > state.localVersion) {
           // 冲突对话期间云变新了；应用它并让用户再次决定
           debugLog('conflict resolve(local): cloud moved ahead, re-evaluating')
-          await processCloudChange(currentCloud)
+          await processCloudChange(normalizedCloud)
         } else {
           await writeToCloud(state.latestLocalPayload)
           state.latestLocalPayload = null
         }
       }
     } else if (message.type === 'SYNC_CLEAR_LEGACY') {
-      // 重新读取云：可能其他设备已将数据迁移到 v1
+      // 重新读取云：可能其他设备已将数据迁移到 v2
       const currentCloud = await syncDataStorage.getValue()
-      if (isSyncEnvelopeV1(currentCloud)) {
-        debugLog('SYNC_CLEAR_LEGACY: cloud is already v1, processing normally')
-        await processCloudChange(currentCloud)
+      const normalizedCloud = normalizeSyncEnvelope(currentCloud)
+      if (normalizedCloud) {
+        debugLog('SYNC_CLEAR_LEGACY: cloud is already v2, processing normally')
+        await processCloudChange(normalizedCloud)
         return
       }
 
-      // 云仍为旧版本 — 重置版本跟踪并写入干净的 v1 信封
+      // 云仍为旧版本 — 重置版本跟踪并写入干净的 v2 信封
       // so other devices stop seeing the legacy format
       const meta = await localSyncMetaStorage.getValue()
-      const envelope: SyncEnvelopeV1 = {
-        _v: 1,
+      const envelope: SyncEnvelopeV2 = {
+        _v: 2,
         configVersion: CURRENT_CONFIG_VERSION,
         fromDeviceId: meta.deviceId || 'unknown',
         fromDeviceName: meta.deviceName || 'unknown',
         lastUpdate: Date.now(),
         settings: defaultSettings,
-        bookmarks: defaultShortcuts,
+        quickLinks: defaultQuickLinksData,
         customSearchEngines: defaultSyncedCustomSearchEngines,
         version: 0,
         baseVersion: 0,

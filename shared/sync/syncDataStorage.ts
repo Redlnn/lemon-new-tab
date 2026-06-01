@@ -1,19 +1,19 @@
 import { storage } from '#imports'
 
+import { defaultQuickLinksData } from '../quickLinks/quickLinksStorage'
 import { CURRENT_CONFIG_VERSION, defaultSettings } from '../settings'
-import { defaultShortcuts } from '../shortcut/shortcutStorage'
 
 import { defaultSyncedCustomSearchEngines } from './types'
-import type { LocalSyncMeta, SyncEnvelopeV1 } from './types'
+import type { LocalSyncMeta, SyncEnvelope } from './types'
 
-export const syncDataStorage = storage.defineItem<SyncEnvelopeV1>('sync:syncData', {
+export const syncDataStorage = storage.defineItem<SyncEnvelope>('sync:syncData', {
   fallback: {
-    _v: 1,
+    _v: 2,
     configVersion: CURRENT_CONFIG_VERSION,
     fromDeviceId: '',
     fromDeviceName: '',
     settings: defaultSettings,
-    bookmarks: defaultShortcuts,
+    quickLinks: defaultQuickLinksData,
     customSearchEngines: defaultSyncedCustomSearchEngines,
     lastUpdate: 0,
     version: 0,

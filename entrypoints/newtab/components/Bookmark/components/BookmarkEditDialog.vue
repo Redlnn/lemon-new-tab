@@ -46,7 +46,7 @@ async function submit() {
     await browser.bookmarks.update(data.id, { title: data.title.trim() })
   } else {
     if (!isValidUrl(data.url)) {
-      ElMessage.error(t('shortcut.addDialog.invalidUrlError'))
+      ElMessage.error(t('quickLinks.addDialog.invalidUrlError'))
       return
     }
 
@@ -74,7 +74,7 @@ defineExpose({
   <el-dialog
     v-model="showDialog"
     :title="t('common.edit')"
-    class="add-shortcut-dialog base-dialog--blur base-dialog--opacity noselect"
+    class="link-form-dialog base-dialog--blur base-dialog--opacity noselect"
     width="450"
     append-to-body
     destroy-on-close

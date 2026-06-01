@@ -8,13 +8,13 @@ import CloseRound from '~icons/ic/round-close'
 import { browser } from 'wxt/browser'
 
 import { fetchFaviconWithCache, warmFaviconCache } from '@/shared/media'
+import { DEFAULT_QUICK_LINK_GROUP_ID, useQuickLinksStore } from '@/shared/quickLinks'
 import { settingsStorage } from '@/shared/settings'
-import { DEFAULT_SHORTCUT_GROUP_ID, useShortcutStore } from '@/shared/shortcut'
 
 import { isValidUrl } from '@newtab/shared/utils'
 
 const { t } = useTranslation('popup')
-const shortcutStore = useShortcutStore()
+const quickLinksStore = useQuickLinksStore()
 
 /**
  * 规范化 URL 用于比较
@@ -102,9 +102,9 @@ watchEffect(async () => {
 onMounted(async () => {
   const [settings] = await Promise.all([
     settingsStorage.getValue(),
-    shortcutStore.init({ acquire: false }),
+    quickLinksStore.init({ acquire: false }),
   ])
-  groupingEnabled.value = settings.shortcut.grouping ?? false
+  groupingEnabled.value = settings.quickLinks.grouping ?? false
 
   try {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true })
@@ -119,7 +119,7 @@ onMounted(async () => {
 
       // 检查是否已经存在（规范化 URL 后比较）
       const normalizedTabUrl = normalizeUrlForCompare(tab.url)
-      isAlreadyExists.value = shortcutStore.items.some(
+      isAlreadyExists.value = quickLinksStore.items.some(
         (item) => normalizeUrlForCompare(item.url) === normalizedTabUrl,
       )
     }
@@ -142,21 +142,21 @@ async function addCurrentPage() {
     finalFavicon = await warmFaviconCache(currentTab.value.url, currentTabFaviconRef.value)
   }
 
-  const shortcut = {
+  const quickLink = {
     url: currentTab.value.url,
     title: currentTab.value.title,
-    // 此处若获取到图标则同时把缓存的base64结果存储到shortcutStore
-    // 后续ShortcutItem组件优先使用该字段，避免每次都调用getFaviconURL函数获取图标
+    // 此处若获取到图标则同时把缓存的base64结果存储到quickLinksStore
+    // 后续QuickLinkItem组件优先使用该字段，避免每次都调用getFaviconURL函数获取图标
     favicon: finalFavicon ?? undefined,
   }
 
   if (groupingEnabled.value) {
-    await shortcutStore.addShortcutToGroup(DEFAULT_SHORTCUT_GROUP_ID, shortcut, {
+    await quickLinksStore.addQuickLinkToGroup(DEFAULT_QUICK_LINK_GROUP_ID, quickLink, {
       groupingEnabled: true,
     })
   } else {
-    shortcutStore.items.push(shortcut)
-    await shortcutStore.save()
+    quickLinksStore.items.push(quickLink)
+    await quickLinksStore.save()
   }
   isAdded.value = true
 }
@@ -209,7 +209,7 @@ async function addCurrentPage() {
             :disabled="isAlreadyExists"
             :icon="Add12Filled"
           >
-            {{ t('addToShortcut') }}
+            {{ t('addToQuickLinks') }}
           </el-button>
         </div>
       </template>

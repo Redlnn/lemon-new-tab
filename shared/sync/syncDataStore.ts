@@ -7,8 +7,11 @@ import { browser } from 'wxt/browser'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 
 import { BgType } from '../enums'
+import { defaultQuickLinksData, useQuickLinksStore } from '../quickLinks'
+import type { QuickLinksData } from '../quickLinks/quickLinksStorage'
 import type {
   CURRENT_CONFIG_SCHEMA,
+  SettingsSchemaV10,
   SettingsSchemaV7,
   SettingsSchemaV8,
   SettingsSchemaV9,
@@ -16,24 +19,23 @@ import type {
 import {
   CURRENT_CONFIG_VERSION,
   defaultSettings,
+  migrateFromVer10To11,
   migrateFromVer7To8,
   migrateFromVer8To9,
   migrateFromVer9To10,
   useSettingsStore,
 } from '../settings'
-import { defaultShortcuts, useShortcutStore } from '../shortcut'
-import type { Shortcuts } from '../shortcut/shortcutStorage'
 
 import { createDeviceId, detectDeviceName } from './device'
 import { localSyncMetaStorage } from './syncDataStorage'
-import { isSyncEnvelopeV1 } from './types'
+import { normalizeSyncEnvelope } from './types'
 import type {
   LocalSyncMeta,
   SyncApplyDataMessage,
   SyncClearLegacyMessage,
   SyncConflictMessage,
   SyncConflictResolveMessage,
-  SyncEnvelopeV1,
+  SyncEnvelopeV2,
   SyncEventPayloadMap,
   SyncEventType,
   SyncInitedMessage,
@@ -50,7 +52,7 @@ const hasStringType = (value: unknown): value is { type: string } =>
 
 const toError = (err: unknown): Error => (err instanceof Error ? err : new Error(String(err)))
 
-const debouncedSend = useDebounceFn(async (data: SyncEnvelopeV1) => {
+const debouncedSend = useDebounceFn(async (data: SyncEnvelopeV2) => {
   try {
     const localSettings = useSettingsStore()
     if (!initialized || !localSettings.sync.enabled) {
@@ -97,6 +99,7 @@ type MigratableSettings =
   | SettingsSchemaV7
   | SettingsSchemaV8
   | SettingsSchemaV9
+  | SettingsSchemaV10
   | CURRENT_CONFIG_SCHEMA
 
 const migrations: Partial<
@@ -108,6 +111,7 @@ const migrations: Partial<
   7: (s) => (s.version === 7 ? migrateFromVer7To8(s) : s),
   8: (s) => (s.version === 8 ? migrateFromVer8To9(s) : s),
   9: (s) => (s.version === 9 ? migrateFromVer9To10(s) : s),
+  10: (s) => (s.version === 10 ? migrateFromVer10To11(s) : s),
 }
 
 const BUILTIN_SEARCH_ENGINES = new Set(['google', 'baidu', 'bing', 'yandex', 'duckduckgo'])
@@ -127,7 +131,7 @@ const normalizeCustomSearchEngines = (
 
 export const useSyncDataStore = defineStore('sync', () => {
   const settings = ref<CURRENT_CONFIG_SCHEMA>(structuredClone(defaultSettings))
-  const bookmarks = ref<Shortcuts>(structuredClone(defaultShortcuts))
+  const quickLinks = ref<QuickLinksData>(structuredClone(defaultQuickLinksData))
   const lastUpdate = ref(0)
 
   const legacyDialogVisible = ref(false)
@@ -182,17 +186,17 @@ export const useSyncDataStore = defineStore('sync', () => {
 
   const computeSyncHash = (
     localSettings: ReturnType<typeof useSettingsStore>,
-    shortcutStore: ReturnType<typeof useShortcutStore>,
+    quickLinksStore: ReturnType<typeof useQuickLinksStore>,
     customSearchEngineStore: ReturnType<typeof useCustomSearchEngineStore>,
   ): string => {
     const rawSettings = localSettings.getRawState()
     const sanitizedSettings = sanitizeSettingsForCloud(rawSettings)
-    const bookmarksData = {
-      items: toRaw(shortcutStore.items),
-      groups: toRaw(shortcutStore.groups),
+    const quickLinksData = {
+      items: toRaw(quickLinksStore.items),
+      groups: toRaw(quickLinksStore.groups),
     }
     const customEnginesData = toRaw(customSearchEngineStore.items)
-    return JSON.stringify({ s: sanitizedSettings, b: bookmarksData, e: customEnginesData })
+    return JSON.stringify({ s: sanitizedSettings, q: quickLinksData, e: customEnginesData })
   }
 
   const restoreDeviceLocalFields = (
@@ -245,8 +249,8 @@ export const useSyncDataStore = defineStore('sync', () => {
     }
 
     const normalized = current as CURRENT_CONFIG_SCHEMA
-    normalized.shortcut.grouping ??= defaultSettings.shortcut.grouping
-    normalized.shortcut.pagingLoop ??= defaultSettings.shortcut.pagingLoop
+    normalized.quickLinks.grouping ??= defaultSettings.quickLinks.grouping
+    normalized.quickLinks.pagingLoop ??= defaultSettings.quickLinks.pagingLoop
 
     return {
       settings: normalized,
@@ -254,29 +258,29 @@ export const useSyncDataStore = defineStore('sync', () => {
     }
   }
 
-  const buildPayload = (timestamp: number, meta: LocalSyncMeta): SyncEnvelopeV1 => {
+  const buildPayload = (timestamp: number, meta: LocalSyncMeta): SyncEnvelopeV2 => {
     const localSettings = useSettingsStore()
-    const shortcutStore = useShortcutStore()
+    const quickLinksStore = useQuickLinksStore()
     const customSearchEngineStore = useCustomSearchEngineStore()
 
     const rawSettings = localSettings.getRawState()
     const sanitizedSettings = sanitizeSettingsForCloud(rawSettings)
-    const bookmarksSnapshot: Shortcuts = {
-      items: structuredClone(toRaw(shortcutStore.items)),
-      groups: structuredClone(toRaw(shortcutStore.groups)),
+    const quickLinksSnapshot: QuickLinksData = {
+      items: structuredClone(toRaw(quickLinksStore.items)),
+      groups: structuredClone(toRaw(quickLinksStore.groups)),
     }
     const customSearchEngineSnapshot = normalizeCustomSearchEngines({
       items: structuredClone(toRaw(customSearchEngineStore.items)),
     })
 
     return {
-      _v: 1,
+      _v: 2,
       configVersion: rawSettings.version,
       fromDeviceId: meta.deviceId,
       fromDeviceName: meta.deviceName,
       lastUpdate: timestamp,
       settings: sanitizedSettings,
-      bookmarks: bookmarksSnapshot,
+      quickLinks: quickLinksSnapshot,
       customSearchEngines: customSearchEngineSnapshot,
       version: 0,
       baseVersion: 0,
@@ -290,16 +294,16 @@ export const useSyncDataStore = defineStore('sync', () => {
     emitSyncEvent('legacy-detected', undefined)
   }
 
-  const applyCloudData = async (cloudInput: SyncEnvelopeV1) => {
+  const applyCloudData = async (cloudInput: unknown) => {
     isProcessing = true
     try {
       const localSettings = useSettingsStore()
-      const cloudData = cloudInput
-      if (!isSyncEnvelopeV1(cloudData)) {
+      const cloudData = normalizeSyncEnvelope(cloudInput)
+      if (!cloudData) {
         handleLegacyDetected()
         return
       }
-      const shortcutStore = useShortcutStore()
+      const quickLinksStore = useQuickLinksStore()
       const customSearchEngineStore = useCustomSearchEngineStore()
 
       if (cloudData.configVersion > CURRENT_CONFIG_VERSION) {
@@ -318,15 +322,15 @@ export const useSyncDataStore = defineStore('sync', () => {
       const mergedSettings = restoreDeviceLocalFields(migratedSettings, localState)
 
       localSettings.$patch(mergedSettings)
-      await shortcutStore.save(cloudData.bookmarks, {
-        groupingEnabled: mergedSettings.shortcut.grouping,
+      await quickLinksStore.save(cloudData.quickLinks, {
+        groupingEnabled: mergedSettings.quickLinks.grouping,
       })
       const normalizedCustomSearchEngines = normalizeCustomSearchEngines(
         cloudData.customSearchEngines,
       )
       await customSearchEngineStore.save(normalizedCustomSearchEngines)
       ensureSearchEngineAvailable(localSettings, normalizedCustomSearchEngines)
-      lastSyncHash = computeSyncHash(localSettings, shortcutStore, customSearchEngineStore)
+      lastSyncHash = computeSyncHash(localSettings, quickLinksStore, customSearchEngineStore)
 
       const cloudVersion = cloudData.version ?? 0
       await setLocalSyncMeta({
@@ -364,7 +368,7 @@ export const useSyncDataStore = defineStore('sync', () => {
 
     const currentInit = (async () => {
       const localSettings = useSettingsStore()
-      const shortcutStore = useShortcutStore()
+      const quickLinksStore = useQuickLinksStore()
       const customSearchEngineStore = useCustomSearchEngineStore()
       isProcessing = true
       // Handle messages from background; hoisted so the catch block can remove it on error.
@@ -376,9 +380,9 @@ export const useSyncDataStore = defineStore('sync', () => {
         // Initialise sync store refs from *local* state — never from the browser's potentially
         // stale cloud cache. applyCloudData() will update these once background decides to apply.
         settings.value = structuredClone(localSettings.getRawState())
-        bookmarks.value = {
-          items: structuredClone(toRaw(shortcutStore.items)),
-          groups: structuredClone(toRaw(shortcutStore.groups)),
+        quickLinks.value = {
+          items: structuredClone(toRaw(quickLinksStore.items)),
+          groups: structuredClone(toRaw(quickLinksStore.groups)),
         }
         lastUpdate.value = meta.lastSyncedAt
 
@@ -392,9 +396,7 @@ export const useSyncDataStore = defineStore('sync', () => {
 
           if (message.type === 'SYNC_APPLY_DATA' && 'data' in message) {
             const { data } = message as SyncApplyDataMessage
-            if (isSyncEnvelopeV1(data)) {
-              await applyCloudData(data)
-            }
+            await applyCloudData(data)
           } else if (message.type === 'SYNC_CONFLICT' && 'payload' in message) {
             const { payload } = message as SyncConflictMessage
             conflictPayload.value = payload
@@ -426,7 +428,7 @@ export const useSyncDataStore = defineStore('sync', () => {
 
         // Cheap change-detection: only serialize sync-relevant data when checking for changes
         let prevSyncEnabled = localSettings.sync.enabled
-        lastSyncHash = computeSyncHash(localSettings, shortcutStore, customSearchEngineStore)
+        lastSyncHash = computeSyncHash(localSettings, quickLinksStore, customSearchEngineStore)
 
         const subChange = async () => {
           const nowEnabled = localSettings.sync.enabled
@@ -438,7 +440,7 @@ export const useSyncDataStore = defineStore('sync', () => {
 
           if (!nowEnabled) return
 
-          const syncHash = computeSyncHash(localSettings, shortcutStore, customSearchEngineStore)
+          const syncHash = computeSyncHash(localSettings, quickLinksStore, customSearchEngineStore)
 
           if (!prevSyncEnabled && nowEnabled) {
             prevSyncEnabled = true
@@ -471,13 +473,13 @@ export const useSyncDataStore = defineStore('sync', () => {
           await subChange()
         }
 
-        const unsubShortcut = shortcutStore.$subscribe(onStateMutation)
+        const unsubQuickLink = quickLinksStore.$subscribe(onStateMutation)
         const unsubCustomSearchEngine = customSearchEngineStore.$subscribe(onStateMutation)
 
         const nextCleanupFns = [
           () => browser.runtime.onMessage.removeListener(handleBackgroundMessage!),
           unsubSettings,
-          unsubShortcut,
+          unsubQuickLink,
           unsubCustomSearchEngine,
         ]
 
@@ -591,7 +593,7 @@ export const useSyncDataStore = defineStore('sync', () => {
 
   return {
     settings,
-    bookmarks,
+    quickLinks,
     lastUpdate,
     legacyDialogVisible,
     conflictDialogVisible,

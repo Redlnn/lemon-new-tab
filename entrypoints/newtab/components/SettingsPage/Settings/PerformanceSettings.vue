@@ -12,7 +12,7 @@ function toggleTransparentSettings(enable: boolean) {
   settings.perf.dialog.transparent = enable
   settings.perf.searchBar.transparent = enable
   settings.perf.actionBtns.transparent = enable
-  settings.perf.shortcut.transparent = enable
+  settings.perf.quickLinks.transparent = enable
   settings.perf.yiyan.transparent = enable
 }
 
@@ -21,7 +21,7 @@ function toggleBlurSettings(enable: boolean) {
   settings.perf.dialog.blur = enable
   settings.perf.searchBar.blur = enable
   settings.perf.actionBtns.blur = enable
-  settings.perf.shortcut.blur = enable
+  settings.perf.quickLinks.blur = enable
   settings.perf.yiyan.blur = enable
   settings.perf.focus.blur = enable
 }
@@ -145,14 +145,14 @@ function toggleAnimationSettings(enable: boolean) {
       />
     </div>
     <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.shortcut.transparent') }}</div>
-      <el-switch v-model="settings.perf.shortcut.transparent" />
+      <div class="settings__label">{{ t('perf.quickLinks.transparent') }}</div>
+      <el-switch v-model="settings.perf.quickLinks.transparent" />
     </div>
     <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.shortcut.blur') }}</div>
+      <div class="settings__label">{{ t('perf.quickLinks.blur') }}</div>
       <el-switch
-        :disabled="!settings.perf.shortcut.transparent"
-        v-model="settings.perf.shortcut.blur"
+        :disabled="!settings.perf.quickLinks.transparent"
+        v-model="settings.perf.quickLinks.blur"
       />
     </div>
     <div class="settings__item settings__item--horizontal">

@@ -16,25 +16,25 @@ import OpenInNewRound from '~icons/ic/round-open-in-new'
 import { browser, type Browser } from 'wxt/browser'
 
 import { acquireFaviconRef, getFaviconURL, releaseFaviconRef } from '@/shared/media'
+import { useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
-import { useShortcutStore } from '@/shared/shortcut'
 
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import {
   BOOKMARK_ACTIVE_MAP,
   BOOKMARK_OPENED_MENU_CLOSE_FN,
   OPEN_BOOKMARK_EDIT_DIALOG,
-  OPEN_SHORTCUT_GROUP_SELECT_DIALOG,
+  OPEN_QUICK_LINK_GROUP_SELECT_DIALOG,
 } from '@newtab/shared/keys'
 import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
 import { isSafeUrl, isValidUrl } from '@newtab/shared/utils'
 
 const openBookmarkEditDialog = inject(OPEN_BOOKMARK_EDIT_DIALOG)
-const openShortcutGroupSelectDialog = inject(OPEN_SHORTCUT_GROUP_SELECT_DIALOG)
+const openQuickLinkGroupSelectDialog = inject(OPEN_QUICK_LINK_GROUP_SELECT_DIALOG)
 
 const { t } = useTranslation()
 const settings = useSettingsStore()
-const shortcutStore = useShortcutStore()
+const quickLinksStore = useQuickLinksStore()
 
 const props = withDefaults(
   defineProps<{
@@ -149,22 +149,22 @@ function copyLink() {
   navigator.clipboard.writeText(props.node.url)
 }
 
-async function addToShortcut() {
+async function addToQuickLinks() {
   if (!props.node.url || !isValidUrl(props.node.url)) return
-  const shortcut = {
+  const quickLink = {
     url: props.node.url,
     title: props.node.title || '',
     favicon: faviconRef.value,
   }
-  if (settings.shortcut.grouping) {
-    const groupId = await openShortcutGroupSelectDialog?.({
-      title: t('shortcut.groups.selectPinTarget'),
+  if (settings.quickLinks.grouping) {
+    const groupId = await openQuickLinkGroupSelectDialog?.({
+      title: t('quickLinks.groups.selectPinTarget'),
     })
     if (!groupId) return
-    await shortcutStore.addShortcutToGroup(groupId, shortcut)
+    await quickLinksStore.addQuickLinkToGroup(groupId, quickLink)
   } else {
-    shortcutStore.items.push(shortcut)
-    await shortcutStore.save()
+    quickLinksStore.items.push(quickLink)
+    await quickLinksStore.save()
   }
   ElMessage.success(t('bookmark.added'))
 }
@@ -395,8 +395,8 @@ const isDragDisabled = computed(() => {
             <el-dropdown-item :icon="ContentCopyRound" divided @click="copyLink">
               <span>{{ t('settings:common.copyLink') }}</span>
             </el-dropdown-item>
-            <el-dropdown-item :icon="Pin12Regular" @click="addToShortcut">
-              <span>{{ t('bookmark.addToShortcut') }}</span>
+            <el-dropdown-item :icon="Pin12Regular" @click="addToQuickLinks">
+              <span>{{ t('bookmark.addToQuickLinks') }}</span>
             </el-dropdown-item>
           </template>
           <template v-if="!isTopLevel">

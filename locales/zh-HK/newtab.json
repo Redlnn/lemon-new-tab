@@ -4,7 +4,7 @@
   },
   "bookmark": {
     "404": "乜都搵唔到",
-    "addToShortcut": "新增至快速連結",
+    "addToQuickLinks": "新增至快速連結",
     "added": "已新增至快速連結",
     "collapse": {
       "all": "摺疊本層全部",
@@ -57,6 +57,7 @@
     "name": "名稱",
     "no": "算啦",
     "save": "儲存",
+    "tooLargeImageError": "圖片超過 100KiB，請重新選擇",
     "undo": "復原",
     "url": "網址",
     "warning": "警告"
@@ -123,20 +124,33 @@
     "purgeSearchHistory": "清除搜尋歷史",
     "searchEngineNotFound": "找不到搜尋引擎"
   },
-  "shortcut": {
+  "sponsor": "呢個擴充功能是我利用業餘時間開發的小工具，好開心能幫到你！如果你鍾意佢嘅話，唔妨俾個 Star ⭐ 來支持一下，咁對我嚟講意義重大。如果有任何想法或建議，都歡迎透過郵箱聯繫我：redlnn@outlook.com。多謝你嘅信任！",
+  "time": {
+    "afternoon": "下午",
+    "dawn": "凌晨",
+    "dusk": "傍晚",
+    "evening": "晚上",
+    "lateNight": "深夜",
+    "morning": "早上",
+    "noon": "中午"
+  },
+  "title": "新分頁",
+  "yiyan": {
+    "copied": "已複製至剪貼板"
+  },
+  "quickLinks": {
     "addDialog": {
       "extensionIconTip": "你亦可以透過點擊瀏覽器擴充功能選單中的圖示，將目前頁面加入快速連結。",
       "invalidUrlError": "網址無效，請重新輸入",
-      "tooLargeImageError": "圖片超過 100KiB，請重新選擇",
       "uploadFaviconAlert": "冇上載圖示時，建議開啟「設定-其他-圖示快取」以自動取得圖示"
     },
-    "addShortcut": "新增連結",
+    "addLink": "新增連結",
     "bookmark": {
       "add": "加入書籤",
       "existing": "此書籤已存在",
       "success": "已加入「{{folder}}」"
     },
-    "editShortcut": "編輯連結",
+    "editLink": "編輯連結",
     "groups": {
       "default": "預設",
       "deleteConfirm": "確定要刪除分組「{{name}}」及其中所有連結？",
@@ -158,19 +172,5 @@
     "unpin": "取消釘選",
     "unpinMessage": "已取消釘選此連結",
     "fetchingFavicon": "正在後台獲取圖示..."
-  },
-  "sponsor": "呢個擴充功能是我利用業餘時間開發的小工具，好開心能幫到你！如果你鍾意佢嘅話，唔妨俾個 Star ⭐ 來支持一下，咁對我嚟講意義重大。如果有任何想法或建議，都歡迎透過郵箱聯繫我：redlnn@outlook.com。多謝你嘅信任！",
-  "time": {
-    "afternoon": "下午",
-    "dawn": "凌晨",
-    "dusk": "傍晚",
-    "evening": "晚上",
-    "lateNight": "深夜",
-    "morning": "早上",
-    "noon": "中午"
-  },
-  "title": "新分頁",
-  "yiyan": {
-    "copied": "已複製至剪貼板"
   }
 }

@@ -12,8 +12,8 @@ import { storage } from '#imports'
 
 import { downloadJSON } from '@/shared/downloadJson'
 import { clearFaviconCache } from '@/shared/media'
+import { type QuickLinksData, useQuickLinksStore } from '@/shared/quickLinks'
 import { type CURRENT_CONFIG_SCHEMA, defaultSettings, useSettingsStore } from '@/shared/settings'
-import { type Shortcuts, useShortcutStore } from '@/shared/shortcut'
 import { idbDropDatabase } from '@/shared/storage/idb'
 import { useSyncDataStore } from '@/shared/sync'
 
@@ -37,7 +37,7 @@ import {
 const { t, i18next } = useTranslation('settings')
 
 const settings = useSettingsStore()
-const shortcuts = useShortcutStore()
+const quickLinks = useQuickLinksStore()
 const customSearchEngineStore = useCustomSearchEngineStore()
 
 const { checkAndRequestPermission } = usePermission()
@@ -206,8 +206,14 @@ function sendSyncMessage() {
 const fileInput = useTemplateRef('fileInput')
 type Backup = {
   settings: CURRENT_CONFIG_SCHEMA
-  shortcuts: Shortcuts
+  quickLinks: QuickLinksData
   customSearchEngines: CustomSearchEngineStorage
+}
+
+type ImportBackup = Partial<Backup> & {
+  bookmark?: QuickLinksData
+  bookmarks?: QuickLinksData
+  shortcuts?: QuickLinksData
 }
 
 /**
@@ -231,29 +237,31 @@ async function openFilePicker() {
 async function exportBackup() {
   const backup: Backup = {
     settings: settings.$state,
-    shortcuts: shortcuts.$state,
+    quickLinks: quickLinks.$state,
     customSearchEngines: customSearchEngineStore.$state,
   }
 
   downloadJSON<Backup>(backup, 'lenmon-new-tab-backup.json')
 }
 
-function backupValidator(data: unknown): data is Backup {
+function hasObjectKey(data: Record<string, unknown>, key: string): boolean {
+  return key in data && typeof data[key] === 'object' && data[key] !== null
+}
+
+function backupValidator(data: unknown): data is ImportBackup {
   if (typeof data !== 'object' || data === null) return false
-  if ('settings' in data && typeof data.settings === 'object' && data.settings !== null) return true
-  if ('shortcuts' in data && typeof data.shortcuts === 'object' && data.shortcuts !== null)
-    return true
-  if (
-    'customSearchEngines' in data &&
-    typeof data.customSearchEngines === 'object' &&
-    data.customSearchEngines !== null
-  )
-    return true
+  const record = data as Record<string, unknown>
+  if (hasObjectKey(record, 'settings')) return true
+  if (hasObjectKey(record, 'quickLinks')) return true
+  if (hasObjectKey(record, 'bookmark')) return true
+  if (hasObjectKey(record, 'bookmarks')) return true
+  if (hasObjectKey(record, 'shortcuts')) return true
+  if (hasObjectKey(record, 'customSearchEngines')) return true
   return false
 }
 
 function handleFileChange(event: Event) {
-  return handleFileImport<Backup>(event, fileInput, backupValidator, async (data) => {
+  return handleFileImport<ImportBackup>(event, fileInput, backupValidator, async (data) => {
     // settings 部分（沿用之前的逻辑）
     if (data.settings && settings.version !== data.settings.version) {
       ElMessage.error(
@@ -282,9 +290,10 @@ function handleFileChange(event: Event) {
       }
     }
 
-    // shortcuts 部分
-    if (data.shortcuts) {
-      await shortcuts.save(data.shortcuts, { groupingEnabled: settings.shortcut.grouping })
+    // quickLinks 部分
+    const quickLinksData = data.quickLinks ?? data.bookmark ?? data.bookmarks ?? data.shortcuts
+    if (quickLinksData) {
+      await quickLinks.save(quickLinksData, { groupingEnabled: settings.quickLinks.grouping })
     }
 
     // custom search engines 部分

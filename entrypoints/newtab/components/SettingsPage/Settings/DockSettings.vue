@@ -6,12 +6,12 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
-import { useShortcutGroupingChange } from '../composables/useShortcutGroupingChange'
+import { useQuickLinksGroupingChange } from '../composables/useQuickLinksGroupingChange'
 
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
-const { handleGroupingChange } = useShortcutGroupingChange()
+const { handleGroupingChange } = useQuickLinksGroupingChange()
 
 async function restoreDefaultTopSites() {
   await blockedTopSitesStorage.setValue([])
@@ -22,7 +22,7 @@ async function restoreDefaultTopSites() {
 <template>
   <div class="settings__items-container">
     <p class="settings__item--note" style="margin-top: 1em">
-      {{ t('shortcut.iconCacheTip') }}
+      {{ t('quickLinks.iconCacheTip') }}
     </p>
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('newtab:common.enable') }}</div>
@@ -31,7 +31,7 @@ async function restoreDefaultTopSites() {
     <p class="settings__item--note">{{ t('dock.actionBtnNote') }}</p>
     <template v-if="settings.dock.enabled">
       <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('shortcut.showOnSearchFocus') }}</div>
+        <div class="settings__label">{{ t('quickLinks.showOnSearchFocus') }}</div>
         <el-switch v-model="settings.dock.showOnSearchFocus" />
       </div>
       <div class="settings__item settings__item--horizontal">
@@ -39,11 +39,11 @@ async function restoreDefaultTopSites() {
         <el-switch v-model="settings.dock.launchpad.enabled" />
       </div>
       <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('shortcut.grouping') }}</div>
-        <el-switch :model-value="settings.shortcut.grouping" @change="handleGroupingChange" />
+        <div class="settings__label">{{ t('quickLinks.grouping') }}</div>
+        <el-switch :model-value="settings.quickLinks.grouping" @change="handleGroupingChange" />
       </div>
-      <p v-if="settings.shortcut.grouping" class="settings__item--note">
-        {{ t('shortcut.groupingTip') }}
+      <p v-if="settings.quickLinks.grouping" class="settings__item--note">
+        {{ t('quickLinks.groupingTip') }}
       </p>
       <div
         class="settings__item settings__group"
@@ -55,7 +55,7 @@ async function restoreDefaultTopSites() {
               {{ t('dock.launchpad.title') }}
             </p>
             <div class="settings__item settings__item--horizontal">
-              <div class="settings__label">{{ t('shortcut.topSites') }}</div>
+              <div class="settings__label">{{ t('quickLinks.topSites') }}</div>
               <el-switch v-model="settings.dock.launchpad.topSites" />
             </div>
             <div class="settings__item settings__item--horizontal">
@@ -79,7 +79,7 @@ async function restoreDefaultTopSites() {
           </p>
         </el-collapse-transition>
         <div class="settings__item settings__item--horizontal">
-          <div class="settings__label">{{ t('shortcut.topSites') }}</div>
+          <div class="settings__label">{{ t('quickLinks.topSites') }}</div>
           <el-switch v-model="settings.dock.topSites" />
         </div>
         <div class="settings__item settings__item--horizontal">
@@ -102,7 +102,7 @@ async function restoreDefaultTopSites() {
           />
         </div>
         <div class="settings__item settings__item--vertical">
-          <div class="settings__label">{{ t('shortcut.iconSize') }}</div>
+          <div class="settings__label">{{ t('quickLinks.iconSize') }}</div>
           <el-slider
             v-model="settings.dock.iconSize"
             :min="30"
@@ -113,7 +113,7 @@ async function restoreDefaultTopSites() {
           />
         </div>
         <div class="settings__item settings__item--vertical">
-          <div class="settings__label">{{ t('shortcut.iconRatio') }}</div>
+          <div class="settings__label">{{ t('quickLinks.iconRatio') }}</div>
           <el-slider
             v-model="settings.dock.iconRatio"
             :min="0.1"
@@ -126,7 +126,7 @@ async function restoreDefaultTopSites() {
         </div>
         <div class="settings__item settings__item--vertical">
           <div class="settings__label">
-            {{ t('shortcut.spacing.itemGapX') }}
+            {{ t('quickLinks.spacing.itemGapX') }}
           </div>
           <el-slider
             v-model="settings.dock.gap"
@@ -139,14 +139,14 @@ async function restoreDefaultTopSites() {
         </div>
       </div>
       <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('shortcut.restoreDefault') }}</div>
+        <div class="settings__label">{{ t('quickLinks.restoreDefault') }}</div>
         <el-popconfirm
           width="220"
           :confirm-button-text="t('newtab:common.confirm')"
           :cancel-button-text="t('newtab:common.no')"
           :icon="RestoreRound"
           icon-color="#626AEF"
-          :title="t('shortcut.restoreDefaultTitle')"
+          :title="t('quickLinks.restoreDefaultTitle')"
           @confirm="restoreDefaultTopSites()"
         >
           <template #reference>

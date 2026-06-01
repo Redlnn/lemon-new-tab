@@ -42,7 +42,7 @@
       },
       "title": "介面掉幀或卡頓、CPU/GPU 佔用率高"
     },
-    "restoreShortcut": {
+    "restoreQuickLinks": {
       "content": "移除任何快速連結後，可在彈出的通知中進行還原操作。",
       "title": "如何還原已刪除/預設快速連結"
     }

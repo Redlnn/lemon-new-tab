@@ -42,7 +42,7 @@
       },
       "title": "Interface lag or stuttering, high CPU/GPU usage"
     },
-    "restoreShortcut": {
+    "restoreQuickLinks": {
       "content": "After removing a Quick Links item, you can restore it from the notification that pops up.",
       "title": "How to restore deleted/default Quick Links items"
     }

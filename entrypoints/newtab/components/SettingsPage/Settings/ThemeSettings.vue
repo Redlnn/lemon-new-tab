@@ -249,9 +249,9 @@ const beforeMonetChange = async () => {
     </div>
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">
-        {{ t('shortcut.titleWhiteInLight') }}
+        {{ t('quickLinks.titleWhiteInLight') }}
       </div>
-      <el-switch v-model="settings.shortcut.title.whiteInLightMode" />
+      <el-switch v-model="settings.quickLinks.title.whiteInLightMode" />
     </div>
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('yiyan.invertColor.light') }}</div>

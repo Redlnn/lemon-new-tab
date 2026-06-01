@@ -1,12 +1,12 @@
 // 后台脚本状态管理的类型
-import type { SyncConflictMessage, SyncEnvelopeV1, SyncMessage } from '@/shared/sync/types'
+import type { SyncConflictMessage, SyncEnvelopeV2, SyncMessage } from '@/shared/sync/types'
 
 export interface BackgroundState {
   localVersion: number
   deviceId: string
   localModifiedAt: number
   startupWriteReady: boolean
-  latestLocalPayload: SyncEnvelopeV1 | null
+  latestLocalPayload: SyncEnvelopeV2 | null
   lastSelfWrittenVersion: number
   pendingImmediatePush: boolean
   isInited: boolean
@@ -20,7 +20,7 @@ export interface QueueState {
 }
 
 export interface PendingMessages {
-  applyData: SyncEnvelopeV1 | null
+  applyData: SyncEnvelopeV2 | null
   conflict: SyncConflictMessage['payload'] | null
   legacyDetected: boolean
   versionTooNew: { cloud: number; local: number } | null

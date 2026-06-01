@@ -4,7 +4,7 @@
   },
   "bookmark": {
     "404": "什么都没找到",
-    "addToShortcut": "添加到快速导航",
+    "addToQuickLinks": "添加到快速导航",
     "added": "已添加到快速导航",
     "collapse": {
       "all": "折叠本层全部",
@@ -57,6 +57,7 @@
     "name": "名称",
     "no": "算了",
     "save": "保存",
+    "tooLargeImageError": "图片大小超过 100KiB，请重新选择~",
     "undo": "撤销",
     "url": "地址",
     "warning": "警告"
@@ -123,20 +124,33 @@
     "purgeSearchHistory": "清除搜索历史",
     "searchEngineNotFound": "未找到搜索引擎"
   },
-  "shortcut": {
+  "sponsor": "这个扩展是我利用业余时间开发的小工具，很开心能帮助到你！如果你喜欢它，不妨给个 Star ⭐ 来支持一下，这对我意义重大。如果有任何想法或建议，也欢迎通过邮箱联系我：redlnn@outlook.com。谢谢你的信任！",
+  "time": {
+    "afternoon": "下午",
+    "dawn": "凌晨",
+    "dusk": "傍晚",
+    "evening": "晚上",
+    "lateNight": "深夜",
+    "morning": "早上",
+    "noon": "中午"
+  },
+  "title": "新标签页",
+  "yiyan": {
+    "copied": "已复制到剪贴板"
+  },
+  "quickLinks": {
     "addDialog": {
       "extensionIconTip": "你也可以点击浏览器扩展菜单中的图标，将当前页面添加到快速导航。",
       "invalidUrlError": "无效的地址，请重新输入~",
-      "tooLargeImageError": "图片大小超过 100KiB，请重新选择~",
       "uploadFaviconAlert": "没有上传图标时建议打开「设置-其他-图标缓存」以自动获取图标"
     },
-    "addShortcut": "添加链接",
+    "addLink": "添加链接",
     "bookmark": {
       "add": "收藏到书签",
       "existing": "该书签已存在",
       "success": "已收藏到「{{folder}}」"
     },
-    "editShortcut": "编辑链接",
+    "editLink": "编辑链接",
     "groups": {
       "default": "默认",
       "deleteConfirm": "确定要删除分组「{{name}}」及其中的所有链接吗？",
@@ -158,19 +172,5 @@
     "unpin": "取消置顶",
     "unpinMessage": "已取消置顶该链接",
     "fetchingFavicon": "正在后台获取图标..."
-  },
-  "sponsor": "这个扩展是我利用业余时间开发的小工具，很开心能帮助到你！如果你喜欢它，不妨给个 Star ⭐ 来支持一下，这对我意义重大。如果有任何想法或建议，也欢迎通过邮箱联系我：redlnn@outlook.com。谢谢你的信任！",
-  "time": {
-    "afternoon": "下午",
-    "dawn": "凌晨",
-    "dusk": "傍晚",
-    "evening": "晚上",
-    "lateNight": "深夜",
-    "morning": "早上",
-    "noon": "中午"
-  },
-  "title": "新标签页",
-  "yiyan": {
-    "copied": "已复制到剪贴板"
   }
 }

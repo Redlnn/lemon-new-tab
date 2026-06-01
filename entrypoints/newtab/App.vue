@@ -20,9 +20,9 @@ import RefreshBgBtn from './components/ActionBtn/RefreshBgBtn.vue'
 import SettingsBtn from './components/ActionBtn/SettingsBtn.vue'
 import Background from './components/Background.vue'
 import Clock from './components/Clock.vue'
+import Dock from './components/QuickLinks/Dock.vue'
+import QuickLinks from './components/QuickLinks/index.vue'
 import SearchBox from './components/SearchBox/index.vue'
-import Dock from './components/Shortcut/Dock.vue'
-import Shortcut from './components/Shortcut/index.vue'
 import YiYan from './components/YiYan.vue'
 import { useAppNotifications } from './composables/useAppNotifications'
 import { useElementLang } from './composables/useElementLang'
@@ -42,8 +42,8 @@ const BackgroundSwitcher = defineAsyncComponent(
 )
 const PermissionDialog = defineAsyncComponent(() => import('./components/PermissionDialog.vue'))
 const Bookmark = defineAsyncComponent(() => import('./components/Bookmark/index.vue'))
-const AddShortcutDialog = defineAsyncComponent(
-  () => import('./components/Shortcut/components/AddShortcutDialog.vue'),
+const AddQuickLinkDialog = defineAsyncComponent(
+  () => import('./components/QuickLinks/components/AddQuickLinkDialog.vue'),
 )
 const SyncLegacyDialog = defineAsyncComponent(() => import('./components/SyncLegacyDialog.vue'))
 const SyncConflictDialog = defineAsyncComponent(() => import('./components/SyncConflictDialog.vue'))
@@ -56,7 +56,7 @@ const SESwitcherRef = ref<InstanceType<typeof SearchEnginesSwitcher>>()
 const BGSwticherRef = ref<InstanceType<typeof BackgroundSwitcher>>()
 const BookmarkRef = ref<InstanceType<typeof Bookmark>>()
 const BackgroundRef = ref<InstanceType<typeof Background>>()
-const AddShortcutDialogRef = ref<InstanceType<typeof AddShortcutDialog>>()
+const AddQuickLinkDialogRef = ref<InstanceType<typeof AddQuickLinkDialog>>()
 
 const appRef = useTemplateRef('appRef')
 
@@ -153,17 +153,17 @@ const handleDisableSyncConflict = () => syncStore.disableSyncAndDismissConflict(
     <main :style="mainStyle" class="app" ref="appRef" @contextmenu.prevent="openBookmarkSidebar">
       <clock v-if="settings.clock.enabled" @contextmenu.stop />
       <search-box v-if="settings.search.enabled" @contextmenu.stop />
-      <shortcut
-        v-if="settings.shortcut.enabled"
-        :on-open-add-dialog="AddShortcutDialogRef?.openAddDialog"
-        :on-open-edit-dialog="AddShortcutDialogRef?.openEditDialog"
+      <quick-links
+        v-if="settings.quickLinks.enabled"
+        :on-open-add-dialog="AddQuickLinkDialogRef?.openAddDialog"
+        :on-open-edit-dialog="AddQuickLinkDialogRef?.openEditDialog"
         @contextmenu.stop
       />
       <yi-yan v-if="settings.yiyan.enabled" @contextmenu.stop />
       <dock
         v-if="settings.dock.enabled"
-        :on-open-add-dialog="AddShortcutDialogRef?.openAddDialog"
-        :on-open-edit-dialog="AddShortcutDialogRef?.openEditDialog"
+        :on-open-add-dialog="AddQuickLinkDialogRef?.openAddDialog"
+        :on-open-edit-dialog="AddQuickLinkDialogRef?.openEditDialog"
       />
     </main>
     <background ref="BackgroundRef" />
@@ -192,7 +192,7 @@ const handleDisableSyncConflict = () => syncStore.disableSyncAndDismissConflict(
     <search-engines-switcher ref="SESwitcherRef" />
     <background-switcher ref="BGSwticherRef" />
     <bookmark ref="BookmarkRef" />
-    <add-shortcut-dialog ref="AddShortcutDialogRef" />
+    <add-quick-link-dialog ref="AddQuickLinkDialogRef" />
     <permission-dialog
       v-model="permissionDialogVisible"
       :hostname="currentHostname"

@@ -245,10 +245,6 @@
       "blur": "搜索框模糊",
       "transparent": "搜索框透明"
     },
-    "shortcut": {
-      "blur": "快速导航图标模糊",
-      "transparent": "快速导航图标透明"
-    },
     "title": "性能",
     "toggleAll": {
       "animation": "动画",
@@ -261,6 +257,10 @@
       "blur": "一言背景模糊",
       "ripple": "一言水波纹动画",
       "transparent": "一言背景透明"
+    },
+    "quickLinks": {
+      "blur": "快速导航图标模糊",
+      "transparent": "快速导航图标透明"
     }
   },
   "search": {
@@ -277,37 +277,6 @@
     "shadow": "显示搜索框阴影",
     "tip": "想要打开新标签页就激活搜索输入？请查看页面右下角按钮菜单的「帮助和反馈」",
     "title": "搜索"
-  },
-  "shortcut": {
-    "border": "显示图标边框",
-    "iconCacheTip": "Tip：建议打开「设置-其他-图标缓存」以尝试获取更高清晰度的图标。",
-    "iconRatio": "图标填充比例",
-    "iconSize": "图标大小",
-    "grouping": "启用分组",
-    "groupingDisableConfirm": "关闭分组会合并所有快速导航分组，并移除重复 URL。不同分组中的重复链接将无法保留。",
-    "groupingTip": "双击快速导航区或启动台中的分组名即可重命名。",
-    "marginTop": "区域上边距",
-    "maxColumns": "最大列数",
-    "maxItemsTipForChrome": "最常访问的上限只有 10 个噢~",
-    "maxRows": "最大行数",
-    "paging": "启用翻页",
-    "pagingLoop": "翻页循环",
-    "pinnedIcon": "显示置顶图标",
-    "restoreDefault": "恢复隐藏的链接",
-    "restoreDefaultTitle": "你确定要恢复默认快速导航吗？",
-    "shadow": "显示图标阴影",
-    "showOnSearchFocus": "搜索框聚焦时显示",
-    "showTitle": "显示标题",
-    "spacing": {
-      "iconTitleGap": "图标与标题间距",
-      "itemGapX": "链接左右间距",
-      "itemGapY": "链接上下间距"
-    },
-    "tip": "提示：可以拖动设置窗口以观察快速导航区域变化。",
-    "title": "快速导航",
-    "titleExtraWidth": "标题扩展宽度",
-    "titleWhiteInLight": "【快速导航】浅色模式下使用白色文字",
-    "topSites": "展示最常访问"
   },
   "theme": {
     "color": {
@@ -383,5 +352,36 @@
     },
     "shadow": "显示文字阴影",
     "title": "一言"
+  },
+  "quickLinks": {
+    "border": "显示图标边框",
+    "iconCacheTip": "Tip：建议打开「设置-其他-图标缓存」以尝试获取更高清晰度的图标。",
+    "iconRatio": "图标填充比例",
+    "iconSize": "图标大小",
+    "grouping": "启用分组",
+    "groupingDisableConfirm": "关闭分组会合并所有快速导航分组，并移除重复 URL。不同分组中的重复链接将无法保留。",
+    "groupingTip": "双击快速导航区或启动台中的分组名即可重命名。",
+    "marginTop": "区域上边距",
+    "maxColumns": "最大列数",
+    "maxItemsTipForChrome": "最常访问的上限只有 10 个噢~",
+    "maxRows": "最大行数",
+    "paging": "启用翻页",
+    "pagingLoop": "翻页循环",
+    "pinnedIcon": "显示置顶图标",
+    "restoreDefault": "恢复隐藏的链接",
+    "restoreDefaultTitle": "你确定要恢复默认快速导航吗？",
+    "shadow": "显示图标阴影",
+    "showOnSearchFocus": "搜索框聚焦时显示",
+    "showTitle": "显示标题",
+    "spacing": {
+      "iconTitleGap": "图标与标题间距",
+      "itemGapX": "链接左右间距",
+      "itemGapY": "链接上下间距"
+    },
+    "tip": "提示：可以拖动设置窗口以观察快速导航区域变化。",
+    "title": "快速导航",
+    "titleExtraWidth": "标题扩展宽度",
+    "titleWhiteInLight": "【快速导航】浅色模式下使用白色文字",
+    "topSites": "展示最常访问"
   }
 }

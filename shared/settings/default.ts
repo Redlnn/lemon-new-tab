@@ -104,7 +104,7 @@ export const defaultSettings = {
     },
   },
 
-  shortcut: {
+  quickLinks: {
     enabled: true,
 
     topSites: true,
@@ -198,7 +198,7 @@ export const defaultSettings = {
       scale: true,
       blur: true,
     },
-    shortcut: {
+    quickLinks: {
       transparent: true,
       blur: true,
     },

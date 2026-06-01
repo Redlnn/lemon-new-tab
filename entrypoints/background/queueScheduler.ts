@@ -1,6 +1,6 @@
 // 同步操作的队列调度和速率限制
-import { isSyncEnvelopeV1 } from '@/shared/sync/types'
-import type { SyncEnvelopeV1 } from '@/shared/sync/types'
+import { normalizeSyncEnvelope } from '@/shared/sync/types'
+import type { SyncEnvelopeV2 } from '@/shared/sync/types'
 
 import type { BackgroundState, QueueState } from './types'
 
@@ -13,7 +13,7 @@ const SYNC_INTERVAL = 2000
 export function createQueueScheduler(
   state: BackgroundState,
   queueState: QueueState,
-  writeToCloud: (payload: SyncEnvelopeV1) => Promise<void>,
+  writeToCloud: (payload: SyncEnvelopeV2) => Promise<void>,
   processCloudChange: (cloudRaw: unknown) => Promise<void>,
   syncDataStorage: { getValue: () => Promise<unknown> },
 ) {
@@ -81,21 +81,22 @@ export function createQueueScheduler(
 
     // 读前写：如果云在等待期间更新，则中止推送
     const currentCloud = await syncDataStorage.getValue()
-    if (!isSyncEnvelopeV1(currentCloud)) {
-      debugLog('读前写：非 v1 云数据存在，跳过推送直到解决')
+    const normalizedCloud = normalizeSyncEnvelope(currentCloud)
+    if (!normalizedCloud) {
+      debugLog('读前写：非 v2 云数据存在，跳过推送直到解决')
       return
     }
-    if (currentCloud.version > state.localVersion) {
+    if (normalizedCloud.version > state.localVersion) {
       debugLog('读前写：云比较新，应用而不是推送')
-      await processCloudChange(currentCloud)
+      await processCloudChange(normalizedCloud)
       return
     }
 
     // 空操作保护：如果云已反映了我们最新的本地状态，则跳过推送
     if (
-      currentCloud.version === state.localVersion &&
-      currentCloud.fromDeviceId === state.deviceId &&
-      payload.lastUpdate <= currentCloud.lastUpdate
+      normalizedCloud.version === state.localVersion &&
+      normalizedCloud.fromDeviceId === state.deviceId &&
+      payload.lastUpdate <= normalizedCloud.lastUpdate
     ) {
       debugLog('读前写：最后一次推送后无本地变化，跳过')
       return

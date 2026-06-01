@@ -245,10 +245,6 @@
       "blur": "Search bar blur",
       "transparent": "Search bar transparency"
     },
-    "shortcut": {
-      "blur": "Quick Links icon blur",
-      "transparent": "Quick Links icon transparency"
-    },
     "title": "Performance",
     "toggleAll": {
       "animation": "Animation",
@@ -261,6 +257,10 @@
       "blur": "Quote blur",
       "ripple": "Quote ripple animation",
       "transparent": "Quote transparency"
+    },
+    "quickLinks": {
+      "blur": "Quick Links icon blur",
+      "transparent": "Quick Links icon transparency"
     }
   },
   "search": {
@@ -277,37 +277,6 @@
     "shadow": "Show search box shadow",
     "tip": "Want to activate the search input when opening a new tab? Check the “Help and Feedback” in the button menu at the bottom right of the page.",
     "title": "Search"
-  },
-  "shortcut": {
-    "border": "Show icon border",
-    "iconCacheTip": "Tip: Consider enabling Settings → Other → Icon cache to attempt fetching higher-resolution icons.",
-    "iconRatio": "Icon ratio",
-    "iconSize": "Icon size",
-    "grouping": "Enable groups",
-    "groupingDisableConfirm": "Disabling groups will merge all Quick Links groups and remove duplicate URLs. Duplicate links in different groups cannot be preserved.",
-    "groupingTip": "Double-click a group name in Quick Links or Launchpad to rename it.",
-    "marginTop": "Area top margin",
-    "maxColumns": "Maximum columns",
-    "maxItemsTipForChrome": "Tip: You can only have up to 10 most visited links.",
-    "maxRows": "Maximum rows",
-    "paging": "Enable paging",
-    "pagingLoop": "Loop pages",
-    "pinnedIcon": "Show pinned icon",
-    "restoreDefault": "Recover hidden links",
-    "restoreDefaultTitle": "Are you sure you want to restore default Quick Links?",
-    "shadow": "Show icon shadow",
-    "showOnSearchFocus": "Show on search focus",
-    "showTitle": "Show link title",
-    "spacing": {
-      "iconTitleGap": "Icon–Title Spacing",
-      "itemGapX": "Horizontal link spacing",
-      "itemGapY": "Vertical link spacing"
-    },
-    "tip": "Tip: Drag the settings window to preview changes in the Quick Links area.",
-    "title": "Quick Links",
-    "titleExtraWidth": "Title expand width",
-    "titleWhiteInLight": "[Quick Links] Use white text in light mode",
-    "topSites": "Show most visited"
   },
   "theme": {
     "color": {
@@ -383,5 +352,36 @@
     },
     "shadow": "Show text shadow",
     "title": "Quote"
+  },
+  "quickLinks": {
+    "border": "Show icon border",
+    "iconCacheTip": "Tip: Consider enabling Settings → Other → Icon cache to attempt fetching higher-resolution icons.",
+    "iconRatio": "Icon ratio",
+    "iconSize": "Icon size",
+    "grouping": "Enable groups",
+    "groupingDisableConfirm": "Disabling groups will merge all Quick Links groups and remove duplicate URLs. Duplicate links in different groups cannot be preserved.",
+    "groupingTip": "Double-click a group name in Quick Links or Launchpad to rename it.",
+    "marginTop": "Area top margin",
+    "maxColumns": "Maximum columns",
+    "maxItemsTipForChrome": "Tip: You can only have up to 10 most visited links.",
+    "maxRows": "Maximum rows",
+    "paging": "Enable paging",
+    "pagingLoop": "Loop pages",
+    "pinnedIcon": "Show pinned icon",
+    "restoreDefault": "Recover hidden links",
+    "restoreDefaultTitle": "Are you sure you want to restore default Quick Links?",
+    "shadow": "Show icon shadow",
+    "showOnSearchFocus": "Show on search focus",
+    "showTitle": "Show link title",
+    "spacing": {
+      "iconTitleGap": "Icon–Title Spacing",
+      "itemGapX": "Horizontal link spacing",
+      "itemGapY": "Vertical link spacing"
+    },
+    "tip": "Tip: Drag the settings window to preview changes in the Quick Links area.",
+    "title": "Quick Links",
+    "titleExtraWidth": "Title expand width",
+    "titleWhiteInLight": "[Quick Links] Use white text in light mode",
+    "topSites": "Show most visited"
   }
 }

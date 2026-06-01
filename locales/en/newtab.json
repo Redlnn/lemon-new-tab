@@ -4,7 +4,7 @@
   },
   "bookmark": {
     "404": "Nothing found",
-    "addToShortcut": "Add to Quick Links",
+    "addToQuickLinks": "Add to Quick Links",
     "added": "Added to Quick Links",
     "collapse": {
       "all": "Collapse All at Level",
@@ -57,6 +57,7 @@
     "name": "Name",
     "no": "No",
     "save": "Save",
+    "tooLargeImageError": "The image size exceeds 100KiB, please select another one.",
     "undo": "Undo",
     "url": "URL",
     "warning": "Warning"
@@ -123,20 +124,33 @@
     "purgeSearchHistory": "Clear Search History",
     "searchEngineNotFound": "Search engine not found"
   },
-  "shortcut": {
+  "sponsor": "This extension was created by me in my spare time to solve my own needs, and I'm thrilled it helps you too! If you enjoy it, please consider giving it a ⭐ on GitHub—it means a lot to me. Feel free to share your ideas or feedback at: redlnn@outlook.com. Thank you!",
+  "time": {
+    "afternoon": "",
+    "dawn": "",
+    "dusk": "",
+    "evening": "",
+    "lateNight": "",
+    "morning": "",
+    "noon": ""
+  },
+  "title": "New Tab",
+  "yiyan": {
+    "copied": "Copied to clipboard"
+  },
+  "quickLinks": {
     "addDialog": {
       "extensionIconTip": "You can also add the current page to Quick Links by clicking the icon in the browser extensions menu.",
       "invalidUrlError": "Invalid URL. Please input a new one",
-      "tooLargeImageError": "The image size exceeds 100KiB, please reselect a new one~",
       "uploadFaviconAlert": "If you don't upload an icon, consider enabling Settings → Other → Icon cache to automatically fetch icons."
     },
-    "addShortcut": "Add Link",
+    "addLink": "Add Link",
     "bookmark": {
       "add": "Add to Bookmarks",
       "existing": "This bookmark already exists",
       "success": "Saved to “{{folder}}”"
     },
-    "editShortcut": "Edit Link",
+    "editLink": "Edit Link",
     "groups": {
       "default": "Default",
       "deleteConfirm": "Delete group “{{name}}” and all links inside it?",
@@ -158,19 +172,5 @@
     "unpin": "Unpin",
     "unpinMessage": "Link unpinned.",
     "fetchingFavicon": "Fetching icon in background..."
-  },
-  "sponsor": "This extension was created by me in my spare time to solve my own needs, and I'm thrilled it helps you too! If you enjoy it, please consider giving it a ⭐ on GitHub—it means a lot to me. Feel free to share your ideas or feedback at: redlnn@outlook.com. Thank you!",
-  "time": {
-    "afternoon": "",
-    "dawn": "",
-    "dusk": "",
-    "evening": "",
-    "lateNight": "",
-    "morning": "",
-    "noon": ""
-  },
-  "title": "New Tab",
-  "yiyan": {
-    "copied": "Copied to clipboard"
   }
 }

@@ -8,11 +8,11 @@ async function downloadBackup() {
   const { downloadJSON } = await import('@/shared/downloadJson')
 
   const settings = await browser.storage.local.get('settings')
-  const pinedShortcut = await browser.storage.local.get('bookmark')
+  const quickLinksData = await browser.storage.local.get(['quickLinks', 'bookmark'])
   const customSearchEngine = await browser.storage.local.get('customSearchEngine')
 
   downloadJSON(
-    { ...settings, ...pinedShortcut, ...customSearchEngine },
+    { ...settings, ...quickLinksData, ...customSearchEngine },
     `lemon-new-tab-backup-${new Date().toISOString()}.json`,
   )
 }

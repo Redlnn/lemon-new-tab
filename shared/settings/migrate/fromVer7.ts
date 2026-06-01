@@ -73,8 +73,8 @@ export function migrateFromVer7To8(oldSettings: SettingsSchemaV7): SettingsSchem
       enabled: oldSettings.shortcut.enabled,
       enableTopSites: oldSettings.shortcut.enableTopSites,
       enableShadow: oldSettings.shortcut.enableShadow,
-      disablePaging: !defaultSettings.shortcut.paging, // 旧版本是反的
-      showOnSearchFocus: defaultSettings.shortcut.showOnSearchFocus,
+      disablePaging: !defaultSettings.quickLinks.paging, // 旧版本是反的
+      showOnSearchFocus: defaultSettings.quickLinks.showOnSearchFocus,
       rows: oldSettings.shortcut.rows,
       columns: oldSettings.shortcut.columns,
       itemMarginH: oldSettings.shortcut.itemMarginH,
@@ -82,12 +82,12 @@ export function migrateFromVer7To8(oldSettings: SettingsSchemaV7): SettingsSchem
       showShortcutTitle: oldSettings.shortcut.showShortcutTitle,
       showPinnedIcon: oldSettings.shortcut.showPinnedIcon,
       iconSize: oldSettings.shortcut.iconSize,
-      iconRatio: defaultSettings.shortcut.iconRatio,
-      iconMarginBottom: defaultSettings.shortcut.spacing.iconTitleGap,
-      titleExtraWidth: defaultSettings.shortcut.title.extraWidth,
+      iconRatio: defaultSettings.quickLinks.iconRatio,
+      iconMarginBottom: defaultSettings.quickLinks.spacing.iconTitleGap,
+      titleExtraWidth: defaultSettings.quickLinks.title.extraWidth,
       whiteTextInLightMode: oldSettings.shortcut.whiteTextInLightMode,
       marginTop: oldSettings.shortcut.marginTop,
-      openInNewTab: defaultSettings.shortcut.openInNewTab,
+      openInNewTab: defaultSettings.quickLinks.openInNewTab,
     },
     sync: { enabled: oldSettings.sync.enabled },
     yiyan: {

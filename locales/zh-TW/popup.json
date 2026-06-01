@@ -1,6 +1,6 @@
 {
   "title": "新增連結",
-  "addToShortcut": "新增",
+  "addToQuickLinks": "新增",
   "addSuccess": "已新增至快速連結",
   "alreadyExists": "此頁面已在快速連結中",
   "cannotAdd": "無法新增此頁面"

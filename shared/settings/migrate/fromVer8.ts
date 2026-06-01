@@ -142,7 +142,7 @@ export function migrateFromVer8To9(oldSettings: SettingsSchemaV8): SettingsSchem
 
       style: {
         shadow: oldSettings.shortcut.enableShadow,
-        border: defaultSettings.shortcut.style.border,
+        border: defaultSettings.quickLinks.style.border,
       },
 
       layout: {

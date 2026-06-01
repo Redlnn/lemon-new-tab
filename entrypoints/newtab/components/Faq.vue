@@ -82,9 +82,9 @@ function handleEmailClick() {
         </div>
       </div>
       <div class="faq-item">
-        <div class="faq-item__title">{{ t('items.restoreShortcut.title') }}</div>
+        <div class="faq-item__title">{{ t('items.restoreQuickLinks.title') }}</div>
         <div class="markdown-body">
-          <p>{{ t('items.restoreShortcut.content') }}</p>
+          <p>{{ t('items.restoreQuickLinks.content') }}</p>
         </div>
       </div>
       <div class="faq-item">
