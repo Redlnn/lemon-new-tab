@@ -81,10 +81,7 @@ function handlePagingChange(enabled: boolean | string | number) {
         </div>
         <div class="settings__item settings__item--horizontal">
           <div class="settings__label">{{ t('quickLinks.useScroll') }}</div>
-          <el-switch
-            :model-value="settings.quickLinks.useScroll"
-            @change="handleUseScrollChange"
-          />
+          <el-switch :model-value="settings.quickLinks.useScroll" @change="handleUseScrollChange" />
         </div>
         <p v-if="isHasTouchDevice" class="settings__item--note">
           {{ t('quickLinks.useScrollTouchTip') }}

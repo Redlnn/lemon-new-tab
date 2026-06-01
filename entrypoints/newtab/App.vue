@@ -145,7 +145,10 @@ const mainClass = computed(() => ({
 
 const mainStyle = computed<StyleValue>(() => {
   if (quickLinksScrollEnabled.value && settings.layout.mainPosition.type === 'center') {
-    return [{ paddingTop: `${defaultSettings.layout.mainPosition.value}vh` }, { paddingTop: `${defaultSettings.layout.mainPosition.value}dvh` }]
+    return [
+      { paddingTop: `${defaultSettings.layout.mainPosition.value}vh` },
+      { paddingTop: `${defaultSettings.layout.mainPosition.value}dvh` },
+    ]
   }
 
   const pos = settings.layout.mainPosition
