@@ -4,8 +4,51 @@
   max-width: 85%;
   transition: opacity 0.1s ease;
 
+  &--scroll {
+    width: min(1000px, 90vw);
+    max-width: 90vw;
+  }
+
   &__wrapper {
     position: relative;
+  }
+
+  &__scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    width: 100%;
+    padding: 10px 10px 40px;
+  }
+
+  &__scroll-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__scroll-title {
+    padding: 0 10px;
+    margin: 0;
+    font-size: var(--el-font-size-small);
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+    text-align: center;
+
+    html.light .quick-links__container--white-in-light & {
+      color: var(--el-color-white);
+      text-shadow:
+        1px 1px 4px rgb(0 0 0 / 50%),
+        0 0 6px rgb(0 0 0 / 10%);
+    }
+  }
+
+  &__scroll-grid {
+    grid-auto-rows: max-content;
+    justify-content: center;
+    width: max-content;
+    padding: 0 10px;
+    margin: 0 auto;
   }
 
   &__wrapper-inner {

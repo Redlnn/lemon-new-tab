@@ -21,6 +21,10 @@ const quickLinksStore = useQuickLinksStore()
 const settings = useSettingsStore()
 const modelForm = ref<FormInstance>()
 
+const emit = defineEmits<{
+  saved: []
+}>()
+
 const showDialog = ref(false)
 const editingTarget = ref<QuickLinkTarget | null>(null)
 const addingGroupId = ref<string | null>(null)
@@ -87,7 +91,7 @@ async function submit() {
         quickLink,
       )
     }
-  } else if (addingGroupId.value) {
+  } else if (settings.quickLinks.grouping && addingGroupId.value) {
     await quickLinksStore.addQuickLinkToGroup(addingGroupId.value, quickLink)
   } else if (settings.quickLinks.grouping) {
     await quickLinksStore.addQuickLinkToGroup(DEFAULT_QUICK_LINK_GROUP_ID, quickLink)
@@ -98,6 +102,7 @@ async function submit() {
 
   showDialog.value = false
   resetFields()
+  emit('saved')
 
   if (!quickLink.favicon) {
     ElNotification({

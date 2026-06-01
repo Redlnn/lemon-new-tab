@@ -162,7 +162,8 @@
       "dvhValue": "Distance from top (dvh)",
       "label": "Main area position",
       "px": "From top (px)",
-      "pxValue": "Distance from top (px)"
+      "pxValue": "Distance from top (px)",
+      "quickLinksScrollNote": "Center positioning is unavailable while Quick Links scrolling is enabled."
     },
     "title": "Layout"
   },
@@ -361,6 +362,8 @@
     "grouping": "Enable groups",
     "groupingDisableConfirm": "Disabling groups will merge all Quick Links groups and remove duplicate URLs. Duplicate links in different groups cannot be preserved.",
     "groupingTip": "Double-click a group name in Quick Links or Launchpad to rename it.",
+    "useScroll": "Use scrolling",
+    "useScrollTouchTip": "Recommended on mobile devices for a better browsing experience.",
     "marginTop": "Area top margin",
     "maxColumns": "Maximum columns",
     "maxItemsTipForChrome": "Tip: You can only have up to 10 most visited links.",

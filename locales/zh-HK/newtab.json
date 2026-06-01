@@ -57,7 +57,7 @@
     "name": "名稱",
     "no": "算啦",
     "save": "儲存",
-    "tooLargeImageError": "圖片超過 100KiB，請重新選擇",
+    "tooLargeImageConfirm": "圖片較大（{{size}}），可能會影響效能同反應速度，是否繼續使用？",
     "undo": "復原",
     "url": "網址",
     "warning": "警告"

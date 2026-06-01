@@ -20,6 +20,7 @@ export const useSettingsStore = defineStore('option', () => {
 
     Object.assign(state, settings)
     state.quickLinks.grouping ??= defaultSettings.quickLinks.grouping
+    state.quickLinks.useScroll ??= defaultSettings.quickLinks.useScroll
     state.quickLinks.pagingLoop ??= defaultSettings.quickLinks.pagingLoop
 
     // 清理之前的 watcher（幂等性）
@@ -30,6 +31,7 @@ export const useSettingsStore = defineStore('option', () => {
       if (!newSettings) return
       Object.assign(state, newSettings)
       state.quickLinks.grouping ??= defaultSettings.quickLinks.grouping
+      state.quickLinks.useScroll ??= defaultSettings.quickLinks.useScroll
       state.quickLinks.pagingLoop ??= defaultSettings.quickLinks.pagingLoop
     })
   }

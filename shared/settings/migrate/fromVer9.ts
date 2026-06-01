@@ -11,6 +11,7 @@ export function migrateFromVer9To10(old: SettingsSchemaV9): SettingsSchemaV10 {
     shortcut: {
       ...old.shortcut,
       grouping: defaultSettings.quickLinks.grouping,
+      useScroll: defaultSettings.quickLinks.useScroll,
       pagingLoop: defaultSettings.quickLinks.pagingLoop,
     },
     yiyan: {

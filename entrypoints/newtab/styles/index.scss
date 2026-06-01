@@ -84,6 +84,13 @@ html.dialog-acrylic {
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
     env(safe-area-inset-left); // 移动端安全区
   transition: opacity var(--el-transition-duration) ease-in-out;
+
+  &--quick-links-scroll {
+    justify-content: flex-start;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 96px);
+    overflow: hidden auto;
+    overscroll-behavior-y: contain;
+  }
 }
 
 .noselect {

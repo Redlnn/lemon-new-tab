@@ -112,6 +112,7 @@ export const defaultSettings = {
     openInNewTab: false,
     paging: true,
     grouping: false,
+    useScroll: false,
     pagingLoop: false,
     showOnSearchFocus: false,
 

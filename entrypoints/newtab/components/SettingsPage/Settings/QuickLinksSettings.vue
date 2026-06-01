@@ -5,6 +5,7 @@ import RestoreRound from '~icons/ic/round-restore'
 import { useSettingsStore } from '@/shared/settings'
 
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
+import { isHasTouchDevice } from '@newtab/shared/touch'
 
 import { useQuickLinksGroupingChange } from '../composables/useQuickLinksGroupingChange'
 
@@ -17,6 +18,20 @@ const { handleGroupingChange } = useQuickLinksGroupingChange()
 async function restoreDefaultTopSites() {
   await blockedTopSitesStorage.setValue([])
   location.reload()
+}
+
+function handleUseScrollChange(enabled: boolean | string | number) {
+  if (enabled) {
+    settings.quickLinks.paging = false
+  }
+  settings.quickLinks.useScroll = Boolean(enabled)
+}
+
+function handlePagingChange(enabled: boolean | string | number) {
+  if (enabled) {
+    settings.quickLinks.useScroll = false
+  }
+  settings.quickLinks.paging = Boolean(enabled)
 }
 </script>
 
@@ -65,8 +80,18 @@ async function restoreDefaultTopSites() {
           />
         </div>
         <div class="settings__item settings__item--horizontal">
+          <div class="settings__label">{{ t('quickLinks.useScroll') }}</div>
+          <el-switch
+            :model-value="settings.quickLinks.useScroll"
+            @change="handleUseScrollChange"
+          />
+        </div>
+        <p v-if="isHasTouchDevice" class="settings__item--note">
+          {{ t('quickLinks.useScrollTouchTip') }}
+        </p>
+        <div class="settings__item settings__item--horizontal">
           <div class="settings__label">{{ t('quickLinks.paging') }}</div>
-          <el-switch v-model="settings.quickLinks.paging" />
+          <el-switch :model-value="settings.quickLinks.paging" @change="handlePagingChange" />
         </div>
         <div v-if="settings.quickLinks.paging" class="settings__item settings__item--horizontal">
           <div class="settings__label">{{ t('quickLinks.pagingLoop') }}</div>
@@ -91,6 +116,7 @@ async function restoreDefaultTopSites() {
             :show-tooltip="false"
             style="margin-bottom: 20px"
             :marks="{ 1: '1', 2: '2', 3: '3', 4: '4', 5: '5' }"
+            :disabled="settings.quickLinks.useScroll"
           />
         </div>
         <div class="settings__item settings__item--vertical">

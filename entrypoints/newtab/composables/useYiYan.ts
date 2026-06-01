@@ -46,6 +46,10 @@ export function useYiYan() {
   const isEnabled = computed(() => {
     if (!yiyan.value) return false
     if (settings.yiyan.alwaysShow) {
+      if (settings.quickLinks.useScroll) {
+        return true
+      }
+
       // 限制700px只能保证2行快速访问，再多就不行了
       if (!focusStore.isFocused && height.value < 700) {
         return false

@@ -13,6 +13,7 @@ export interface SettingsSchemaV10 extends Omit<
 
   shortcut: SettingsSchemaV9['shortcut'] & {
     grouping: boolean
+    useScroll: boolean
     pagingLoop: boolean
   }
 

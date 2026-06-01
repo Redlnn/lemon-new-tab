@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia'
 import type { StyleValue } from 'vue'
 
 import { BgType } from '@/shared/enums'
-import { useSettingsStore } from '@/shared/settings'
+import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import { useSyncDataStore } from '@/shared/sync'
 
 import {
@@ -57,6 +57,8 @@ const BGSwticherRef = ref<InstanceType<typeof BackgroundSwitcher>>()
 const BookmarkRef = ref<InstanceType<typeof Bookmark>>()
 const BackgroundRef = ref<InstanceType<typeof Background>>()
 const AddQuickLinkDialogRef = ref<InstanceType<typeof AddQuickLinkDialog>>()
+const QuickLinksRef = ref<InstanceType<typeof QuickLinks>>()
+const DockRef = ref<InstanceType<typeof Dock>>()
 
 const appRef = useTemplateRef('appRef')
 
@@ -121,7 +123,31 @@ const actionClass = computed(() => {
   }
 })
 
+const quickLinksScrollEnabled = computed(
+  () => settings.quickLinks.enabled && settings.quickLinks.useScroll,
+)
+
+watch(
+  quickLinksScrollEnabled,
+  (enabled) => {
+    if (!enabled || settings.layout.mainPosition.type !== 'center') return
+    settings.layout.mainPosition = {
+      type: 'dvh',
+      value: defaultSettings.layout.mainPosition.value,
+    }
+  },
+  { immediate: true },
+)
+
+const mainClass = computed(() => ({
+  'app--quick-links-scroll': quickLinksScrollEnabled.value,
+}))
+
 const mainStyle = computed<StyleValue>(() => {
+  if (quickLinksScrollEnabled.value && settings.layout.mainPosition.type === 'center') {
+    return [{ paddingTop: `${defaultSettings.layout.mainPosition.value}vh` }, { paddingTop: `${defaultSettings.layout.mainPosition.value}dvh` }]
+  }
+
   const pos = settings.layout.mainPosition
   if (pos.type === 'center') {
     return { justifyContent: 'center' }
@@ -137,6 +163,10 @@ const handleLegacyCancel = () => syncStore.dismissLegacyDialog()
 const handleUseCloudConflictData = () => syncStore.useCloudConflictData()
 const handleUseLocalConflictData = () => syncStore.useLocalConflictData()
 const handleDisableSyncConflict = () => syncStore.disableSyncAndDismissConflict()
+
+async function refreshQuickLinks() {
+  await Promise.all([QuickLinksRef.value?.refresh(), DockRef.value?.refresh()])
+}
 </script>
 
 <template>
@@ -150,11 +180,18 @@ const handleDisableSyncConflict = () => syncStore.disableSyncAndDismissConflict(
       placement: 'bottom',
     }"
   >
-    <main :style="mainStyle" class="app" ref="appRef" @contextmenu.prevent="openBookmarkSidebar">
+    <main
+      :style="mainStyle"
+      class="app"
+      :class="mainClass"
+      ref="appRef"
+      @contextmenu.prevent="openBookmarkSidebar"
+    >
       <clock v-if="settings.clock.enabled" @contextmenu.stop />
       <search-box v-if="settings.search.enabled" @contextmenu.stop />
       <quick-links
         v-if="settings.quickLinks.enabled"
+        ref="QuickLinksRef"
         :on-open-add-dialog="AddQuickLinkDialogRef?.openAddDialog"
         :on-open-edit-dialog="AddQuickLinkDialogRef?.openEditDialog"
         @contextmenu.stop
@@ -162,6 +199,7 @@ const handleDisableSyncConflict = () => syncStore.disableSyncAndDismissConflict(
       <yi-yan v-if="settings.yiyan.enabled" @contextmenu.stop />
       <dock
         v-if="settings.dock.enabled"
+        ref="DockRef"
         :on-open-add-dialog="AddQuickLinkDialogRef?.openAddDialog"
         :on-open-edit-dialog="AddQuickLinkDialogRef?.openEditDialog"
       />
@@ -192,7 +230,7 @@ const handleDisableSyncConflict = () => syncStore.disableSyncAndDismissConflict(
     <search-engines-switcher ref="SESwitcherRef" />
     <background-switcher ref="BGSwticherRef" />
     <bookmark ref="BookmarkRef" />
-    <add-quick-link-dialog ref="AddQuickLinkDialogRef" />
+    <add-quick-link-dialog ref="AddQuickLinkDialogRef" @saved="refreshQuickLinks" />
     <permission-dialog
       v-model="permissionDialogVisible"
       :hostname="currentHostname"

@@ -63,6 +63,14 @@ type QuickLinkPage = {
   items: DisplayItem[]
 }
 
+type ScrollSection = {
+  key: string
+  title?: string
+  groupId?: string
+  isTopSites: boolean
+  items: DisplayItem[]
+}
+
 const topSitesGroupId = '__top-sites__'
 const topSitesGroupName = i18next.t('newtab:quickLinks.groups.topSites')
 
@@ -160,6 +168,55 @@ const pages = computed<QuickLinkPage[]>(() => {
   return result.length > 0 ? result : splitIntoPages(DEFAULT_QUICK_LINK_GROUP_ID, [], false)
 })
 
+const scrollSections = computed<ScrollSection[]>(() => {
+  if (!settings.quickLinks.grouping) {
+    return [
+      {
+        key: 'quick-links',
+        isTopSites: false,
+        items: legacyItems.value,
+      },
+    ]
+  }
+
+  const sections: ScrollSection[] = visibleCategoryGroups.value.map((group) => ({
+    key: group.id,
+    title: group.name,
+    groupId: group.id,
+    isTopSites: false,
+    items: buildGroupItems(group),
+  }))
+
+  if (settings.quickLinks.topSites && topSites.value.length > 0) {
+    sections.push({
+      key: topSitesGroupId,
+      title: topSitesGroupName,
+      groupId: topSitesGroupId,
+      isTopSites: true,
+      items: topSites.value.map((item, index) => ({
+        url: item.url,
+        title: item.title || '',
+        favicon: item.favicon,
+        isPinned: false,
+        originalIndex: index,
+        groupId: topSitesGroupId,
+      })),
+    })
+  }
+
+  return sections.length > 0
+    ? sections
+    : [
+        {
+          key: DEFAULT_QUICK_LINK_GROUP_ID,
+          title: quickLinksStore.groups[0]?.name,
+          groupId: DEFAULT_QUICK_LINK_GROUP_ID,
+          isTopSites: false,
+          items: [],
+        },
+      ]
+})
+
 // 始终使用完整 pages 长度，以支持关闭翻页时也能切换分组
 const paginationTotalItems = computed(() => pages.value.length)
 const paginationItemsPerPage = ref(1)
@@ -181,7 +238,9 @@ const {
 } = useQuickLinksPagination(paginationTotalItems, paginationItemsPerPage, allowPageLoop)
 
 // 仅在翻页启用时才显示翻页 UI
-const showPagination = computed(() => settings.quickLinks.paging && rawShowPagination.value)
+const showPagination = computed(
+  () => !settings.quickLinks.useScroll && settings.quickLinks.paging && rawShowPagination.value,
+)
 
 function getPage(pageIndex: number): QuickLinkPage | null {
   return pages.value[pageIndex] ?? null
@@ -334,6 +393,11 @@ async function updateCategoryGroupOrder(groups: QuickLinkGroup[]) {
 }
 
 async function openAddQuickLink() {
+  if (!settings.quickLinks.grouping) {
+    props.onOpenAddDialog?.()
+    return
+  }
+
   const page = currentPageData.value
   if (page && !page.isTopSites && page.groupId !== topSitesGroupId) {
     props.onOpenAddDialog?.(page.groupId)
@@ -344,6 +408,14 @@ async function openAddQuickLink() {
     title: i18next.t('newtab:quickLinks.groups.selectAddTarget'),
   })
   if (groupId) props.onOpenAddDialog?.(groupId)
+}
+
+function openAddQuickLinkForSection(section: ScrollSection) {
+  if (!settings.quickLinks.grouping) {
+    props.onOpenAddDialog?.()
+    return
+  }
+  props.onOpenAddDialog?.(section.groupId ?? DEFAULT_QUICK_LINK_GROUP_ID)
 }
 
 function openCtxMenu(event: MouseEvent | PointerEvent, item: DisplayItem): void {
@@ -462,7 +534,8 @@ function scheduleQuickLinkOrderSave() {
   }, 150)
 }
 
-useDraggable(currentPageContainerRef, currentDragItems, {
+const currentPageDraggable = useDraggable(currentPageContainerRef, currentDragItems, {
+  immediate: false,
   animation: 150,
   delayOnTouchOnly: true,
   touchStartThreshold: 10,
@@ -487,6 +560,16 @@ useDraggable(currentPageContainerRef, currentDragItems, {
   },
 })
 
+watch(
+  [() => settings.quickLinks.useScroll, currentPageContainerRef],
+  ([useScroll]) => {
+    currentPageDraggable.destroy()
+    if (useScroll || !currentPageContainerRef.value) return
+    currentPageDraggable.start(currentPageContainerRef.value)
+  },
+  { immediate: true, flush: 'post' },
+)
+
 // 设置滑动手势支持（绑定到 slide-viewport，以便切换时能切换 overflow）
 setupSwipe(
   quickLinksContainerRef,
@@ -494,7 +577,7 @@ setupSwipe(
   currentPageContainerRef,
   nextPageContainerRef,
   isDragging,
-  computed(() => settings.quickLinks.paging),
+  computed(() => settings.quickLinks.paging && !settings.quickLinks.useScroll),
 )
 
 // 开始拖拽时关闭已打开的菜单
@@ -509,7 +592,7 @@ useEventListener(
   currentPageContainerRef,
   'wheel',
   (evt: WheelEvent) => {
-    if (isDragging.value || !settings.quickLinks.paging) return
+    if (isDragging.value || settings.quickLinks.useScroll || !settings.quickLinks.paging) return
     if (evt.deltaY < 0 || evt.deltaX < 0) {
       // 向上滚动，上一页
       prevPage()
@@ -535,10 +618,23 @@ watch(
     settings.quickLinks.spacing.itemGapX,
     settings.quickLinks.spacing.itemGapY,
     settings.quickLinks.paging,
+    settings.quickLinks.useScroll,
   ],
   async () => {
     updateMaxCols()
     await refreshDebounced()
+  },
+)
+
+watch(
+  () => settings.quickLinks.useScroll,
+  (enabled) => {
+    if (!enabled) return
+    noTransition.value = true
+    currentPage.value = 0
+    nextTick(() => {
+      noTransition.value = false
+    })
   },
 )
 
@@ -620,17 +716,27 @@ const containerGridStyle = computed(() => ({
   '--icon_ratio': `${settings.quickLinks.iconRatio}`,
 }))
 
+const scrollGridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${displayColumns.value}, 1fr)`,
+  gridGap: `${settings.quickLinks.spacing.itemGapY}px ${settings.quickLinks.spacing.itemGapX}px`,
+  '--icon_size': `${settings.quickLinks.iconSize}px`,
+  '--icon_ratio': `${settings.quickLinks.iconRatio}`,
+}))
+
 const categoryPerf = usePerfClasses(() => ({
   transparent: settings.perf.quickLinks.transparent,
   blur: settings.perf.quickLinks.blur,
 }))
 
 const categoryClass = categoryPerf('quick-links__category')
+
+defineExpose({ refresh })
 </script>
 
 <template>
   <section
     class="quick-links"
+    :class="{ 'quick-links--scroll': settings.quickLinks.useScroll }"
     :style="{
       opacity: isHideQuickLink,
       // paddingTop: `${settings.quickLinks.marginTop / 2}px`,
@@ -638,7 +744,41 @@ const categoryClass = categoryPerf('quick-links__category')
     }"
   >
     <div ref="quickLinksWrapperRef" class="quick-links__wrapper" :class="containerBaseClasses">
-      <el-space v-if="settings.quickLinks.grouping" class="noselect" :class="categoryClass">
+      <div v-if="settings.quickLinks.useScroll" class="quick-links__scroll">
+        <section
+          v-for="section in scrollSections"
+          :key="section.key"
+          class="quick-links__scroll-section"
+        >
+          <h2 v-if="section.title" class="quick-links__scroll-title">{{ section.title }}</h2>
+          <div
+            class="quick-links__container quick-links__scroll-grid"
+            :class="containerBaseClasses"
+            :style="scrollGridStyle"
+          >
+            <quick-link-item
+              v-for="item in section.items"
+              :key="getDisplayItemKey(section.key, item)"
+              :url="item.url"
+              :title="item.title"
+              :favicon="item.favicon"
+              :pined="item.isPinned"
+              :on-context-menu="(e) => openCtxMenu(e, item)"
+              :tabindex="focusStore.isFocused ? -1 : 0"
+            />
+            <add-quick-link
+              v-if="!section.isTopSites"
+              :show-button="true"
+              :on-open="() => openAddQuickLinkForSection(section)"
+            />
+          </div>
+        </section>
+      </div>
+      <el-space
+        v-if="!settings.quickLinks.useScroll && settings.quickLinks.grouping"
+        class="noselect"
+        :class="categoryClass"
+      >
         <vue-draggable
           v-model="draggableCategoryGroups"
           class="quick-links__category-groups"
@@ -671,7 +811,7 @@ const categoryClass = categoryPerf('quick-links__category')
           <el-icon><PlusIcon /></el-icon>
         </button>
       </el-space>
-      <div class="quick-links__wrapper-inner">
+      <div v-if="!settings.quickLinks.useScroll" class="quick-links__wrapper-inner">
         <!-- 左翻页按钮 -->
         <button
           v-if="showPagination && !isOnlyTouchDevice"
@@ -815,6 +955,7 @@ const categoryClass = categoryPerf('quick-links__category')
 
       <!-- 页数指示器 -->
       <quick-links-pagination-dots
+        v-if="!settings.quickLinks.useScroll"
         :current-page="currentGroupPageIndex"
         :total-pages="showPagination ? currentGroupPages.length : 1"
         @goto="goToGroupPage"

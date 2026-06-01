@@ -57,7 +57,7 @@
     "name": "Name",
     "no": "No",
     "save": "Save",
-    "tooLargeImageError": "The image size exceeds 100KiB, please select another one.",
+    "tooLargeImageConfirm": "This image is large ({{size}}) and may affect performance and responsiveness. Continue?",
     "undo": "Undo",
     "url": "URL",
     "warning": "Warning"

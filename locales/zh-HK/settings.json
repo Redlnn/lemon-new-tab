@@ -162,7 +162,8 @@
       "dvhValue": "距頂部距離（dvh）",
       "label": "主區域位置",
       "px": "距頂部（px）",
-      "pxValue": "距頂部距離（px）"
+      "pxValue": "距頂部距離（px）",
+      "quickLinksScrollNote": "快速導航使用滾動時不能使用居中定位。"
     },
     "title": "佈局"
   },
@@ -361,6 +362,8 @@
     "grouping": "啟用分組",
     "groupingDisableConfirm": "關閉分組會合併所有快速連結分組，並移除重複 URL。不同分組中的重複連結將無法保留。",
     "groupingTip": "雙擊快速連結區或啟動台中的分組名稱即可重新命名。",
+    "useScroll": "使用滾動",
+    "useScrollTouchTip": "建議流動裝置開啟此開關，以獲得更好的瀏覽體驗。",
     "marginTop": "區域上邊距",
     "maxColumns": "最大欄數",
     "maxItemsTipForChrome": "僅支援最多 10 個常用網站",

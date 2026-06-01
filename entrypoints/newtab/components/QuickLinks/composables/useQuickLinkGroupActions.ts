@@ -3,6 +3,9 @@ import {
   useQuickLinksStore,
   type QuickLinkGroup,
 } from '@/shared/quickLinks'
+import { useSettingsStore } from '@/shared/settings'
+
+import { pinQuickLink } from '../utils/quickLink'
 
 type GroupSelectDialog = {
   open: (options?: { title?: string; currentGroupId?: string }) => Promise<string | null>
@@ -25,8 +28,14 @@ export function useQuickLinkGroupActions(options: {
   afterDelete?: () => void
 }) {
   const quickLinksStore = useQuickLinksStore()
+  const settings = useSettingsStore()
 
   const pinToGroup = async (item: QuickLinkGroupActionItem) => {
+    if (!settings.quickLinks.grouping) {
+      await pinQuickLink(quickLinksStore, options.refresh, item.url, item.title, item.favicon)
+      return
+    }
+
     const groupId = await options.groupSelectDialogRef.value?.open({
       title: options.t('quickLinks.groups.selectPinTarget'),
     })

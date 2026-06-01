@@ -292,6 +292,13 @@ async function copyToClipboard() {
   }
 }
 
+.app--quick-links-scroll .yiyan {
+  position: relative;
+  bottom: auto;
+  flex-shrink: 0;
+  margin: 20px 0 0;
+}
+
 .ripple {
   position: absolute;
   pointer-events: none;

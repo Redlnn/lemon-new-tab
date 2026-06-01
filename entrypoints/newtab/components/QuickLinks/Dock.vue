@@ -311,6 +311,8 @@ const { pinToGroup, moveToGroup } = useQuickLinkGroupActions({
 function openAddQuickLink() {
   props.onOpenAddDialog?.(settings.quickLinks.grouping ? DEFAULT_QUICK_LINK_GROUP_ID : undefined)
 }
+
+defineExpose({ refresh })
 </script>
 
 <template>

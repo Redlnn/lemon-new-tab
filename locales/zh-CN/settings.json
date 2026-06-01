@@ -162,7 +162,8 @@
       "dvhValue": "距顶部距离（dvh）",
       "label": "主区域位置",
       "px": "距顶部（px）",
-      "pxValue": "距顶部距离（px）"
+      "pxValue": "距顶部距离（px）",
+      "quickLinksScrollNote": "快速导航使用滚动时不能使用居中定位。"
     },
     "title": "布局"
   },
@@ -361,6 +362,8 @@
     "grouping": "启用分组",
     "groupingDisableConfirm": "关闭分组会合并所有快速导航分组，并移除重复 URL。不同分组中的重复链接将无法保留。",
     "groupingTip": "双击快速导航区或启动台中的分组名即可重命名。",
+    "useScroll": "使用滚动",
+    "useScrollTouchTip": "建议移动端开启此开关以获得更好的浏览体验。",
     "marginTop": "区域上边距",
     "maxColumns": "最大列数",
     "maxItemsTipForChrome": "最常访问的上限只有 10 个噢~",

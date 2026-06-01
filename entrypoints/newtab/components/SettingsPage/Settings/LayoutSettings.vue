@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTranslation } from 'i18next-vue'
 
-import { useSettingsStore } from '@/shared/settings'
+import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import type { ActionBtnPosition, MainPositionType } from '@/shared/settings/types'
 
 const { t } = useTranslation('settings')
@@ -23,6 +23,21 @@ const actionBtnOptions: BtnCorner[] = [
 ]
 
 const dockEnabled = computed(() => settings.dock.enabled)
+const quickLinksScrollEnabled = computed(
+  () => settings.quickLinks.enabled && settings.quickLinks.useScroll,
+)
+
+watch(
+  quickLinksScrollEnabled,
+  (enabled) => {
+    if (!enabled || settings.layout.mainPosition.type !== 'center') return
+    settings.layout.mainPosition = {
+      type: 'dvh',
+      value: defaultSettings.layout.mainPosition.value,
+    }
+  },
+  { immediate: true },
+)
 
 function selectActionBtn(pos: ActionBtnPosition) {
   if (dockEnabled.value && !pos.startsWith('top')) return
@@ -47,9 +62,13 @@ function selectActionBtn(pos: ActionBtnPosition) {
           :key="opt.value"
           :value="opt.value"
           :label="t(opt.label)"
+          :disabled="quickLinksScrollEnabled && opt.value === 'center'"
         />
       </el-select>
     </div>
+    <p v-if="quickLinksScrollEnabled" class="settings__item--note" style="margin-top: 8px">
+      {{ t('layout.mainPosition.quickLinksScrollNote') }}
+    </p>
     <div
       v-if="settings.layout.mainPosition.type !== 'center'"
       class="settings__item settings__item--vertical"
