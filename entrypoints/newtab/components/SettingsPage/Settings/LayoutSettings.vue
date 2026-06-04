@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTranslation } from 'i18next-vue'
 
-import { defaultSettings, useSettingsStore } from '@/shared/settings'
+import { useSettingsStore } from '@/shared/settings'
 import type { ActionBtnPosition, MainPositionType } from '@/shared/settings/types'
 
 const { t } = useTranslation('settings')
@@ -25,18 +25,6 @@ const actionBtnOptions: BtnCorner[] = [
 const dockEnabled = computed(() => settings.dock.enabled)
 const quickLinksScrollEnabled = computed(
   () => settings.quickLinks.enabled && settings.quickLinks.useScroll,
-)
-
-watch(
-  quickLinksScrollEnabled,
-  (enabled) => {
-    if (!enabled || settings.layout.mainPosition.type !== 'center') return
-    settings.layout.mainPosition = {
-      type: 'dvh',
-      value: defaultSettings.layout.mainPosition.value,
-    }
-  },
-  { immediate: true },
 )
 
 function selectActionBtn(pos: ActionBtnPosition) {
