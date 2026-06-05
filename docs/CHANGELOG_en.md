@@ -2,6 +2,21 @@
 
 > Translated by AI from Chinese.
 
+## 3.3.0 (Jun 5, 2026)
+
+### New Features✨
+
+- **Quick Links:** Added group support, including creating, renaming, sorting, deleting groups, and moving links between groups.
+- **Launchpad:** Added support for Quick Links groups, with most visited sites available in grouped mode.
+- **Quick Links:** Added a scrolling mode for smoother browsing when you have many links, especially on mobile devices.
+- **Quick Links:** Added a "Loop Pages" setting to control whether pagination wraps at the first and last pages.
+- **Quick Links:** Custom icon upload now supports larger images, with a performance warning before using large images.
+
+### Improvements⚡️
+
+- Unified Quick Links wording across the extension to reduce mixed terms such as "Shortcut" and "Quick Access".
+- Improved interaction details for Quick Links pagination, scrolling, and grouped mode.
+
 ## 3.2.3 (May 21, 2026)
 
 📄 Starting from this version (commit 65a894c), this project has switched to the AGPL-3.0 License. Previous versions under the MIT License still apply to the versions released at that time.
