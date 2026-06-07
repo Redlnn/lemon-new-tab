@@ -2,6 +2,7 @@
 import { useSortable } from '@dnd-kit/vue/sortable'
 
 import {
+  QUICK_LINK_DND_CLICK_SUPPRESS_DURATION,
   QUICK_LINK_TOUCH_CONTEXT_MENU_EVENT,
   type QuickLinkDndData,
 } from '../composables/useQuickLinkDnd'
@@ -52,7 +53,7 @@ function handleTouchContextMenu(event: Event) {
 
 watch(isDragging, (dragging, wasDragging) => {
   if (!dragging && wasDragging) {
-    suppressClickUntil = Date.now() + 350
+    suppressClickUntil = Date.now() + QUICK_LINK_DND_CLICK_SUPPRESS_DURATION
   }
 })
 

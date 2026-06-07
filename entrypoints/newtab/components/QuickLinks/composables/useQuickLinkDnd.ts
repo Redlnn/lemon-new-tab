@@ -9,7 +9,10 @@ export const TOP_SITES_DND_GROUP_ID = '__top-sites__'
 export const FLAT_QUICK_LINK_DND_GROUP_ID = 'flat'
 export const QUICK_LINK_TOUCH_CONTEXT_MENU_EVENT = 'quick-link-touch-context-menu'
 export const QUICK_LINK_DND_ACTIVATION_DELAY = 500
-export const QUICK_LINK_DND_MOVE_THRESHOLD = 8
+export const QUICK_LINK_TOUCH_DRAG_STATIONARY_DELAY = 100
+export const QUICK_LINK_TOUCH_DRAG_MOVE_THRESHOLD = 8
+export const QUICK_LINK_MOUSE_DRAG_MOVE_THRESHOLD = 4
+export const QUICK_LINK_DND_CLICK_SUPPRESS_DURATION = 350
 
 export type QuickLinkDndSource = 'quick-links' | 'launchpad' | 'dock'
 
@@ -66,7 +69,10 @@ class QuickLinkLongPressActivationConstraint {
   private initialEvent: PointerEvent | undefined
   private latestEvent: PointerEvent | undefined
   private timer: ReturnType<typeof setTimeout> | undefined
+  private stationaryTimer: ReturnType<typeof setTimeout> | undefined
+  private touchDragReady = false
   private moved = false
+  private activated = false
 
   constructor(private readonly options: { touchMenu: boolean }) {}
 
@@ -79,23 +85,35 @@ class QuickLinkLongPressActivationConstraint {
     if (event.type === 'pointerdown') {
       this.initialEvent = event
       this.latestEvent = event
+      this.touchDragReady = !this.options.touchMenu
       this.moved = false
+      this.activated = false
       this.timer = setTimeout(() => this.activateOrOpenMenu(), QUICK_LINK_DND_ACTIVATION_DELAY)
+      if (this.options.touchMenu) {
+        this.stationaryTimer = setTimeout(() => {
+          this.touchDragReady = true
+          this.stationaryTimer = undefined
+        }, QUICK_LINK_TOUCH_DRAG_STATIONARY_DELAY)
+      }
       return
     }
 
     if (event.type === 'pointermove') {
       this.latestEvent = event
       if (!this.initialEvent) return
-      const distance = Math.hypot(
-        event.clientX - this.initialEvent.clientX,
-        event.clientY - this.initialEvent.clientY,
-      )
-      if (distance > QUICK_LINK_DND_MOVE_THRESHOLD) {
-        this.moved = true
-        if (!this.options.touchMenu) {
-          this.activateOrOpenMenu()
+      const deltaX = event.clientX - this.initialEvent.clientX
+      const deltaY = event.clientY - this.initialEvent.clientY
+      const distance = Math.hypot(deltaX, deltaY)
+      const moveThreshold = this.options.touchMenu
+        ? QUICK_LINK_TOUCH_DRAG_MOVE_THRESHOLD
+        : QUICK_LINK_MOUSE_DRAG_MOVE_THRESHOLD
+      if (distance > moveThreshold) {
+        if (this.options.touchMenu && !this.touchDragReady) {
+          this.controllerRef?.abort(event)
+          return
         }
+        this.moved = true
+        this.activateOrOpenMenu()
       }
     }
   }
@@ -105,20 +123,37 @@ class QuickLinkLongPressActivationConstraint {
       clearTimeout(this.timer)
       this.timer = undefined
     }
+    if (this.stationaryTimer) {
+      clearTimeout(this.stationaryTimer)
+      this.stationaryTimer = undefined
+    }
     this.initialEvent = undefined
     this.latestEvent = undefined
+    this.touchDragReady = false
     this.moved = false
+    this.activated = false
   }
 
   private activateOrOpenMenu() {
+    if (this.activated) return
     const event = this.latestEvent ?? this.initialEvent
     if (this.timer) {
       clearTimeout(this.timer)
       this.timer = undefined
     }
+    if (this.stationaryTimer) {
+      clearTimeout(this.stationaryTimer)
+      this.stationaryTimer = undefined
+    }
     if (!event) return
 
+    if (!this.options.touchMenu && !this.moved) {
+      this.controllerRef?.abort(event)
+      return
+    }
+
     if (this.options.touchMenu && !this.moved) {
+      this.activated = true
       event.target?.dispatchEvent(
         new CustomEvent(QUICK_LINK_TOUCH_CONTEXT_MENU_EVENT, {
           bubbles: true,
@@ -129,20 +164,29 @@ class QuickLinkLongPressActivationConstraint {
       return
     }
 
+    this.activated = true
     this.controllerRef?.activate(event)
   }
 }
 
-export const quickLinkDndSensors = [
-  PointerSensor.configure({
-    activationConstraints(event) {
-      return [
-        new QuickLinkLongPressActivationConstraint({ touchMenu: event.pointerType === 'touch' }),
-      ] as never
-    },
-  }),
-  KeyboardSensor,
-]
+function createQuickLinkDndSensors() {
+  return [
+    PointerSensor.configure({
+      activationConstraints(event) {
+        return [
+          new QuickLinkLongPressActivationConstraint({
+            touchMenu: event.pointerType === 'touch',
+          }),
+        ] as never
+      },
+    }),
+    KeyboardSensor,
+  ]
+}
+
+export const quickLinkDndSensors = createQuickLinkDndSensors()
+
+export const launchpadDndSensors = createQuickLinkDndSensors()
 
 export function quickLinkDndId(
   source: QuickLinkDndSource,
@@ -167,7 +211,7 @@ export function quickLinkGroupDndId(source: QuickLinkDndSource, groupId: string)
 
 export function toQuickLinkDndData(value: unknown): QuickLinkDndData | null {
   if (!value || typeof value !== 'object' || !('kind' in value)) return null
-  const kind = (value as { kind?: unknown }).kind
+  const { kind } = value as { kind?: unknown }
   if (kind !== 'quick-link' && kind !== 'quick-link-container' && kind !== 'quick-link-group') {
     return null
   }
@@ -262,10 +306,7 @@ export function getSortableStoreIndexes<T extends { isPinned: boolean; originalI
   return items.filter((item) => item.isPinned).map((item) => item.originalIndex)
 }
 
-export function getSortableIndexForStoreIndex(
-  sortableStoreIndexes: number[],
-  storeIndex: number,
-) {
+export function getSortableIndexForStoreIndex(sortableStoreIndexes: number[], storeIndex: number) {
   return sortableStoreIndexes.indexOf(storeIndex)
 }
 

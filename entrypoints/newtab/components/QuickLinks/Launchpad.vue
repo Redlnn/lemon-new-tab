@@ -47,8 +47,8 @@ import {
   getPointerClientPoint,
   getSortableMoveState,
   getSortableStoreIndexes,
+  launchpadDndSensors,
   quickLinkContainerDndId,
-  quickLinkDndSensors,
   quickLinkDndId,
   resolveQuickLinkMoveTarget,
   resolveStoreIndexFromSortableIndex,
@@ -645,7 +645,7 @@ onBeforeUnmount(() => {
           </div>
 
           <DragDropProvider
-            :sensors="quickLinkDndSensors"
+            :sensors="launchpadDndSensors"
             @dragStart="handleLaunchpadDragStart"
             @dragMove="handleLaunchpadDragMove"
             @dragOver="handleLaunchpadDragOver"
