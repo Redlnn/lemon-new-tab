@@ -40,6 +40,43 @@ const bookmarkListeners: {
   importEnded?: () => void
 } = {}
 
+const suppressedMoveReloadIds = new Set<string>()
+type BookmarkTreeNode = Browser.bookmarks.BookmarkTreeNode
+
+function cloneBookmarkTree(nodes: BookmarkTreeNode[]): BookmarkTreeNode[] {
+  return nodes.map((node) => ({
+    ...node,
+    children: node.children ? cloneBookmarkTree(node.children) : undefined,
+  }))
+}
+
+function updateSiblingIndexes(nodes: BookmarkTreeNode[]) {
+  for (let index = 0; index < nodes.length; index++) {
+    nodes[index]!.index = index
+  }
+}
+
+function findBookmarkLocation(
+  nodes: BookmarkTreeNode[],
+  id: string,
+): { node: BookmarkTreeNode; siblings: BookmarkTreeNode[]; index: number } | null {
+  for (let index = 0; index < nodes.length; index++) {
+    const node = nodes[index]!
+    if (node.id === id) return { node, siblings: nodes, index }
+
+    if (node.children) {
+      const matched = findBookmarkLocation(node.children, id)
+      if (matched) return matched
+    }
+  }
+  return null
+}
+
+function findBookmarkChildren(nodes: BookmarkTreeNode[], parentId: string) {
+  const parent = findBookmarkLocation(nodes, parentId)?.node
+  return parent?.children ?? null
+}
+
 export const useBookmarkStore = defineStore('bookmark', () => {
   const tree = ref<Browser.bookmarks.BookmarkTreeNode[]>([])
   const loaded = ref(false)
@@ -126,7 +163,8 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     }
 
     if (!bookmarkListeners.moved) {
-      bookmarkListeners.moved = () => {
+      bookmarkListeners.moved = (id) => {
+        if (suppressedMoveReloadIds.delete(id)) return
         reloadBookmarks('onMoved')
       }
       browser.bookmarks.onMoved.addListener(bookmarkListeners.moved)
@@ -160,6 +198,58 @@ export const useBookmarkStore = defineStore('bookmark', () => {
         sortMode: sortMode.value,
       },
     })
+  }
+
+  const moveBookmark = async (
+    id: string,
+    destination: Parameters<typeof browser.bookmarks.move>[1],
+  ) => {
+    suppressedMoveReloadIds.add(id)
+    try {
+      const movedNode = await browser.bookmarks.move(id, destination)
+      const nextTree = cloneBookmarkTree(tree.value)
+      const source = findBookmarkLocation(nextTree, id)
+      const targetSiblings = movedNode.parentId
+        ? findBookmarkChildren(nextTree, movedNode.parentId)
+        : nextTree
+
+      if (!source || !targetSiblings) {
+        await loadBookmarks()
+        return
+      }
+
+      const [node] = source.siblings.splice(source.index, 1)
+      if (!node) {
+        await loadBookmarks()
+        return
+      }
+
+      Object.assign(node, { ...movedNode, children: node.children })
+      const targetIndex = Math.min(
+        Math.max(0, movedNode.index ?? targetSiblings.length),
+        targetSiblings.length,
+      )
+      targetSiblings.splice(targetIndex, 0, node)
+
+      updateSiblingIndexes(source.siblings)
+      if (source.siblings !== targetSiblings) updateSiblingIndexes(targetSiblings)
+
+      tree.value = nextTree
+      filteredResult.value = nextTree
+      worker?.postMessage({
+        type: 'INIT',
+        payload: {
+          tree: nextTree,
+          language: i18next.language,
+          sortMode: sortMode.value,
+        },
+      })
+    } catch (error) {
+      suppressedMoveReloadIds.delete(id)
+      throw error
+    } finally {
+      globalThis.setTimeout(() => suppressedMoveReloadIds.delete(id), 1000)
+    }
   }
 
   const _setSortMode = (mode: SortMode) => {
@@ -254,6 +344,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     filteredTree,
     initWorker,
     loadBookmarks,
+    moveBookmark,
     _setSortMode,
     setSortMode,
     updateFilteredResult,

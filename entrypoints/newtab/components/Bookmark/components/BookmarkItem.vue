@@ -255,7 +255,7 @@ const model = computed({
 
 // 懒加载优化：判断当前节点是否展开
 const isExpanded = computed(() => {
-  return activeMap?.value && props.depth in activeMap.value
+  return activeMap?.value?.[props.depth]?.includes(String(id.value)) ?? false
 })
 
 const hasBeenExpanded = ref(false)

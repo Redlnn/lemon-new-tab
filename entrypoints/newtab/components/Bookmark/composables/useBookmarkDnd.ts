@@ -25,7 +25,7 @@ export function bookmarkContainerDndId(parentId: string) {
 
 export function toBookmarkDndData(value: unknown): BookmarkDndData | null {
   if (!value || typeof value !== 'object' || !('kind' in value)) return null
-  const kind = (value as { kind?: unknown }).kind
+  const { kind } = value as { kind?: unknown }
   if (kind !== 'bookmark-item' && kind !== 'bookmark-container') return null
   return value as BookmarkDndData
 }
