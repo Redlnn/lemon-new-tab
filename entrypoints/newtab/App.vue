@@ -13,6 +13,7 @@ import {
   OPEN_SEARCH_ENGINE_PREFERENCE,
   OPEN_SETTINGS,
 } from '@newtab/shared/keys'
+import { isOnlyTouchDevice } from '@newtab/shared/touch'
 
 import BookmarkBtn from './components/ActionBtn/BookmarkBtn.vue'
 import DownloadBgBtn from './components/ActionBtn/DownloadBgBtn.vue'
@@ -78,8 +79,19 @@ const { idle } = useIdle(5_000, {
   listenForVisibilityChange: false,
 })
 
-watch(idle, (v) => {
-  if (!settings.theme.idleHide) return
+const idleHideEnabled = computed(() => settings.theme.idleHide && !isOnlyTouchDevice.value)
+
+watch(isOnlyTouchDevice, (onlyTouch) => {
+  if (!onlyTouch) return
+  settings.background.parallax = false
+  settings.theme.idleHide = false
+}, { immediate: true })
+
+watch([idle, idleHideEnabled], ([v, enabled]) => {
+  if (!enabled) {
+    appRef.value?.style.removeProperty('opacity')
+    return
+  }
   if (v) {
     if (appRef.value) appRef.value.style.opacity = '0.2'
   } else {

@@ -135,7 +135,8 @@
     "copyLink": "複製連結網址",
     "hour": "個鈡",
     "openInNewTab": "在新分頁中開啟",
-    "openInNewWindow": "在新視窗中開啟"
+    "openInNewWindow": "在新視窗中開啟",
+    "touchDeviceDisabledNote": "觸控裝置已停用此項。"
   },
   "dock": {
     "actionBtnNote": "開啟 Dock 後，功能按鈕只能放在頂部（可在「佈局」中選擇左/右）",

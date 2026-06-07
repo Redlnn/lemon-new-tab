@@ -135,7 +135,8 @@
     "copyLink": "复制链接地址",
     "hour": "小时",
     "openInNewTab": "在新标签页中打开",
-    "openInNewWindow": "在新窗口中打开"
+    "openInNewWindow": "在新窗口中打开",
+    "touchDeviceDisabledNote": "触控设备已禁用此项。"
   },
   "dock": {
     "actionBtnNote": "开启 Dock 后，功能按钮只能放在顶部（可在「布局」中选择左/右）",

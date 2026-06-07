@@ -3,6 +3,8 @@ import { useTranslation } from 'i18next-vue'
 
 import { useSettingsStore } from '@/shared/settings'
 
+import { isOnlyTouchDevice } from '@newtab/shared/touch'
+
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
@@ -35,7 +37,7 @@ function toggleAnimationSettings(enable: boolean) {
   settings.perf.bgSwitchAnim = enable
   settings.perf.dockScale = enable
   settings.perf.yiyan.ripple = enable
-  settings.background.parallax = enable
+  settings.background.parallax = enable && !isOnlyTouchDevice.value
 }
 </script>
 
@@ -184,7 +186,10 @@ function toggleAnimationSettings(enable: boolean) {
     </div>
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('background.parallax') }}</div>
-      <el-switch v-model="settings.background.parallax" />
+      <el-switch v-model="settings.background.parallax" :disabled="isOnlyTouchDevice" />
     </div>
+    <p v-if="isOnlyTouchDevice" class="settings__item--note">
+      {{ t('common.touchDeviceDisabledNote') }}
+    </p>
   </div>
 </template>

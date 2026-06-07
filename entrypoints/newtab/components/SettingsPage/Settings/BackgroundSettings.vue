@@ -13,6 +13,7 @@ import {
   usePermission,
 } from '@newtab/composables/usePermission'
 import { OPEN_BACKGROUND_PREFERENCE } from '@newtab/shared/keys'
+import { isOnlyTouchDevice } from '@newtab/shared/touch'
 
 const { t } = useTranslation('settings')
 
@@ -72,8 +73,11 @@ const beforeCacheChange = async () => {
     </div>
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('background.parallax') }}</div>
-      <el-switch v-model="settings.background.parallax" />
+      <el-switch v-model="settings.background.parallax" :disabled="isOnlyTouchDevice" />
     </div>
+    <p v-if="isOnlyTouchDevice" class="settings__item--note">
+      {{ t('common.touchDeviceDisabledNote') }}
+    </p>
     <div
       v-if="settings.background.bgType !== BgType.None"
       class="settings__item settings__item--vertical"

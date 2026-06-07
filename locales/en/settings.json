@@ -135,7 +135,8 @@
     "copyLink": "Copy Link Address",
     "hour": "Hour",
     "openInNewTab": "Open in New Tab",
-    "openInNewWindow": "Open in New Window"
+    "openInNewWindow": "Open in New Window",
+    "touchDeviceDisabledNote": "This option is disabled on touch-only devices."
   },
   "dock": {
     "actionBtnNote": "When Dock is enabled, the button bar can only be placed at the top (choose left/right in Layout settings)",

@@ -4,6 +4,8 @@ import { useTranslation } from 'i18next-vue'
 import { useSettingsStore } from '@/shared/settings'
 import type { ActionBtnPosition, MainPositionType } from '@/shared/settings/types'
 
+import { isOnlyTouchDevice } from '@newtab/shared/touch'
+
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
@@ -105,8 +107,11 @@ function selectActionBtn(pos: ActionBtnPosition) {
     <!-- 不活动时淡出（UI 仅在此处，storage path 仍为 theme.idleHide） -->
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('theme.idleHide') }}</div>
-      <el-switch v-model="settings.theme.idleHide" />
+      <el-switch v-model="settings.theme.idleHide" :disabled="isOnlyTouchDevice" />
     </div>
+    <p v-if="isOnlyTouchDevice" class="settings__item--note">
+      {{ t('common.touchDeviceDisabledNote') }}
+    </p>
   </div>
 </template>
 

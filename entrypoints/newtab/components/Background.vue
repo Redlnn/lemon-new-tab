@@ -18,6 +18,7 @@ import { BgType } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 
 import { useFocusState } from '@newtab/composables/useFocus'
+import { isOnlyTouchDevice } from '@newtab/shared/touch'
 import { applyMonet } from '@newtab/shared/theme'
 import {
   bingWallpaperURLGetter,
@@ -108,11 +109,14 @@ const backgroundCss = computed(() => ({
 }))
 
 // 视差效果
+const backgroundParallaxEnabled = computed(
+  () => settings.background.parallax && !isOnlyTouchDevice.value,
+)
 const mouseX = ref(typeof window !== 'undefined' ? window.innerWidth / 2 : 960)
 const mouseY = ref(typeof window !== 'undefined' ? window.innerHeight / 2 : 540)
 
 watchEffect((onCleanup) => {
-  if (!settings.background.parallax || documentVisibility.value === 'hidden') return
+  if (!backgroundParallaxEnabled.value || documentVisibility.value === 'hidden') return
 
   const onMouseMove = useThrottleFn((e: MouseEvent) => {
     mouseX.value = e.clientX
@@ -145,7 +149,7 @@ const backgroundScale = computed(() => {
 })
 
 const backgroundTranslate = computed(() => {
-  if (!settings.background.parallax || focusStore.isFocused) return ''
+  if (!backgroundParallaxEnabled.value || focusStore.isFocused) return ''
   const strength = 20
   const tx = (0.5 - mouseX.value / window.innerWidth) * 2 * strength
   const ty = (0.5 - mouseY.value / window.innerHeight) * 2 * strength
@@ -497,7 +501,7 @@ async function onImgLoaded() {
           scale: backgroundScale,
           translate: backgroundTranslate,
           '--parallax-inset':
-            settings.background.parallax && settings.background.blur < 10 ? '20px' : '0px',
+            backgroundParallaxEnabled && settings.background.blur < 10 ? '20px' : '0px',
         }"
       >
         <video
