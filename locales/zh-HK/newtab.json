@@ -153,6 +153,7 @@
     "editLink": "編輯連結",
     "groups": {
       "default": "預設",
+      "defaultDeleteBlocked": "預設分組不可刪除",
       "deleteConfirm": "確定要刪除分組「{{name}}」及其中所有連結？",
       "moveTo": "移動到分組",
       "selectAddTarget": "選擇要新增到哪個分組",
@@ -163,6 +164,9 @@
       "untitled": "分組 {{index}}"
     },
     "hide": "隱藏",
+    "moveError": "移動失敗",
+    "moveLeft": "左移",
+    "moveRight": "右移",
     "hideTopMessage": {
       "content": "已隱藏該最常瀏覽網站",
       "restoreDefault": "還原預設",

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 
+import { DragDropProvider, type DragEndEvent } from '@dnd-kit/vue'
 import { useTranslation } from 'i18next-vue'
 import SearchRound from '~icons/ic/round-search'
+
+import { browser } from 'wxt/browser'
 
 import { SortMode } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
@@ -21,6 +24,34 @@ import QuickLinkGroupSelectDialog from '../QuickLinks/components/QuickLinkGroupS
 import { useBookmarkStore } from './bookmarks'
 import BookmarkEditDialog from './components/BookmarkEditDialog.vue'
 import BookmarkItem from './components/BookmarkItem.vue'
+import { getBookmarkDndData } from './composables/useBookmarkDnd'
+
+type SortableLike = {
+  initialGroup?: unknown
+  group?: unknown
+  initialIndex?: unknown
+  index?: unknown
+  sortable?: {
+    initialGroup?: unknown
+    group?: unknown
+    initialIndex?: unknown
+    index?: unknown
+  }
+}
+
+function getSortableString(value: SortableLike | null, key: 'initialGroup' | 'group') {
+  const direct = value?.[key]
+  if (typeof direct === 'string') return direct
+  const nested = value?.sortable?.[key]
+  return typeof nested === 'string' ? nested : null
+}
+
+function getSortableNumber(value: SortableLike | null, key: 'initialIndex' | 'index') {
+  const direct = value?.[key]
+  if (typeof direct === 'number') return direct
+  const nested = value?.sortable?.[key]
+  return typeof nested === 'number' ? nested : null
+}
 
 const { opened, show, hide, toggle } = useDialog()
 defineExpose({ show, hide, toggle })
@@ -158,6 +189,64 @@ watch(
   },
   { immediate: true },
 )
+
+function handleBookmarkDragStart() {
+  if (openedMenuCloseFn.value) {
+    openedMenuCloseFn.value()
+    openedMenuCloseFn.value = null
+  }
+}
+
+async function handleBookmarkDragEnd(event: DragEndEvent) {
+  const source = getBookmarkDndData(event.operation.source)
+  const target = getBookmarkDndData(event.operation.target)
+  if (event.canceled || source?.kind !== 'bookmark-item') return
+  if (searchQuery.value.trim() !== '' || store.sortMode !== SortMode.Original) return
+
+  const operationSource = event.operation.source as SortableLike | null
+  const fromParentId = getSortableString(operationSource, 'initialGroup') ?? source.parentId
+  const fromIndex = getSortableNumber(operationSource, 'initialIndex') ?? source.index
+
+  const runtimeParentId = getSortableString(operationSource, 'group')
+  const runtimeIndex = getSortableNumber(operationSource, 'index')
+  const nextParentId =
+    target?.kind === 'bookmark-container'
+      ? target.parentId
+      : (runtimeParentId ?? (target?.kind === 'bookmark-item' ? target.parentId : null))
+  let nextIndex =
+    target?.kind === 'bookmark-container'
+      ? target.index
+      : (runtimeIndex ?? (target?.kind === 'bookmark-item' ? target.index : null))
+  if (!nextParentId || nextIndex === null || nextIndex === undefined || fromIndex === undefined) {
+    return
+  }
+
+  const usesTargetIndex = runtimeIndex === null
+  if (
+    usesTargetIndex &&
+    fromParentId === nextParentId &&
+    fromIndex < nextIndex
+  ) {
+    nextIndex--
+  }
+
+  if (fromParentId === nextParentId && fromIndex === nextIndex) return
+
+  try {
+    await browser.bookmarks.move(source.id, {
+      parentId: nextParentId,
+      index: nextIndex,
+    })
+    await store.loadBookmarks()
+  } catch (error) {
+    console.error(t('bookmark.moveError'), error)
+    ElNotification.error({
+      title: t('bookmark.moveError'),
+      message: (error as Error).message || 'Unknown error.',
+    })
+    await store.loadBookmarks()
+  }
+}
 </script>
 
 <template>
@@ -198,15 +287,17 @@ watch(
         </div>
         <template v-if="store.filteredResult.length > 0">
           <el-scrollbar style="height: calc(100% - 42px)">
-            <el-collapse v-model="topModel" expand-icon-position="left">
-              <bookmark-item
-                v-for="item in store.filteredResult"
-                :key="item.id"
-                :node="item"
-                :is-searching="searchQuery.trim() !== ''"
-                :is-sorted-mode="store.sortMode !== SortMode.Original"
-              />
-            </el-collapse>
+            <DragDropProvider @dragStart="handleBookmarkDragStart" @dragEnd="handleBookmarkDragEnd">
+              <el-collapse v-model="topModel" expand-icon-position="left">
+                <bookmark-item
+                  v-for="item in store.filteredResult"
+                  :key="item.id"
+                  :node="item"
+                  :is-searching="searchQuery.trim() !== ''"
+                  :is-sorted-mode="store.sortMode !== SortMode.Original"
+                />
+              </el-collapse>
+            </DragDropProvider>
           </el-scrollbar>
           <bookmark-edit-dialog ref="editDialogRef" />
         </template>
@@ -378,7 +469,7 @@ watch(
 }
 
 .bookmark .el-scrollbar__view > .el-collapse {
-  &:not(:has(.sortable-chosen)) {
+  &:not(:has(.bookmark-dnd-item--dragging)) {
     .bookmark-link-item:hover,
     .el-collapse-item__header:hover {
       background-color: var(--el-color-primary-light-8);
@@ -406,6 +497,30 @@ watch(
   }
 }
 
+.bookmark-dnd-item {
+  transition: opacity var(--el-transition-duration-fast);
+
+  &--dragging {
+    opacity: 0.35;
+  }
+
+  &--drop-target {
+    > .bookmark-link-item,
+    > .el-collapse-item > .el-collapse-item__header {
+      background-color: var(--el-color-primary-light-8);
+    }
+  }
+}
+
+.bookmark-dnd-children {
+  min-height: 6px;
+  border-radius: 8px;
+
+  &--drop-target {
+    box-shadow: inset 0 0 0 1px var(--el-color-primary-light-5);
+  }
+}
+
 .bookmark .el-collapse {
   --el-collapse-border-color: transparent;
   --el-collapse-header-bg-color: transparent;
@@ -423,6 +538,10 @@ watch(
 
     .el-icon:not(.bookmark-drag-handle) {
       margin-right: 10px;
+    }
+
+    span {
+      width: stretch;
     }
   }
 
@@ -447,6 +566,7 @@ watch(
   }
 
   .el-text {
+    width: stretch;
     font-size: inherit;
     line-height: 1.2em;
     color: inherit;
@@ -487,7 +607,6 @@ watch(
 .bookmark-drag-handle {
   width: 30px;
   height: 30px;
-  margin-left: 10px;
   color: var(--el-text-color-regular);
   cursor: grab;
   border-radius: 50%;
@@ -502,11 +621,11 @@ watch(
 
   &-container {
     display: flex;
-    flex-grow: 1;
     flex-shrink: 0;
     flex-direction: row-reverse;
     align-items: center;
     height: 100%;
+    margin-left: 10px;
   }
 }
 </style>

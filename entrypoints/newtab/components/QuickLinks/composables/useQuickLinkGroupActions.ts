@@ -65,7 +65,10 @@ export function useQuickLinkGroupActions(options: {
   }
 
   const confirmDeleteGroup = async (group: QuickLinkGroup) => {
-    if (group.id === DEFAULT_QUICK_LINK_GROUP_ID) return
+    if (group.id === DEFAULT_QUICK_LINK_GROUP_ID) {
+      ElMessage.warning(options.t('quickLinks.groups.defaultDeleteBlocked'))
+      return
+    }
     try {
       await ElMessageBox.confirm(
         options.t('quickLinks.groups.deleteConfirm', { name: group.name }),

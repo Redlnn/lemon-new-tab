@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onLongPress } from '@vueuse/core'
 
+import { useDroppable } from '@dnd-kit/vue'
+import { useSortable } from '@dnd-kit/vue/sortable'
 import type { DropdownInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
-import { type DraggableEvent, VueDraggable } from 'vue-draggable-plus'
 import Dismiss12Regular from '~icons/fluent/dismiss-12-regular'
 import Pin12Regular from '~icons/fluent/pin-12-regular'
 import EditOutlined from '~icons/ic/outline-edit'
@@ -29,6 +30,13 @@ import {
 import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
 import { isSafeUrl, isValidUrl } from '@newtab/shared/utils'
 
+import {
+  BOOKMARK_DND_GROUP,
+  BOOKMARK_DND_TYPE,
+  bookmarkContainerDndId,
+  bookmarkDndId,
+} from '../composables/useBookmarkDnd'
+
 const openBookmarkEditDialog = inject(OPEN_BOOKMARK_EDIT_DIALOG)
 const openQuickLinkGroupSelectDialog = inject(OPEN_QUICK_LINK_GROUP_SELECT_DIALOG)
 
@@ -53,6 +61,10 @@ const props = withDefaults(
 )
 const isFolder = computed(() => !!props.node.children)
 const isTopLevel = computed(() => props.depth === 1)
+// 搜索、非原始排序或显式禁用时不允许改写真实书签顺序。
+const isDragDisabled = computed(() => {
+  return props.disableDrag || props.isSearching || props.isSortedMode
+})
 const expandeds = computed(() => activeMap?.value[props.depth] ?? [])
 const id = computed(() => props.node.id)
 const canCollapseOther = computed(() => {
@@ -98,6 +110,60 @@ const triggerRef = ref({
 })
 
 const itemRef = useTemplateRef('itemRef')
+const sortableRef = ref<HTMLElement | null>(null)
+const childrenDropRef = ref<HTMLElement | null>(null)
+const dragHandleRef = ref<HTMLElement | null>(null)
+
+const bookmarkDndData = computed(() => ({
+  kind: 'bookmark-item' as const,
+  id: props.node.id,
+  parentId: props.node.parentId,
+  index: props.node.index,
+  isFolder: isFolder.value,
+}))
+
+const { isDragging, isDropTarget } = useSortable({
+  id: computed(() => bookmarkDndId(props.node.id)),
+  index: computed(() => props.node.index ?? 0),
+  group: computed(() => props.node.parentId ?? BOOKMARK_DND_GROUP),
+  element: sortableRef,
+  handle: dragHandleRef,
+  type: BOOKMARK_DND_TYPE,
+  accept: BOOKMARK_DND_TYPE,
+  data: bookmarkDndData,
+  disabled: computed(() => isDragDisabled.value || isTopLevel.value),
+  transition: {
+    duration: 150,
+    easing: 'ease',
+  },
+})
+let suppressClickUntil = 0
+
+watch(isDragging, (dragging, wasDragging) => {
+  if (!dragging && wasDragging) {
+    suppressClickUntil = Date.now() + 350
+  }
+})
+
+function handleClickCapture(event: MouseEvent) {
+  if (isDragging.value || Date.now() < suppressClickUntil) {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+  }
+}
+
+const { isDropTarget: isChildrenDropTarget } = useDroppable({
+  id: computed(() => bookmarkContainerDndId(props.node.id)),
+  element: childrenDropRef,
+  type: 'bookmark-container',
+  accept: BOOKMARK_DND_TYPE,
+  data: computed(() => ({
+    kind: 'bookmark-container' as const,
+    parentId: props.node.id,
+    index: props.node.children?.length ?? 0,
+  })),
+  disabled: computed(() => !isFolder.value || isDragDisabled.value),
+})
 
 function handleContextmenu(event: MouseEvent | TouchEvent | PointerEvent): void {
   // 打开新菜单前关闭旧菜单
@@ -231,58 +297,6 @@ async function deleteBookmark() {
   }
 }
 
-// 创建子节点的本地可编辑副本（用于拖动）
-const localChildren = computed({
-  get: () => props.node.children ?? [],
-  set: () => {},
-})
-
-// 嵌套拖拽完成的处理器
-const handleNestedDragSort = async (event: DraggableEvent) => {
-  try {
-    // 获取拖拽源和目标的信息
-    const oldIndex = event.oldIndex
-    let newIndex = event.newIndex
-
-    // 只有在索引改变时才更新
-    if (oldIndex !== newIndex && oldIndex !== undefined && newIndex !== undefined) {
-      const nodeId = event.item?.dataset?.nodeId // 需要在模板中设置
-      if (!nodeId) return
-
-      // 如果在同一个文件夹内，parentId 是 props.node.id
-      // 如果跨文件夹，需要通过 event.to 获取目标容器找出 parentId
-      let parentId = id.value
-
-      // 检查是否跨越了文件夹（通过检查 event.to 元素）
-      if (event.to !== event.from) {
-        // 从目标容器往上找到对应的文件夹 node
-        // parentId 需要从 event.to 的关联数据中获取
-        parentId = event.to.dataset?.parentId || id.value
-      }
-
-      if (parentId === id.value) {
-        // 同一文件夹内移动
-        if (newIndex > oldIndex) {
-          // 向后移动
-          newIndex += 1
-        }
-      }
-
-      // 调用浏览器 API 移动书签
-      await browser.bookmarks.move(nodeId, {
-        parentId,
-        index: newIndex,
-      })
-    }
-  } catch (error) {
-    console.error(t('bookmark.moveError'), error)
-    ElNotification.error({
-      title: t('bookmark.moveError'),
-      message: (error as Error).message || 'Unknown error.',
-    })
-  }
-}
-
 function collapseOther(e: Event | undefined, all: boolean = false) {
   const map = activeMap?.value
   if (!map) return
@@ -308,14 +322,20 @@ function collapseOther(e: Event | undefined, all: boolean = false) {
   }
 }
 
-// 判断是否应该禁用拖动：搜索中、使用非原始排序、顶层文件夹
-const isDragDisabled = computed(() => {
-  return props.disableDrag || props.isSearching || props.isSortedMode
-})
 </script>
 
 <template>
-  <div style="display: grid" @contextmenu.stop.prevent="handleContextmenu">
+  <div
+    ref="sortableRef"
+    class="bookmark-dnd-item"
+    :class="{
+      'bookmark-dnd-item--dragging': isDragging,
+      'bookmark-dnd-item--drop-target': isDropTarget,
+    }"
+    style="display: grid"
+    @click.capture="handleClickCapture"
+    @contextmenu.stop.prevent="handleContextmenu"
+  >
     <el-collapse-item
       v-if="node.children"
       :name="node.id"
@@ -324,24 +344,20 @@ const isDragDisabled = computed(() => {
       <template #title>
         <el-icon color="var(--el-color-primary)"><folder-open-round /></el-icon>
         <span>{{ node.title || '(未命名)' }}</span>
-        <div class="bookmark-drag-handle-container" v-if="!(depth === 1)">
+        <div v-if="!(depth === 1)" ref="dragHandleRef" class="bookmark-drag-handle-container">
           <el-icon v-if="!isDragDisabled" class="bookmark-drag-handle">
             <drag-indicator-round />
           </el-icon>
         </div>
       </template>
       <el-collapse v-if="shouldRenderChildren" v-model="model" expand-icon-position="left">
-        <vue-draggable
-          v-model="localChildren"
-          :disabled="isDragDisabled"
-          :data-parent-id="node.id"
-          handle=".bookmark-drag-handle"
-          :animation="200"
-          group="g1"
-          @end="handleNestedDragSort"
+        <div
+          ref="childrenDropRef"
+          class="bookmark-dnd-children"
+          :class="{ 'bookmark-dnd-children--drop-target': isChildrenDropTarget }"
         >
           <bookmark-item
-            v-for="child in localChildren"
+            v-for="child in node.children ?? []"
             :key="child.id"
             :node="child"
             :depth="depth + 1"
@@ -351,7 +367,7 @@ const isDragDisabled = computed(() => {
             :data-node-id="child.id"
             :data-node-indexx="child.index"
           />
-        </vue-draggable>
+        </div>
       </el-collapse>
     </el-collapse-item>
     <a
@@ -365,7 +381,7 @@ const isDragDisabled = computed(() => {
       <el-text line-clamp="2">
         {{ node.title }}
       </el-text>
-      <div class="bookmark-drag-handle-container">
+      <div ref="dragHandleRef" class="bookmark-drag-handle-container">
         <el-icon v-if="!isDragDisabled" class="bookmark-drag-handle">
           <drag-indicator-round />
         </el-icon>

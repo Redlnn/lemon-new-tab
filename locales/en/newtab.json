@@ -153,6 +153,7 @@
     "editLink": "Edit Link",
     "groups": {
       "default": "Default",
+      "defaultDeleteBlocked": "The default group cannot be deleted.",
       "deleteConfirm": "Delete group “{{name}}” and all links inside it?",
       "moveTo": "Move to Group",
       "selectAddTarget": "Choose a group for the new link",
@@ -163,6 +164,9 @@
       "untitled": "Group {{index}}"
     },
     "hide": "Hide",
+    "moveError": "Move failed",
+    "moveLeft": "Move left",
+    "moveRight": "Move right",
     "hideTopMessage": {
       "content": "Most visited site hidden.",
       "restoreDefault": "Restore default",

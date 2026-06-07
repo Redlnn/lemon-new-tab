@@ -153,6 +153,7 @@
     "editLink": "编辑链接",
     "groups": {
       "default": "默认",
+      "defaultDeleteBlocked": "默认分组不可删除",
       "deleteConfirm": "确定要删除分组「{{name}}」及其中的所有链接吗？",
       "moveTo": "移动到分组",
       "selectAddTarget": "选择添加到哪个分组",
@@ -163,6 +164,9 @@
       "untitled": "分组 {{index}}"
     },
     "hide": "隐藏",
+    "moveError": "移动失败",
+    "moveLeft": "左移",
+    "moveRight": "右移",
     "hideTopMessage": {
       "content": "已隐藏该最常访问网站",
       "restoreDefault": "恢复默认",

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { DropdownInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
+import ChevronLeft20Filled from '~icons/fluent/chevron-left-20-filled'
+import ChevronRight20Filled from '~icons/fluent/chevron-right-20-filled'
 import Edit16Regular from '~icons/fluent/edit-16-regular'
+import FolderArrowRight16Regular from '~icons/fluent/folder-arrow-right-16-regular'
 import Pin12Regular from '~icons/fluent/pin-12-regular'
 import PinOff16Regular from '~icons/fluent/pin-off-16-regular'
 import Star12Regular from '~icons/fluent/star-12-regular'
@@ -21,15 +24,21 @@ const props = withDefaults(
     onOpenEditDialog?: (target: QuickLinkTarget) => void
     onPin?: (item: CtxQuickLinkItem) => Promise<void> | void
     onMove?: (item: CtxQuickLinkItem) => Promise<void> | void
+    onMoveLeft?: (item: CtxQuickLinkItem) => Promise<void> | void
+    onMoveRight?: (item: CtxQuickLinkItem) => Promise<void> | void
+    canMoveLeft?: (item: CtxQuickLinkItem) => boolean
+    canMoveRight?: (item: CtxQuickLinkItem) => boolean
     placement?: 'bottom-start' | 'top-start'
     popperClass?: string
     showEdit?: boolean
     showMove?: boolean
+    showSortActions?: boolean
   }>(),
   {
     placement: 'bottom-start',
     showEdit: false,
     showMove: false,
+    showSortActions: false,
   },
 )
 
@@ -74,6 +83,24 @@ function close(): void {
   dropdownRef.value?.handleClose()
 }
 
+function canMoveCurrentItemLeft() {
+  return Boolean(ctxItem.value?.isPinned && props.canMoveLeft?.(ctxItem.value))
+}
+
+function canMoveCurrentItemRight() {
+  return Boolean(ctxItem.value?.isPinned && props.canMoveRight?.(ctxItem.value))
+}
+
+async function ctxMoveLeft() {
+  if (!ctxItem.value?.isPinned) return
+  await props.onMoveLeft?.(ctxItem.value)
+}
+
+async function ctxMoveRight() {
+  if (!ctxItem.value?.isPinned) return
+  await props.onMoveRight?.(ctxItem.value)
+}
+
 defineExpose({ open, close })
 </script>
 
@@ -111,10 +138,26 @@ defineExpose({ open, close })
           </el-dropdown-item>
           <el-dropdown-item
             v-if="showMove && settings.quickLinks.grouping && ctxItem?.groupId"
+            :icon="FolderArrowRight16Regular"
             :divided="!showEdit"
             @click="ctxMove"
           >
             <span>{{ t('quickLinks.groups.moveTo') }}</span>
+          </el-dropdown-item>
+          <el-dropdown-item
+            v-if="showSortActions && canMoveCurrentItemLeft()"
+            :icon="ChevronLeft20Filled"
+            :divided="!showEdit && !showMove"
+            @click="ctxMoveLeft"
+          >
+            <span>{{ t('quickLinks.moveLeft') }}</span>
+          </el-dropdown-item>
+          <el-dropdown-item
+            v-if="showSortActions && canMoveCurrentItemRight()"
+            :icon="ChevronRight20Filled"
+            @click="ctxMoveRight"
+          >
+            <span>{{ t('quickLinks.moveRight') }}</span>
           </el-dropdown-item>
           <el-dropdown-item :icon="PinOff16Regular" :divided="!showEdit" @click="ctxUnpin">
             <span>{{ t('quickLinks.unpin') }}</span>

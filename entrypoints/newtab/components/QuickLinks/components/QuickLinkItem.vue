@@ -37,9 +37,53 @@ const pinIconClass = perf('quick-links__pin-icon')
 
 <template>
   <div role="button" class="quick-links__item noselect" :class="[{ pined: pined }]">
+    <a
+      v-if="pined"
+      class="quick-links__item-link"
+      tabindex="-1"
+      :href="safeUrl"
+      :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
+      :rel="settings.quickLinks.openInNewTab ? 'noopener noreferrer' : undefined"
+      @contextmenu.stop.prevent="onContextMenu"
+    >
+      <div
+        class="quick-links__icon-container"
+        :style="{ marginBottom: `${settings.quickLinks.spacing.iconTitleGap}px` }"
+      >
+        <div
+          v-if="pined && settings.quickLinks.pinnedIcon && settings.quickLinks.topSites"
+          class="quick-links__pin-icon"
+          :class="pinIconClass"
+        >
+          <el-icon size="11">
+            <pin12-regular />
+          </el-icon>
+        </div>
+        <div
+          class="quick-links__icon"
+          :class="[iconClass, { border: settings.quickLinks.style.border }]"
+        >
+          <span
+            class="span"
+            :style="{
+              backgroundImage: `url(${iconUrl})`,
+            }"
+          ></span>
+        </div>
+      </div>
+      <el-text
+        :data-content="title"
+        v-if="settings.quickLinks.title.show"
+        class="quick-links__title"
+        :style="{ width: `calc(var(--icon_size) + ${settings.quickLinks.title.extraWidth}px)` }"
+        truncated
+      >
+        {{ title }}
+      </el-text>
+    </a>
     <OnLongPress
+      v-else
       as="a"
-      ref="itemRef"
       class="quick-links__item-link"
       tabindex="-1"
       :href="safeUrl"

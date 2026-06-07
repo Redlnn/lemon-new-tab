@@ -2,9 +2,18 @@
 import { useTranslation } from 'i18next-vue'
 
 import { DEFAULT_QUICK_LINK_GROUP_ID, useQuickLinksStore } from '@/shared/quickLinks'
+import { useSettingsStore } from '@/shared/settings'
+
+import usePerfClasses from '@newtab/composables/usePerfClasses'
 
 const { t } = useTranslation()
 const quickLinksStore = useQuickLinksStore()
+const settings = useSettingsStore()
+const perf = usePerfClasses(() => ({
+  transparent: settings.perf.quickLinks.transparent,
+  blur: settings.perf.quickLinks.blur,
+}))
+const dialogPerfClass = perf('quick-link-group-select-dialog')
 
 const visible = ref(false)
 const selectedGroupId = ref(DEFAULT_QUICK_LINK_GROUP_ID)
@@ -44,6 +53,7 @@ defineExpose({ open })
     v-model="visible"
     :title="title"
     width="360"
+    :class="[dialogPerfClass, 'noselect']"
     append-to-body
     destroy-on-close
     @closed="cancel"
@@ -62,3 +72,25 @@ defineExpose({ open })
     </template>
   </el-dialog>
 </template>
+
+<style lang="scss">
+@use '@newtab/styles/mixins/acrylic.scss' as acrylic;
+
+html.colorful {
+  .quick-link-group-select-dialog {
+    background-color: var(--el-color-primary-light-9);
+  }
+}
+
+html.dialog-transparent {
+  .quick-link-group-select-dialog--opacity {
+    background-color: var(--le-bg-color-overlay-opacity-15);
+  }
+}
+
+html.dialog-acrylic {
+  .quick-link-group-select-dialog--blur {
+    @include acrylic.acrylic;
+  }
+}
+</style>

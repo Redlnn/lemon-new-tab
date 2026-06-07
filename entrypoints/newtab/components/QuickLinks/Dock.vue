@@ -21,6 +21,7 @@ import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
 import QuickLinkContextMenu from './components/QuickLinkContextMenu.vue'
 import QuickLinkGroupSelectDialog from './components/QuickLinkGroupSelectDialog.vue'
 import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions'
+import type { CtxQuickLinkItem } from './composables/useQuickLinkContextMenu'
 import { useQuickLinksData } from './composables/useQuickLinksData'
 import { useDockLayout } from './composables/useQuickLinksLayout'
 import { useTopSitesMerge } from './composables/useTopSitesMerge'
@@ -199,6 +200,20 @@ function updateScales(clientX: number | null): void {
   }
 }
 
+async function refreshDockScaleLayout() {
+  await nextTick()
+  cacheNaturalCenters()
+  updateScales(null)
+  requestAnimationFrame(() => {
+    cacheNaturalCenters()
+    updateScales(null)
+  })
+  window.setTimeout(() => {
+    cacheNaturalCenters()
+    updateScales(null)
+  }, 180)
+}
+
 let transitionTimer: ReturnType<typeof setTimeout> | null = null
 
 // 追踪当前交互是否来自触屏，用于混合设备（鼠标+触屏）的判断
@@ -308,6 +323,49 @@ const { pinToGroup, moveToGroup } = useQuickLinkGroupActions({
   t,
 })
 
+function getDockQuickLinkCount() {
+  if (!settings.quickLinks.grouping) return quickLinksStore.items.length
+  return (
+    quickLinksStore.groups.find((group) => group.id === DEFAULT_QUICK_LINK_GROUP_ID)?.items
+      .length ?? 0
+  )
+}
+
+function canMoveDockQuickLinkLeft(item: CtxQuickLinkItem) {
+  return item.isPinned && item.originalIndex > 0
+}
+
+function canMoveDockQuickLinkRight(item: CtxQuickLinkItem) {
+  return item.isPinned && item.originalIndex < getDockQuickLinkCount() - 1
+}
+
+async function moveDockQuickLink(item: CtxQuickLinkItem, direction: -1 | 1) {
+  if (!item.isPinned) return
+  const fromIndex = item.originalIndex
+  const toIndex = fromIndex + direction
+  if (toIndex < 0 || toIndex >= getDockQuickLinkCount()) return
+  try {
+    const changed = settings.quickLinks.grouping
+      ? await quickLinksStore.moveQuickLink({
+          fromGroupId: DEFAULT_QUICK_LINK_GROUP_ID,
+          fromIndex,
+          toGroupId: DEFAULT_QUICK_LINK_GROUP_ID,
+          toIndex,
+        })
+      : await quickLinksStore.moveFlatQuickLink({
+          fromIndex,
+          toIndex,
+        })
+    if (changed) await refreshDebounced()
+  } catch (error) {
+    console.error('[dock] Failed to move quick link:', error)
+    ElMessage.error(t('quickLinks.moveError'))
+    await refreshDebounced()
+  } finally {
+    await refreshDockScaleLayout()
+  }
+}
+
 function openAddQuickLink() {
   props.onOpenAddDialog?.(settings.quickLinks.grouping ? DEFAULT_QUICK_LINK_GROUP_ID : undefined)
 }
@@ -332,7 +390,6 @@ defineExpose({ refresh })
     @mouseleave="onMouseLeave"
     @contextmenu.stop.prevent
   >
-    <!--  -->
     <!-- 启动台固定入口 -->
     <template v-if="settings.dock.launchpad.enabled">
       <el-tooltip
@@ -370,23 +427,17 @@ defineExpose({ refresh })
         transition="none"
         popper-class="dock-tooltip noselect"
       >
-        <OnLongPress
-          as="a"
+        <a
           class="dock-item"
           :href="item.url"
           :ref="setScalableRef"
           :target="settings.dock.openInNewTab ? '_blank' : '_self'"
           @contextmenu.stop.prevent="onItemContextmenu($event, item, true, idx)"
-          @trigger="onItemLongPress($event, item, true, idx)"
         >
           <img :src="item.favicon || getOrCreateFaviconRef(item.url)" alt="favicon" />
-        </OnLongPress>
+        </a>
       </el-tooltip>
-      <div
-        v-if="idx !== visibleQuickLinksData.length - 1"
-        class="dock-gap"
-        :ref="setScalableRef"
-      ></div>
+      <div v-if="idx !== visibleQuickLinksData.length - 1" class="dock-gap" :ref="setScalableRef"></div>
     </template>
     <template v-if="visibleQuickLinksData.length > 0 && visibleTopSites.length > 0">
       <div class="dock-gap" :ref="setScalableRef"></div>
@@ -448,6 +499,11 @@ defineExpose({ refresh })
       :on-open-edit-dialog="props.onOpenEditDialog"
       :on-pin="pinToGroup"
       :on-move="moveToGroup"
+      show-sort-actions
+      :can-move-left="canMoveDockQuickLinkLeft"
+      :can-move-right="canMoveDockQuickLinkRight"
+      :on-move-left="(item) => moveDockQuickLink(item, -1)"
+      :on-move-right="(item) => moveDockQuickLink(item, 1)"
     />
     <quick-link-group-select-dialog ref="groupSelectDialogRef" />
   </div>

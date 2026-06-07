@@ -2,8 +2,15 @@
 import { OnLongPress } from '@vueuse/components'
 import { onKeyStroke, useDebounceFn, useElementSize, useSwipe, useWindowSize } from '@vueuse/core'
 
+import {
+  DragDropProvider,
+  DragOverlay,
+  type DragEndEvent,
+  type DragMoveEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+} from '@dnd-kit/vue'
 import { useTranslation } from 'i18next-vue'
-import { VueDraggable } from 'vue-draggable-plus'
 import ChevronDown20Filled from '~icons/fluent/chevron-down-20-filled'
 import ChevronUp20Filled from '~icons/fluent/chevron-up-20-filled'
 import Pin12Regular from '~icons/fluent/pin-12-regular'
@@ -26,10 +33,27 @@ import { OPEN_SETTINGS } from '@newtab/shared/keys'
 import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
 
 import QuickLinkContextMenu from './components/QuickLinkContextMenu.vue'
+import QuickLinkDragOverlay from './components/QuickLinkDragOverlay.vue'
+import QuickLinkDropTarget from './components/QuickLinkDropTarget.vue'
 import QuickLinkGroupName from './components/QuickLinkGroupName.vue'
 import QuickLinkGroupSelectDialog from './components/QuickLinkGroupSelectDialog.vue'
+import QuickLinkSortableItem from './components/QuickLinkSortableItem.vue'
 import { buildQuickLinkDisplayItems } from './composables/quickLinkDisplayItems'
 import { useGroupNameRefs } from './composables/useGroupNameRefs'
+import {
+  FLAT_QUICK_LINK_DND_GROUP_ID,
+  TOP_SITES_DND_GROUP_ID,
+  getDndData,
+  getPointerClientPoint,
+  getSortableMoveState,
+  getSortableStoreIndexes,
+  quickLinkContainerDndId,
+  quickLinkDndSensors,
+  quickLinkDndId,
+  resolveQuickLinkMoveTarget,
+  resolveStoreIndexFromSortableIndex,
+  type QuickLinkDndData,
+} from './composables/useQuickLinkDnd'
 import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions'
 import { useQuickLinksData } from './composables/useQuickLinksData'
 import { useTopSitesMerge } from './composables/useTopSitesMerge'
@@ -57,11 +81,20 @@ const props = defineProps<{
 type IndexedQuickLink = {
   item: QuickLink
   index: number
+  sortableIndex: number
+}
+
+type GroupView = {
+  group: QuickLinkGroup
+  items: IndexedQuickLink[]
+  sortableStoreIndexes: number[]
 }
 
 const { t } = useTranslation()
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
+const legacyDndGroupId = FLAT_QUICK_LINK_DND_GROUP_ID
+const topSitesGroupId = TOP_SITES_DND_GROUP_ID
 
 const openSettings = inject(OPEN_SETTINGS)
 
@@ -91,13 +124,7 @@ const ROWS = computed(() => {
 const pageSize = computed(() => COLS.value * ROWS.value)
 
 const allItems = computed(() => buildQuickLinkDisplayItems(quickLinks.value, topSites.value))
-const userGroups = computed(() =>
-  settings.quickLinks.grouping
-    ? quickLinksStore.groups.filter(
-        (group) => group.id !== DEFAULT_QUICK_LINK_GROUP_ID || group.items.length > 0,
-      )
-    : [],
-)
+const userGroups = computed(() => (settings.quickLinks.grouping ? quickLinksStore.groups : []))
 const topSitesItems = computed(() =>
   topSites.value.map((item, index) => ({
     url: item.url,
@@ -138,6 +165,27 @@ const currentItems = computed(() => {
   // 最后一页留一个槽给添加按钮
   const end = isLastPage && !isSearching.value ? start + pageSize.value - 1 : start + pageSize.value
   return allItems.value.slice(start, end)
+})
+
+const currentSortableStoreIndexes = computed(() => getSortableStoreIndexes(currentItems.value))
+const currentSortableIndexByStoreIndex = computed(
+  () =>
+    new Map(
+      currentSortableStoreIndexes.value.map((storeIndex, sortableIndex) => [
+        storeIndex,
+        sortableIndex,
+      ]),
+    ),
+)
+
+const currentFlatContainerInsertIndex = computed(() => {
+  const pinnedIndexes = currentItems.value
+    .filter((item) => item.isPinned)
+    .map((item) => item.originalIndex)
+  if (pinnedIndexes.length === 0) {
+    return Math.min(page.value * pageSize.value, quickLinksStore.items.length)
+  }
+  return Math.min(Math.max(...pinnedIndexes) + 1, quickLinksStore.items.length)
 })
 
 // ---- 数据获取 ----
@@ -278,7 +326,7 @@ const groupSelectDialogRef =
   useTemplateRef<InstanceType<typeof QuickLinkGroupSelectDialog>>('groupSelectDialogRef')
 const { groupNameRefs, setGroupNameRef } = useGroupNameRefs()
 
-function getFilteredGroupItems(group: QuickLinkGroup): IndexedQuickLink[] {
+function getFilteredGroupItems(group: QuickLinkGroup): Omit<IndexedQuickLink, 'sortableIndex'>[] {
   const q = query.value.trim().toLowerCase()
   return group.items
     .map((item, index) => ({ item, index }))
@@ -287,6 +335,25 @@ function getFilteredGroupItems(group: QuickLinkGroup): IndexedQuickLink[] {
         !q || item.title.toLowerCase().includes(q) || item.url.toLowerCase().includes(q),
     )
 }
+
+const groupViews = computed<GroupView[]>(() =>
+  userGroups.value.map((group) => {
+    const filteredItems = getFilteredGroupItems(group)
+    const sortableStoreIndexes = filteredItems.map(({ index }) => index)
+    const sortableIndexByStoreIndex = new Map(
+      sortableStoreIndexes.map((storeIndex, sortableIndex) => [storeIndex, sortableIndex]),
+    )
+    return {
+      group,
+      items: filteredItems.map(({ item, index }) => ({
+        item,
+        index,
+        sortableIndex: sortableIndexByStoreIndex.get(index) ?? 0,
+      })),
+      sortableStoreIndexes,
+    }
+  }),
+)
 
 function toGroupedDisplayItem(item: QuickLink, index: number, groupId: string) {
   return {
@@ -299,10 +366,17 @@ function toGroupedDisplayItem(item: QuickLink, index: number, groupId: string) {
   }
 }
 
-async function updateGroupItems(group: QuickLinkGroup, items: QuickLink[]) {
-  if (isSearching.value || items.length !== group.items.length) return
-  await quickLinksStore.setGroupItems(group.id, items)
-  await refreshDebounced()
+function getCurrentSortableStoreIndexes() {
+  return currentSortableStoreIndexes.value
+}
+
+function getFlatSortableIndex(storeIndex: number) {
+  return currentSortableIndexByStoreIndex.value.get(storeIndex) ?? 0
+}
+
+function getLaunchpadContextStoreIndexes(groupId: string) {
+  if (!settings.quickLinks.grouping) return getCurrentSortableStoreIndexes()
+  return groupViews.value.find((view) => view.group.id === groupId)?.sortableStoreIndexes ?? []
 }
 
 async function createGroupInline() {
@@ -333,6 +407,188 @@ const { pinToGroup, moveToGroup, renameGroup, confirmDeleteGroup } = useQuickLin
   groupSelectDialogRef,
   refresh: refreshDebounced,
   t,
+})
+
+const activeDndData = shallowRef<QuickLinkDndData | null>(null)
+let pageSwitchTimer: ReturnType<typeof setTimeout> | undefined
+let pageSwitchTarget: number | null = null
+
+function clearPageSwitchTimer() {
+  if (pageSwitchTimer) {
+    clearTimeout(pageSwitchTimer)
+    pageSwitchTimer = undefined
+  }
+  pageSwitchTarget = null
+}
+
+function buildDisplayItemFromDndData(data: Extract<QuickLinkDndData, { kind: 'quick-link' }>) {
+  return {
+    url: data.url,
+    title: data.title,
+    favicon: data.favicon,
+    isPinned: true,
+    originalIndex: data.storeIndex,
+    groupId: settings.quickLinks.grouping ? data.groupId : undefined,
+  }
+}
+
+function scheduleLaunchpadPageSwitch(point: { x: number; y: number } | null) {
+  if (!point || settings.quickLinks.grouping || isSearching.value || pageCount.value <= 1) {
+    clearPageSwitchTimer()
+    return
+  }
+
+  const rect = containerRef.value?.getBoundingClientRect()
+  if (!rect) {
+    clearPageSwitchTimer()
+    return
+  }
+
+  const threshold = 72
+  let target: number | null = null
+  if (point.x - rect.left < threshold && page.value > 0) {
+    target = page.value - 1
+  } else if (rect.right - point.x < threshold && page.value < pageCount.value - 1) {
+    target = page.value + 1
+  }
+
+  if (target === null || target === page.value) {
+    clearPageSwitchTimer()
+    return
+  }
+  if (pageSwitchTarget === target) return
+
+  clearPageSwitchTimer()
+  pageSwitchTarget = target
+  pageSwitchTimer = setTimeout(() => {
+    if (target! > page.value) nextPage()
+    else prevPage()
+    clearPageSwitchTimer()
+  }, 500)
+}
+
+function autoScrollGroupedLaunchpad(point: { x: number; y: number } | null) {
+  if (!point || !settings.quickLinks.grouping) return
+  const scrollEl = containerRef.value?.querySelector('.launchpad-grouped .el-scrollbar__wrap')
+  if (!(scrollEl instanceof HTMLElement)) return
+  const rect = scrollEl.getBoundingClientRect()
+  const threshold = 80
+  if (point.y - rect.top < threshold) {
+    scrollEl.scrollBy({ top: -18 })
+  } else if (rect.bottom - point.y < threshold) {
+    scrollEl.scrollBy({ top: 18 })
+  }
+}
+
+function getLaunchpadMoveTarget(
+  source: Extract<QuickLinkDndData, { kind: 'quick-link' }>,
+  target: QuickLinkDndData | null,
+  sortableMove: ReturnType<typeof getSortableMoveState>,
+) {
+  const fallbackGroupId = settings.quickLinks.grouping ? source.groupId : legacyDndGroupId
+  const fallbackStoreIndex = settings.quickLinks.grouping
+    ? (quickLinksStore.groups.find((group) => group.id === fallbackGroupId)?.items.length ?? 0)
+    : currentFlatContainerInsertIndex.value
+  const fallbackTarget = {
+    groupId: fallbackGroupId,
+    sortableIndex: getLaunchpadContextStoreIndexes(fallbackGroupId).length,
+    storeIndex: fallbackStoreIndex,
+  }
+  const targetForQuickLink =
+    target?.kind === 'quick-link-group'
+      ? {
+          ...target,
+          sortableIndex: getLaunchpadContextStoreIndexes(target.groupId).length,
+          storeIndex:
+            quickLinksStore.groups.find((group) => group.id === target.groupId)?.items.length ?? 0,
+        }
+      : target
+  const moveTarget = resolveQuickLinkMoveTarget(targetForQuickLink, fallbackTarget)
+  if (!moveTarget || moveTarget.groupId === topSitesGroupId) return null
+
+  if (targetForQuickLink?.kind !== 'quick-link') {
+    return {
+      groupId: moveTarget.groupId,
+      storeIndex: moveTarget.storeIndex,
+    }
+  }
+
+  const targetGroupId = sortableMove.toGroupId ?? moveTarget.groupId
+  if (targetGroupId === topSitesGroupId) return null
+  const targetStoreIndexes = getLaunchpadContextStoreIndexes(targetGroupId)
+  return {
+    groupId: targetGroupId,
+    storeIndex: resolveStoreIndexFromSortableIndex(
+      targetStoreIndexes,
+      sortableMove.toSortableIndex,
+      moveTarget.storeIndex,
+    ),
+  }
+}
+
+function handleLaunchpadDragStart(event: DragStartEvent) {
+  const data = getDndData(event.operation.source)
+  activeDndData.value = data
+  if (ctxMenuOpen.value) {
+    ctxMenuRef.value?.close()
+    ctxMenuOpen.value = false
+  }
+}
+
+function handleLaunchpadDragMove(event: DragMoveEvent) {
+  const point = getPointerClientPoint(event)
+  scheduleLaunchpadPageSwitch(point)
+  autoScrollGroupedLaunchpad(point)
+}
+
+function handleLaunchpadDragOver(event: DragOverEvent) {
+  const source = getDndData(event.operation.source)
+  if (!source || source.source !== 'launchpad' || isSearching.value) {
+    event.preventDefault()
+  }
+}
+
+async function handleLaunchpadDragEnd(event: DragEndEvent) {
+  clearPageSwitchTimer()
+  const source = activeDndData.value ?? getDndData(event.operation.source)
+  const target = getDndData(event.operation.target)
+  const sortableMove = getSortableMoveState(event.operation.source)
+  activeDndData.value = null
+
+  if (!source || event.canceled || source.source !== 'launchpad' || source.kind !== 'quick-link') {
+    return
+  }
+
+  const moveTarget = getLaunchpadMoveTarget(source, target, sortableMove)
+  if (!moveTarget) return
+
+  try {
+    const changed = !settings.quickLinks.grouping
+      ? await quickLinksStore.moveFlatQuickLink({
+          fromIndex: source.storeIndex,
+          toIndex: moveTarget.storeIndex,
+        })
+      : await quickLinksStore.moveQuickLink({
+          fromGroupId: source.groupId,
+          fromIndex: source.storeIndex,
+          toGroupId: moveTarget.groupId,
+          toIndex: moveTarget.storeIndex,
+        })
+    if (changed) await refreshDebounced()
+  } catch (error) {
+    console.error('[launchpad] Failed to persist drag order:', error)
+    ElMessage.error('拖拽排序保存失败')
+    await refreshDebounced()
+  }
+}
+
+function handleLaunchpadTouchMenu(event: PointerEvent, data: QuickLinkDndData) {
+  if (data.kind !== 'quick-link') return
+  openCtxMenu(event, buildDisplayItemFromDndData(data))
+}
+
+onBeforeUnmount(() => {
+  clearPageSwitchTimer()
 })
 </script>
 
@@ -388,110 +644,242 @@ const { pinToGroup, moveToGroup, renameGroup, confirmDeleteGroup } = useQuickLin
             </div>
           </div>
 
-          <!-- 图标网格 -->
-          <div v-if="settings.quickLinks.grouping" class="launchpad-grouped" @click.self="close">
-            <el-scrollbar>
-              <section v-for="group in userGroups" :key="group.id" class="launchpad-group">
-                <div class="launchpad-group__header">
-                  <quick-link-group-name
-                    :ref="(el) => setGroupNameRef(group.id, el)"
-                    :name="group.name"
-                    class="launchpad-group__title"
-                    editable
-                    plain
-                    @rename="(name) => renameGroup(group.id, name)"
-                  />
-                  <div class="launchpad-group__actions">
-                    <button
-                      type="button"
-                      class="launchpad-group__sort-btn"
-                      :disabled="userGroups[0]?.id === group.id"
-                      @click="moveGroup(group.id, -1)"
+          <DragDropProvider
+            :sensors="quickLinkDndSensors"
+            @dragStart="handleLaunchpadDragStart"
+            @dragMove="handleLaunchpadDragMove"
+            @dragOver="handleLaunchpadDragOver"
+            @dragEnd="handleLaunchpadDragEnd"
+          >
+            <!-- 图标网格 -->
+            <div v-if="settings.quickLinks.grouping" class="launchpad-grouped" @click.self="close">
+              <el-scrollbar>
+                <section v-for="view in groupViews" :key="view.group.id" class="launchpad-group">
+                  <div class="launchpad-group__header">
+                    <quick-link-drop-target
+                      :id="`launchpad-group-title:${view.group.id}`"
+                      class="launchpad-group__title-drop"
+                      :disabled="isSearching"
+                      :data="{
+                        kind: 'quick-link-group',
+                        source: 'launchpad',
+                        groupId: view.group.id,
+                        sortableIndex: view.sortableStoreIndexes.length,
+                        storeIndex: view.group.items.length,
+                      }"
                     >
-                      <el-icon><chevron-up20-filled /></el-icon>
-                    </button>
-                    <button
-                      type="button"
-                      class="launchpad-group__sort-btn"
-                      :disabled="userGroups[userGroups.length - 1]?.id === group.id"
-                      @click="moveGroup(group.id, 1)"
-                    >
-                      <el-icon><chevron-down20-filled /></el-icon>
-                    </button>
-                    <button
-                      v-if="group.id !== DEFAULT_QUICK_LINK_GROUP_ID"
-                      type="button"
-                      class="launchpad-group__sort-btn"
-                      @click="confirmDeleteGroup(group)"
-                    >
-                      <el-icon><delete-round /></el-icon>
-                    </button>
-                  </div>
-                </div>
-                <vue-draggable
-                  :model-value="group.items"
-                  class="launchpad-grid"
-                  :style="{ '--lp-cols': COLS }"
-                  handle=".launchpad-item--pined"
-                  :animation="150"
-                  :disabled="isSearching"
-                  @update:model-value="(items: QuickLink[]) => updateGroupItems(group, items)"
-                >
-                  <OnLongPress
-                    v-for="{ item, index } in getFilteredGroupItems(group)"
-                    :key="`${group.id}-${item.url}-${index}`"
-                    as="a"
-                    class="launchpad-item launchpad-item--pined"
-                    :href="item.url"
-                    :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
-                    @contextmenu.prevent="
-                      openCtxMenu($event, toGroupedDisplayItem(item, index, group.id))
-                    "
-                    @trigger="
-                      (e: PointerEvent) => {
-                        if (isHasTouchDevice && isTouchEvent(e))
-                          openCtxMenu(e, toGroupedDisplayItem(item, index, group.id))
-                      }
-                    "
-                  >
-                    <div class="launchpad-item__icon">
-                      <img
-                        :src="item.favicon || getOrCreateFaviconRef(item.url)"
-                        :alt="item.title"
+                      <quick-link-group-name
+                        :ref="(el) => setGroupNameRef(view.group.id, el)"
+                        :name="view.group.name"
+                        class="launchpad-group__title"
+                        editable
+                        plain
+                        @rename="(name) => renameGroup(view.group.id, name)"
                       />
+                    </quick-link-drop-target>
+                    <div class="launchpad-group__actions">
+                      <button
+                        type="button"
+                        class="launchpad-group__sort-btn"
+                        :disabled="userGroups[0]?.id === view.group.id"
+                        @click="moveGroup(view.group.id, -1)"
+                      >
+                        <el-icon><chevron-up20-filled /></el-icon>
+                      </button>
+                      <button
+                        type="button"
+                        class="launchpad-group__sort-btn"
+                        :disabled="userGroups[userGroups.length - 1]?.id === view.group.id"
+                        @click="moveGroup(view.group.id, 1)"
+                      >
+                        <el-icon><chevron-down20-filled /></el-icon>
+                      </button>
+                      <button
+                        type="button"
+                        class="launchpad-group__sort-btn"
+                        @click="confirmDeleteGroup(view.group)"
+                      >
+                        <el-icon><delete-round /></el-icon>
+                      </button>
                     </div>
-                    <el-text :line-clamp="1" truncated class="launchpad-item__label">
-                      {{ item.title }}
-                    </el-text>
-                  </OnLongPress>
-                  <div
-                    v-if="!isSearching"
-                    class="launchpad-item"
-                    @click="openAddQuickLink(group.id)"
-                  >
-                    <el-icon class="launchpad-item__icon launchpad-item__icon--add">
-                      <add-round />
-                    </el-icon>
-                    <el-text :line-clamp="1" truncated class="launchpad-item__label">
-                      {{ t('dock.launchpad.add') }}
-                    </el-text>
                   </div>
-                </vue-draggable>
-              </section>
+                  <quick-link-drop-target
+                    :id="quickLinkContainerDndId('launchpad', view.group.id)"
+                    class="launchpad-grid"
+                    :style="{ '--lp-cols': COLS }"
+                    :disabled="isSearching"
+                    :data="{
+                      kind: 'quick-link-container',
+                      source: 'launchpad',
+                      groupId: view.group.id,
+                      sortableIndex: view.sortableStoreIndexes.length,
+                      storeIndex: view.group.items.length,
+                    }"
+                  >
+                    <quick-link-sortable-item
+                      v-for="{ item, index, sortableIndex } in view.items"
+                      :key="`${view.group.id}-${item.url}-${index}`"
+                      :id="quickLinkDndId('launchpad', view.group.id, index, item.url)"
+                      :index="sortableIndex"
+                      :group="view.group.id"
+                      :disabled="isSearching"
+                      :data="{
+                        kind: 'quick-link',
+                        source: 'launchpad',
+                        groupId: view.group.id,
+                        sortableIndex,
+                        storeIndex: index,
+                        url: item.url,
+                        title: item.title,
+                        favicon: item.favicon,
+                        isPinned: true,
+                      }"
+                      @touch-menu="handleLaunchpadTouchMenu"
+                    >
+                      <a
+                        class="launchpad-item launchpad-item--pined"
+                        :href="item.url"
+                        :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
+                        :rel="settings.quickLinks.openInNewTab ? 'noopener noreferrer' : undefined"
+                        @contextmenu.prevent="
+                          openCtxMenu($event, toGroupedDisplayItem(item, index, view.group.id))
+                        "
+                      >
+                        <div class="launchpad-item__icon">
+                          <img
+                            :src="item.favicon || getOrCreateFaviconRef(item.url)"
+                            :alt="item.title"
+                          />
+                        </div>
+                        <el-text :line-clamp="1" truncated class="launchpad-item__label">
+                          {{ item.title }}
+                        </el-text>
+                      </a>
+                    </quick-link-sortable-item>
+                    <div
+                      v-if="!isSearching"
+                      class="launchpad-item"
+                      @click="openAddQuickLink(view.group.id)"
+                    >
+                      <el-icon class="launchpad-item__icon launchpad-item__icon--add">
+                        <add-round />
+                      </el-icon>
+                      <el-text :line-clamp="1" truncated class="launchpad-item__label">
+                        {{ t('dock.launchpad.add') }}
+                      </el-text>
+                    </div>
+                  </quick-link-drop-target>
+                </section>
 
-              <section
-                v-if="settings.dock.launchpad.topSites && filteredTopSitesItems.length > 0"
-                class="launchpad-group"
+                <section
+                  v-if="settings.dock.launchpad.topSites && filteredTopSitesItems.length > 0"
+                  class="launchpad-group"
+                >
+                  <h2 class="launchpad-group__system-title">
+                    {{ t('quickLinks.groups.topSites') }}
+                  </h2>
+                  <div class="launchpad-grid" :style="{ '--lp-cols': COLS }">
+                    <OnLongPress
+                      v-for="item in filteredTopSitesItems"
+                      :key="`top-${item.originalIndex}`"
+                      as="a"
+                      class="launchpad-item"
+                      :href="item.url"
+                      :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
+                      @contextmenu.prevent="openCtxMenu($event, item)"
+                      @trigger="
+                        (e: PointerEvent) => {
+                          if (isHasTouchDevice && isTouchEvent(e)) openCtxMenu(e, item)
+                        }
+                      "
+                    >
+                      <div class="launchpad-item__icon">
+                        <img
+                          :src="item.favicon || getOrCreateFaviconRef(item.url)"
+                          :alt="item.title"
+                        />
+                      </div>
+                      <el-text :line-clamp="1" truncated class="launchpad-item__label">
+                        {{ item.title }}
+                      </el-text>
+                    </OnLongPress>
+                  </div>
+                </section>
+              </el-scrollbar>
+            </div>
+
+            <Transition
+              v-else
+              :name="pageDirection === 'backward' ? 'launchpad-page-back' : 'launchpad-page'"
+              mode="out-in"
+            >
+              <quick-link-drop-target
+                :key="isSearching ? 'search' : page"
+                :id="quickLinkContainerDndId('launchpad', legacyDndGroupId, page)"
+                class="launchpad-grid"
+                :style="{ '--lp-cols': COLS }"
+                :disabled="isSearching"
+                :data="{
+                  kind: 'quick-link-container',
+                  source: 'launchpad',
+                  groupId: legacyDndGroupId,
+                  sortableIndex: getCurrentSortableStoreIndexes().length,
+                  storeIndex: currentFlatContainerInsertIndex,
+                  pageIndex: page,
+                }"
+                @click.self="close"
               >
-                <h2 class="launchpad-group__system-title">{{ t('quickLinks.groups.topSites') }}</h2>
-                <div class="launchpad-grid" :style="{ '--lp-cols': COLS }">
+                <template v-for="item in currentItems" :key="item.url">
+                  <quick-link-sortable-item
+                    v-if="item.isPinned"
+                    :id="
+                      quickLinkDndId('launchpad', legacyDndGroupId, item.originalIndex, item.url)
+                    "
+                    :index="getFlatSortableIndex(item.originalIndex)"
+                    :group="legacyDndGroupId"
+                    :disabled="isSearching"
+                    :data="{
+                      kind: 'quick-link',
+                      source: 'launchpad',
+                      groupId: legacyDndGroupId,
+                      sortableIndex: getFlatSortableIndex(item.originalIndex),
+                      storeIndex: item.originalIndex,
+                      url: item.url,
+                      title: item.title,
+                      favicon: item.favicon,
+                      isPinned: true,
+                      pageIndex: page,
+                    }"
+                    @touch-menu="handleLaunchpadTouchMenu"
+                  >
+                    <a
+                      class="launchpad-item launchpad-item--pined"
+                      :href="item.url"
+                      :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
+                      :rel="settings.quickLinks.openInNewTab ? 'noopener noreferrer' : undefined"
+                      @contextmenu.prevent="openCtxMenu($event, item)"
+                    >
+                      <div class="launchpad-item__icon">
+                        <img
+                          :src="item.favicon || getOrCreateFaviconRef(item.url)"
+                          :alt="item.title"
+                        />
+                      </div>
+                      <el-text :line-clamp="1" truncated class="launchpad-item__label">
+                        <el-icon v-if="settings.dock.launchpad.topSites">
+                          <pin12-regular />
+                        </el-icon>
+                        {{ item.title }}
+                      </el-text>
+                    </a>
+                  </quick-link-sortable-item>
                   <OnLongPress
-                    v-for="item in filteredTopSitesItems"
-                    :key="`top-${item.originalIndex}`"
+                    v-else
                     as="a"
                     class="launchpad-item"
                     :href="item.url"
                     :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
+                    :rel="settings.quickLinks.openInNewTab ? 'noopener noreferrer' : undefined"
                     @contextmenu.prevent="openCtxMenu($event, item)"
                     @trigger="
                       (e: PointerEvent) => {
@@ -509,96 +897,60 @@ const { pinToGroup, moveToGroup, renameGroup, confirmDeleteGroup } = useQuickLin
                       {{ item.title }}
                     </el-text>
                   </OnLongPress>
+                </template>
+                <!-- 无结果 -->
+                <div
+                  v-if="currentItems.length === 0 && isSearching"
+                  class="launchpad-empty"
+                  style="pointer-events: none"
+                >
+                  {{ t('dock.launchpad.empty') }}
                 </div>
-              </section>
-            </el-scrollbar>
-          </div>
-
-          <Transition
-            v-else
-            :name="pageDirection === 'backward' ? 'launchpad-page-back' : 'launchpad-page'"
-            mode="out-in"
-          >
-            <div
-              :key="isSearching ? 'search' : page"
-              class="launchpad-grid"
-              :style="{ '--lp-cols': COLS }"
-              @click.self="close"
-            >
-              <OnLongPress
-                v-for="item in currentItems"
-                :key="item.url"
-                as="a"
-                class="launchpad-item"
-                :class="{ 'launchpad-item--pined': item.isPinned }"
-                :href="item.url"
-                :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
-                @contextmenu.prevent="openCtxMenu($event, item)"
-                @trigger="
-                  (e: PointerEvent) => {
-                    if (isHasTouchDevice && isTouchEvent(e)) openCtxMenu(e, item)
-                  }
-                "
-              >
-                <div class="launchpad-item__icon">
-                  <img :src="item.favicon || getOrCreateFaviconRef(item.url)" :alt="item.title" />
-                </div>
-                <el-text :line-clamp="1" truncated class="launchpad-item__label">
-                  <el-icon v-if="item.isPinned && settings.dock.launchpad.topSites">
-                    <pin12-regular />
+                <!-- 添加按钮（仅最后一页显示）-->
+                <div
+                  v-if="!isSearching && page === pageCount - 1"
+                  class="launchpad-item"
+                  @click="props.onOpenAddDialog?.()"
+                >
+                  <el-icon class="launchpad-item__icon launchpad-item__icon--add">
+                    <add-round />
                   </el-icon>
-                  {{ item.title }}
-                </el-text>
-              </OnLongPress>
-              <!-- 无结果 -->
-              <div
-                v-if="currentItems.length === 0 && isSearching"
-                class="launchpad-empty"
-                style="pointer-events: none"
-              >
-                {{ t('dock.launchpad.empty') }}
-              </div>
-              <!-- 添加按钮（仅最后一页显示）-->
-              <div
-                v-if="!isSearching && page === pageCount - 1"
-                class="launchpad-item"
-                @click="props.onOpenAddDialog?.()"
-              >
-                <el-icon class="launchpad-item__icon launchpad-item__icon--add">
-                  <add-round />
-                </el-icon>
-                <el-text :line-clamp="1" truncated class="launchpad-item__label">
-                  {{ t('dock.launchpad.add') }}
-                </el-text>
-              </div>
-            </div>
-          </Transition>
+                  <el-text :line-clamp="1" truncated class="launchpad-item__label">
+                    {{ t('dock.launchpad.add') }}
+                  </el-text>
+                </div>
+              </quick-link-drop-target>
+            </Transition>
 
-          <!-- 分页控制（非搜索模式，多于1页时显示） -->
-          <div
-            v-if="!settings.quickLinks.grouping && !isSearching && pageCount > 1"
-            class="launchpad-pagination"
-          >
-            <button class="launchpad-arrow" :disabled="page === 0" @click="prevPage">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
-              </svg>
-            </button>
-            <div class="launchpad-dots">
-              <span
-                v-for="i in pageCount"
-                :key="i"
-                class="launchpad-dot"
-                :class="{ 'launchpad-dot--active': page === i - 1 }"
-                @click="page = i - 1"
-              ></span>
+            <!-- 分页控制（非搜索模式，多于1页时显示） -->
+            <div
+              v-if="!settings.quickLinks.grouping && !isSearching && pageCount > 1"
+              class="launchpad-pagination"
+            >
+              <button class="launchpad-arrow" :disabled="page === 0" @click="prevPage">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                  <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
+                </svg>
+              </button>
+              <div class="launchpad-dots">
+                <span
+                  v-for="i in pageCount"
+                  :key="i"
+                  class="launchpad-dot"
+                  :class="{ 'launchpad-dot--active': page === i - 1 }"
+                  @click="page = i - 1"
+                ></span>
+              </div>
+              <button class="launchpad-arrow" :disabled="page === pageCount - 1" @click="nextPage">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                  <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+                </svg>
+              </button>
             </div>
-            <button class="launchpad-arrow" :disabled="page === pageCount - 1" @click="nextPage">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
-              </svg>
-            </button>
-          </div>
+            <DragOverlay :drop-animation="null">
+              <quick-link-drag-overlay :data="activeDndData" />
+            </DragOverlay>
+          </DragDropProvider>
         </div>
       </el-overlay>
     </Transition>
@@ -700,6 +1052,7 @@ const { pinToGroup, moveToGroup, renameGroup, confirmDeleteGroup } = useQuickLin
 }
 
 .launchpad-group {
+  padding: 0 5px;
   margin-bottom: 28px;
 }
 
@@ -719,6 +1072,11 @@ const { pinToGroup, moveToGroup, renameGroup, confirmDeleteGroup } = useQuickLin
   font-weight: 600;
   color: rgb(255 255 255 / 82%);
   background: transparent;
+}
+
+.launchpad-group__title-drop {
+  display: inline-flex;
+  border-radius: 8px;
 }
 
 .launchpad-group__title.quick-links__category-item {
@@ -776,6 +1134,10 @@ const { pinToGroup, moveToGroup, renameGroup, confirmDeleteGroup } = useQuickLin
   align-content: start;
   width: 100%;
   max-width: 1000px;
+}
+
+.launchpad-grouped .launchpad-grid.quick-link-dnd-drop-target {
+  min-height: 96px;
 }
 
 .launchpad-item {
