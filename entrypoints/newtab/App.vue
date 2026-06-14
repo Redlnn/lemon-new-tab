@@ -28,38 +28,57 @@ import YiYan from './components/YiYan.vue'
 import { useAppNotifications } from './composables/useAppNotifications'
 import { useElementLang } from './composables/useElementLang'
 import { createFocusState } from './composables/useFocus'
+import {
+  AboutComp,
+  AddQuickLinkDialog,
+  BackgroundSwitcher,
+  Bookmark,
+  Changelog,
+  Faq,
+  PermissionDialog,
+  SearchEnginesSwitcher,
+  SettingsPage,
+  SyncConflictDialog,
+  SyncLegacyDialog,
+  useLazyAppComponents,
+} from './composables/useLazyAppComponents'
 import { usePermission } from './composables/usePermission'
 import { useThemeWatcher } from './composables/useThemeWatcher'
 
-const SettingsPage = defineAsyncComponent(() => import('./components/SettingsPage/index.vue'))
-const Changelog = defineAsyncComponent(() => import('./components/Changelog.vue'))
-const Faq = defineAsyncComponent(() => import('./components/Faq.vue'))
-const AboutComp = defineAsyncComponent(() => import('./components/About.vue'))
-const SearchEnginesSwitcher = defineAsyncComponent(
-  () => import('./components/SearchEnginesSwitcher/index.vue'),
-)
-const BackgroundSwitcher = defineAsyncComponent(
-  () => import('./components/BackgroundSwitcher/index.vue'),
-)
-const PermissionDialog = defineAsyncComponent(() => import('./components/PermissionDialog.vue'))
-const Bookmark = defineAsyncComponent(() => import('./components/Bookmark/index.vue'))
-const AddQuickLinkDialog = defineAsyncComponent(
-  () => import('./components/QuickLinks/components/AddQuickLinkDialog.vue'),
-)
-const SyncLegacyDialog = defineAsyncComponent(() => import('./components/SyncLegacyDialog.vue'))
-const SyncConflictDialog = defineAsyncComponent(() => import('./components/SyncConflictDialog.vue'))
-
-const SettingsPageRef = ref<InstanceType<typeof SettingsPage>>()
-const ChangelogRef = ref<InstanceType<typeof Changelog>>()
-const FaqRef = ref<InstanceType<typeof Faq>>()
-const AboutRef = ref<InstanceType<typeof AboutComp>>()
-const SESwitcherRef = ref<InstanceType<typeof SearchEnginesSwitcher>>()
-const BGSwticherRef = ref<InstanceType<typeof BackgroundSwitcher>>()
-const BookmarkRef = ref<InstanceType<typeof Bookmark>>()
 const BackgroundRef = ref<InstanceType<typeof Background>>()
-const AddQuickLinkDialogRef = ref<InstanceType<typeof AddQuickLinkDialog>>()
 const QuickLinksRef = ref<InstanceType<typeof QuickLinks>>()
 const DockRef = ref<InstanceType<typeof Dock>>()
+
+const {
+  SettingsPageRef, // 这些 Ref 看着是灰的但模板里有用
+  ChangelogRef,
+  FaqRef,
+  AboutRef,
+  SESwitcherRef,
+  BGSwticherRef,
+  BookmarkRef,
+  AddQuickLinkDialogRef,
+  settingsPageLoaded,
+  changelogLoaded,
+  faqLoaded,
+  aboutLoaded,
+  searchEnginesSwitcherLoaded,
+  backgroundSwitcherLoaded,
+  bookmarkLoaded,
+  addQuickLinkDialogLoaded,
+  permissionDialogLoaded,
+  syncLegacyDialogLoaded,
+  syncConflictDialogLoaded,
+  toggleSettingsPage,
+  showChangelog,
+  showFaq,
+  toggleAbout,
+  showSearchEnginesSwitcher,
+  showBackgroundSwitcher,
+  showBookmark,
+  openAddQuickLinkDialog,
+  openEditQuickLinkDialog,
+} = useLazyAppComponents()
 
 const appRef = useTemplateRef('appRef')
 
@@ -71,9 +90,6 @@ const { legacyDialogVisible, conflictDialogVisible, conflictPayload } = storeToR
 // 主题/外观 watcher
 useThemeWatcher()
 
-// 应用级通知（欢迎、缓存提示、版本更新、同步错误）
-useAppNotifications(ChangelogRef)
-
 const { idle } = useIdle(5_000, {
   events: ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel'],
   listenForVisibilityChange: false,
@@ -81,11 +97,15 @@ const { idle } = useIdle(5_000, {
 
 const idleHideEnabled = computed(() => settings.theme.idleHide && !isOnlyTouchDevice.value)
 
-watch(isOnlyTouchDevice, (onlyTouch) => {
-  if (!onlyTouch) return
-  settings.background.parallax = false
-  settings.theme.idleHide = false
-}, { immediate: true })
+watch(
+  isOnlyTouchDevice,
+  (onlyTouch) => {
+    if (!onlyTouch) return
+    settings.background.parallax = false
+    settings.theme.idleHide = false
+  },
+  { immediate: true },
+)
 
 watch([idle, idleHideEnabled], ([v, enabled]) => {
   if (!enabled) {
@@ -101,14 +121,9 @@ watch([idle, idleHideEnabled], ([v, enabled]) => {
 
 function openBookmarkSidebar() {
   if (settings.bookmark.rightClickToOpen) {
-    BookmarkRef.value?.show()
+    void showBookmark()
   }
 }
-
-provide(FOCUS_STATE, createFocusState())
-provide(OPEN_SETTINGS, () => SettingsPageRef.value?.toggle())
-provide(OPEN_SEARCH_ENGINE_PREFERENCE, () => SESwitcherRef.value?.show())
-provide(OPEN_BACKGROUND_PREFERENCE, () => BGSwticherRef.value?.show())
 
 const {
   permissionDialogVisible,
@@ -117,6 +132,38 @@ const {
   currentContext,
   onPermissionDialogResult,
 } = usePermission()
+
+provide(FOCUS_STATE, createFocusState())
+provide(OPEN_SETTINGS, toggleSettingsPage)
+provide(OPEN_SEARCH_ENGINE_PREFERENCE, showSearchEnginesSwitcher)
+provide(OPEN_BACKGROUND_PREFERENCE, showBackgroundSwitcher)
+
+// 应用级通知（欢迎、缓存提示、版本更新、同步错误）
+useAppNotifications(showChangelog)
+
+watch(
+  permissionDialogVisible,
+  (visible) => {
+    if (visible) permissionDialogLoaded.value = true
+  },
+  { immediate: true },
+)
+
+watch(
+  legacyDialogVisible,
+  (visible) => {
+    if (visible) syncLegacyDialogLoaded.value = true
+  },
+  { immediate: true },
+)
+
+watch(
+  conflictDialogVisible,
+  (visible) => {
+    if (visible) syncConflictDialogLoaded.value = true
+  },
+  { immediate: true },
+)
 
 const actionClass = computed(() => {
   const perf = settings.perf
@@ -207,29 +254,29 @@ async function refreshQuickLinks() {
       <quick-links
         v-if="settings.quickLinks.enabled"
         ref="QuickLinksRef"
-        :on-open-add-dialog="AddQuickLinkDialogRef?.openAddDialog"
-        :on-open-edit-dialog="AddQuickLinkDialogRef?.openEditDialog"
+        :on-open-add-dialog="openAddQuickLinkDialog"
+        :on-open-edit-dialog="openEditQuickLinkDialog"
         @contextmenu.stop
       />
       <yi-yan v-if="settings.yiyan.enabled" @contextmenu.stop />
       <dock
         v-if="settings.dock.enabled"
         ref="DockRef"
-        :on-open-add-dialog="AddQuickLinkDialogRef?.openAddDialog"
-        :on-open-edit-dialog="AddQuickLinkDialogRef?.openEditDialog"
+        :on-open-add-dialog="openAddQuickLinkDialog"
+        :on-open-edit-dialog="openEditQuickLinkDialog"
       />
     </main>
     <background ref="BackgroundRef" />
     <div class="action-btn-container" :class="actionClass">
       <settings-btn
-        @open-settings="SettingsPageRef?.toggle"
-        @open-changelog="ChangelogRef?.show"
-        @open-about="AboutRef?.toggle"
-        @open-search-engine-preference="SESwitcherRef?.show"
-        @open-faq="FaqRef?.show"
-        @open-background-switcher="BGSwticherRef?.show"
+        @open-settings="toggleSettingsPage"
+        @open-changelog="showChangelog"
+        @open-about="toggleAbout"
+        @open-search-engine-preference="showSearchEnginesSwitcher"
+        @open-faq="showFaq"
+        @open-background-switcher="showBackgroundSwitcher"
       />
-      <bookmark-btn v-if="settings.bookmark.showBtn" @open-bookmark-sidebar="BookmarkRef?.show" />
+      <bookmark-btn v-if="settings.bookmark.showBtn" @open-bookmark-sidebar="showBookmark" />
       <refresh-bg-btn
         v-if="settings.background.bgType === BgType.Online"
         @refresh-background="BackgroundRef?.refreshBackground"
@@ -238,15 +285,20 @@ async function refreshQuickLinks() {
         v-if="([BgType.Bing, BgType.Online] as BgType[]).includes(settings.background.bgType)"
       ></download-bg-btn>
     </div>
-    <settings-page ref="SettingsPageRef" />
-    <changelog ref="ChangelogRef" />
-    <faq ref="FaqRef" />
-    <about-comp ref="AboutRef" />
-    <search-engines-switcher ref="SESwitcherRef" />
-    <background-switcher ref="BGSwticherRef" />
-    <bookmark ref="BookmarkRef" />
-    <add-quick-link-dialog ref="AddQuickLinkDialogRef" @saved="refreshQuickLinks" />
+    <settings-page v-if="settingsPageLoaded" ref="SettingsPageRef" />
+    <changelog v-if="changelogLoaded" ref="ChangelogRef" />
+    <faq v-if="faqLoaded" ref="FaqRef" />
+    <about-comp v-if="aboutLoaded" ref="AboutRef" />
+    <search-engines-switcher v-if="searchEnginesSwitcherLoaded" ref="SESwitcherRef" />
+    <background-switcher v-if="backgroundSwitcherLoaded" ref="BGSwticherRef" />
+    <bookmark v-if="bookmarkLoaded" ref="BookmarkRef" />
+    <add-quick-link-dialog
+      v-if="addQuickLinkDialogLoaded"
+      ref="AddQuickLinkDialogRef"
+      @saved="refreshQuickLinks"
+    />
     <permission-dialog
+      v-if="permissionDialogLoaded"
       v-model="permissionDialogVisible"
       :hostname="currentHostname"
       :only-all="currentOnlyAll"
@@ -254,11 +306,13 @@ async function refreshQuickLinks() {
       @result="onPermissionDialogResult"
     />
     <sync-legacy-dialog
+      v-if="syncLegacyDialogLoaded"
       v-model="legacyDialogVisible"
       @confirm="handleLegacyConfirm"
       @cancel="handleLegacyCancel"
     />
     <sync-conflict-dialog
+      v-if="syncConflictDialogLoaded"
       v-model="conflictDialogVisible"
       :conflict="conflictPayload"
       @use-cloud="handleUseCloudConflictData"

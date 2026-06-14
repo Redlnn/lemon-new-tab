@@ -11,9 +11,9 @@ import { shouldShowChangelog } from '../shared/utils'
 
 /**
  * 处理应用级通知（欢迎、图标缓存提示、版本更新、同步错误）。
- * @param changelogRef 传入 Changelog 组件的 template ref，用于自动弹出更新日志。
+ * @param showChangelog 用于自动弹出更新日志，调用方可在其中懒加载 Changelog。
  */
-export function useAppNotifications(changelogRef: Ref<{ show: () => void } | undefined>) {
+export function useAppNotifications(showChangelog: () => void | Promise<void>) {
   const settings = useSettingsStore()
   const { t } = useTranslation('sync')
 
@@ -47,14 +47,7 @@ export function useAppNotifications(changelogRef: Ref<{ show: () => void } | und
       const canAutoShow = shouldShowChangelog(settings.pluginVersion, version)
 
       if (canAutoShow && !settings.hideMajorChangelog) {
-        watch(
-          () => changelogRef.value,
-          (instance) => {
-            if (!instance) return
-            instance.show()
-          },
-          { once: true, flush: 'post' },
-        )
+        void showChangelog()
       } else {
         settings.pluginVersion = version
       }
