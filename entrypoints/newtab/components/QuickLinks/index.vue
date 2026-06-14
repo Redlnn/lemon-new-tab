@@ -116,6 +116,7 @@ const visibleCategoryGroups = computed(() => userGroups.value)
 const { updateMaxCols, maxFitCols, maxFitRows } = usePagedGridLayout()
 const slotsPerPage = computed(() => maxFitCols.value * maxFitRows.value)
 const isDragging = ref(false)
+const dndRenderKey = ref(0)
 
 function buildGroupItems(group: QuickLinkGroup): DisplayItem[] {
   return group.items.map((item, index) => ({
@@ -303,6 +304,22 @@ const showAddButton = computed(() => showAddButtonForPage(currentPage.value))
 
 function getDisplayGroupId(groupId?: string) {
   return settings.quickLinks.grouping ? (groupId ?? DEFAULT_QUICK_LINK_GROUP_ID) : legacyDndGroupId
+}
+
+function getItemDndGroupId(item: DisplayItem, groupId?: string) {
+  return item.isPinned ? getDisplayGroupId(groupId) : topSitesGroupId
+}
+
+function getItemSortableIndex(item: DisplayItem) {
+  return item.isPinned ? (item.sortableIndex ?? 0) : item.originalIndex
+}
+
+function getItemDndOrigin(item: DisplayItem) {
+  return item.isPinned ? 'pinned' : 'top-sites'
+}
+
+function getItemDndDisabled(item: DisplayItem) {
+  return item.isPinned ? false : { draggable: false, droppable: true }
 }
 
 function getSortableStoreIndexesForContext(groupId: string, pageIndex?: number) {
@@ -575,9 +592,9 @@ function buildDisplayItemFromDndData(data: Extract<QuickLinkDndData, { kind: 'qu
     url: data.url,
     title: data.title,
     favicon: data.favicon,
-    isPinned: true,
+    isPinned: data.origin === 'pinned',
     originalIndex: data.storeIndex,
-    groupId: settings.quickLinks.grouping ? data.groupId : undefined,
+    groupId: settings.quickLinks.grouping && data.origin === 'pinned' ? data.groupId : undefined,
   }
 }
 
@@ -638,7 +655,15 @@ function getQuickLinkMoveTarget(
     currentPage &&
     (target.groupId !== currentPage.groupId || target.pageIndex !== currentPage.pageInGroup)
   const targetForQuickLink = isStalePagedTarget ? null : target
-  if (targetForQuickLink?.kind === 'quick-link-group') return null
+  const targetGroupAsContainer =
+    source.origin === 'top-sites' && targetForQuickLink?.kind === 'quick-link-group'
+      ? {
+          groupId: targetForQuickLink.groupId,
+          sortableIndex: getSortableStoreIndexesForContext(targetForQuickLink.groupId).length,
+          storeIndex: getItemGroupSize(targetForQuickLink.groupId),
+        }
+      : null
+  if (targetForQuickLink?.kind === 'quick-link-group' && !targetGroupAsContainer) return null
 
   const fallbackGroupId = currentPageData.value?.groupId ?? source.groupId
   const fallbackTarget =
@@ -649,10 +674,11 @@ function getQuickLinkMoveTarget(
           storeIndex: getItemGroupSize(fallbackGroupId),
         }
       : null
-  const moveTarget = resolveQuickLinkMoveTarget(targetForQuickLink, fallbackTarget)
+  const moveTarget =
+    targetGroupAsContainer ?? resolveQuickLinkMoveTarget(targetForQuickLink, fallbackTarget)
   if (!moveTarget || moveTarget.groupId === topSitesGroupId) return null
 
-  if (targetForQuickLink?.kind !== 'quick-link') {
+  if (targetForQuickLink?.kind !== 'quick-link' || targetGroupAsContainer) {
     return {
       groupId: moveTarget.groupId,
       storeIndex: moveTarget.storeIndex,
@@ -699,7 +725,11 @@ function handleQuickLinkDragOver(event: DragOverEvent) {
   if (source.kind === 'quick-link-group' && target?.kind !== 'quick-link-group') {
     event.preventDefault()
   }
-  if (source.kind === 'quick-link' && target?.kind === 'quick-link-group') {
+  if (
+    source.kind === 'quick-link' &&
+    source.origin !== 'top-sites' &&
+    target?.kind === 'quick-link-group'
+  ) {
     event.preventDefault()
   }
 }
@@ -732,22 +762,49 @@ async function handleQuickLinkDragEnd(event: DragEndEvent) {
   if (!moveTarget) return
 
   try {
-    const changed = !settings.quickLinks.grouping
-      ? await quickLinksStore.moveFlatQuickLink({
-          fromIndex: source.storeIndex,
-          toIndex: moveTarget.storeIndex,
-        })
-      : await quickLinksStore.moveQuickLink({
-          fromGroupId: source.groupId,
-          fromIndex: source.storeIndex,
-          toGroupId: moveTarget.groupId,
-          toIndex: moveTarget.storeIndex,
-        })
-    if (changed) await refreshDebounced()
+    const quickLink = {
+      url: source.url,
+      title: source.title,
+      favicon: source.favicon,
+    }
+    let changed: boolean
+    if (source.origin === 'top-sites') {
+      changed = settings.quickLinks.grouping
+        ? await quickLinksStore.insertQuickLinkToGroup({
+            groupId: moveTarget.groupId,
+            quickLink,
+            index: moveTarget.storeIndex,
+          })
+        : await quickLinksStore.insertFlatQuickLink({
+            quickLink,
+            index: moveTarget.storeIndex,
+          })
+    } else {
+      changed = !settings.quickLinks.grouping
+        ? await quickLinksStore.moveFlatQuickLink({
+            fromIndex: source.storeIndex,
+            toIndex: moveTarget.storeIndex,
+          })
+        : await quickLinksStore.moveQuickLink({
+            fromGroupId: source.groupId,
+            fromIndex: source.storeIndex,
+            toGroupId: moveTarget.groupId,
+            toIndex: moveTarget.storeIndex,
+          })
+    }
+    if (source.origin === 'top-sites') {
+      await refreshDebounced()
+      dndRenderKey.value++
+    } else if (changed) {
+      await refreshDebounced()
+    }
   } catch (error) {
     console.error('[quick-links] Failed to persist drag order:', error)
     ElMessage.error('拖拽排序保存失败')
     await refreshDebounced()
+    if (source.origin === 'top-sites') {
+      dndRenderKey.value++
+    }
   }
 }
 
@@ -937,6 +994,7 @@ defineExpose({ refresh })
     }"
   >
     <DragDropProvider
+      :key="dndRenderKey"
       :sensors="quickLinkDndSensors"
       @dragStart="handleQuickLinkDragStart"
       @dragMove="handleQuickLinkDragMove"
@@ -967,27 +1025,28 @@ defineExpose({ refresh })
             >
               <template v-for="item in section.items" :key="getDisplayItemKey(section.key, item)">
                 <quick-link-sortable-item
-                  v-if="item.isPinned && !section.isTopSites"
                   :id="
                     quickLinkDndId(
                       'quick-links',
-                      getDisplayGroupId(section.groupId),
+                      getItemDndGroupId(item, section.groupId),
                       item.originalIndex,
                       item.url,
                     )
                   "
-                  :index="item.sortableIndex ?? 0"
-                  :group="getDisplayGroupId(section.groupId)"
+                  :index="getItemSortableIndex(item)"
+                  :group="getItemDndGroupId(item, section.groupId)"
+                  :disabled="getItemDndDisabled(item)"
                   :data="{
                     kind: 'quick-link',
                     source: 'quick-links',
-                    groupId: getDisplayGroupId(section.groupId),
-                    sortableIndex: item.sortableIndex ?? 0,
+                    groupId: getItemDndGroupId(item, section.groupId),
+                    sortableIndex: getItemSortableIndex(item),
                     storeIndex: item.originalIndex,
                     url: item.url,
                     title: item.title,
                     favicon: item.favicon,
-                    isPinned: true,
+                    isPinned: item.isPinned,
+                    origin: getItemDndOrigin(item),
                   }"
                   @touch-menu="handleQuickLinkTouchMenu"
                 >
@@ -1000,15 +1059,6 @@ defineExpose({ refresh })
                     :tabindex="focusStore.isFocused ? -1 : 0"
                   />
                 </quick-link-sortable-item>
-                <quick-link-item
-                  v-else
-                  :url="item.url"
-                  :title="item.title"
-                  :favicon="item.favicon"
-                  :pined="item.isPinned"
-                  :on-context-menu="(e) => openCtxMenu(e, item)"
-                  :tabindex="focusStore.isFocused ? -1 : 0"
-                />
               </template>
               <add-quick-link
                 v-if="!section.isTopSites"
@@ -1040,15 +1090,27 @@ defineExpose({ refresh })
                 storeIndex: index,
               }"
             >
-              <quick-link-group-name
-                :ref="(el) => setGroupNameRef(group.id, el)"
-                :name="group.name"
-                :active="currentPageData?.groupId === group.id"
-                editable
-                @select="selectGroup(group.id)"
-                @rename="(name) => renameGroup(group.id, name)"
-                @contextmenu.prevent="confirmDeleteGroup(group)"
-              />
+              <quick-link-drop-target
+                :id="`quick-links-group-title:${group.id}`"
+                class="quick-links__category-title-drop"
+                :data="{
+                  kind: 'quick-link-group',
+                  source: 'quick-links',
+                  groupId: group.id,
+                  sortableIndex: getSortableStoreIndexesForContext(group.id).length,
+                  storeIndex: getItemGroupSize(group.id),
+                }"
+              >
+                <quick-link-group-name
+                  :ref="(el) => setGroupNameRef(group.id, el)"
+                  :name="group.name"
+                  :active="currentPageData?.groupId === group.id"
+                  editable
+                  @select="selectGroup(group.id)"
+                  @rename="(name) => renameGroup(group.id, name)"
+                  @contextmenu.prevent="confirmDeleteGroup(group)"
+                />
+              </quick-link-drop-target>
             </quick-link-sortable-item>
           </div>
           <button
@@ -1155,27 +1217,28 @@ defineExpose({ refresh })
                     :key="getDisplayItemKey(currentPageData?.key, item)"
                   >
                     <quick-link-sortable-item
-                      v-if="item.isPinned && !currentPageData?.isTopSites"
                       :id="
                         quickLinkDndId(
                           'quick-links',
-                          getDisplayGroupId(currentPageData?.groupId),
+                          getItemDndGroupId(item, currentPageData?.groupId),
                           item.originalIndex,
                           item.url,
                         )
                       "
-                      :index="item.sortableIndex ?? 0"
-                      :group="getDisplayGroupId(currentPageData?.groupId)"
+                      :index="getItemSortableIndex(item)"
+                      :group="getItemDndGroupId(item, currentPageData?.groupId)"
+                      :disabled="getItemDndDisabled(item)"
                       :data="{
                         kind: 'quick-link',
                         source: 'quick-links',
-                        groupId: getDisplayGroupId(currentPageData?.groupId),
-                        sortableIndex: item.sortableIndex ?? 0,
+                        groupId: getItemDndGroupId(item, currentPageData?.groupId),
+                        sortableIndex: getItemSortableIndex(item),
                         storeIndex: item.originalIndex,
                         url: item.url,
                         title: item.title,
                         favicon: item.favicon,
-                        isPinned: true,
+                        isPinned: item.isPinned,
+                        origin: getItemDndOrigin(item),
                         pageIndex: currentPageData?.pageInGroup,
                       }"
                       @touch-menu="handleQuickLinkTouchMenu"
@@ -1189,15 +1252,6 @@ defineExpose({ refresh })
                         :tabindex="focusStore.isFocused ? -1 : 0"
                       />
                     </quick-link-sortable-item>
-                    <quick-link-item
-                      v-else
-                      :url="item.url"
-                      :title="item.title"
-                      :favicon="item.favicon"
-                      :pined="item.isPinned"
-                      :on-context-menu="(e) => openCtxMenu(e, item)"
-                      :tabindex="focusStore.isFocused ? -1 : 0"
-                    />
                   </template>
 
                   <!-- 添加链接按钮（始终在最后一页最后一格） -->

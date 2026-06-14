@@ -23,7 +23,8 @@ export type QuickLinkDndData =
       url: string
       title: string
       favicon?: string
-      isPinned: true
+      isPinned: boolean
+      origin: 'pinned' | 'top-sites'
       pageIndex?: number
     }
   | {

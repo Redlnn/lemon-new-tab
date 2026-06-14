@@ -589,6 +589,10 @@
   display: inline-flex;
 }
 
+.quick-links__category-title-drop {
+  display: inline-flex;
+}
+
 .quick-links__category-groups .quick-link-dnd-sortable--drop-target {
   border-radius: 10px;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--el-color-primary), transparent 45%);

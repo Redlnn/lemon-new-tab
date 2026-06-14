@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { OnLongPress } from '@vueuse/components'
 import { onKeyStroke, useDebounceFn, useElementSize, useSwipe, useWindowSize } from '@vueuse/core'
 
 import {
@@ -30,7 +29,6 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { usePerfClasses } from '@newtab/composables/usePerfClasses'
 import { OPEN_SETTINGS } from '@newtab/shared/keys'
-import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
 
 import QuickLinkContextMenu from './components/QuickLinkContextMenu.vue'
 import QuickLinkDragOverlay from './components/QuickLinkDragOverlay.vue'
@@ -306,6 +304,7 @@ const popperClass = perf('quick-links__menu-popper')
 
 const ctxMenuRef = useTemplateRef<InstanceType<typeof QuickLinkContextMenu>>('ctxMenuRef')
 const ctxMenuOpen = ref(false)
+const dndRenderKey = ref(0)
 
 function openCtxMenu(
   event: MouseEvent | PointerEvent,
@@ -417,9 +416,9 @@ function buildDisplayItemFromDndData(data: Extract<QuickLinkDndData, { kind: 'qu
     url: data.url,
     title: data.title,
     favicon: data.favicon,
-    isPinned: true,
+    isPinned: data.origin === 'pinned',
     originalIndex: data.storeIndex,
-    groupId: settings.quickLinks.grouping ? data.groupId : undefined,
+    groupId: settings.quickLinks.grouping && data.origin === 'pinned' ? data.groupId : undefined,
   }
 }
 
@@ -554,22 +553,49 @@ async function handleLaunchpadDragEnd(event: DragEndEvent) {
   if (!moveTarget) return
 
   try {
-    const changed = !settings.quickLinks.grouping
-      ? await quickLinksStore.moveFlatQuickLink({
-          fromIndex: source.storeIndex,
-          toIndex: moveTarget.storeIndex,
-        })
-      : await quickLinksStore.moveQuickLink({
-          fromGroupId: source.groupId,
-          fromIndex: source.storeIndex,
-          toGroupId: moveTarget.groupId,
-          toIndex: moveTarget.storeIndex,
-        })
-    if (changed) await refreshDebounced()
+    const quickLink = {
+      url: source.url,
+      title: source.title,
+      favicon: source.favicon,
+    }
+    let changed: boolean
+    if (source.origin === 'top-sites') {
+      changed = settings.quickLinks.grouping
+        ? await quickLinksStore.insertQuickLinkToGroup({
+            groupId: moveTarget.groupId,
+            quickLink,
+            index: moveTarget.storeIndex,
+          })
+        : await quickLinksStore.insertFlatQuickLink({
+            quickLink,
+            index: moveTarget.storeIndex,
+          })
+    } else {
+      changed = !settings.quickLinks.grouping
+        ? await quickLinksStore.moveFlatQuickLink({
+            fromIndex: source.storeIndex,
+            toIndex: moveTarget.storeIndex,
+          })
+        : await quickLinksStore.moveQuickLink({
+            fromGroupId: source.groupId,
+            fromIndex: source.storeIndex,
+            toGroupId: moveTarget.groupId,
+            toIndex: moveTarget.storeIndex,
+          })
+    }
+    if (source.origin === 'top-sites') {
+      await refreshDebounced()
+      dndRenderKey.value++
+    } else if (changed) {
+      await refreshDebounced()
+    }
   } catch (error) {
     console.error('[launchpad] Failed to persist drag order:', error)
     ElMessage.error('拖拽排序保存失败')
     await refreshDebounced()
+    if (source.origin === 'top-sites') {
+      dndRenderKey.value++
+    }
   }
 }
 
@@ -636,6 +662,7 @@ onBeforeUnmount(() => {
           </div>
 
           <DragDropProvider
+            :key="dndRenderKey"
             :sensors="launchpadDndSensors"
             @dragStart="handleLaunchpadDragStart"
             @dragMove="handleLaunchpadDragMove"
@@ -724,6 +751,7 @@ onBeforeUnmount(() => {
                         title: item.title,
                         favicon: item.favicon,
                         isPinned: true,
+                        origin: 'pinned',
                       }"
                       @touch-menu="handleLaunchpadTouchMenu"
                     >
@@ -770,30 +798,47 @@ onBeforeUnmount(() => {
                     {{ t('quickLinks.groups.topSites') }}
                   </h2>
                   <div class="launchpad-grid" :style="{ '--lp-cols': COLS }">
-                    <OnLongPress
+                    <quick-link-sortable-item
                       v-for="item in filteredTopSitesItems"
                       :key="`top-${item.originalIndex}`"
-                      as="a"
-                      class="launchpad-item"
-                      :href="item.url"
-                      :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
-                      @contextmenu.prevent="openCtxMenu($event, item)"
-                      @trigger="
-                        (e: PointerEvent) => {
-                          if (isHasTouchDevice && isTouchEvent(e)) openCtxMenu(e, item)
-                        }
+                      :id="
+                        quickLinkDndId('launchpad', topSitesGroupId, item.originalIndex, item.url)
                       "
+                      :index="item.originalIndex"
+                      :group="topSitesGroupId"
+                      :disabled="isSearching ? true : { draggable: false, droppable: true }"
+                      :data="{
+                        kind: 'quick-link',
+                        source: 'launchpad',
+                        groupId: topSitesGroupId,
+                        sortableIndex: item.originalIndex,
+                        storeIndex: item.originalIndex,
+                        url: item.url,
+                        title: item.title,
+                        favicon: item.favicon,
+                        isPinned: false,
+                        origin: 'top-sites',
+                      }"
+                      @touch-menu="handleLaunchpadTouchMenu"
                     >
-                      <div class="launchpad-item__icon">
-                        <img
-                          :src="item.favicon || getOrCreateFaviconRef(item.url)"
-                          :alt="item.title"
-                        />
-                      </div>
-                      <el-text :line-clamp="1" truncated class="launchpad-item__label">
-                        {{ item.title }}
-                      </el-text>
-                    </OnLongPress>
+                      <a
+                        class="launchpad-item"
+                        :href="item.url"
+                        :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
+                        :rel="settings.quickLinks.openInNewTab ? 'noopener noreferrer' : undefined"
+                        @contextmenu.prevent="openCtxMenu($event, item)"
+                      >
+                        <div class="launchpad-item__icon">
+                          <img
+                            :src="item.favicon || getOrCreateFaviconRef(item.url)"
+                            :alt="item.title"
+                          />
+                        </div>
+                        <el-text :line-clamp="1" truncated class="launchpad-item__label">
+                          {{ item.title }}
+                        </el-text>
+                      </a>
+                    </quick-link-sortable-item>
                   </div>
                 </section>
               </el-scrollbar>
@@ -839,6 +884,7 @@ onBeforeUnmount(() => {
                       title: item.title,
                       favicon: item.favicon,
                       isPinned: true,
+                      origin: 'pinned',
                       pageIndex: page,
                     }"
                     @touch-menu="handleLaunchpadTouchMenu"
@@ -864,30 +910,45 @@ onBeforeUnmount(() => {
                       </el-text>
                     </a>
                   </quick-link-sortable-item>
-                  <OnLongPress
+                  <quick-link-sortable-item
                     v-else
-                    as="a"
-                    class="launchpad-item"
-                    :href="item.url"
-                    :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
-                    :rel="settings.quickLinks.openInNewTab ? 'noopener noreferrer' : undefined"
-                    @contextmenu.prevent="openCtxMenu($event, item)"
-                    @trigger="
-                      (e: PointerEvent) => {
-                        if (isHasTouchDevice && isTouchEvent(e)) openCtxMenu(e, item)
-                      }
-                    "
+                    :id="quickLinkDndId('launchpad', topSitesGroupId, item.originalIndex, item.url)"
+                    :index="item.originalIndex"
+                    :group="topSitesGroupId"
+                    :disabled="isSearching ? true : { draggable: false, droppable: true }"
+                    :data="{
+                      kind: 'quick-link',
+                      source: 'launchpad',
+                      groupId: topSitesGroupId,
+                      sortableIndex: item.originalIndex,
+                      storeIndex: item.originalIndex,
+                      url: item.url,
+                      title: item.title,
+                      favicon: item.favicon,
+                      isPinned: false,
+                      origin: 'top-sites',
+                      pageIndex: page,
+                    }"
+                    @touch-menu="handleLaunchpadTouchMenu"
                   >
-                    <div class="launchpad-item__icon">
-                      <img
-                        :src="item.favicon || getOrCreateFaviconRef(item.url)"
-                        :alt="item.title"
-                      />
-                    </div>
-                    <el-text :line-clamp="1" truncated class="launchpad-item__label">
-                      {{ item.title }}
-                    </el-text>
-                  </OnLongPress>
+                    <a
+                      class="launchpad-item"
+                      :href="item.url"
+                      :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
+                      :rel="settings.quickLinks.openInNewTab ? 'noopener noreferrer' : undefined"
+                      @contextmenu.prevent="openCtxMenu($event, item)"
+                    >
+                      <div class="launchpad-item__icon">
+                        <img
+                          :src="item.favicon || getOrCreateFaviconRef(item.url)"
+                          :alt="item.title"
+                        />
+                      </div>
+                      <el-text :line-clamp="1" truncated class="launchpad-item__label">
+                        {{ item.title }}
+                      </el-text>
+                    </a>
+                  </quick-link-sortable-item>
                 </template>
                 <!-- 无结果 -->
                 <div
@@ -1135,6 +1196,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
   padding: 10px 8px;
   overflow: hidden;
   cursor: pointer;

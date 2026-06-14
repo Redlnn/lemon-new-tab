@@ -40,6 +40,17 @@ type MoveFlatQuickLinkOptions = {
   toIndex: number
 }
 
+type InsertFlatQuickLinkOptions = {
+  quickLink: QuickLink
+  index: number
+}
+
+type InsertQuickLinkToGroupOptions = {
+  groupId: string
+  quickLink: QuickLink
+  index: number
+}
+
 function normalizeQuickLinkGroupName(name: string, fallback: string): string {
   const trimmed = name.trim()
   return (trimmed || fallback).slice(0, MAX_QUICK_LINK_GROUP_NAME_LENGTH)
@@ -127,6 +138,26 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
       groups.value.unshift(target)
     }
     return target
+  }
+
+  const getGroupForInsert = (groupId: string): QuickLinkGroup | undefined => {
+    return groupId === DEFAULT_QUICK_LINK_GROUP_ID
+      ? ensureDefaultGroup()
+      : groups.value.find((item) => item.id === groupId)
+  }
+
+  const findFlatQuickLinkIndexByUrl = (url: string) => {
+    const normalizedUrl = normalizeUrlForDedup(url)
+    return items.value.findIndex((item) => normalizeUrlForDedup(item.url) === normalizedUrl)
+  }
+
+  const findGroupedQuickLinkByUrl = (url: string) => {
+    const normalizedUrl = normalizeUrlForDedup(url)
+    for (const group of groups.value) {
+      const index = group.items.findIndex((item) => normalizeUrlForDedup(item.url) === normalizedUrl)
+      if (index >= 0) return { group, index }
+    }
+    return null
   }
 
   const applyItems = (
@@ -250,10 +281,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     quickLink: QuickLink,
     options?: QuickLinksSaveOptions,
   ) => {
-    const group =
-      groupId === DEFAULT_QUICK_LINK_GROUP_ID
-        ? ensureDefaultGroup()
-        : groups.value.find((item) => item.id === groupId)
+    const group = getGroupForInsert(groupId)
     if (!group) return
     group.items.push(quickLink)
     await save(undefined, options)
@@ -279,10 +307,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
 
   const moveQuickLinkToGroup = async (fromGroupId: string, index: number, toGroupId: string) => {
     const fromGroup = groups.value.find((item) => item.id === fromGroupId)
-    const toGroup =
-      toGroupId === DEFAULT_QUICK_LINK_GROUP_ID
-        ? ensureDefaultGroup()
-        : groups.value.find((item) => item.id === toGroupId)
+    const toGroup = getGroupForInsert(toGroupId)
     if (!fromGroup?.items[index] || !toGroup) return
     const [quickLink] = fromGroup.items.splice(index, 1)
     if (!quickLink) return
@@ -297,10 +322,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     toIndex,
   }: MoveQuickLinkOptions) => {
     const fromGroup = groups.value.find((item) => item.id === fromGroupId)
-    const toGroup =
-      toGroupId === DEFAULT_QUICK_LINK_GROUP_ID
-        ? ensureDefaultGroup()
-        : groups.value.find((item) => item.id === toGroupId)
+    const toGroup = getGroupForInsert(toGroupId)
     if (!fromGroup?.items[fromIndex] || !toGroup) return false
 
     if (fromGroup.id === toGroup.id) {
@@ -328,6 +350,51 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     if (!quickLink) return false
     nextItems.splice(Math.max(0, Math.min(toIndex, nextItems.length)), 0, quickLink)
     items.value = nextItems
+    await save()
+    return true
+  }
+
+  const insertFlatQuickLink = async ({ quickLink, index }: InsertFlatQuickLinkOptions) => {
+    const duplicateIndex = findFlatQuickLinkIndexByUrl(quickLink.url)
+    const insertIndex = Math.max(0, Math.min(index, items.value.length))
+
+    if (duplicateIndex >= 0) {
+      const toIndex = duplicateIndex < insertIndex ? insertIndex - 1 : insertIndex
+      return moveFlatQuickLink({ fromIndex: duplicateIndex, toIndex })
+    }
+
+    const nextItems = items.value.slice()
+    nextItems.splice(insertIndex, 0, quickLink)
+    items.value = nextItems
+    await save()
+    return true
+  }
+
+  const insertQuickLinkToGroup = async ({
+    groupId,
+    quickLink,
+    index,
+  }: InsertQuickLinkToGroupOptions) => {
+    const toGroup = getGroupForInsert(groupId)
+    if (!toGroup) return false
+
+    const insertIndex = Math.max(0, Math.min(index, toGroup.items.length))
+    const duplicate = findGroupedQuickLinkByUrl(quickLink.url)
+
+    if (duplicate) {
+      const toIndex =
+        duplicate.group.id === toGroup.id && duplicate.index < insertIndex
+          ? insertIndex - 1
+          : insertIndex
+      return moveQuickLink({
+        fromGroupId: duplicate.group.id,
+        fromIndex: duplicate.index,
+        toGroupId: toGroup.id,
+        toIndex,
+      })
+    }
+
+    toGroup.items.splice(insertIndex, 0, quickLink)
     await save()
     return true
   }
@@ -387,6 +454,8 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     moveQuickLinkToGroup,
     moveQuickLink,
     moveFlatQuickLink,
+    insertQuickLinkToGroup,
+    insertFlatQuickLink,
     getQuickLink,
   }
 })
