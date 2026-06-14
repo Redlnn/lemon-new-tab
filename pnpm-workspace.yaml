@@ -1,5 +1,5 @@
-minimumReleaseAgeExclude:
-  - vite@8.0.16
+allowBuilds:
+  esbuild: true
 
 overrides:
   glob: '^13.0.6' # 统一版本
@@ -13,6 +13,9 @@ overrides:
   'config-chain>ini': '^1.3.8'
   'global-prefix>ini': '^1.3.8'
   'rc>ini': '^1.3.8'
+  fx-runner: '^1.5.0' # web-ext-run 的依赖，修复 CVE-2026-9277
+  esbuild: '^0.28.1'
+  js-yaml: '^3.14.2' # 修复 CVE-2025-64718
 
 peerDependencyRules:
   ignoreMissing:
