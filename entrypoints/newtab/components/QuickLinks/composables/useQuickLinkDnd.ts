@@ -1,8 +1,5 @@
 import { KeyboardSensor, PointerSensor } from '@dnd-kit/vue'
 
-import type { QuickLink } from '@/shared/quickLinks'
-
-export const QUICK_LINK_DND_TYPE = 'quick-link'
 export const QUICK_LINK_GROUP_DND_TYPE = 'quick-link-group'
 export const QUICK_LINK_GROUPS_DND_ID = 'quick-link-groups'
 export const TOP_SITES_DND_GROUP_ID = '__top-sites__'
@@ -14,7 +11,7 @@ export const QUICK_LINK_TOUCH_DRAG_MOVE_THRESHOLD = 8
 export const QUICK_LINK_MOUSE_DRAG_MOVE_THRESHOLD = 4
 export const QUICK_LINK_DND_CLICK_SUPPRESS_DURATION = 350
 
-export type QuickLinkDndSource = 'quick-links' | 'launchpad' | 'dock'
+export type QuickLinkDndSource = 'quick-links' | 'launchpad'
 
 export type QuickLinkDndData =
   | {
@@ -222,28 +219,6 @@ export function getDndData(entity: unknown): QuickLinkDndData | null {
   return toQuickLinkDndData((entity as { data?: unknown } | null | undefined)?.data)
 }
 
-export function toQuickLinkDndItem(
-  item: QuickLink,
-  source: QuickLinkDndSource,
-  groupId: string,
-  storeIndex: number,
-  sortableIndex: number,
-  pageIndex?: number,
-): Extract<QuickLinkDndData, { kind: 'quick-link' }> {
-  return {
-    kind: 'quick-link',
-    source,
-    groupId,
-    storeIndex,
-    sortableIndex,
-    url: item.url,
-    title: item.title,
-    favicon: item.favicon,
-    isPinned: true,
-    pageIndex,
-  }
-}
-
 export function resolveQuickLinkMoveTarget(
   target: QuickLinkDndData | null,
   fallback?: QuickLinkMoveTarget | null,
@@ -304,10 +279,6 @@ export function getSortableStoreIndexes<T extends { isPinned: boolean; originalI
   items: T[],
 ) {
   return items.filter((item) => item.isPinned).map((item) => item.originalIndex)
-}
-
-export function getSortableIndexForStoreIndex(sortableStoreIndexes: number[], storeIndex: number) {
-  return sortableStoreIndexes.indexOf(storeIndex)
 }
 
 export function resolveStoreIndexFromSortableIndex(

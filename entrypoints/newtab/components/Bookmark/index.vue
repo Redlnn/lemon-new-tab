@@ -10,6 +10,7 @@ import type { Browser } from 'wxt/browser'
 import { SortMode } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 
+import { useCompositionInput } from '@newtab/composables/useCompositionInput'
 import { useDialog } from '@newtab/composables/useDialog'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import {
@@ -151,18 +152,9 @@ onMounted(() => {
   }
 })
 
-const isComposing = ref(false)
 const searchQuery = ref('')
-
-function handleCompositionStart() {
-  isComposing.value = true
-}
-
-function handleCompositionEnd() {
-  isComposing.value = false
-  // 输入法上屏后,触发搜索建议
-  handleInput()
-}
+const { isComposing, handleCompositionStart, handleCompositionEnd } =
+  useCompositionInput(handleInput)
 
 const updateStoreDebounced = useDebounceFn(() => {
   // 搜索时关闭已打开的菜单

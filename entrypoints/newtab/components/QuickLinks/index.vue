@@ -46,7 +46,6 @@ import {
   getDndData,
   getPointerClientPoint,
   getSortableMoveState,
-  getSortableStoreIndexes,
   quickLinkContainerDndId,
   quickLinkDndId,
   quickLinkGroupDndId,
@@ -130,15 +129,14 @@ function buildGroupItems(group: QuickLinkGroup): DisplayItem[] {
 }
 
 function withSortableIndexes(items: DisplayItem[]) {
-  const sortableStoreIndexes = getSortableStoreIndexes(items)
-  const sortableIndexByStoreIndex = new Map(
-    sortableStoreIndexes.map((storeIndex, sortableIndex) => [storeIndex, sortableIndex]),
-  )
+  const sortableStoreIndexes: number[] = []
   return {
-    items: items.map((item) => ({
-      ...item,
-      sortableIndex: sortableIndexByStoreIndex.get(item.originalIndex),
-    })),
+    items: items.map((item) => {
+      if (!item.isPinned) return item
+      const sortableIndex = sortableStoreIndexes.length
+      sortableStoreIndexes.push(item.originalIndex)
+      return { ...item, sortableIndex }
+    }),
     sortableStoreIndexes,
   }
 }

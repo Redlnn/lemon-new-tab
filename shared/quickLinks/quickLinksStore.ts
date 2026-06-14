@@ -4,6 +4,7 @@ import i18next from 'i18next'
 
 import { acquireFaviconRef, releaseFaviconRef } from '@/shared/media'
 import { useSettingsStore } from '@/shared/settings'
+import { normalizeUrlForDedup } from '@/shared/url'
 
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
@@ -39,17 +40,9 @@ type MoveFlatQuickLinkOptions = {
   toIndex: number
 }
 
-export function normalizeQuickLinkGroupName(name: string, fallback: string): string {
+function normalizeQuickLinkGroupName(name: string, fallback: string): string {
   const trimmed = name.trim()
   return (trimmed || fallback).slice(0, MAX_QUICK_LINK_GROUP_NAME_LENGTH)
-}
-
-export function normalizeQuickLinkUrlForDedup(url: string): string {
-  let normalized = url.trim().toLowerCase()
-  normalized = normalized.replace(/^https?:\/\//, '')
-  normalized = normalized.replace(/^www\./, '')
-  normalized = normalized.replace(/\/+$/, '')
-  return normalized
 }
 
 function flattenGroups(groups: QuickLinkGroup[], options?: { dedupe?: boolean }): QuickLink[] {
@@ -61,7 +54,7 @@ function flattenGroups(groups: QuickLinkGroup[], options?: { dedupe?: boolean })
   const result: QuickLink[] = []
   for (const group of groups) {
     for (const item of group.items) {
-      const key = normalizeQuickLinkUrlForDedup(item.url)
+      const key = normalizeUrlForDedup(item.url)
       if (seen.has(key)) continue
       seen.add(key)
       result.push(item)
@@ -367,13 +360,6 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     return true
   }
 
-  const setGroupItems = async (groupId: string, nextItems: QuickLink[]) => {
-    const group = groups.value.find((item) => item.id === groupId)
-    if (!group) return
-    group.items = nextItems
-    await save()
-  }
-
   const getQuickLink = (target: QuickLinkTarget): QuickLink | undefined => {
     if (typeof target === 'number') {
       return items.value[target]
@@ -401,7 +387,6 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     moveQuickLinkToGroup,
     moveQuickLink,
     moveFlatQuickLink,
-    setGroupItems,
     getQuickLink,
   }
 })

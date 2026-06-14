@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 
+import { downloadBlob } from '@/shared/download'
 import { useSettingsStore } from '@/shared/settings'
 
 import { bingWallpaperURLGetter, getCachedOnlineWallpaper } from '@newtab/shared/wallpaper'
@@ -50,16 +51,7 @@ function downloadImageBlob(blob: Blob) {
 
   const ext = extMap[mime] || 'bin' // fallback
   const finalName = `image.${ext}`
-
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-
-  a.href = url
-  a.download = finalName
-  a.target = '_blank'
-  a.click()
-
-  URL.revokeObjectURL(url)
+  downloadBlob(blob, finalName, { target: '_blank' })
 }
 
 async function downloadOnline() {

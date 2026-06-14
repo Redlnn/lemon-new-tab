@@ -66,10 +66,12 @@ async function getTopSites(force = false): Promise<TopSites.MostVisitedURL[]> {
     const previousUrls = cachedTopSites?.value.map((s) => s.url) ?? []
     const value = await pendingTopSitesPromise
     const newUrls = value.map((s) => s.url)
+    const previousUrlSet = new Set(previousUrls)
+    const newUrlSet = new Set(newUrls)
 
     // 更新引用计数：新出现的站点 acquire，消失的站点 release
-    const disappeared = previousUrls.filter((u) => !newUrls.includes(u))
-    const appeared = newUrls.filter((u) => !previousUrls.includes(u))
+    const disappeared = previousUrls.filter((u) => !newUrlSet.has(u))
+    const appeared = newUrls.filter((u) => !previousUrlSet.has(u))
     disappeared.forEach((u) => releaseFaviconRef(u))
     appeared.forEach((u) => acquireFaviconRef(u))
 

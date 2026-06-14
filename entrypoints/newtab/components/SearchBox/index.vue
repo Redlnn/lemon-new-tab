@@ -13,6 +13,7 @@ import Search from '~icons/fa6-solid/magnifying-glass'
 import { BgType } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 
+import { useCompositionInput } from '@newtab/composables/useCompositionInput'
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useSearchHistoryCache } from '@newtab/composables/useSearchHistoryCache'
@@ -44,7 +45,8 @@ const { t } = useTranslation()
 const searchText = ref('')
 const originSearchText = ref<string | null>(null)
 const mounted = ref(false)
-const isComposing = ref(false) // 跟踪输入法组合输入状态
+const { isComposing, handleCompositionStart, handleCompositionEnd } =
+  useCompositionInput(handleInput)
 
 const focusStore = useFocusState()
 const settings = useSettingsStore()
@@ -117,18 +119,6 @@ function handleFocus() {
   searchForm.value?.classList.add('search-box__form--focus')
   focusStore.focus()
   suggestionArea.value?.showSearchHistories()
-}
-
-// 处理输入法组合输入开始
-function handleCompositionStart() {
-  isComposing.value = true
-}
-
-// 处理输入法组合输入结束(文字上屏)
-function handleCompositionEnd() {
-  isComposing.value = false
-  // 输入法上屏后,触发搜索建议
-  handleInput()
 }
 
 // 处理输入事件

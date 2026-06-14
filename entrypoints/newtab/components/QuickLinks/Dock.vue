@@ -6,7 +6,7 @@ import { useTranslation } from 'i18next-vue'
 import Apps24Regular from '~icons/fluent/apps-24-regular'
 import AddRound from '~icons/ic/round-add'
 
-import { getFaviconURL } from '@/shared/media'
+import { createFaviconUrlResolver } from '@/shared/media'
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   useQuickLinksStore,
@@ -27,14 +27,7 @@ import { useDockLayout } from './composables/useQuickLinksLayout'
 import { useTopSitesMerge } from './composables/useTopSitesMerge'
 import Launchpad from './Launchpad.vue'
 
-// Stable Ref map so we don't re-create Refs on every render
-const faviconRefMap = new Map<string, Ref<string>>()
-function getOrCreateFaviconRef(url: string): string {
-  if (!faviconRefMap.has(url)) {
-    faviconRefMap.set(url, getFaviconURL(url))
-  }
-  return faviconRefMap.get(url)!.value
-}
+const getOrCreateFaviconRef = createFaviconUrlResolver()
 
 const props = defineProps<{
   onOpenAddDialog?: (groupId?: string) => void

@@ -10,24 +10,12 @@ import { browser } from 'wxt/browser'
 import { fetchFaviconWithCache, warmFaviconCache } from '@/shared/media'
 import { DEFAULT_QUICK_LINK_GROUP_ID, useQuickLinksStore } from '@/shared/quickLinks'
 import { settingsStorage } from '@/shared/settings'
+import { normalizeUrlForDedup } from '@/shared/url'
 
 import { isValidUrl } from '@newtab/shared/utils'
 
 const { t } = useTranslation('popup')
 const quickLinksStore = useQuickLinksStore()
-
-/**
- * 规范化 URL 用于比较
- * 移除协议 (http/https)、末尾斜杠、www 前缀，统一转为小写
- */
-function normalizeUrlForCompare(url: string): string {
-  let normalized = url.trim().toLowerCase()
-  // 移除协议
-  normalized = normalized.replace(/^https?:\/\//, '')
-  // 移除末尾斜杠
-  normalized = normalized.replace(/\/+$/, '')
-  return normalized
-}
 
 const currentTab = shallowRef<{
   url: string
@@ -118,9 +106,9 @@ onMounted(async () => {
       }
 
       // 检查是否已经存在（规范化 URL 后比较）
-      const normalizedTabUrl = normalizeUrlForCompare(tab.url)
+      const normalizedTabUrl = normalizeUrlForDedup(tab.url)
       isAlreadyExists.value = quickLinksStore.items.some(
-        (item) => normalizeUrlForCompare(item.url) === normalizedTabUrl,
+        (item) => normalizeUrlForDedup(item.url) === normalizedTabUrl,
       )
     }
   } catch (error) {

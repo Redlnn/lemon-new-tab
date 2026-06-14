@@ -43,3 +43,14 @@ export function getFaviconURL(url: string | Ref<string | null>): Ref<string> {
 
   return iconUrl
 }
+
+export function createFaviconUrlResolver() {
+  const faviconRefMap = new Map<string, Ref<string>>()
+
+  return (url: string, cacheKey = url): string => {
+    if (!faviconRefMap.has(cacheKey)) {
+      faviconRefMap.set(cacheKey, getFaviconURL(url))
+    }
+    return faviconRefMap.get(cacheKey)!.value
+  }
+}

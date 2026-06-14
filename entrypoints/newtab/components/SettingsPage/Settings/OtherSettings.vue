@@ -10,7 +10,7 @@ import FileUploadRound from '~icons/ic/round-file-upload'
 
 import { storage } from '#imports'
 
-import { downloadJSON } from '@/shared/downloadJson'
+import { downloadJSON } from '@/shared/download'
 import { clearFaviconCache } from '@/shared/media'
 import { type QuickLinksData, useQuickLinksStore } from '@/shared/quickLinks'
 import { type CURRENT_CONFIG_SCHEMA, defaultSettings, useSettingsStore } from '@/shared/settings'

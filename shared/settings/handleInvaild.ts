@@ -5,7 +5,7 @@ import i18next from 'i18next'
 import { browser, storage } from '#imports'
 
 async function downloadBackup() {
-  const { downloadJSON } = await import('@/shared/downloadJson')
+  const { downloadJSON } = await import('@/shared/download')
 
   const settings = await browser.storage.local.get('settings')
   const quickLinksData = await browser.storage.local.get(['quickLinks', 'bookmark'])

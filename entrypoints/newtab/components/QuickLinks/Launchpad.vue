@@ -18,7 +18,7 @@ import AddRound from '~icons/ic/round-add'
 import DeleteRound from '~icons/ic/round-delete'
 import SettingsRound from '~icons/ic/round-settings'
 
-import { getFaviconURL } from '@/shared/media'
+import { createFaviconUrlResolver } from '@/shared/media'
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   useQuickLinksStore,
@@ -58,14 +58,7 @@ import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions
 import { useQuickLinksData } from './composables/useQuickLinksData'
 import { useTopSitesMerge } from './composables/useTopSitesMerge'
 
-// Stable Ref map so we don't re-create Refs on every render
-const faviconRefMap = new Map<string, Ref<string>>()
-function getOrCreateFaviconRef(url: string): string {
-  if (!faviconRefMap.has(url)) {
-    faviconRefMap.set(url, getFaviconURL(url))
-  }
-  return faviconRefMap.get(url)!.value
-}
+const getOrCreateFaviconRef = createFaviconUrlResolver()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
 
@@ -326,34 +319,32 @@ const groupSelectDialogRef =
   useTemplateRef<InstanceType<typeof QuickLinkGroupSelectDialog>>('groupSelectDialogRef')
 const { groupNameRefs, setGroupNameRef } = useGroupNameRefs()
 
-function getFilteredGroupItems(group: QuickLinkGroup): Omit<IndexedQuickLink, 'sortableIndex'>[] {
+const groupViews = computed<GroupView[]>(() => {
   const q = query.value.trim().toLowerCase()
-  return group.items
-    .map((item, index) => ({ item, index }))
-    .filter(
-      ({ item }) =>
-        !q || item.title.toLowerCase().includes(q) || item.url.toLowerCase().includes(q),
-    )
-}
+  return userGroups.value.map((group) => {
+    const items: IndexedQuickLink[] = []
+    const sortableStoreIndexes: number[] = []
 
-const groupViews = computed<GroupView[]>(() =>
-  userGroups.value.map((group) => {
-    const filteredItems = getFilteredGroupItems(group)
-    const sortableStoreIndexes = filteredItems.map(({ index }) => index)
-    const sortableIndexByStoreIndex = new Map(
-      sortableStoreIndexes.map((storeIndex, sortableIndex) => [storeIndex, sortableIndex]),
-    )
-    return {
-      group,
-      items: filteredItems.map(({ item, index }) => ({
+    for (let index = 0; index < group.items.length; index++) {
+      const item = group.items[index]!
+      if (q && !item.title.toLowerCase().includes(q) && !item.url.toLowerCase().includes(q)) {
+        continue
+      }
+      items.push({
         item,
         index,
-        sortableIndex: sortableIndexByStoreIndex.get(index) ?? 0,
-      })),
+        sortableIndex: sortableStoreIndexes.length,
+      })
+      sortableStoreIndexes.push(index)
+    }
+
+    return {
+      group,
+      items,
       sortableStoreIndexes,
     }
-  }),
-)
+  })
+})
 
 function toGroupedDisplayItem(item: QuickLink, index: number, groupId: string) {
   return {

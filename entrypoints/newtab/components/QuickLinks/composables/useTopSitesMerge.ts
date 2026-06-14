@@ -1,5 +1,7 @@
 import type { TopSites } from 'webextension-polyfill'
 
+import { normalizeUrlForDedup } from '@/shared/url'
+
 import { getTopSites } from '@newtab/components/QuickLinks/utils/topSites'
 
 interface UseTopSitesMergeOptions {
@@ -12,10 +14,6 @@ interface UseTopSitesMergeOptions {
 }
 
 const WWW_RE = /^www\./
-
-function normalizeUrlForDedup(url: string): string {
-  return url.replace(/\/+$/, '')
-}
 
 function getFallbackTitle(url: string): string {
   try {
