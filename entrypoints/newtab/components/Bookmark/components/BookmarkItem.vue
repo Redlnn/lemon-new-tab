@@ -122,6 +122,14 @@ const bookmarkDndData = computed(() => ({
   isFolder: isFolder.value,
 }))
 
+const bookmarkSortableDisabled = computed(() => {
+  const disabled = isDragDisabled.value || isTopLevel.value
+  return {
+    draggable: disabled,
+    droppable: disabled,
+  }
+})
+
 const { isDragging, isDropTarget } = useSortable({
   id: computed(() => bookmarkDndId(props.node.id)),
   index: computed(() => props.node.index ?? 0),
@@ -131,7 +139,7 @@ const { isDragging, isDropTarget } = useSortable({
   type: BOOKMARK_DND_TYPE,
   accept: BOOKMARK_DND_TYPE,
   data: bookmarkDndData,
-  disabled: computed(() => isDragDisabled.value || isTopLevel.value),
+  disabled: bookmarkSortableDisabled,
   transition: {
     duration: 150,
     easing: 'ease',
@@ -321,7 +329,6 @@ function collapseOther(e: Event | undefined, all: boolean = false) {
     map[depth] = next
   }
 }
-
 </script>
 
 <template>

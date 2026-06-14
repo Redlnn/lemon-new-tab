@@ -7,6 +7,8 @@ import {
   type QuickLinkDndData,
 } from '../composables/useQuickLinkDnd'
 
+type SortableDisabled = boolean | { draggable?: boolean; droppable?: boolean }
+
 const props = withDefaults(
   defineProps<{
     id: string
@@ -14,7 +16,7 @@ const props = withDefaults(
     group?: string
     type?: string
     accept?: string | string[]
-    disabled?: boolean
+    disabled?: SortableDisabled
     data: QuickLinkDndData
   }>(),
   {
@@ -39,7 +41,7 @@ const { isDragging, isDropTarget } = useSortable({
   type: computed(() => props.type),
   accept: computed(() => props.accept),
   data: computed(() => props.data),
-  disabled: computed(() => Boolean(props.disabled)),
+  disabled: computed(() => props.disabled ?? false),
   transition: {
     duration: 150,
     easing: 'ease',
