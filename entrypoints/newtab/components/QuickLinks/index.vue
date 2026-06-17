@@ -275,6 +275,7 @@ const {
   prevPage,
   nextPage,
   goToPage,
+  resetPagingTransition,
   setupSwipe,
 } = useQuickLinksPagination(paginationTotalItems, paginationItemsPerPage, allowPageLoop)
 
@@ -573,6 +574,7 @@ async function refresh() {
 const activeDndData = shallowRef<QuickLinkDndData | null>(null)
 let edgeSwitchTimer: ReturnType<typeof setTimeout> | undefined
 let edgeSwitchTarget: number | null = null
+let edgeSwitchOccurred = false
 
 function clearEdgeSwitchTimer() {
   if (edgeSwitchTimer) {
@@ -608,7 +610,7 @@ async function moveCategoryGroup(fromIndex: number, toIndex: number) {
 }
 
 function scheduleEdgePageSwitch(point: { x: number; y: number } | null) {
-  if (!point || settings.quickLinks.useScroll || !settings.quickLinks.paging) {
+  if (!point || settings.quickLinks.useScroll || !settings.quickLinks.paging || isAnimating.value) {
     clearEdgeSwitchTimer()
     return
   }
@@ -639,6 +641,7 @@ function scheduleEdgePageSwitch(point: { x: number; y: number } | null) {
   edgeSwitchTarget = target
   edgeSwitchTimer = setTimeout(() => {
     goToPage(target)
+    edgeSwitchOccurred = true
     clearEdgeSwitchTimer()
   }, 500)
 }
@@ -705,6 +708,7 @@ async function handleQuickLinkDragStart(event: DragStartEvent) {
   const data = getDndData(event.operation.source)
   activeDndData.value = data
   isDragging.value = data?.kind === 'quick-link' || data?.kind === 'quick-link-group'
+  edgeSwitchOccurred = false
   if (openedMenuCloseFn.value) {
     openedMenuCloseFn.value()
     openedMenuCloseFn.value = null
@@ -735,76 +739,85 @@ function handleQuickLinkDragOver(event: DragOverEvent) {
 }
 
 async function handleQuickLinkDragEnd(event: DragEndEvent) {
-  clearEdgeSwitchTimer()
-  isDragging.value = false
-
-  const source = activeDndData.value ?? getDndData(event.operation.source)
-  const target = getDndData(event.operation.target)
-  const sortableMove = getSortableMoveState(event.operation.source)
-  activeDndData.value = null
-
-  if (!source || event.canceled || source.source !== 'quick-links') {
-    return
-  }
-
-  if (source.kind === 'quick-link-group') {
-    if (target?.kind === 'quick-link-group' || sortableMove.toSortableIndex !== undefined) {
-      await moveCategoryGroup(
-        source.storeIndex,
-        sortableMove.toSortableIndex ?? target?.storeIndex ?? source.storeIndex,
-      )
-    }
-    return
-  }
-
-  if (source.kind !== 'quick-link') return
-  const moveTarget = getQuickLinkMoveTarget(source, target, sortableMove)
-  if (!moveTarget) return
+  let shouldRemountDnd = false
 
   try {
-    const quickLink = {
-      url: source.url,
-      title: source.title,
-      favicon: source.favicon,
+    clearEdgeSwitchTimer()
+    isDragging.value = false
+
+    const source = activeDndData.value ?? getDndData(event.operation.source)
+    const target = getDndData(event.operation.target)
+    const sortableMove = getSortableMoveState(event.operation.source)
+
+    if (!source || event.canceled || source.source !== 'quick-links') {
+      return
     }
-    let changed: boolean
-    if (source.origin === 'top-sites') {
-      changed = settings.quickLinks.grouping
-        ? await quickLinksStore.insertQuickLinkToGroup({
-            groupId: moveTarget.groupId,
-            quickLink,
-            index: moveTarget.storeIndex,
-          })
-        : await quickLinksStore.insertFlatQuickLink({
-            quickLink,
-            index: moveTarget.storeIndex,
-          })
-    } else {
-      changed = !settings.quickLinks.grouping
-        ? await quickLinksStore.moveFlatQuickLink({
-            fromIndex: source.storeIndex,
-            toIndex: moveTarget.storeIndex,
-          })
-        : await quickLinksStore.moveQuickLink({
-            fromGroupId: source.groupId,
-            fromIndex: source.storeIndex,
-            toGroupId: moveTarget.groupId,
-            toIndex: moveTarget.storeIndex,
-          })
+
+    if (source.kind === 'quick-link-group') {
+      if (target?.kind === 'quick-link-group' || sortableMove.toSortableIndex !== undefined) {
+        await moveCategoryGroup(
+          source.storeIndex,
+          sortableMove.toSortableIndex ?? target?.storeIndex ?? source.storeIndex,
+        )
+      }
+      return
     }
-    if (source.origin === 'top-sites') {
+
+    if (source.kind !== 'quick-link') return
+    shouldRemountDnd = source.origin === 'top-sites'
+    const moveTarget = getQuickLinkMoveTarget(source, target, sortableMove)
+    if (!moveTarget) return
+
+    try {
+      const quickLink = {
+        url: source.url,
+        title: source.title,
+        favicon: source.favicon,
+      }
+      let changed: boolean
+      if (source.origin === 'top-sites') {
+        changed = settings.quickLinks.grouping
+          ? await quickLinksStore.insertQuickLinkToGroup({
+              groupId: moveTarget.groupId,
+              quickLink,
+              index: moveTarget.storeIndex,
+            })
+          : await quickLinksStore.insertFlatQuickLink({
+              quickLink,
+              index: moveTarget.storeIndex,
+            })
+      } else {
+        changed = !settings.quickLinks.grouping
+          ? await quickLinksStore.moveFlatQuickLink({
+              fromIndex: source.storeIndex,
+              toIndex: moveTarget.storeIndex,
+            })
+          : await quickLinksStore.moveQuickLink({
+              fromGroupId: source.groupId,
+              fromIndex: source.storeIndex,
+              toGroupId: moveTarget.groupId,
+              toIndex: moveTarget.storeIndex,
+            })
+      }
+      if (source.origin === 'top-sites') {
+        await refreshDebounced()
+      } else if (changed) {
+        await refreshDebounced()
+      }
+    } catch (error) {
+      console.error('[quick-links] Failed to persist drag order:', error)
+      ElMessage.error('拖拽排序保存失败')
       await refreshDebounced()
-      dndRenderKey.value++
-    } else if (changed) {
-      await refreshDebounced()
     }
-  } catch (error) {
-    console.error('[quick-links] Failed to persist drag order:', error)
-    ElMessage.error('拖拽排序保存失败')
-    await refreshDebounced()
-    if (source.origin === 'top-sites') {
+  } finally {
+    clearEdgeSwitchTimer()
+    isDragging.value = false
+    activeDndData.value = null
+    resetPagingTransition()
+    if (shouldRemountDnd || edgeSwitchOccurred) {
       dndRenderKey.value++
     }
+    edgeSwitchOccurred = false
   }
 }
 

@@ -11,6 +11,7 @@ export interface UseQuickLinksPagination {
   prevPage: () => void
   nextPage: () => void
   goToPage: (page: number) => void
+  resetPagingTransition: () => void
   setupSwipe: (
     containerRef: Ref<HTMLElement | undefined | null>,
     prevPageRef: Ref<HTMLElement | undefined | null>,
@@ -33,6 +34,7 @@ export function useQuickLinksPagination(
   const slideDirection = ref<'left' | 'right' | null>(null)
   const noTransition = ref(false)
   const preloadTargetPage = ref<number | null>(null)
+  let transitionVersion = 0
 
   const totalPages = computed(() => {
     // 防止除以 0 导致 Infinity
@@ -52,16 +54,33 @@ export function useQuickLinksPagination(
     }
   })
 
+  const restoreTransitionNextFrame = () => {
+    requestAnimationFrame(() => {
+      noTransition.value = false
+    })
+  }
+
+  const resetPagingTransition = () => {
+    transitionVersion++
+    isAnimating.value = false
+    slideDirection.value = null
+    preloadTargetPage.value = null
+    noTransition.value = true
+    restoreTransitionNextFrame()
+  }
+
   const animateToPage = (targetPage: number, direction: 'left' | 'right') => {
     if (isAnimating.value) return
     if (targetPage < 0 || targetPage >= totalPages.value) return
     if (targetPage === currentPage.value) return
 
+    const version = ++transitionVersion
     isAnimating.value = true
     slideDirection.value = direction
 
     // 动画结束后更新页码
     useTimeoutFn(() => {
+      if (version !== transitionVersion) return
       // 禁用 transition，防止内容更新时触发二次动画
       noTransition.value = true
       slideDirection.value = null
@@ -71,6 +90,7 @@ export function useQuickLinksPagination(
 
       // 在下一帧恢复 transition
       requestAnimationFrame(() => {
+        if (version !== transitionVersion) return
         noTransition.value = false
         isAnimating.value = false
       })
@@ -101,6 +121,7 @@ export function useQuickLinksPagination(
 
     // 跨页跳转（距离 > 1）：先将目标页内容预加载到即将滑入的 prev/next 位置
     if (distance > 1) {
+      const version = transitionVersion
       // 设置预加载目标页（组件会据此渲染目标页内容到相邻位置）
       preloadTargetPage.value = page
 
@@ -108,6 +129,7 @@ export function useQuickLinksPagination(
       nextTick(() => {
         // 等待一帧确保内容已渲染
         requestAnimationFrame(() => {
+          if (version !== transitionVersion) return
           // 执行翻页动画（不清除 preloadTargetPage，让动画期间目标内容保持在相邻位置）
           // preloadTargetPage 会在 animateToPage 动画结束后清除
           animateToPage(page, direction)
@@ -187,6 +209,7 @@ export function useQuickLinksPagination(
     prevPage,
     nextPage,
     goToPage,
+    resetPagingTransition,
     setupSwipe,
   }
 }
