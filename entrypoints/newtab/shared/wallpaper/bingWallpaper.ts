@@ -117,7 +117,7 @@ class BingWallpaperURLGetter {
     // 尝试从 store 获取 URL (会自动处理缓存和从 DB 加载)
     const url = await wallpaperUrlStore.getUrl('bing')
 
-    if (url) {
+    if (url.value) {
       const cache = await bingInfoCache.getValue()
       this.info.value = {
         ...this.info.value,
