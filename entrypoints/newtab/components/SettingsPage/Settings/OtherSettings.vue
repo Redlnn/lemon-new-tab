@@ -241,7 +241,7 @@ async function exportBackup() {
     customSearchEngines: customSearchEngineStore.$state,
   }
 
-  downloadJSON<Backup>(backup, 'lenmon-new-tab-backup.json')
+  downloadJSON<Backup>(backup, 'lemon-new-tab-backup.json')
 }
 
 function hasObjectKey(data: Record<string, unknown>, key: string): boolean {
@@ -264,10 +264,7 @@ function handleFileChange(event: Event) {
   return handleFileImport<ImportBackup>(event, fileInput, backupValidator, async (data) => {
     // settings 部分（沿用之前的逻辑）
     if (data.settings && settings.version !== data.settings.version) {
-      ElMessage.error(
-        t('other.importExport.importFailed', { reason: t('other.importExport.versionMismatch') }),
-      )
-      return
+      throw new Error(t('other.importExport.versionMismatch'))
     }
 
     const originalSyncState = settings.$state.sync.enabled
@@ -314,7 +311,7 @@ function handleFileImport<T>(
   event: Event,
   inputRef: Ref<HTMLInputElement | null>,
   validator: (data: unknown) => data is T,
-  onSuccess: (data: T) => void,
+  onSuccess: (data: T) => Promise<void> | void,
 ) {
   const input = event.target as HTMLInputElement
   const file = input?.files?.[0]
@@ -347,20 +344,30 @@ function handleFileImport<T>(
 
   reader.readAsText(file)
   return new Promise<void>((resolve) => {
-    reader.onloadend = () => {
-      if (fileContent) {
-        onSuccess(fileContent)
-        ElMessage.success(t('other.importExport.importSuccess'))
-      } else {
+    reader.onloadend = async () => {
+      try {
+        if (fileContent) {
+          await onSuccess(fileContent)
+          ElMessage.success(t('other.importExport.importSuccess'))
+        } else {
+          ElMessage.error(
+            t('other.importExport.importFailed', {
+              reason: parseError || t('other.importExport.unknownError'),
+            }),
+          )
+        }
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error)
         ElMessage.error(
           t('other.importExport.importFailed', {
-            reason: parseError || t('other.importExport.unknownError'),
+            reason: reason || t('other.importExport.unknownError'),
           }),
         )
+      } finally {
+        // 重置 file input 以允许导入同一个文件
+        if (inputRef.value) inputRef.value.value = ''
+        resolve()
       }
-      // 重置 file input 以允许导入同一个文件
-      if (inputRef.value) inputRef.value.value = ''
-      resolve()
     }
   })
 }
