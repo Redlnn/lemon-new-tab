@@ -77,6 +77,10 @@ function findBookmarkChildren(nodes: BookmarkTreeNode[], parentId: string) {
   return parent?.children ?? null
 }
 
+function hasBookmarkContent(nodes: BookmarkTreeNode[]) {
+  return nodes.some((node) => Boolean(node.url) || Boolean(node.children?.length))
+}
+
 export const useBookmarkStore = defineStore('bookmark', () => {
   const tree = ref<Browser.bookmarks.BookmarkTreeNode[]>([])
   const loaded = ref(false)
@@ -185,10 +189,18 @@ export const useBookmarkStore = defineStore('bookmark', () => {
   }
 
   const loadBookmarks = async () => {
-    initWorker()
     const _tree = await browser.bookmarks.getTree()
     const children = _tree[0]?.children ?? []
     tree.value = children
+
+    if (!hasBookmarkContent(children)) {
+      filteredResult.value = []
+      firstMatchPath.value = []
+      loaded.value = true
+      return
+    }
+
+    initWorker()
 
     worker?.postMessage({
       type: 'INIT',
