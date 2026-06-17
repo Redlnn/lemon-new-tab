@@ -2,11 +2,13 @@
 
 > Translated by AI from Chinese.
 
-## 3.3.0 (Jun 5, 2026)
+## 3.3.0 (Jun 17, 2026)
 
 ### New Features✨
 
 - **Quick Links:** Added group support, including creating, renaming, sorting, deleting groups, and moving links between groups.
+- **Quick Links:** Added press-and-drag sorting across groups, making grouped link management more flexible.
+- **Quick Links:** Added support for dragging links from Top Sites and pinning them to Quick Links.
 - **Launchpad:** Added support for Quick Links groups, with most visited sites available in grouped mode.
 - **Quick Links:** Added a scrolling mode for smoother browsing when you have many links, especially on mobile devices.
 - **Quick Links:** Added a "Loop Pages" setting to control whether pagination wraps at the first and last pages.
@@ -16,6 +18,14 @@
 
 - Unified Quick Links wording across the extension to reduce mixed terms such as "Shortcut" and "Quick Access".
 - Improved interaction details for Quick Links pagination, scrolling, and grouped mode.
+- Improved first-screen loading speed, so the new tab page starts faster.
+- Automatically disables some mouse-only interaction settings on touch-only devices to reduce unavailable options.
+
+### Bug Fixes🐛
+
+- Fixed bookmark dragging issues and a possible crash when opening the bookmarks sidebar with no bookmarks.
+- Fixed an issue where pressing `Esc` to close an IME candidate popup inside a dialog could also close the dialog.
+  ([#91](https://github.com/Redlnn/lemon-new-tab/issues/91))
 
 ## 3.2.3 (May 21, 2026)
 
