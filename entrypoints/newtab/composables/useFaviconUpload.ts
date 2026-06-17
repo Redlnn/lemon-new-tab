@@ -43,25 +43,10 @@ export function useFaviconUpload(options?: { maxKB?: number }) {
       const reader = new FileReader()
       reader.readAsDataURL(file)
       reader.onloadend = () => {
-        try {
-          let res = reader.result as string
-          if (res.startsWith('data:image/svg+xml')) {
-            // 使用 TextEncoder 将 UTF-8 字符串转为字节，再进行 base64 编码
-            const encoder = new TextEncoder()
-            const bytes = encoder.encode(res)
-            const CHUNK = 0x8000
-            let binary = ''
-            for (let i = 0; i < bytes.length; i += CHUNK) {
-              const slice = bytes.subarray(i, i + CHUNK)
-              // Array.prototype.slice.call 转为普通数组以兼容 apply
-              const nums = Array.prototype.slice.call(slice) as number[]
-              binary += String.fromCharCode.apply(null, nums)
-            }
-            res = `data:image/svg+xml;base64,${btoa(binary)}`
-          }
-          resolve(res)
-        } catch (e) {
-          reject(e)
+        if (typeof reader.result === 'string') {
+          resolve(reader.result)
+        } else {
+          reject(new Error('Failed to read favicon file'))
         }
       }
       reader.onerror = reject
