@@ -183,6 +183,8 @@ const currentFlatContainerInsertIndex = computed(() => {
 
 // ---- 数据获取 ----
 async function refresh() {
+  await quickLinksStore.init()
+
   if (
     settings.quickLinks.grouping &&
     !quickLinksStore.groups.some((group) => group.id === DEFAULT_QUICK_LINK_GROUP_ID)

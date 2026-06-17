@@ -375,6 +375,8 @@ export const useSyncDataStore = defineStore('sync', () => {
       let handleBackgroundMessage: ((message: unknown) => Promise<void>) | undefined
 
       try {
+        await Promise.all([quickLinksStore.init(), customSearchEngineStore.init()])
+
         const meta = await ensureDeviceMeta()
 
         // Initialise sync store refs from *local* state — never from the browser's potentially

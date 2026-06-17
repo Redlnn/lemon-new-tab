@@ -73,12 +73,20 @@ export const main = async () => {
 
   setupAutoSaveSettings(settings)
 
-  // 先恢复快速导航和搜索引擎数据，避免组件首刷在空 store 上写回存储
-  await Promise.all([useCustomSearchEngineStore().init(), useQuickLinksStore().init()])
+  const dataStoresInit = Promise.all([
+    useCustomSearchEngineStore().init(),
+    useQuickLinksStore().init(),
+  ])
 
   app.mount('body')
 
-  if (settings.sync.enabled) {
-    useSyncDataStore().init()
-  }
+  void dataStoresInit
+    .then(() => {
+      if (settings.sync.enabled) {
+        useSyncDataStore().init()
+      }
+    })
+    .catch((error) => {
+      console.error('[newtab] Failed to initialize data stores:', error)
+    })
 }

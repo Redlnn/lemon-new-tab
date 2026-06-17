@@ -3,6 +3,7 @@ import { useTimeoutFn } from '@vueuse/core'
 
 import type { TooltipInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
+import Search from '~icons/fa6-solid/magnifying-glass'
 
 import { useSettingsStore } from '@/shared/settings'
 
@@ -143,6 +144,9 @@ defineExpose({ hide, showEngineToast })
       </template>
       <el-icon v-if="isBuiltInEngine" class="search-engine-menu__icon">
         <component :is="searchEngines[settings.search.engine as keyof typeof searchEngines].icon" />
+      </el-icon>
+      <el-icon v-else-if="!currentCustomEngine" class="search-engine-menu__icon">
+        <search />
       </el-icon>
       <div v-else class="search-engine-menu__icon search-engine-menu__icon--custom">
         <img :src="getCustomEngineFavicon(currentCustomEngine!)" />

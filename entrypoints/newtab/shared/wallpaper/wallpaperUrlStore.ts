@@ -137,17 +137,14 @@ export const useWallpaperUrlStore = defineStore('wallpaperUrl', () => {
   watch(
     () => settings.background.local.id,
     () => triggerRefresh('light'),
-    { immediate: true },
   )
   watch(
     () => settings.background.localDark.id,
     () => triggerRefresh('dark'),
-    { immediate: true },
   )
   watch(
     () => settings.background.bing.id,
     () => triggerRefresh('bing'),
-    { immediate: true },
   )
 
   const setUrl = async (type: 'light' | 'dark' | 'bing', url: string) => {

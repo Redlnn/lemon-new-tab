@@ -51,6 +51,8 @@ function formatUTCCompact(date: Date): number {
 
 class BingWallpaperURLGetter {
   private isRefreshing = false
+  private initialized = false
+  private initTask: Promise<void> | null = null
   private readonly COOLDOWN_MS = 30 * 60 * 1000 // 30 分钟
 
   public info: ShallowRef<BingWallpaperImage> = shallowRef({
@@ -92,21 +94,33 @@ class BingWallpaperURLGetter {
   }
 
   public async init() {
-    const settings = useSettingsStore()
+    if (this.initialized) return
+    if (this.initTask) return await this.initTask
 
-    // 兼容旧版逻辑：如果 updateDate 存在，迁移到 startdate
-    if (typeof settings.background.bing.updateDate === 'string') {
-      // 将旧版的 new Date().toDateString() 格式转换为 ISO 格式
-      const parsedDate = new Date(settings.background.bing.updateDate)
-      if (!isNaN(parsedDate.getTime())) {
-        settings.background.bing.updateDate = formatUTCCompact(parsedDate)
-        // await settings.save()
+    this.initTask = (async () => {
+      const settings = useSettingsStore()
+
+      // 兼容旧版逻辑：如果 updateDate 存在，迁移到 startdate
+      if (typeof settings.background.bing.updateDate === 'string') {
+        // 将旧版的 new Date().toDateString() 格式转换为 ISO 格式
+        const parsedDate = new Date(settings.background.bing.updateDate)
+        if (!isNaN(parsedDate.getTime())) {
+          settings.background.bing.updateDate = formatUTCCompact(parsedDate)
+          // await settings.save()
+        }
       }
+
+      await this.resolveLocalBingWallpaperURL()
+      this.initialized = true
+
+      void this.refresh() // 后台检查更新，不阻塞壁纸上屏
+    })()
+
+    try {
+      await this.initTask
+    } finally {
+      this.initTask = null
     }
-
-    await this.resolveLocalBingWallpaperURL()
-
-    void this.refresh() // 后台检查更新，不阻塞壁纸上屏
   }
 
   private async resolveLocalBingWallpaperURL() {

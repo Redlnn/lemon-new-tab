@@ -74,10 +74,16 @@ function flattenGroups(groups: QuickLinkGroup[], options?: { dedupe?: boolean })
   return result
 }
 
+function hasQuickLinksData(data: QuickLinksData): boolean {
+  return data.items.length > 0 || (data.groups?.length ?? 0) > 0
+}
+
 export const useQuickLinksStore = defineStore('quickLinks', () => {
   const items = ref(structuredClone(defaultQuickLinksData.items))
   const groups = ref<QuickLinkGroup[]>(structuredClone(defaultQuickLinksData.groups ?? []))
+  const loaded = ref(false)
   const acquiredUrls = new Set<string>()
+  let initTask: Promise<void> | null = null
 
   const syncFaviconRefs = (nextUrls: string[]) => {
     const nextUrlSet = new Set(nextUrls)
@@ -176,12 +182,28 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const init = async (options?: { acquire?: boolean }) => {
-    const quickLinksData = await getQuickLinksStorageValue()
-    applyItems(quickLinksData.items, { ...options, groups: quickLinksData.groups })
+    if (loaded.value) return
+    if (initTask) return await initTask
+
+    initTask = (async () => {
+      const quickLinksData = await getQuickLinksStorageValue()
+      applyItems(quickLinksData.items, { ...options, groups: quickLinksData.groups })
+      loaded.value = true
+    })()
+
+    try {
+      await initTask
+    } finally {
+      initTask = null
+    }
   }
 
   const replace = (data: QuickLinksData, options?: { acquire?: boolean }) => {
+    if (!loaded.value && !hasQuickLinksData(data)) {
+      return
+    }
     applyItems(data.items, { ...options, groups: data.groups })
+    loaded.value = true
   }
 
   const deinit = () => {
@@ -190,9 +212,13 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const save = async (data?: QuickLinksData, options?: QuickLinksSaveOptions) => {
+    if (!loaded.value && !data) {
+      await init()
+    }
     const groupingEnabled = options?.groupingEnabled ?? useSettingsStore().quickLinks.grouping
     if (data) {
       applyItems(data.items, { groups: groupingEnabled ? data.groups : [] })
+      loaded.value = true
     } else {
       if (groupingEnabled && groups.value.length > 0) {
         syncItemsFromGroups()
@@ -208,6 +234,9 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const enableGroupingFromItems = async () => {
+    if (!loaded.value) {
+      await init()
+    }
     const defaultGroup = groups.value.find((group) => group.id === DEFAULT_QUICK_LINK_GROUP_ID)
     const hasGroupedItems = groups.value.some((group) => group.items.length > 0)
     if (defaultGroup && (hasGroupedItems || items.value.length === 0)) {
@@ -239,6 +268,9 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const disableGroupingToItems = async () => {
+    if (!loaded.value) {
+      await init()
+    }
     if (groups.value.length === 0) return
 
     items.value = flattenGroups(groups.value, { dedupe: true })
@@ -439,6 +471,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   return {
     items,
     groups,
+    loaded,
     init,
     replace,
     deinit,

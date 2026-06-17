@@ -538,6 +538,8 @@ async function refresh() {
       openedMenuCloseFn.value = null
     }
 
+    await quickLinksStore.init()
+
     if (settings.quickLinks.grouping && !hasDefaultGroup()) {
       await quickLinksStore.enableGroupingFromItems()
     }

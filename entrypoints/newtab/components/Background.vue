@@ -181,8 +181,16 @@ const bgTypeProviders: Record<
   BgType,
   () => string | Promise<string> | Ref<string> | Promise<Ref<string>>
 > = {
-  [BgType.Bing]: () => bingWallpaperURLGetter.getBgUrl(),
-  [BgType.Local]: () => currentLocalUrl.value,
+  [BgType.Bing]: async () => {
+    await bingWallpaperURLGetter.init()
+    return bingWallpaperURLGetter.getBgUrl()
+  },
+  [BgType.Local]: () => {
+    if (isDark.value && settings.background.localDark.id) {
+      return wallpaperUrlStore.getUrl('dark')
+    }
+    return wallpaperUrlStore.getUrl('light')
+  },
   [BgType.Online]: async () => {
     const rawUrl = settings.background.online.url
     if (!rawUrl) return ''
@@ -421,7 +429,6 @@ watch(
 )
 
 onMounted(async () => {
-  await bingWallpaperURLGetter.init()
   await updateBackgroundURL(settings.background.bgType)
 
   // 初始化时激活当前背景类型的watch

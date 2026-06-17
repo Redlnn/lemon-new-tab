@@ -3,6 +3,7 @@ import { OnLongPress } from '@vueuse/components'
 import { useDebounceFn, useResizeObserver, useWindowSize } from '@vueuse/core'
 
 import { useTranslation } from 'i18next-vue'
+import { defineAsyncComponent } from 'vue'
 import Apps24Regular from '~icons/fluent/apps-24-regular'
 import AddRound from '~icons/ic/round-add'
 
@@ -25,7 +26,8 @@ import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions
 import { useQuickLinksData } from './composables/useQuickLinksData'
 import { useDockLayout } from './composables/useQuickLinksLayout'
 import { useTopSitesMerge } from './composables/useTopSitesMerge'
-import Launchpad from './Launchpad.vue'
+
+const Launchpad = defineAsyncComponent(() => import('./Launchpad.vue'))
 
 const getOrCreateFaviconRef = createFaviconUrlResolver()
 
@@ -53,6 +55,8 @@ const refreshDebounced = useDebounceFn(refresh, 100)
 const { topSites, quickLinks, mounted, topSitesNeedsReload } = useQuickLinksData(refreshDebounced)
 
 async function refresh() {
+  await quickLinksStore.init()
+
   if (
     settings.quickLinks.grouping &&
     !quickLinksStore.groups.some((group) => group.id === DEFAULT_QUICK_LINK_GROUP_ID)
@@ -150,6 +154,7 @@ const addBtnEl = ref<HTMLElement | null>(null)
 // 启动台入口（静态）
 const launchpadBtnEl = ref<HTMLElement | null>(null)
 const showLaunchpad = ref(false)
+const launchpadLoaded = ref(false)
 
 // 合并动态+静态，供 cacheNaturalCenters / updateScales 使用
 const scalableEls = computed(() => {
@@ -363,6 +368,11 @@ function openAddQuickLink() {
   props.onOpenAddDialog?.(settings.quickLinks.grouping ? DEFAULT_QUICK_LINK_GROUP_ID : undefined)
 }
 
+function toggleLaunchpad() {
+  launchpadLoaded.value = true
+  showLaunchpad.value = !showLaunchpad.value
+}
+
 defineExpose({ refresh })
 </script>
 
@@ -401,7 +411,7 @@ defineExpose({ refresh })
           tabindex="0"
           class="dock-item"
           :ref="setLaunchpadBtnRef"
-          @click="showLaunchpad = !showLaunchpad"
+          @click="toggleLaunchpad"
         >
           <apps24-regular />
         </div>
@@ -480,6 +490,7 @@ defineExpose({ refresh })
 
     <!-- 启动台覆盖层 -->
     <Launchpad
+      v-if="launchpadLoaded"
       v-model="showLaunchpad"
       :on-open-add-dialog="props.onOpenAddDialog"
       :on-open-edit-dialog="props.onOpenEditDialog"

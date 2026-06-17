@@ -204,6 +204,10 @@ const doSearchWithText = async (text: string, newtab: boolean = false) => {
 
   await saveSearchHistory(text)
 
+  if (!(settings.search.engine in searchEngines)) {
+    await customSearchEngineStore.init()
+  }
+
   const searchUrl = getSearchEngineUrl(settings.search.engine)
   if (!searchUrl) {
     console.error('Invalid search engine:', settings.search.engine)
