@@ -4,11 +4,13 @@ import { useTranslation } from 'i18next-vue'
 
 import { browser, type Browser } from 'wxt/browser'
 
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import { formatUrl, isValidUrl } from '@newtab/shared/utils'
 
 type BookmarkTreeNode = Browser.bookmarks.BookmarkTreeNode
 
 const { t } = useTranslation()
+const { isComposing } = useImeAwareDialog()
 
 const modelForm = ref<FormInstance>()
 
@@ -78,6 +80,7 @@ defineExpose({
     width="450"
     append-to-body
     destroy-on-close
+    :close-on-press-escape="!isComposing"
   >
     <el-form ref="modelForm" :model="data">
       <el-form-item :label="t('common.name')" label-position="top">

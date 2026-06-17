@@ -110,7 +110,10 @@ onClickOutside(searchBox, (e) => {
   resetSearch()
 })
 
-function handleEsc() {
+function handleEsc(event?: KeyboardEvent) {
+  if (isComposing.value || event?.isComposing) {
+    return
+  }
   resetSearch()
   searchInput.value?.blur()
 }

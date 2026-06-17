@@ -27,6 +27,7 @@ import {
 } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import { usePerfClasses } from '@newtab/composables/usePerfClasses'
 import { OPEN_SETTINGS } from '@newtab/shared/keys'
 
@@ -86,6 +87,7 @@ const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
 const legacyDndGroupId = FLAT_QUICK_LINK_DND_GROUP_ID
 const topSitesGroupId = TOP_SITES_DND_GROUP_ID
+const { isComposing: isImeComposing } = useImeAwareDialog()
 
 const openSettings = inject(OPEN_SETTINGS)
 
@@ -240,6 +242,7 @@ useSwipe(containerRef, {
 // ---- 键盘 ----
 onKeyStroke('Escape', (e) => {
   if (model.value) {
+    if (isImeComposing.value) return
     e.preventDefault()
     close()
   }

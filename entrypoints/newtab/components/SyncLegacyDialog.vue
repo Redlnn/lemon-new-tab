@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useTranslation } from 'i18next-vue'
 
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
+
 const model = defineModel<boolean>({ required: true })
 const emit = defineEmits<{
   confirm: []
@@ -8,6 +10,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useTranslation('sync')
+const { isComposing } = useImeAwareDialog()
 </script>
 
 <template>
@@ -17,6 +20,7 @@ const { t } = useTranslation('sync')
     width="400px"
     class="sync-legacy-dialog base-dialog--blur base-dialog--opacity noselect"
     :close-on-click-modal="false"
+    :close-on-press-escape="!isComposing"
   >
     <div class="sync-legacy-dialog__message">{{ t('legacyFormat.message') }}</div>
     <template #footer>

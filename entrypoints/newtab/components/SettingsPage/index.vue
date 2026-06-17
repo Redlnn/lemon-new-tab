@@ -8,6 +8,7 @@ import KeyboardArrowLeftRound from '~icons/ic/round-keyboard-arrow-left'
 import { useSettingsStore } from '@/shared/settings'
 
 import { useDialog } from '@newtab/composables/useDialog'
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 
 import SettingsDetailView from './components/SettingsDetailView.vue'
 import SettingsDialog from './components/SettingsDialog.vue'
@@ -23,6 +24,7 @@ const router = useSettingsRouter()
 const settings = useSettingsStore()
 const { width: windowWidth } = useWindowSize({ type: 'visual' })
 const { opened, show, hide, toggle } = useDialog()
+const { isComposing } = useImeAwareDialog()
 
 const isMobile = computed(() => windowWidth.value < MOBILE_BREAKPOINT)
 const isCollapse = computed(() => windowWidth.value < COLLAPSE_BREAKPOINT && !isMobile.value)
@@ -95,6 +97,7 @@ defineExpose({ show: customShow, hide, toggle: customToggle })
     ]"
     draggable
     :show-close="false"
+    :close-on-press-escape="!isComposing"
     header-class="settings-header noselect"
     @close="handleClose"
     @closed="resetRouter"

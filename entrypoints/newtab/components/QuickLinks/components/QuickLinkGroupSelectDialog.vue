@@ -4,11 +4,13 @@ import { useTranslation } from 'i18next-vue'
 import { DEFAULT_QUICK_LINK_GROUP_ID, useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 
 const { t } = useTranslation()
 const quickLinksStore = useQuickLinksStore()
 const settings = useSettingsStore()
+const { isComposing } = useImeAwareDialog()
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.quickLinks.transparent,
   blur: settings.perf.quickLinks.blur,
@@ -56,6 +58,7 @@ defineExpose({ open })
     :class="[dialogPerfClass, 'noselect']"
     append-to-body
     destroy-on-close
+    :close-on-press-escape="!isComposing"
     @closed="cancel"
   >
     <el-select v-model="selectedGroupId" style="width: 100%">

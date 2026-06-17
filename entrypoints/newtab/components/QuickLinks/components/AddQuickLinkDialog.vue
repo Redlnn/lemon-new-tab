@@ -13,9 +13,11 @@ import {
 import { useSettingsStore } from '@/shared/settings'
 
 import { useFaviconUpload } from '@newtab/composables/useFaviconUpload'
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import { formatUrl, isValidUrl } from '@newtab/shared/utils'
 
 const { t } = useTranslation()
+const { isComposing } = useImeAwareDialog()
 
 const quickLinksStore = useQuickLinksStore()
 const settings = useSettingsStore()
@@ -130,6 +132,7 @@ defineExpose({ openAddDialog, openEditDialog })
     width="450"
     append-to-body
     destroy-on-close
+    :close-on-press-escape="!isComposing"
   >
     <el-form ref="modelForm" :model="data">
       <el-form-item :label="t('common.name')" label-position="top">

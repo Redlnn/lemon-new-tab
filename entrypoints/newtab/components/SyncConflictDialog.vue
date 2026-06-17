@@ -3,6 +3,8 @@ import { useTranslation } from 'i18next-vue'
 
 import type { SyncEventPayloadMap } from '@/shared/sync'
 
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
+
 const model = defineModel<boolean>({ required: true })
 const props = defineProps<{
   conflict: SyncEventPayloadMap['conflict'] | null
@@ -14,6 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useTranslation('sync')
+const { isComposing } = useImeAwareDialog()
 
 const formatTime = (time: number) => {
   if (!time) return '-'
@@ -28,6 +31,7 @@ const formatTime = (time: number) => {
     width="400px"
     class="sync-conflict-dialog base-dialog--blur base-dialog--opacity noselect"
     :close-on-click-modal="false"
+    :close-on-press-escape="!isComposing"
     :show-close="false"
   >
     <div class="sync-conflict-dialog__message">{{ t('conflict.message') }}</div>

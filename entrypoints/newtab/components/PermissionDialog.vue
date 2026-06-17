@@ -3,6 +3,7 @@ import { useTranslation } from 'i18next-vue'
 
 import { browser } from 'wxt/browser'
 
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import { PermissionContext, PermissionResult } from '@newtab/composables/usePermission'
 
 const props = defineProps<{
@@ -16,6 +17,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useTranslation('settings')
+const { isComposing } = useImeAwareDialog()
 
 const contextMessage = computed(() => {
   switch (props.context) {
@@ -63,6 +65,7 @@ function onDeny() {
     :title="t('background.permission.request.title')"
     width="400px"
     class="permission-dialog base-dialog--blur base-dialog--opacity noselect"
+    :close-on-press-escape="!isComposing"
   >
     <div class="permission-dialog-content">
       <p>{{ contextMessage }}</p>

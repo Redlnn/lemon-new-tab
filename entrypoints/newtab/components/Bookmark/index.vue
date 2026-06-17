@@ -12,6 +12,7 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { useCompositionInput } from '@newtab/composables/useCompositionInput'
 import { useDialog } from '@newtab/composables/useDialog'
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import {
   BOOKMARK_ACTIVE_MAP,
@@ -112,6 +113,7 @@ function resolveBookmarkMoveIndex(options: {
 }
 
 const { opened, show, hide, toggle } = useDialog()
+const { isComposing: isImeComposing } = useImeAwareDialog()
 defineExpose({ show, hide, toggle })
 
 const { t } = useTranslation()
@@ -327,7 +329,7 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
     resizable
     @resize="onDrawerResize"
     close-on-click-modal
-    close-on-press-escape
+    :close-on-press-escape="!isImeComposing"
     destroy-on-close
   >
     <Transition name="el-fade-in" mode="out-in">

@@ -15,6 +15,7 @@ const emit = defineEmits<{
 
 const editing = ref(false)
 const draft = ref('')
+const isComposing = ref(false)
 const inputRef = useTemplateRef<{ focus: () => void }>('inputRef')
 
 function beginEdit() {
@@ -30,7 +31,18 @@ function finishEdit() {
   emit('rename', draft.value)
 }
 
-function cancelEdit() {
+function handleCompositionStart() {
+  isComposing.value = true
+}
+
+function handleCompositionEnd() {
+  isComposing.value = false
+}
+
+function cancelEdit(event?: Event | KeyboardEvent) {
+  if (isComposing.value || (event instanceof KeyboardEvent && event.isComposing)) {
+    return
+  }
   editing.value = false
   draft.value = props.name
 }
@@ -46,9 +58,11 @@ defineExpose({ beginEdit })
     class="quick-links__category-input"
     :maxlength="MAX_QUICK_LINK_GROUP_NAME_LENGTH"
     size="small"
+    @compositionstart="handleCompositionStart"
+    @compositionend="handleCompositionEnd"
     @blur="finishEdit"
     @keyup.enter="finishEdit"
-    @keyup.esc="cancelEdit"
+    @keydown.esc="cancelEdit"
     @click.stop
   />
   <button

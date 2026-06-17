@@ -4,6 +4,7 @@ import { useElementVisibility, useWindowSize } from '@vueuse/core'
 import type { DialogInstance, ScrollbarInstance } from 'element-plus'
 import CloseRound from '~icons/ic/round-close'
 
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 
 interface Props {
@@ -30,6 +31,7 @@ const emit = defineEmits<{
 const headerRef = useTemplateRef('headerRef')
 const scrollbarRef = ref<ScrollbarInstance>()
 const dialogRef = ref<DialogInstance>()
+const { isComposing } = useImeAwareDialog()
 
 const headerIsVisible = useElementVisibility(headerRef)
 const { width: windowWidth } = useWindowSize({ type: 'visual' })
@@ -81,6 +83,7 @@ const dialogId = computed(() => {
     :append-to-body="appendToBody"
     :destroy-on-close="destroyOnClose"
     :header-class="headerClass"
+    :close-on-press-escape="!isComposing"
     @open="onOpen"
     @close="onClose"
     @closed="onClosed"

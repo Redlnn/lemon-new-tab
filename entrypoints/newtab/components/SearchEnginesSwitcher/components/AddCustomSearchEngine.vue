@@ -6,9 +6,11 @@ import Plus from '~icons/fa6-solid/plus'
 import { fetchFaviconWithCache } from '@/shared/media'
 
 import { useFaviconUpload } from '@newtab/composables/useFaviconUpload'
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 
 const { t } = useTranslation()
+const { isComposing } = useImeAwareDialog()
 
 const customSearchEngineStore = useCustomSearchEngineStore()
 const modelForm = ref<FormInstance>()
@@ -125,6 +127,7 @@ defineExpose({
     width="450"
     append-to-body
     destroy-on-close
+    :close-on-press-escape="!isComposing"
   >
     <el-form ref="modelForm" :model="data">
       <el-form-item :label="t('common.name')" label-position="top">
