@@ -20,8 +20,8 @@ import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
 
 import QuickLinkContextMenu from './components/QuickLinkContextMenu.vue'
 import QuickLinkGroupSelectDialog from './components/QuickLinkGroupSelectDialog.vue'
-import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions'
 import type { CtxQuickLinkItem } from './composables/useQuickLinkContextMenu'
+import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions'
 import { useQuickLinksData } from './composables/useQuickLinksData'
 import { useDockLayout } from './composables/useQuickLinksLayout'
 import { useTopSitesMerge } from './composables/useTopSitesMerge'
@@ -430,7 +430,11 @@ defineExpose({ refresh })
           <img :src="item.favicon || getOrCreateFaviconRef(item.url)" alt="favicon" />
         </a>
       </el-tooltip>
-      <div v-if="idx !== visibleQuickLinksData.length - 1" class="dock-gap" :ref="setScalableRef"></div>
+      <div
+        v-if="idx !== visibleQuickLinksData.length - 1"
+        class="dock-gap"
+        :ref="setScalableRef"
+      ></div>
     </template>
     <template v-if="visibleQuickLinksData.length > 0 && visibleTopSites.length > 0">
       <div class="dock-gap" :ref="setScalableRef"></div>

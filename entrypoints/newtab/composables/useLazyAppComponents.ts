@@ -2,7 +2,9 @@ import { defineAsyncComponent, nextTick, ref, watch, type Ref } from 'vue'
 
 import type { QuickLinkTarget } from '@/shared/quickLinks'
 
-export const SettingsPage = defineAsyncComponent(() => import('../components/SettingsPage/index.vue'))
+export const SettingsPage = defineAsyncComponent(
+  () => import('../components/SettingsPage/index.vue'),
+)
 export const Changelog = defineAsyncComponent(() => import('../components/Changelog.vue'))
 export const Faq = defineAsyncComponent(() => import('../components/Faq.vue'))
 export const AboutComp = defineAsyncComponent(() => import('../components/About.vue'))
@@ -59,7 +61,10 @@ function createLazyComponentRef<T>() {
   return { componentRef, loaded, getInstance }
 }
 
-async function callLazy<T>(lazy: ReturnType<typeof createLazyComponentRef<T>>, call: (instance: T) => void) {
+async function callLazy<T>(
+  lazy: ReturnType<typeof createLazyComponentRef<T>>,
+  call: (instance: T) => void,
+) {
   const instance = await lazy.getInstance()
   if (instance) call(instance)
 }
@@ -69,8 +74,7 @@ export function useLazyAppComponents() {
   const changelog = createLazyComponentRef<InstanceType<typeof Changelog>>()
   const faq = createLazyComponentRef<InstanceType<typeof Faq>>()
   const about = createLazyComponentRef<InstanceType<typeof AboutComp>>()
-  const searchEnginesSwitcher =
-    createLazyComponentRef<InstanceType<typeof SearchEnginesSwitcher>>()
+  const searchEnginesSwitcher = createLazyComponentRef<InstanceType<typeof SearchEnginesSwitcher>>()
   const backgroundSwitcher = createLazyComponentRef<InstanceType<typeof BackgroundSwitcher>>()
   const bookmark = createLazyComponentRef<InstanceType<typeof Bookmark>>()
   const addQuickLinkDialog = createLazyComponentRef<InstanceType<typeof AddQuickLinkDialog>>()
@@ -84,8 +88,7 @@ export function useLazyAppComponents() {
   const toggleAbout = () => callLazy(about, (instance) => instance.toggle())
   const showSearchEnginesSwitcher = () =>
     callLazy(searchEnginesSwitcher, (instance) => instance.show())
-  const showBackgroundSwitcher = () =>
-    callLazy(backgroundSwitcher, (instance) => instance.show())
+  const showBackgroundSwitcher = () => callLazy(backgroundSwitcher, (instance) => instance.show())
   const showBookmark = () => callLazy(bookmark, (instance) => instance.show())
   const openAddQuickLinkDialog = (groupId?: string) =>
     callLazy(addQuickLinkDialog, (instance) => instance.openAddDialog(groupId))

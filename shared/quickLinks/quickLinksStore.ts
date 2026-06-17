@@ -154,7 +154,9 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   const findGroupedQuickLinkByUrl = (url: string) => {
     const normalizedUrl = normalizeUrlForDedup(url)
     for (const group of groups.value) {
-      const index = group.items.findIndex((item) => normalizeUrlForDedup(item.url) === normalizedUrl)
+      const index = group.items.findIndex(
+        (item) => normalizeUrlForDedup(item.url) === normalizedUrl,
+      )
       if (index >= 0) return { group, index }
     }
     return null

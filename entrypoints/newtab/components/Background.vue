@@ -18,8 +18,8 @@ import { BgType } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 
 import { useFocusState } from '@newtab/composables/useFocus'
-import { isOnlyTouchDevice } from '@newtab/shared/touch'
 import { applyMonet } from '@newtab/shared/theme'
+import { isOnlyTouchDevice } from '@newtab/shared/touch'
 import {
   bingWallpaperURLGetter,
   cacheOnlineWallpaper,
