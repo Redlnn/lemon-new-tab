@@ -197,19 +197,19 @@ const sortOptions = [
     click: () => store.setSortMode(SortMode.NameAsc),
   },
   {
-    value: 'NnameDesc',
+    value: 'NameDesc',
     labelKey: 'bookmark.sortMode.nameDesc',
     click: () => store.setSortMode(SortMode.NameDesc),
   },
   {
     value: 'CreatedAsc',
     labelKey: 'bookmark.sortMode.createdAsc',
-    click: () => store.setSortMode(SortMode.CreatedDesc),
+    click: () => store.setSortMode(SortMode.CreatedAsc),
   },
   {
     value: 'CreatedDesc',
     labelKey: 'bookmark.sortMode.createdDesc',
-    click: () => store.setSortMode(SortMode.CreatedAsc),
+    click: () => store.setSortMode(SortMode.CreatedDesc),
   },
 ]
 
