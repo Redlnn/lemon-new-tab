@@ -38,6 +38,15 @@ async function cacheBrowserFavicons(sites: TopSites.MostVisitedURL[]): Promise<v
   await Promise.allSettled(tasks)
 }
 
+function releaseTopSiteFaviconRefs(sites: TopSites.MostVisitedURL[]) {
+  const releasedUrls = new Set<string>()
+  for (const site of sites) {
+    if (!site.url || releasedUrls.has(site.url)) continue
+    releasedUrls.add(site.url)
+    releaseFaviconRef(site.url)
+  }
+}
+
 async function fetchTopSites(): Promise<TopSites.MostVisitedURL[]> {
   let topSites
   if (import.meta.env.CHROME || import.meta.env.EDGE || import.meta.env.OPERA) {
@@ -63,8 +72,10 @@ async function getTopSites(force = false): Promise<TopSites.MostVisitedURL[]> {
   pendingTopSitesPromise = fetchTopSites()
 
   try {
-    const previousUrls = cachedTopSites?.value.map((s) => s.url) ?? []
+    const previousCache = cachedTopSites
     const value = await pendingTopSitesPromise
+    const activePreviousCache = cachedTopSites === previousCache ? previousCache : cachedTopSites
+    const previousUrls = activePreviousCache?.value.map((s) => s.url) ?? []
     const newUrls = value.map((s) => s.url)
     const previousUrlSet = new Set(previousUrls)
     const newUrlSet = new Set(newUrls)
@@ -87,6 +98,9 @@ async function getTopSites(force = false): Promise<TopSites.MostVisitedURL[]> {
 }
 
 function invalidateTopSitesCache() {
+  if (cachedTopSites) {
+    releaseTopSiteFaviconRefs(cachedTopSites.value)
+  }
   cachedTopSites = null
 }
 
