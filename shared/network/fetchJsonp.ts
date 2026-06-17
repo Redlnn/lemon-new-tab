@@ -16,13 +16,14 @@ interface fetchJsonpOptions {
  */
 async function fetchJsonp(options: fetchJsonpOptions): Promise<string[]> {
   const { url, params, callbackParam, callbackName } = options
-  const queryParams = new URLSearchParams(params)
-  queryParams.set(callbackParam, callbackName)
-
-  const fullUrl = `${url}?${queryParams.toString()}`
+  const fullUrl = new URL(url)
+  for (const [key, value] of Object.entries(params)) {
+    fullUrl.searchParams.set(key, value)
+  }
+  fullUrl.searchParams.set(callbackParam, callbackName)
 
   try {
-    const response = await enhancedFetch<string>(fullUrl, {
+    const response = await enhancedFetch<string>(fullUrl.toString(), {
       responseType: 'text',
       responseEncoding: options.encoding,
       headers: {
