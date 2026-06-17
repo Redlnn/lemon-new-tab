@@ -23,6 +23,7 @@
 
 ### Bug Fixes🐛
 
+- Fixed some potential bugs to improve stability.
 - Fixed bookmark dragging issues and a possible crash when opening the bookmarks sidebar with no bookmarks.
 - Fixed an issue where pressing `Esc` to close an IME candidate popup inside a dialog could also close the dialog.
   ([#91](https://github.com/Redlnn/lemon-new-tab/issues/91))
