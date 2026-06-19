@@ -30,13 +30,20 @@ export function useQuickLinkGroupActions(options: {
   const quickLinksStore = useQuickLinksStore()
   const settings = useSettingsStore()
 
+  const openGroupSelectDialog = async (dialogOptions?: {
+    title?: string
+    currentGroupId?: string
+  }) => {
+    return await options.groupSelectDialogRef.value?.open(dialogOptions)
+  }
+
   const pinToGroup = async (item: QuickLinkGroupActionItem) => {
     if (!settings.quickLinks.grouping) {
       await pinQuickLink(quickLinksStore, options.refresh, item.url, item.title, item.favicon)
       return
     }
 
-    const groupId = await options.groupSelectDialogRef.value?.open({
+    const groupId = await openGroupSelectDialog({
       title: options.t('quickLinks.groups.selectPinTarget'),
     })
     if (!groupId) return
@@ -50,7 +57,7 @@ export function useQuickLinkGroupActions(options: {
 
   const moveToGroup = async (item: Pick<QuickLinkGroupActionItem, 'groupId' | 'originalIndex'>) => {
     if (!item.groupId) return
-    const groupId = await options.groupSelectDialogRef.value?.open({
+    const groupId = await openGroupSelectDialog({
       title: options.t('quickLinks.groups.selectMoveTarget'),
       currentGroupId: item.groupId,
     })

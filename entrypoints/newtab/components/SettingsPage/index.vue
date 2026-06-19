@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import 'element-plus/theme-chalk/src/dialog.scss'
+import '@newtab/styles/dialog.scss'
+import '@newtab/styles/settings.scss'
 import { useWindowSize } from '@vueuse/core'
 
 import { useTranslation } from 'i18next-vue'

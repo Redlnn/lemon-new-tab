@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import '@newtab/styles/search.scss'
 import {
   onClickOutside,
   useActiveElement,

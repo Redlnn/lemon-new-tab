@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { useIdle } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
-import type { StyleValue } from 'vue'
+import { shallowRef, type StyleValue } from 'vue'
 
 import { BgType } from '@/shared/enums'
 import { defaultSettings, useSettingsStore } from '@/shared/settings'
-import { useSyncDataStore } from '@/shared/sync'
+import { addSyncEventCallback } from '@/shared/sync/syncEvents'
+import type { SyncEventPayloadMap } from '@/shared/sync/types'
 
 import {
   FOCUS_STATE,
@@ -84,8 +84,41 @@ const appRef = useTemplateRef('appRef')
 
 const elLocale = useElementLang()
 const settings = useSettingsStore()
-const syncStore = useSyncDataStore()
-const { legacyDialogVisible, conflictDialogVisible, conflictPayload } = storeToRefs(syncStore)
+const legacyDialogVisible = ref(false)
+const conflictDialogVisible = ref(false)
+const conflictPayload = shallowRef<SyncEventPayloadMap['conflict'] | null>(null)
+
+// 同步模块体积较大，首屏只订阅轻量事件；真正处理用户选择时再懒加载 store。
+const stopSyncDialogEvents = addSyncEventCallback((type, payload) => {
+  if (type === 'legacy-detected') {
+    syncLegacyDialogLoaded.value = true
+    legacyDialogVisible.value = true
+  } else if (type === 'conflict') {
+    syncConflictDialogLoaded.value = true
+    conflictPayload.value = payload as SyncEventPayloadMap['conflict']
+    conflictDialogVisible.value = true
+  }
+})
+
+onUnmounted(stopSyncDialogEvents)
+
+type SyncStoreActions = {
+  clearLegacyAndReinitialize: () => Promise<void>
+  dismissLegacyDialog: () => void
+  useCloudConflictData: () => Promise<void>
+  useLocalConflictData: () => Promise<void>
+  disableSyncAndDismissConflict: () => void
+}
+
+let syncStoreTask: Promise<SyncStoreActions> | null = null
+
+// 多个按钮可能连续触发，复用同一个动态导入任务，避免重复拉取 sync chunk。
+async function getSyncStore() {
+  syncStoreTask ??= import('@/shared/sync').then(
+    ({ useSyncDataStore }) => useSyncDataStore() as SyncStoreActions,
+  )
+  return await syncStoreTask
+}
 
 // 主题/外观 watcher
 useThemeWatcher()
@@ -220,11 +253,34 @@ const mainStyle = computed<StyleValue>(() => {
   return { paddingTop: `${pos.value}px` }
 })
 
-const handleLegacyConfirm = () => syncStore.clearLegacyAndReinitialize()
-const handleLegacyCancel = () => syncStore.dismissLegacyDialog()
-const handleUseCloudConflictData = () => syncStore.useCloudConflictData()
-const handleUseLocalConflictData = () => syncStore.useLocalConflictData()
-const handleDisableSyncConflict = () => syncStore.disableSyncAndDismissConflict()
+const handleLegacyConfirm = async () => {
+  const syncStore = await getSyncStore()
+  await syncStore.clearLegacyAndReinitialize()
+  legacyDialogVisible.value = false
+}
+const handleLegacyCancel = async () => {
+  const syncStore = await getSyncStore()
+  syncStore.dismissLegacyDialog()
+  legacyDialogVisible.value = false
+}
+const handleUseCloudConflictData = async () => {
+  const syncStore = await getSyncStore()
+  await syncStore.useCloudConflictData()
+  conflictDialogVisible.value = false
+  conflictPayload.value = null
+}
+const handleUseLocalConflictData = async () => {
+  const syncStore = await getSyncStore()
+  await syncStore.useLocalConflictData()
+  conflictDialogVisible.value = false
+  conflictPayload.value = null
+}
+const handleDisableSyncConflict = async () => {
+  const syncStore = await getSyncStore()
+  syncStore.disableSyncAndDismissConflict()
+  conflictDialogVisible.value = false
+  conflictPayload.value = null
+}
 
 async function refreshQuickLinks() {
   await Promise.all([QuickLinksRef.value?.refresh(), DockRef.value?.refresh()])

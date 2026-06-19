@@ -1,4 +1,5 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
+import '@newtab/styles/quick-links.scss'
 import { useDebounceFn, useEventListener, useResizeObserver, useWindowSize } from '@vueuse/core'
 
 import {
@@ -59,7 +60,6 @@ import { useQuickLinksData } from './composables/useQuickLinksData'
 import { solveGridColumnFirst, usePagedGridLayout } from './composables/useQuickLinksLayout'
 import { useQuickLinksPagination } from './composables/useQuickLinksPagination'
 import { useTopSitesMerge } from './composables/useTopSitesMerge'
-
 const focusStore = useFocusState()
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
@@ -560,7 +560,6 @@ async function refresh() {
       topSites.value = []
     }
 
-    // 首次刷新完成后设置 mounted 标志
     if (!mounted.value) {
       mounted.value = true
     }

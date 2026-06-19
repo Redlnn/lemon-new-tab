@@ -2,9 +2,7 @@ import type { TopSites } from 'webextension-polyfill'
 
 import { normalizeUrlForDedup } from '@/shared/url'
 
-import { getTopSites } from '@newtab/components/QuickLinks/utils/topSites'
-
-interface UseTopSitesMergeOptions {
+interface TopSitesMergeOptions {
   quickLinks: { url: string }[]
   columns?: number
   maxRows?: number
@@ -28,12 +26,10 @@ function getFallbackTitle(url: string): string {
   }
 }
 
-export async function useTopSitesMerge(
-  options: UseTopSitesMergeOptions,
-): Promise<TopSites.MostVisitedURL[]> {
-  // 如果 getTopSites() 返回 undefined，则默认空数组
-  const topSites = (await getTopSites(options.force)) ?? []
-
+export function mergeTopSites(
+  topSites: TopSites.MostVisitedURL[],
+  options: TopSitesMergeOptions,
+): TopSites.MostVisitedURL[] {
   // 构建 URL Set 用于快速去重
   const { quickLinks } = options
   const quickLinkUrlsSet = new Set<string>()
@@ -73,4 +69,13 @@ export async function useTopSitesMerge(
   }
 
   return dedup.slice(0, remain)
+}
+
+export async function useTopSitesMerge(
+  options: TopSitesMergeOptions,
+): Promise<TopSites.MostVisitedURL[]> {
+  const { getTopSites } = await import('../utils/topSites')
+  // 如果 getTopSites() 返回 undefined，则默认空数组
+  const topSites = (await getTopSites(options.force)) ?? []
+  return mergeTopSites(topSites, options)
 }

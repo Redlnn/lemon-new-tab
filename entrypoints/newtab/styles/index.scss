@@ -1,12 +1,8 @@
 @use './element.scss';
-@use './clock.scss';
-@use './settings.scss';
-@use './search.scss';
 @use './color.scss';
 @use './mixins/acrylic.scss' as acrylic;
 @use './transitions.scss';
 @use './action-btn.scss';
-@use './quick-links.scss';
 @use '@/assets/styles/font.scss';
 
 * {

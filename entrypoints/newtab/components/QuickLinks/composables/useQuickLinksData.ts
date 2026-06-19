@@ -4,8 +4,6 @@ import { quickLinksStorage, useQuickLinksStore, type QuickLink } from '@/shared/
 
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
-import { invalidateTopSitesCache } from '../utils/topSites'
-
 const refreshListeners = new Set<() => void>()
 const topSitesReloadRefs = new Set<Ref<boolean>>()
 let stopQuickLinkStorageWatch: (() => void) | null = null
@@ -30,8 +28,11 @@ function ensureQuickLinkWatchers(store: ReturnType<typeof useQuickLinksStore>) {
       topSitesReloadRefs.forEach((needsReload) => {
         needsReload.value = true
       })
-      invalidateTopSitesCache()
-      notifyQuickLinkConsumers()
+      void import('../utils/topSites')
+        .then(({ invalidateTopSitesCache }) => {
+          invalidateTopSitesCache()
+        })
+        .finally(notifyQuickLinkConsumers)
     })
   }
 }

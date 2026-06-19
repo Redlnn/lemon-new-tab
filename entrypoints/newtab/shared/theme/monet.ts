@@ -10,7 +10,7 @@ const pendingResolves = new Map<
   number,
   (result: { cssLight: Record<string, string>; cssDark: Record<string, string> }) => void
 >()
-// 存储待处理的 Promise reject 函数，key 为 msgId
+// 存储待处理的 Promise 拒绝函数
 const pendingRejects = new Map<number, (error: Error) => void>()
 
 function getWorker() {
@@ -96,8 +96,19 @@ async function getThemeFromImage(
   })
 }
 
-export async function applyMonet(image: HTMLImageElement | undefined | null, cropCenter = false) {
+type ApplyMonetOptions = {
+  cropCenter?: boolean
+  sourceKey?: string
+}
+
+export async function applyMonet(
+  image: HTMLImageElement | undefined | null,
+  options: boolean | ApplyMonetOptions = false,
+) {
   if (!image) return
+
+  const cropCenter = typeof options === 'boolean' ? options : (options.cropCenter ?? false)
+  const sourceKey = typeof options === 'boolean' ? undefined : options.sourceKey
 
   let cssLight: Record<string, string>
   let cssDark: Record<string, string>
@@ -111,8 +122,8 @@ export async function applyMonet(image: HTMLImageElement | undefined | null, cro
   }
 
   // 保存莫奈颜色到 storage，供 popup 等其他页面使用
-  saveMonetColors(cssLight, cssDark)
+  await saveMonetColors(cssLight, cssDark, sourceKey)
 
   // 应用莫奈颜色到当前页面
-  applyStoredMonetColors({ cssLight, cssDark, timestamp: Date.now() })
+  applyStoredMonetColors({ cssLight, cssDark, timestamp: Date.now(), sourceKey })
 }

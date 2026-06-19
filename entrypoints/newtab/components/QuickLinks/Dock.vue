@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import '@newtab/styles/quick-links.scss'
 import { OnLongPress } from '@vueuse/components'
 import { useDebounceFn, useResizeObserver, useWindowSize } from '@vueuse/core'
+import { defineAsyncComponent } from 'vue'
 
 import { useTranslation } from 'i18next-vue'
-import { defineAsyncComponent } from 'vue'
 import Apps24Regular from '~icons/fluent/apps-24-regular'
 import AddRound from '~icons/ic/round-add'
 
@@ -84,7 +85,6 @@ async function refresh() {
     topSites.value = []
   }
 
-  // 首次刷新完成后设置 mounted 标志
   if (!mounted.value) {
     mounted.value = true
   }
@@ -283,7 +283,7 @@ const ctxMenuRef = useTemplateRef<InstanceType<typeof QuickLinkContextMenu>>('ct
 const groupSelectDialogRef =
   useTemplateRef<InstanceType<typeof QuickLinkGroupSelectDialog>>('groupSelectDialogRef')
 
-function onItemContextmenu(
+function openDockItemMenu(
   event: MouseEvent | TouchEvent | PointerEvent,
   item: { url: string; title?: string },
   isPinned: boolean,
@@ -298,6 +298,15 @@ function onItemContextmenu(
   })
 }
 
+function onItemContextmenu(
+  event: MouseEvent | TouchEvent | PointerEvent,
+  item: { url: string; title?: string },
+  isPinned: boolean,
+  originalIndex: number,
+): void {
+  openDockItemMenu(event, item, isPinned, originalIndex)
+}
+
 function onItemLongPress(
   event: PointerEvent,
   item: { url: string; title?: string },
@@ -305,13 +314,7 @@ function onItemLongPress(
   originalIndex: number,
 ): void {
   if (isHasTouchDevice && isTouchEvent(event)) {
-    ctxMenuRef.value?.open(event, {
-      url: item.url,
-      title: item.title || '',
-      isPinned,
-      originalIndex,
-      groupId: isPinned && settings.quickLinks.grouping ? DEFAULT_QUICK_LINK_GROUP_ID : undefined,
-    })
+    openDockItemMenu(event, item, isPinned, originalIndex)
   }
 }
 

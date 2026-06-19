@@ -7,7 +7,6 @@ import { i18n } from '@/shared/i18n'
 import { setFaviconCacheEnabled } from '@/shared/media'
 import { useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
-import { useSyncDataStore } from '@/shared/sync'
 import { applyStoredMonetColors, getMonetColors } from '@/shared/theme'
 
 import { colorMode, preferredDark } from '@newtab/shared/colorMode'
@@ -73,6 +72,7 @@ export const main = async () => {
 
   setupAutoSaveSettings(settings)
 
+  // 数据 store 与首屏挂载并行，组件读取时会复用同一个初始化任务。
   const dataStoresInit = Promise.all([
     useCustomSearchEngineStore().init(),
     useQuickLinksStore().init(),
@@ -83,7 +83,7 @@ export const main = async () => {
   void dataStoresInit
     .then(() => {
       if (settings.sync.enabled) {
-        useSyncDataStore().init()
+        void import('@/shared/sync').then(({ useSyncDataStore }) => useSyncDataStore().init())
       }
     })
     .catch((error) => {

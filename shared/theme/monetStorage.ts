@@ -4,6 +4,7 @@ export interface MonetColors {
   cssLight: Record<string, string>
   cssDark: Record<string, string>
   timestamp: number
+  sourceKey?: string
 }
 
 // 使用 wxt storage 存储莫奈颜色
@@ -17,11 +18,13 @@ export const monetColorsStorage = storage.defineItem<MonetColors | null>('local:
 export async function saveMonetColors(
   cssLight: Record<string, string>,
   cssDark: Record<string, string>,
+  sourceKey?: string,
 ) {
   await monetColorsStorage.setValue({
     cssLight,
     cssDark,
     timestamp: Date.now(),
+    sourceKey,
   })
 }
 

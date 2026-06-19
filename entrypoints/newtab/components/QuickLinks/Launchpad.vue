@@ -56,7 +56,6 @@ import {
 import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions'
 import { useQuickLinksData } from './composables/useQuickLinksData'
 import { useTopSitesMerge } from './composables/useTopSitesMerge'
-
 const getOrCreateFaviconRef = createFaviconUrlResolver()
 
 const refreshDebounced = useDebounceFn(refresh, 100)

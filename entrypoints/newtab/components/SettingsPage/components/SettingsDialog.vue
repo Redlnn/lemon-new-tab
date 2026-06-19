@@ -78,7 +78,7 @@ defineExpose({
 </script>
 
 <template>
-  <Teleport :to="appendTo" :disabled="appendTo !== 'body' ? false : !appendToBody">
+  <teleport :to="appendTo" :disabled="appendTo !== 'body' ? false : !appendToBody">
     <transition v-bind="transitionConfig as TransitionProps">
       <el-overlay
         v-show="visible"
@@ -152,5 +152,5 @@ defineExpose({
         </div>
       </el-overlay>
     </transition>
-  </Teleport>
+  </teleport>
 </template>

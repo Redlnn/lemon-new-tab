@@ -28,6 +28,7 @@ import {
 
 import { createDeviceId, detectDeviceName } from './device'
 import { localSyncMetaStorage } from './syncDataStorage'
+import { emitSyncEvent } from './syncEvents'
 import { normalizeSyncEnvelope } from './types'
 import type {
   LocalSyncMeta,
@@ -37,7 +38,6 @@ import type {
   SyncConflictResolveMessage,
   SyncEnvelopeV2,
   SyncEventPayloadMap,
-  SyncEventType,
   SyncInitedMessage,
   SyncLocalChangedMessage,
   SyncVersionTooNewMessage,
@@ -76,20 +76,6 @@ let cleanupFns: (() => void)[] = []
 let initPromise: Promise<void> | null = null
 let initGeneration = 0
 let lastSyncHash: string | null = null
-
-// 事件回调，用于通知 UI 层
-export type SyncEventCallback = <T extends SyncEventType>(
-  type: T,
-  payload: SyncEventPayloadMap[T],
-) => void
-let syncEventCallback: SyncEventCallback | null = null
-export function setSyncEventCallback(cb: SyncEventCallback | null) {
-  syncEventCallback = cb
-}
-
-const emitSyncEvent = <T extends SyncEventType>(type: T, payload: SyncEventPayloadMap[T]) => {
-  syncEventCallback?.(type, payload)
-}
 
 const emitSyncError = (err: unknown) => {
   emitSyncEvent('sync-error', toError(err))

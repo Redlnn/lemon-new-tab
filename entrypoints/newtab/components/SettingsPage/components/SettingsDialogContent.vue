@@ -47,7 +47,7 @@ defineExpose({
   <div :ref="composedDialogRef" :class="dialogKls" :style="style" tabindex="-1">
     <slot name="aside"></slot>
     <div :id="bodyId" :class="[ns.e('body'), bodyClass]">
-      <header ref="headerRef" :class="[headerClass]">
+      <header ref="headerRef" :class="[ns.e('header'), headerClass, { 'show-close': showClose }]">
         <slot name="header">
           <span role="heading" :aria-level="ariaLevel" :class="ns.e('title')">
             {{ title }}

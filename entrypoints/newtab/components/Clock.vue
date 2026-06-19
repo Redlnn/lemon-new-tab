@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import '@newtab/styles/clock.scss'
 import { useIntervalFn, useNow, useTimeoutFn } from '@vueuse/core'
 
 import dayjs from 'dayjs/esm'
