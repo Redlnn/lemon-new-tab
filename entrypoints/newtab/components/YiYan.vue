@@ -169,6 +169,7 @@ async function copyToClipboard() {
     backdrop-filter var(--el-transition-duration-fast) ease,
     color var(--el-transition-duration-fast) ease,
     bottom var(--el-transition-duration-fast) ease;
+  animation: delayedFadeIn 0.25s;
 
   .yiyan__copy-btn {
     position: absolute;
