@@ -2,7 +2,7 @@
 
 > Translated by AI from Chinese.
 
-## 3.3.0 (Jun 17, 2026)
+## 3.3.0 (Jun 21, 2026)
 
 ### New Features✨
 
@@ -20,6 +20,7 @@
 - Improved interaction details for Quick Links pagination, scrolling, and grouped mode.
 - Improved first-screen loading speed, so the new tab page starts faster.
 - Automatically disables some mouse-only interaction settings on touch-only devices to reduce unavailable options.
+- Improved loading performance.
 
 ### Bug Fixes🐛
 

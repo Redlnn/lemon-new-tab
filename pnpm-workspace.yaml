@@ -9,13 +9,16 @@ overrides:
   sass: 'npm:sass-embedded@^1.100.0' # 替换为高性能实现
   vite: '^8.0.16' # 统一版本
   'web-ext-run>tmp': '^0.2.7' # 修复 CVE-2026-44705
+  # -----
   # 以下是为了修复 CVE-2026-44705
-  'config-chain>ini': '^1.3.8'
-  'global-prefix>ini': '^1.3.8'
-  'rc>ini': '^1.3.8'
+  'config-chain>ini': '^7.0.0'
+  'global-modules>global-prefix': '^4.0.0'
+  'global-prefix>ini': '^7.0.0'
+  registry-url: '^7.2.0' # 删除了 rc 依赖，rc 依赖旧版本 ini
+  # -----
   fx-runner: '^1.5.0' # web-ext-run 的依赖，修复 CVE-2026-9277
   esbuild: '^0.28.1'
-  js-yaml: '^3.14.2' # 修复 CVE-2025-64718
+  'gray-matter>js-yaml': '^3.14.2' # 修复 CVE-2025-64718
 
 peerDependencyRules:
   ignoreMissing:
