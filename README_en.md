@@ -18,17 +18,36 @@ The extension is now available on
 
 ## Features
 
-- Fast⚡ – Purely local, high-performance, fast loading
-- Search 🔍 – Instant suggestions and customizable search engine.
-- Flexible 🌈 – Customize and combine page layouts to adjust appearance to your preference with rich options
-- Elegant 🎨 – With rich custom color options and Monet-based color extraction, the interface becomes cleaner and more visually appealing.
-- Wallpapers 🖼️ – Support for Bing daily wallpapers, custom online APIs, and local images/videos
-- Quotes 💬 – A classical Chinese poem or motivational quote each time you open a new tab
-- Open Source ⚛️ – No worries about privacy leaks or malicious code
-- Internationalization 🌐 – Built-in multi-language support (Include Simplified / Traditional Chinese, Cantonese)
-- Bookmark 🔖 – Search and open the bookmark from the browser
-- Quick Links 🪜 – Display/pin frequently visited sites and add your own custom links
-- Dark Mode 🌓 – Support for dark mode, with an option to follow the system setting
+Make every new tab feel fast, effortless, and enjoyable.
+
+Lemon New Tab is a local-first, open-source browser extension with no additional account required. Your core settings and personalized content stay in your browser, giving you fast loading, a clean interface, and no distracting news feed or ads.
+
+**🔍 Flexible Search**  
+&emsp;&ensp;Use Bing, Google, Baidu, DuckDuckGo, Yandex, and other search engines. Search suggestions, search history, and custom search engines help you quickly find what you need using a familiar workflow.
+
+**🧭 Quick Links**  
+&emsp;&ensp;Automatically display your most-visited sites, or add, pin, and rearrange your own links. Organize them into groups, browse with pages or scrolling, and switch to Dock or Launchpad layouts to keep favorite sites within easy reach.
+
+**🔖 Browser Bookmarks**  
+&emsp;&ensp;Search, open, edit, delete, and rearrange your browser bookmarks without leaving the new tab page.
+
+**🖼️ Rich Wallpaper Options**  
+&emsp;&ensp;Use Bing's daily image, an online image API, or local images and videos as your wallpaper. Extensive customization options help bring your background to life.
+
+**🎨 Highly Customizable**  
+&emsp;&ensp;A wide range of options lets you customize the layout, theme colors, and the position and appearance of individual components. Dynamic theme colors can even be extracted from your wallpaper to create a naturally coordinated page.
+
+**🕒 Useful Without Distractions**  
+&emsp;&ensp;Display the time, date, seconds, and lunar calendar. Enjoy a daily poem, motivational quote, or your own custom text, with one-click copying whenever you want to save it.
+
+**⚡ Fast and Easy to Use**  
+&emsp;&ensp;Continuously optimized for faster loading and lower resource usage, with responsive layouts and independent controls for performance and visual effects.
+
+**🔄 Easy Backup and Sync**  
+&emsp;&ensp;Import or export your settings, or use experimental cloud sync through your browser account. There is no separate account system, making setup and everyday use more convenient.
+
+**⚛️ Built for Trust**  
+&emsp;&ensp;Lemon New Tab makes all of its source code available under the AGPL-3.0 license and does not actively collect or send private data. It supports Chrome, Edge, and Firefox, providing a consistent experience across browsers.
 
 > [!NOTE]  
 > Contributions via PRs are welcome. Issues may not always be implemented.
