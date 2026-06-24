@@ -2,7 +2,11 @@
 
 > Translated by AI from Chinese.
 
-## 3.3.1 (Jun 24, 2026)
+## 3.3.2 (Jun 24, 2026)
+
+### New Features✨
+
+- Added a prompt to enable caching when using online wallpapers, reducing repeated downloads and keeping cached wallpapers available offline.
 
 ### Improvements⚡️
 
@@ -11,6 +15,7 @@
 ### Bug Fixes🐛
 
 - Fixed an issue where Bing wallpapers might fail to load.
+- Fixed an issue where Bing wallpaper information was missing from the wallpaper picker when Bing wallpaper was not enabled.
 
 ## 3.3.0 (Jun 21, 2026)
 
