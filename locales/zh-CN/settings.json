@@ -265,8 +265,8 @@
       "transparent": "一言背景透明"
     },
     "quickLinks": {
-      "blur": "快速导航模糊",
-      "transparent": "快速导航图标透明"
+      "blur": "快速导航、Dock 和启动台模糊",
+      "transparent": "快速导航和 Dock 透明"
     }
   },
   "search": {

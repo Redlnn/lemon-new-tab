@@ -265,8 +265,8 @@
       "transparent": "Quote transparency"
     },
     "quickLinks": {
-      "blur": "Quick Links blur",
-      "transparent": "Quick Links icon transparency"
+      "blur": "Quick Links, Dock, and Launchpad blur",
+      "transparent": "Quick Links and Dock transparency"
     }
   },
   "search": {
