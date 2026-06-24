@@ -198,20 +198,25 @@ watch(
   { immediate: true },
 )
 
+// Dock 占用底部空间时，将操作按钮位置同步为对应的顶部位置，保证渲染与持久化设置一致。
+watch(
+  [() => settings.dock.enabled, () => settings.layout.actionBtnPosition],
+  ([dockEnabled, actionBtnPosition]) => {
+    if (!dockEnabled || !actionBtnPosition.startsWith('bottom')) return
+    settings.layout.actionBtnPosition = actionBtnPosition.replace('bottom', 'top') as typeof actionBtnPosition
+  },
+  { immediate: true },
+)
+
 const actionClass = computed(() => {
   const perf = settings.perf
   const enableTransparent = perf.actionBtns.transparent
   const enableBlur = perf.actionBtns.blur && enableTransparent
 
-  let pos = settings.layout.actionBtnPosition
-  if (settings.dock.enabled && pos.startsWith('bottom')) {
-    pos = pos.replace('bottom', 'top') as typeof pos
-  }
-
   return {
     'action-btn-container--tran': enableTransparent,
     'action-btn-container--blur': enableBlur,
-    [`action-btn-container--${pos}`]: true,
+    [`action-btn-container--${settings.layout.actionBtnPosition}`]: true,
   }
 })
 
