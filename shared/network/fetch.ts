@@ -64,10 +64,10 @@ export async function enhancedFetch<T = unknown>(
           const decoder = new TextDecoder(responseEncoding)
           return decoder.decode(buffer) as T
         }
-        return response.text() as Promise<T>
+        return (await response.text()) as T
       }
 
-      return response.json() as Promise<T>
+      return (await response.json()) as T
     } catch (error) {
       throw new EnhancedFetchError(
         `Invalid ${responseType} response from ${url}`,
