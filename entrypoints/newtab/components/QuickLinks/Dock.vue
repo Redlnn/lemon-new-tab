@@ -49,6 +49,14 @@ const focusStore = useFocusState()
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
 
+const quickLinksBlurEnabled = computed(
+  () => settings.perf.quickLinks.transparent && settings.perf.quickLinks.blur,
+)
+const dockClass = computed(() => ({ 'dock--blur': quickLinksBlurEnabled.value }))
+const dockTooltipClass = computed(
+  () => `dock-tooltip noselect${quickLinksBlurEnabled.value ? ' dock-tooltip--blur' : ''}`,
+)
+
 const { updateMaxCols, maxFitCols } = useDockLayout()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
@@ -383,6 +391,7 @@ defineExpose({ refresh })
   <div
     ref="dockRef"
     class="dock noselect"
+    :class="dockClass"
     :style="{
       opacity: isHideDock,
       pointerEvents: isHideDock === '0' ? 'none' : 'auto',
@@ -407,7 +416,7 @@ defineExpose({ refresh })
         :enterable="false"
         :disabled="isUsingTouch"
         transition="none"
-        popper-class="dock-tooltip noselect"
+        :popper-class="dockTooltipClass"
       >
         <div
           role="button"
@@ -431,7 +440,7 @@ defineExpose({ refresh })
         :enterable="false"
         :disabled="isUsingTouch"
         transition="none"
-        popper-class="dock-tooltip noselect"
+        :popper-class="dockTooltipClass"
       >
         <a
           class="dock-item"
@@ -464,7 +473,7 @@ defineExpose({ refresh })
         :enterable="false"
         :disabled="isUsingTouch"
         transition="none"
-        popper-class="dock-tooltip noselect"
+        :popper-class="dockTooltipClass"
       >
         <OnLongPress
           as="a"
@@ -542,7 +551,9 @@ defineExpose({ refresh })
     bottom var(--el-transition-duration-fast) ease,
     background-color var(--el-transition-duration-fast) ease;
 
-  @include acrylic.acrylic(10px, 1.2, 1.1);
+  &--blur {
+    @include acrylic.acrylic(10px, 1.2, 1.1);
+  }
 }
 
 .app:has(.yiyan) {
@@ -611,13 +622,17 @@ defineExpose({ refresh })
 }
 
 .dock-tooltip.el-popper {
-  background: rgb(from var(--el-bg-color-overlay) r g b/ 50%);
+  --dock-tooltip-background: rgb(from var(--el-bg-color-overlay) r g b/ 50%);
+
+  background: var(--dock-tooltip-background);
   border: none;
 
-  html.colorful & {
-    background: rgb(from var(--el-color-primary-light-7) r g b/ 50%);
+  &.dock-tooltip--blur {
+    @include acrylic.acrylic(10px, 1.3, 1.4);
   }
+}
 
-  @include acrylic.acrylic(10px, 1.3, 1.4);
+html.colorful .dock-tooltip {
+  --dock-tooltip-background: rgb(from var(--el-color-primary-light-7) r g b/ 50%);
 }
 </style>

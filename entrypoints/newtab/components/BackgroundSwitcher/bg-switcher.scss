@@ -1,4 +1,10 @@
-@use '@newtab/styles/mixins/acrylic.scss' as acrylic;
+.bg-switcher__dialog {
+  --bg-switcher-action-background: var(--el-color-primary-light-9);
+}
+
+html.colorful .bg-switcher__dialog {
+  --bg-switcher-action-background: var(--el-color-primary-light-8);
+}
 
 .bg-switcher-container {
   display: grid;
@@ -183,11 +189,7 @@
       &:hover,
       &.active {
         color: var(--el-color-primary);
-        background-color: var(--el-color-primary-light-9);
-
-        html.colorful & {
-          background-color: var(--el-color-primary-light-8);
-        }
+        background-color: var(--bg-switcher-action-background);
       }
     }
   }

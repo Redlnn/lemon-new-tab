@@ -1,6 +1,8 @@
 @use './mixins/acrylic.scss' as acrylic;
 
 .action-btn-container {
+  --action-btn-container-background: var(--el-bg-color-overlay);
+
   position: fixed;
   right: 30px;
   bottom: 20px;
@@ -8,7 +10,7 @@
   flex-direction: row-reverse;
   padding: 5px;
   color: var(--el-text-color-secondary);
-  background-color: var(--el-bg-color-overlay);
+  background-color: var(--action-btn-container-background);
   border-radius: 100px;
   transition: var(--el-transition-duration-fast) ease-in-out;
 
@@ -22,11 +24,6 @@
 
   &--bottom-left {
     inset: auto auto 20px 30px;
-  }
-
-  /* bottom-right is the default — no modifier needed */
-  html.colorful &:not(.action-btn-container--tran) {
-    background-color: var(--el-color-primary-light-9);
   }
 
   &:hover,
@@ -52,6 +49,10 @@
   .el-dropdown {
     color: inherit;
   }
+}
+
+html.colorful .action-btn-container {
+  --action-btn-container-background: var(--el-color-primary-light-9);
 }
 
 .action-btn {
@@ -138,11 +139,14 @@
       }
     }
 
-    html.colorful &:not(.setting-btn__popper--opacity) {
-      background-color: var(--el-color-primary-light-9);
+    &:not(.setting-btn__popper--opacity) {
+      background-color: var(--setting-popper-background, var(--el-bg-color-overlay));
 
       .el-dropdown-menu__item:hover {
-        background-color: var(--el-color-primary-light-8);
+        background-color: var(
+          --setting-popper-item-hover-background,
+          var(--el-dropdown-menuItem-hover-fill)
+        );
       }
     }
 
@@ -154,4 +158,9 @@
       @include acrylic.acrylic;
     }
   }
+}
+
+html.colorful .setting-btn__popper {
+  --setting-popper-background: var(--el-color-primary-light-9);
+  --setting-popper-item-hover-background: var(--el-color-primary-light-8);
 }

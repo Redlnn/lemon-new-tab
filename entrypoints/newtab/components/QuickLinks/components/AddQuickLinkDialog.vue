@@ -128,7 +128,7 @@ defineExpose({ openAddDialog, openEditDialog })
   <el-dialog
     v-model="showDialog"
     :title="dialogTitle"
-    class="link-form-dialog base-dialog--blur base-dialog--opacity noselect"
+    class="link-form-dialog noselect"
     width="450"
     append-to-body
     destroy-on-close
@@ -183,14 +183,14 @@ defineExpose({ openAddDialog, openEditDialog })
 
 <style lang="scss">
 .link-form-dialog {
+  --link-form-dialog-background: var(--el-dialog-bg-color);
+
   max-width: 93%;
   padding: 30px;
 
   --el-dialog-padding-primary: 25px;
 
-  html.colorful:not(.dialog-transparent) & {
-    background-color: var(--el-color-primary-light-9);
-  }
+  background-color: var(--le-dialog-background, var(--link-form-dialog-background));
 
   .el-form-item--label-top .el-form-item__label {
     margin-bottom: 6px;
@@ -214,6 +214,10 @@ defineExpose({ openAddDialog, openEditDialog })
       line-height: 1.4;
     }
   }
+}
+
+html.colorful .link-form-dialog {
+  --link-form-dialog-background: var(--el-color-primary-light-9);
 }
 
 .quick-links__favicon-uploader {

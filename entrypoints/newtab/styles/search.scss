@@ -1,6 +1,14 @@
 @use '@newtab/styles/mixins/acrylic.scss' as acrylic;
 
 .search-box {
+  --search-form-border-color: rgb(255 255 255 / 50%);
+  --search-form-background: var(--el-fill-color-darker);
+  --search-form-hover-background: var(--el-fill-color-dark);
+  --search-form-focus-background: var(--el-fill-color);
+  --search-form-placeholder: var(--el-text-color-regular);
+  --search-form-placeholder-hover: var(--el-text-color-primary);
+  --search-form-shadow: var(--el-box-shadow);
+
   position: relative;
   display: flex;
   align-items: center;
@@ -12,7 +20,7 @@
   &__form {
     --height: 44px;
     --width: 300px;
-    --search-form-placeholder-color: var(--el-text-color-regular);
+    --search-form-placeholder-color: var(--search-form-placeholder);
 
     position: relative;
     display: flex;
@@ -31,11 +39,7 @@
     animation: delayedFadeIn 0.25s;
 
     &.border {
-      border: solid 1px rgb(255 255 255 / 50%);
-
-      html.dark & {
-        border: solid 1px rgb(255 255 255 / 10%);
-      }
+      border: solid 1px var(--search-form-border-color);
     }
 
     &--blur {
@@ -44,54 +48,20 @@
 
     &:hover:not(.search-box__form--focus) {
       --width: var(--search-expand-width, 500px);
-      --search-form-placeholder-color: var(--el-text-color-primary);
+      --search-form-placeholder-color: var(--search-form-placeholder-hover);
     }
 
     // 不透明时浅色模式搜索框背景变化
     /* stylelint-disable-next-line no-descending-specificity */
     &:not(.search-box__form--opacity) {
-      background-color: var(--el-fill-color-darker);
-
-      // 不透明时深色模式搜索框背景变化
-      html.dark & {
-        background-color: var(--el-fill-color);
-      }
-
-      html.colorful & {
-        background-color: var(--el-color-primary-light-9);
-      }
+      background-color: var(--search-form-background);
 
       &:hover:not(.search-box__form--focus) {
-        background-color: var(--el-fill-color-dark);
-
-        html.dark & {
-          background-color: var(--el-fill-color-dark);
-        }
-
-        html.colorful & {
-          background-color: var(--el-color-primary-light-8);
-        }
+        background-color: var(--search-form-hover-background);
       }
 
       &.search-box__form--focus {
-        background-color: var(--el-fill-color);
-
-        html.dark & {
-          background-color: var(--el-fill-color-darker);
-        }
-
-        html.colorful & {
-          background-color: var(--el-color-primary-light-8);
-        }
-      }
-    }
-
-    /* stylelint-disable-next-line no-descending-specificity */
-    html.dark:not(.monet) & {
-      --search-form-placeholder-color: var(--el-text-color-secondary);
-
-      &:hover:not(.search-box__form--focus) {
-        --search-form-placeholder-color: var(--el-text-color-regular);
+        background-color: var(--search-form-focus-background);
       }
     }
 
@@ -109,21 +79,12 @@
     }
 
     &--shadow {
-      box-shadow: var(--el-box-shadow);
-
-      html.dark & {
-        box-shadow: var(--el-box-shadow-light);
-      }
+      box-shadow: var(--search-form-shadow);
     }
 
     &--focus,
     &--expand {
       --width: var(--search-expand-width, 500px);
-    }
-
-    html.light:not(.colorful) &.search-box__form--dark {
-      background-color: var(--el-fill-color-blank);
-      border: solid 1px var(--el-border-color-light);
     }
 
     .search-engine-menu__icon {
@@ -192,6 +153,31 @@
         user-select: none;
       }
     }
+  }
+}
+
+html.dark .search-box {
+  --search-form-border-color: rgb(255 255 255 / 10%);
+  --search-form-background: var(--el-fill-color);
+  --search-form-focus-background: var(--el-fill-color-darker);
+  --search-form-shadow: var(--el-box-shadow-light);
+}
+
+html.colorful .search-box {
+  --search-form-background: var(--el-color-primary-light-9);
+  --search-form-hover-background: var(--el-color-primary-light-8);
+  --search-form-focus-background: var(--el-color-primary-light-8);
+}
+
+html.dark:not(.monet) .search-box {
+  --search-form-placeholder: var(--el-text-color-secondary);
+  --search-form-placeholder-hover: var(--el-text-color-regular);
+}
+
+html.light:not(.colorful) .search-box {
+  .search-box__form--dark {
+    background-color: var(--el-fill-color-blank);
+    border: solid 1px var(--el-border-color-light);
   }
 }
 

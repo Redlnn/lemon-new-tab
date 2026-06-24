@@ -271,13 +271,14 @@ defineExpose({
 
 .search-suggestion-area {
   --cubic-bezier: cubic-bezier(0.65, 0.05, 0.1, 1);
+  --search-suggestion-background: var(--el-fill-color-darker);
 
   position: absolute;
   top: 60px;
   z-index: 1;
   overflow: hidden;
   font-size: var(--el-font-size-small);
-  background-color: var(--el-fill-color-darker);
+  background-color: var(--search-suggestion-background);
   border-radius: 20px;
   transition:
     height 0.1s var(--cubic-bezier),
@@ -295,15 +296,6 @@ defineExpose({
 
   &.search-suggestion-area--blur {
     @include acrylic.acrylic(30px);
-  }
-
-  html.colorful &:not(.search-suggestion-area--opacity) {
-    background-color: var(--el-color-primary-light-9);
-  }
-
-  html:not(.colorful) &--dark {
-    background-color: var(--el-fill-color-blank);
-    border: solid 1px var(--el-border-color-light);
   }
 
   &__item {
@@ -344,6 +336,17 @@ defineExpose({
       padding-left: 30px;
       background-color: var(--le-bg-color-overlay-opacity-60);
     }
+  }
+}
+
+html.colorful .search-suggestion-area {
+  --search-suggestion-background: var(--el-color-primary-light-9);
+}
+
+html:not(.colorful) .search-suggestion-area {
+  &--dark {
+    background-color: var(--el-fill-color-blank);
+    border: solid 1px var(--el-border-color-light);
   }
 }
 </style>

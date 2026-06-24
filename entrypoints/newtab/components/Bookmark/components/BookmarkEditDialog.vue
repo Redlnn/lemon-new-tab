@@ -76,7 +76,7 @@ defineExpose({
   <el-dialog
     v-model="showDialog"
     :title="t('common.edit')"
-    class="link-form-dialog base-dialog--blur base-dialog--opacity noselect"
+    class="link-form-dialog noselect"
     width="450"
     append-to-body
     destroy-on-close

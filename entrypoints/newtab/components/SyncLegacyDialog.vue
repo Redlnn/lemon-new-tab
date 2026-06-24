@@ -18,7 +18,7 @@ const { isComposing } = useImeAwareDialog()
     v-model="model"
     :title="t('legacyFormat.title')"
     width="400px"
-    class="sync-legacy-dialog base-dialog--blur base-dialog--opacity noselect"
+    class="sync-legacy-dialog noselect"
     :close-on-click-modal="false"
     :close-on-press-escape="!isComposing"
   >

@@ -96,7 +96,11 @@ function beforeLocalBgSwitch() {
 </script>
 
 <template>
-  <base-dialog v-model="opened" :title="t('background.preferenceTitle')" acrylic opacity>
+  <base-dialog
+    v-model="opened"
+    :title="t('background.preferenceTitle')"
+    container-class="bg-switcher__dialog"
+  >
     <!-- Bing 每日壁纸 -->
     <div class="bg-switcher-title" style="margin-top: 20px">{{ t('background.today') }}</div>
     <div class="bg-switcher-container">

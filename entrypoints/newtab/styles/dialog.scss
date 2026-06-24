@@ -1,9 +1,11 @@
 .base-dialog {
+  --base-dialog-background: var(--el-bg-color-page);
+
   height: 500px;
   max-height: 80%;
   padding: 0;
   overflow: hidden;
-  background-color: var(--el-bg-color-page);
+  background-color: var(--le-dialog-background, var(--base-dialog-background));
   border-radius: 20px;
   box-shadow: 0 0 15px 0 var(--le-bg-color-page-opacity-60);
   transition:
@@ -99,4 +101,8 @@
     font-size: 28px;
     font-weight: 600;
   }
+}
+
+html.colorful .base-dialog {
+  --base-dialog-background: var(--el-color-primary-light-9);
 }

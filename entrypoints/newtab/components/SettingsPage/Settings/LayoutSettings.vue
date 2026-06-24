@@ -128,17 +128,13 @@ function selectActionBtn(pos: ActionBtnPosition) {
   font-size: var(--el-font-size-extra-small);
   color: var(--el-text-color-regular);
   cursor: pointer;
-  background-color: var(--el-bg-color-page);
+  background-color: var(--settings-option-background);
   border: 1.5px solid var(--el-border-color);
   border-radius: 10px;
   transition:
     border-color var(--el-transition-duration-fast) ease,
     background-color var(--el-transition-duration-fast) ease,
     color var(--el-transition-duration-fast) ease;
-
-  html.colorful & {
-    background-color: var(--el-color-primary-light-9);
-  }
 
   &:hover:not(:disabled) {
     color: var(--el-color-primary);
@@ -147,12 +143,8 @@ function selectActionBtn(pos: ActionBtnPosition) {
 
   &--active {
     color: var(--el-color-primary);
-    background-color: var(--el-color-primary-light-9);
+    background-color: var(--settings-option-active-background);
     border-color: var(--el-color-primary);
-
-    html.colorful & {
-      background-color: var(--el-color-primary-light-8);
-    }
   }
 
   &--disabled {

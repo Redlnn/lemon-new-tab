@@ -79,14 +79,14 @@ withDefaults(
   }
 
   // 白色文本容器特化
-  html.light .quick-links__container--white-in-light & {
+  .quick-links__container--white-in-light & {
     .quick-links__title,
     .quick-links__icon {
-      color: rgb(255 255 255 / 70%);
+      color: var(--quick-links-add-light-color);
 
       &:not(.quick-links__icon--opacity) {
         svg {
-          color: var(--le-text-color-primary-opacity-65);
+          color: var(--quick-links-add-light-icon-color);
         }
       }
     }
@@ -94,11 +94,11 @@ withDefaults(
     &:hover {
       .quick-links__title,
       .quick-links__icon {
-        color: var(--el-color-white);
+        color: var(--quick-links-add-light-hover-color);
 
         &:not(.quick-links__icon--opacity) {
           svg {
-            color: var(--el-text-color-regular);
+            color: var(--quick-links-add-light-icon-hover-color);
           }
         }
       }

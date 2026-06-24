@@ -37,7 +37,7 @@ const currentYiyanProvider = computed(() => {
 </script>
 
 <template>
-  <base-dialog v-model="opened" acrylic opacity container-class="about__dialog noselect">
+  <base-dialog v-model="opened" container-class="about__dialog noselect">
     <section>
       <div class="ext-icon">
         <a href="https://lemon.redlnn.top" target="_blank">
@@ -99,6 +99,8 @@ const currentYiyanProvider = computed(() => {
 
 <style lang="scss">
 .about__dialog {
+  --about-icon-background: var(--el-fill-color-extra-light);
+
   .ext-icon {
     width: 100%;
 
@@ -106,17 +108,13 @@ const currentYiyanProvider = computed(() => {
       width: 55px;
       height: 55px;
       margin: 0 auto;
-      background-color: var(--el-fill-color-extra-light);
+      background-color: var(--about-icon-background);
       background-image: url('@/assets/icon.svg');
       background-repeat: no-repeat;
       background-position: center;
       background-size: 80%;
       border: var(--el-border);
       border-radius: 15px;
-
-      html.colorful & {
-        background-color: var(--el-color-primary-light-8);
-      }
     }
   }
 
@@ -166,5 +164,9 @@ const currentYiyanProvider = computed(() => {
       color: inherit;
     }
   }
+}
+
+html.colorful .about__dialog {
+  --about-icon-background: var(--el-color-primary-light-8);
 }
 </style>

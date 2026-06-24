@@ -33,9 +33,9 @@ export function useThemeWatcher() {
   )
 
   watch(
-    () => settings.perf.dialog.blur,
-    (enabled) => {
-      toggleDocumentClass('dialog-acrylic', enabled)
+    [() => settings.perf.dialog.transparent, () => settings.perf.dialog.blur],
+    ([transparent, blur]) => {
+      toggleDocumentClass('dialog-acrylic', transparent && blur)
     },
     { immediate: true },
   )

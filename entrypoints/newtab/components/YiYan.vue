@@ -155,12 +155,18 @@ async function copyToClipboard() {
 @use '@newtab/styles/mixins/acrylic.scss' as acrylic;
 
 .yiyan {
+  --yiyan-color: var(--el-fill-color-darker);
+  --yiyan-hover-color: var(--el-text-color-regular);
+  --yiyan-hover-background: var(--el-bg-color-overlay);
+  --yiyan-night-color: var(--yiyan-color);
+  --yiyan-night-hover-color: var(--yiyan-hover-color);
+
   position: absolute;
   bottom: 100px;
   width: 500px;
   padding: 20px 26px;
   overflow: hidden;
-  color: var(--el-fill-color-darker);
+  color: var(--yiyan-color);
   text-align: center;
   border-radius: 20px;
   transition: bottom var(--el-transition-duration-fast) ease;
@@ -238,12 +244,8 @@ async function copyToClipboard() {
 
   &:hover,
   &:focus-within {
-    color: var(--el-text-color-regular);
-    background-color: var(--el-bg-color-overlay);
-
-    html.colorful &:not(.yiyan--opacity) {
-      background-color: var(--el-color-primary-light-9);
-    }
+    color: var(--yiyan-hover-color);
+    background-color: var(--yiyan-hover-background);
 
     &.yiyan--opacity {
       color: var(--el-fill-color-blank);
@@ -263,9 +265,7 @@ async function copyToClipboard() {
     }
   }
 
-  &.yiyan--invert.yiyan--light,
-    /* stylelint-disable-next-line no-descending-specificity */
-    html.dark & {
+  &.yiyan--invert.yiyan--light {
     color: var(--el-text-color-regular);
 
     /* stylelint-disable-next-line no-descending-specificity */
@@ -275,12 +275,12 @@ async function copyToClipboard() {
     }
   }
 
-  html.dark &.yiyan--invert.yiyan--night {
-    color: var(--el-fill-color-extra-light);
+  &.yiyan--invert.yiyan--night {
+    color: var(--yiyan-night-color);
 
     &:hover,
     &:focus-within {
-      color: var(--el-fill-color);
+      color: var(--yiyan-night-hover-color);
     }
   }
 
@@ -291,6 +291,17 @@ async function copyToClipboard() {
   @media (height <= 800px) {
     bottom: 70px;
   }
+}
+
+html.dark .yiyan {
+  --yiyan-color: var(--el-text-color-regular);
+  --yiyan-hover-color: var(--el-text-color-primary);
+  --yiyan-night-color: var(--el-fill-color-extra-light);
+  --yiyan-night-hover-color: var(--el-fill-color);
+}
+
+html.colorful .yiyan {
+  --yiyan-hover-background: var(--el-color-primary-light-9);
 }
 
 .app--quick-links-scroll .yiyan {

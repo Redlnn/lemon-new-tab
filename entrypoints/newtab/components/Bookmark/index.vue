@@ -409,6 +409,7 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
   max-width: calc(100% - 20px);
   margin: 10px;
   overflow: hidden;
+  background-color: var(--bookmark-background, var(--el-drawer-bg-color));
   border-radius: 20px;
 
   &.el-drawer.ltr,
@@ -435,10 +436,6 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
 
   &--opacity.el-drawer {
     background-color: var(--le-bg-color-overlay-opacity-15);
-  }
-
-  html.colorful &:not(.bookmark--opacity) {
-    background-color: var(--el-color-primary-light-9);
   }
 
   &--blur.el-drawer {
@@ -469,6 +466,10 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
       }
     }
   }
+}
+
+html.colorful .bookmark {
+  --bookmark-background: var(--el-color-primary-light-9);
 }
 
 @media (width <= 600px) {
