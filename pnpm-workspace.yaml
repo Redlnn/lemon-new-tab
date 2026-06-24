@@ -7,7 +7,7 @@ overrides:
   markdown-exit: 'latest' # 替换为高性能实现
   uuid: '^14.0.0' # 修复 CVE-2026-41907，统一版本
   sass: 'npm:sass-embedded@^1.100.0' # 替换为高性能实现
-  vite: '^8.0.16' # 统一版本
+  vite: '^8.1.0' # 统一版本
   'web-ext-run>tmp': '^0.2.7' # 修复 CVE-2026-44705
   # -----
   # 以下是为了修复 CVE-2026-44705

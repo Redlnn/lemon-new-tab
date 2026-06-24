@@ -203,6 +203,36 @@ function useBackgroundSwitcher() {
 
   const { checkAndRequestPermission } = usePermission()
 
+  const offerEnableOnlineWallpaperCache = async (hostname: string) => {
+    if (settings.background.online.cache.enabled) return
+
+    try {
+      await ElMessageBox.confirm(
+        i18next.t('settings:background.cache.askEnable.message'),
+        i18next.t('settings:background.cache.askEnable.title'),
+        { type: 'info' },
+      )
+    } catch {
+      return
+    }
+
+    if (import.meta.env.MANIFEST_VERSION === 2) {
+      settings.background.online.cache.enabled = true
+      return
+    }
+
+    const result = await checkAndRequestPermission(
+      hostname,
+      true,
+      PermissionContext.WallpaperCache,
+    )
+    if (result === PermissionResult.GrantedAll) {
+      settings.background.online.cache.enabled = true
+    } else {
+      ElMessage.warning(i18next.t('settings:background.warning.cacheDisabled'))
+    }
+  }
+
   const handlePermissions = async (_url: string, hostname: string) => {
     const result = await checkAndRequestPermission(
       hostname,
@@ -250,12 +280,14 @@ function useBackgroundSwitcher() {
     // MV2的Firefox不需要检查权限，直接设置在线壁纸URL即可。MV3才需要检查权限。
     if (import.meta.env.MANIFEST_VERSION === 2 && !settings.theme.monetColor) {
       settings.background.online.url = _url
+      await offerEnableOnlineWallpaperCache(hostname)
       return
     }
 
     isShowingPermissionDialog = true
     if (await handlePermissions(_url, hostname)) {
       settings.background.online.url = _url
+      await offerEnableOnlineWallpaperCache(hostname)
     } else {
       settings.background.bgType = BgType.None
       tempOnlineUrl.value = ''
