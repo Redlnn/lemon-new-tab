@@ -1,6 +1,6 @@
 {
   "name": "lemon-new-tab",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -44,21 +44,21 @@
     "@iconify-json/ic": "^1.2.4",
     "@material/material-color-utilities": "^0.4.0",
     "@tsconfig/node24": "^24.0.4",
-    "@types/chrome": "^0.1.43",
+    "@types/chrome": "^0.2.0",
     "@types/node": "^26.0.0",
     "@types/webextension-polyfill": "^0.12.5",
     "@vitejs/plugin-vue": "^6.0.7",
-    "@vue/eslint-config-typescript": "^14.8.0",
+    "@vue/eslint-config-typescript": "^14.9.0",
     "@vue/tsconfig": "^0.9.1",
     "@wxt-dev/webextension-polyfill": "^1.0.0",
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-oxlint": "^1.70.0",
+    "eslint-plugin-oxlint": "^1.71.0",
     "eslint-plugin-vue": "^10.9.2",
     "markdown-exit": "latest",
     "npm-run-all2": "^9.0.2",
-    "oxfmt": "^0.55.0",
-    "oxlint": "^1.70.0",
+    "oxfmt": "^0.56.0",
+    "oxlint": "^1.71.0",
     "postcss": "^8.5.15",
     "sass-embedded": "^1.100.0",
     "stylelint": "^17.13.0",
@@ -73,11 +73,11 @@
     "unplugin-icons": "^23.0.1",
     "unplugin-vue-components": "^32.1.0",
     "unplugin-vue-markdown": "^32.0.0",
-    "vite": "^8.0.16",
+    "vite": "^8.1.0",
     "vite-plugin-i18next-loader": "^4.0.1",
     "vite-svg-loader": "^5.1.1",
     "vue-tsc": "^3.3.5",
     "webextension-polyfill": "^0.12.0",
-    "wxt": "^0.20.26"
+    "wxt": "^0.21.0"
   }
 }
