@@ -300,7 +300,7 @@ async function refreshQuickLinks() {
       alignCenter: true,
     }"
     :message="{
-      placement: 'bottom',
+      placement: settings.dock.enabled ? 'top' : 'bottom',
     }"
   >
     <main
