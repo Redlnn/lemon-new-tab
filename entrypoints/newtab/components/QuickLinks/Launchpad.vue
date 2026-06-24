@@ -1054,6 +1054,10 @@ onBeforeUnmount(() => {
 
   &--blur {
     backdrop-filter: blur(40px) saturate(1.5);
+
+    .launchpad-search__input .el-input__wrapper {
+      backdrop-filter: blur(10px);
+    }
   }
 }
 
@@ -1091,10 +1095,6 @@ onBeforeUnmount(() => {
     --el-input-text-color: #fff;
     --el-input-placeholder-color: rgb(255 255 255 / 55%);
     --el-input-clear-hover-color: #fff;
-
-    .el-input__wrapper {
-      backdrop-filter: blur(10px);
-    }
   }
 }
 

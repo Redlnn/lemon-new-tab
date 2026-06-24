@@ -150,7 +150,7 @@ function selectActionBtn(pos: ActionBtnPosition) {
   &--disabled {
     color: var(--el-text-color-disabled);
     cursor: not-allowed;
-    background-color: var(--el-bg-color-page);
+    background-color: var(--settings-option-background);
     opacity: 0.6;
   }
 }

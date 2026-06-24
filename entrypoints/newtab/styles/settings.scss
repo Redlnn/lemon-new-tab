@@ -43,8 +43,8 @@ html.colorful .settings__dialog {
   --settings-group-active-background: var(--el-color-primary-light-9);
   --settings-aside-background: var(--el-color-primary-light-8);
   --settings-menu-hover-background: var(--el-color-primary-light-9);
-  --settings-option-background: var(--el-color-primary-light-9);
-  --settings-option-active-background: var(--el-color-primary-light-8);
+  --settings-option-background: var(--el-fill-color-lighter);
+  --settings-option-active-background: var(--el-color-primary-light-7);
 }
 
 html.dialog-transparent .settings__dialog {
@@ -60,6 +60,7 @@ html.colorful.dialog-transparent .settings__dialog {
   --settings-items-background: var(--el-color-primary-light-9);
   --settings-group-active-background: var(--el-color-primary-light-8);
   --settings-aside-background: var(--le-bg-color-overlay-opacity-30);
+  --settings-option-active-background: var(--el-color-primary-light-8);
 }
 
 .settings-header {

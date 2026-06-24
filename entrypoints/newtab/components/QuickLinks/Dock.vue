@@ -52,7 +52,7 @@ const quickLinksStore = useQuickLinksStore()
 const quickLinksBlurEnabled = computed(
   () => settings.perf.quickLinks.transparent && settings.perf.quickLinks.blur,
 )
-const dockClass = computed(() => ({ 'dock--blur': quickLinksBlurEnabled.value }))
+const dockClass = perf('dock')
 const dockTooltipClass = computed(
   () => `dock-tooltip noselect${quickLinksBlurEnabled.value ? ' dock-tooltip--blur' : ''}`,
 )
@@ -533,6 +533,9 @@ defineExpose({ refresh })
 @use '@newtab/styles/mixins/acrylic.scss' as acrylic;
 
 .dock {
+  --dock-background: var(--el-bg-color-overlay);
+  --dock-item-background: var(--el-color-primary-light-9);
+
   position: fixed;
   bottom: 20px;
   left: 50%;
@@ -542,7 +545,7 @@ defineExpose({ refresh })
   max-width: 93%;
   height: calc(var(--item-size) + 10px);
   padding: 5px;
-  background-color: var(--le-bg-color-overlay-opacity-60);
+  background-color: var(--dock-background);
   border-radius: 15px;
   box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
   transform: translateX(-50%);
@@ -554,6 +557,16 @@ defineExpose({ refresh })
   &--blur {
     @include acrylic.acrylic(10px, 1.2, 1.1);
   }
+
+  &--opacity {
+    --dock-background: var(--le-bg-color-overlay-opacity-60);
+    --dock-item-background: var(--le-bg-color-overlay-opacity-20);
+  }
+}
+
+html.colorful .dock:not(.dock--opacity) {
+  --dock-background: var(--el-color-primary-light-9);
+  --dock-item-background: var(--el-color-primary-light-8);
 }
 
 .app:has(.yiyan) {
@@ -574,7 +587,7 @@ defineExpose({ refresh })
   height: calc(var(--scale, 1) * var(--item-size));
   overflow: hidden;
   cursor: pointer;
-  background-color: var(--le-bg-color-overlay-opacity-20);
+  background-color: var(--dock-item-background);
   border-radius: calc(var(--scale, 1) * var(--item-size) * 0.25);
   transition:
     width var(--td, 0s),
