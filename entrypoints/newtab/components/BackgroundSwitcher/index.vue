@@ -30,7 +30,26 @@ import useBackgroundSwitcher from './useBackgroundSwitcher'
 
 const { t } = useTranslation('settings')
 
-const { opened, show, hide, toggle } = useDialog()
+const { opened, show: openDialog, hide } = useDialog()
+
+async function show() {
+  try {
+    // Bing 背景未启用时，Background 不会初始化缓存；弹窗需要在展示前自行恢复预览。
+    await bingWallpaperURLGetter.init()
+  } catch (error) {
+    console.error('[background-switcher] Failed to initialize Bing wallpaper preview:', error)
+  }
+  openDialog()
+}
+
+async function toggle() {
+  if (opened.value) {
+    hide()
+    return
+  }
+  await show()
+}
+
 defineExpose({ show, hide, toggle })
 
 const settings = useSettingsStore()
