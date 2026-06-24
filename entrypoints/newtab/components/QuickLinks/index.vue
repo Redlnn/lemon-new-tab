@@ -35,6 +35,7 @@ import QuickLinkDropTarget from './components/QuickLinkDropTarget.vue'
 import QuickLinkGroupName from './components/QuickLinkGroupName.vue'
 import QuickLinkGroupSelectDialog from './components/QuickLinkGroupSelectDialog.vue'
 import QuickLinkItem from './components/QuickLinkItem.vue'
+import type { QuickLinkItemPresentation } from './components/quickLinkItemPresentation'
 import QuickLinkSortableItem from './components/QuickLinkSortableItem.vue'
 import QuickLinksPaginationDots from './components/QuickLinksPaginationDots.vue'
 import { buildQuickLinkDisplayItems } from './composables/quickLinkDisplayItems'
@@ -405,6 +406,25 @@ const perf = usePerfClasses(() => ({
 }))
 const popperClass = perf('quick-links__menu-popper')
 const navBtnPerfClass = perf('quick-links__nav-btn')
+const iconPerfClass = perf('quick-links__icon')
+const pinIconPerfClass = perf('quick-links__pin-icon')
+
+const quickLinkItemPresentation = computed<QuickLinkItemPresentation>(() => {
+  const quickLinks = settings.quickLinks
+  const openInNewTab = quickLinks.openInNewTab
+
+  return {
+    linkTarget: openInNewTab ? '_blank' : '_self',
+    linkRel: openInNewTab ? 'noopener noreferrer' : undefined,
+    iconTitleGap: `${quickLinks.spacing.iconTitleGap}px`,
+    showPinnedIcon: quickLinks.pinnedIcon && quickLinks.topSites,
+    iconBorder: quickLinks.style.border,
+    showTitle: quickLinks.title.show,
+    titleWidth: `calc(var(--icon_size) + ${quickLinks.title.extraWidth}px)`,
+    iconClass: iconPerfClass.value,
+    pinIconClass: pinIconPerfClass.value,
+  }
+})
 
 // 记录当前打开的右键菜单关闭函数，实现全局唯一
 const openedMenuCloseFn = ref<(() => void) | null>(null)
@@ -1069,6 +1089,7 @@ defineExpose({ refresh })
                     :title="item.title"
                     :favicon="item.favicon"
                     :pined="item.isPinned"
+                    :presentation="quickLinkItemPresentation"
                     :on-context-menu="(e) => openCtxMenu(e, item)"
                     :tabindex="focusStore.isFocused ? -1 : 0"
                   />
@@ -1076,6 +1097,7 @@ defineExpose({ refresh })
               </template>
               <add-quick-link
                 v-if="!section.isTopSites"
+                :presentation="quickLinkItemPresentation"
                 :show-button="true"
                 :on-open="() => openAddQuickLinkForSection(section)"
               />
@@ -1176,16 +1198,24 @@ defineExpose({ refresh })
                   <quick-link-item
                     v-for="item in prevPageItems"
                     :key="getDisplayItemKey(prevPageData?.key, item)"
-                    v-memo="[item.url, item.title, item.favicon, item.isPinned]"
+                    v-memo="[
+                      item.url,
+                      item.title,
+                      item.favicon,
+                      item.isPinned,
+                      quickLinkItemPresentation,
+                    ]"
                     :url="item.url"
                     :title="item.title"
                     :favicon="item.favicon"
                     :pined="item.isPinned"
+                    :presentation="quickLinkItemPresentation"
                     :on-context-menu="(e) => openCtxMenu(e, item)"
                   />
                   <add-quick-link
                     v-if="showPrevPageAddButton"
                     :key="`${prevPageData?.key ?? 'prev'}-add`"
+                    :presentation="quickLinkItemPresentation"
                     :show-button="true"
                     :tabindex="false"
                     :on-open="openAddQuickLink"
@@ -1262,6 +1292,7 @@ defineExpose({ refresh })
                         :title="item.title"
                         :favicon="item.favicon"
                         :pined="item.isPinned"
+                        :presentation="quickLinkItemPresentation"
                         :on-context-menu="(e) => openCtxMenu(e, item)"
                         :tabindex="focusStore.isFocused ? -1 : 0"
                       />
@@ -1271,6 +1302,7 @@ defineExpose({ refresh })
                   <!-- 添加链接按钮（始终在最后一页最后一格） -->
                   <add-quick-link
                     :key="`${currentPageData?.key ?? 'current'}-add`"
+                    :presentation="quickLinkItemPresentation"
                     :show-button="showAddButton"
                     :on-open="openAddQuickLink"
                   />
@@ -1287,16 +1319,24 @@ defineExpose({ refresh })
                   <quick-link-item
                     v-for="item in nextPageItems"
                     :key="getDisplayItemKey(nextPageData?.key, item)"
-                    v-memo="[item.url, item.title, item.favicon, item.isPinned]"
+                    v-memo="[
+                      item.url,
+                      item.title,
+                      item.favicon,
+                      item.isPinned,
+                      quickLinkItemPresentation,
+                    ]"
                     :url="item.url"
                     :title="item.title"
                     :favicon="item.favicon"
                     :pined="item.isPinned"
+                    :presentation="quickLinkItemPresentation"
                     :on-context-menu="(e) => openCtxMenu(e, item)"
                   />
                   <add-quick-link
                     v-if="showNextPageAddButton"
                     :key="`${nextPageData?.key ?? 'next'}-add`"
+                    :presentation="quickLinkItemPresentation"
                     :show-button="true"
                     :tabindex="false"
                     :on-open="openAddQuickLink"

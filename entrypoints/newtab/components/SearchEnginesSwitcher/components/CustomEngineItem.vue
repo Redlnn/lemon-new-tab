@@ -7,20 +7,16 @@ import CheckmarkCircle12Filled from '~icons/fluent/checkmark-circle-12-filled'
 import Delete16Regular from '~icons/fluent/delete-16-regular'
 import Edit16Regular from '~icons/fluent/edit-16-regular'
 
-import { useSettingsStore } from '@/shared/settings'
-
-import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { CUSTOM_ENGINE_OPENED_MENU_CLOSE_FN } from '@newtab/shared/keys'
 import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
 
 const { t } = useTranslation()
 
-const settings = useSettingsStore()
-
 const props = defineProps<{
   engine: { id: string; url: string; name: string; icon?: string }
   iconUrl?: string
   isActive?: boolean
+  popperClass: string
 }>()
 
 const emit = defineEmits<{
@@ -28,13 +24,6 @@ const emit = defineEmits<{
   (e: 'edit'): void
   (e: 'delete'): void
 }>()
-
-const perf = usePerfClasses(() => ({
-  transparent: settings.perf.dialog.transparent,
-  blur: settings.perf.dialog.blur,
-}))
-
-const popperPerfClass = perf('se-switcher-item__menu-popper')
 
 const openedMenuCloseFn = inject(CUSTOM_ENGINE_OPENED_MENU_CLOSE_FN)
 const dropdownRef = ref<DropdownInstance | null>(null)
@@ -122,7 +111,7 @@ defineExpose({ open, close })
       trigger="contextmenu"
       placement="bottom-start"
       :popper-options="{ modifiers: [{ name: 'offset', options: { offset: [0, 0] } }] }"
-      :popper-class="popperPerfClass"
+      :popper-class="popperClass"
     >
       <template #dropdown>
         <el-dropdown-menu class="noselect">

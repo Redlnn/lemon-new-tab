@@ -26,6 +26,7 @@ import QuickLinkGroupSelectDialog from '../QuickLinks/components/QuickLinkGroupS
 import { useBookmarkStore } from './bookmarks'
 import BookmarkEditDialog from './components/BookmarkEditDialog.vue'
 import BookmarkItem from './components/BookmarkItem.vue'
+import { provideBookmarkItemContext } from './composables/bookmarkItemContext'
 import { getBookmarkDndData } from './composables/useBookmarkDnd'
 
 type SortableLike = {
@@ -125,6 +126,12 @@ const perf = usePerfClasses(() => ({
 }))
 
 const bookmarkPerfClass = perf('bookmark')
+const bookmarkMenuPopperClass = perf('bookmark__menu-popper')
+
+provideBookmarkItemContext({
+  popperClass: bookmarkMenuPopperClass,
+  quickLinksGrouping: computed(() => settings.quickLinks.grouping),
+})
 
 const store = useBookmarkStore()
 store._setSortMode(settings.bookmark.defaultSortMode)

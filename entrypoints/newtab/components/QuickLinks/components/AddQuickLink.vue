@@ -2,18 +2,15 @@
 import { useTranslation } from 'i18next-vue'
 import AddRound from '~icons/ic/round-add'
 
-import { useSettingsStore } from '@/shared/settings'
-
-import usePerfClasses from '@newtab/composables/usePerfClasses'
+import type { QuickLinkItemPresentation } from './quickLinkItemPresentation'
 
 const { t } = useTranslation()
-
-const settings = useSettingsStore()
 
 withDefaults(
   defineProps<{
     showButton?: boolean
     tabindex?: boolean
+    presentation: QuickLinkItemPresentation
     onOpen?: () => void
   }>(),
   {
@@ -21,13 +18,6 @@ withDefaults(
     tabindex: true,
   },
 )
-
-const perf = usePerfClasses(() => ({
-  transparent: settings.perf.quickLinks.transparent,
-  blur: settings.perf.quickLinks.blur,
-}))
-
-const iconPerfClass = perf('quick-links__icon')
 </script>
 
 <template>
@@ -43,21 +33,18 @@ const iconPerfClass = perf('quick-links__icon')
       @click="onOpen?.()"
       @keydown.enter="onOpen?.()"
     >
-      <div
-        class="quick-links__icon-container"
-        :style="{ marginBottom: `${settings.quickLinks.spacing.iconTitleGap}px` }"
-      >
+      <div class="quick-links__icon-container" :style="{ marginBottom: presentation.iconTitleGap }">
         <div
           class="quick-links__icon"
-          :class="[iconPerfClass, { border: settings.quickLinks.style.border }]"
+          :class="[presentation.iconClass, { border: presentation.iconBorder }]"
         >
           <add-round />
         </div>
       </div>
       <el-text
-        v-if="settings.quickLinks.title.show"
+        v-if="presentation.showTitle"
         class="quick-links__title"
-        :style="{ width: `calc(var(--icon_size) + ${settings.quickLinks.title.extraWidth}px)` }"
+        :style="{ width: presentation.titleWidth }"
         truncated
       >
         {{ t('quickLinks.addLink') }}

@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/shared/settings'
 
 import BaseDialog from '@newtab/components/BaseDialog.vue'
 import { useDialog } from '@newtab/composables/useDialog'
+import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 import { useCustomEngineFavicon } from '@newtab/shared/customSearchEngine/useCustomEngineFavicon'
 import { CUSTOM_ENGINE_OPENED_MENU_CLOSE_FN } from '@newtab/shared/keys'
@@ -23,6 +24,12 @@ defineExpose({ show, hide, toggle })
 const settings = useSettingsStore()
 const customSearchEngineStore = useCustomSearchEngineStore()
 const { getCustomEngineFavicon } = useCustomEngineFavicon()
+
+const perf = usePerfClasses(() => ({
+  transparent: settings.perf.dialog.transparent,
+  blur: settings.perf.dialog.blur,
+}))
+const customEnginePopperClass = perf('se-switcher-item__menu-popper')
 
 const addCustomSearchEngineRef = ref<InstanceType<typeof AddCustomSearchEngine>>()
 
@@ -126,6 +133,7 @@ function handleScroll() {
             :engine="engine"
             :is-active="settings.search.engine === engine.id"
             :icon-url="getCustomEngineFavicon(engine)"
+            :popper-class="customEnginePopperClass"
             @select="selectCustomEngine"
             @edit="() => editCustomEngine(index)"
             @delete="() => deleteCustomEngine(index)"

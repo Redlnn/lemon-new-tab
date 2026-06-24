@@ -18,9 +18,7 @@ import { browser, type Browser } from 'wxt/browser'
 
 import { acquireFaviconRef, getFaviconURL, releaseFaviconRef } from '@/shared/media'
 import { useQuickLinksStore } from '@/shared/quickLinks'
-import { useSettingsStore } from '@/shared/settings'
 
-import usePerfClasses from '@newtab/composables/usePerfClasses'
 import {
   BOOKMARK_ACTIVE_MAP,
   BOOKMARK_OPENED_MENU_CLOSE_FN,
@@ -30,6 +28,7 @@ import {
 import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
 import { isSafeUrl, isValidUrl } from '@newtab/shared/utils'
 
+import { useBookmarkItemContext } from '../composables/bookmarkItemContext'
 import {
   BOOKMARK_DND_GROUP,
   BOOKMARK_DND_TYPE,
@@ -41,8 +40,8 @@ const openBookmarkEditDialog = inject(OPEN_BOOKMARK_EDIT_DIALOG)
 const openQuickLinkGroupSelectDialog = inject(OPEN_QUICK_LINK_GROUP_SELECT_DIALOG)
 
 const { t } = useTranslation()
-const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
+const { popperClass: popperPerfClass, quickLinksGrouping } = useBookmarkItemContext()
 
 const props = withDefaults(
   defineProps<{
@@ -88,13 +87,6 @@ onMounted(() => {
 onUnmounted(() => {
   if (props.node.url) releaseFaviconRef(props.node.url)
 })
-
-const perf = usePerfClasses(() => ({
-  transparent: settings.perf.bookmark.transparent,
-  blur: settings.perf.bookmark.blur,
-}))
-
-const popperPerfClass = perf('bookmark__menu-popper')
 
 // 右键菜单相关
 const openedMenuCloseFn = inject(BOOKMARK_OPENED_MENU_CLOSE_FN)
@@ -230,7 +222,7 @@ async function addToQuickLinks() {
     title: props.node.title || '',
     favicon: faviconRef.value,
   }
-  if (settings.quickLinks.grouping) {
+  if (quickLinksGrouping.value) {
     const groupId = await openQuickLinkGroupSelectDialog?.({
       title: t('quickLinks.groups.selectPinTarget'),
     })

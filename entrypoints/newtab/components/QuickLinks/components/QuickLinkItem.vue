@@ -5,19 +5,18 @@ import { toRef } from 'vue'
 import Pin12Regular from '~icons/fluent/pin-12-regular'
 
 import { getFaviconURL } from '@/shared/media'
-import { useSettingsStore } from '@/shared/settings'
 
-import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
 import { isValidUrl } from '@newtab/shared/utils'
 
-const settings = useSettingsStore()
+import type { QuickLinkItemPresentation } from './quickLinkItemPresentation'
 
 const props = defineProps<{
   url: string
   title: string
   pined?: boolean
   favicon?: string
+  presentation: QuickLinkItemPresentation
   onContextMenu?: (event: MouseEvent | PointerEvent) => void
 }>()
 
@@ -25,14 +24,6 @@ const props = defineProps<{
 const faviconRef = getFaviconURL(toRef(props, 'url'))
 const iconUrl = computed(() => props.favicon || faviconRef.value)
 const safeUrl = computed(() => (isValidUrl(props.url) ? props.url : '#'))
-
-const perf = usePerfClasses(() => ({
-  transparent: settings.perf.quickLinks.transparent,
-  blur: settings.perf.quickLinks.blur,
-}))
-
-const iconClass = perf('quick-links__icon')
-const pinIconClass = perf('quick-links__pin-icon')
 </script>
 
 <template>
@@ -42,18 +33,15 @@ const pinIconClass = perf('quick-links__pin-icon')
       class="quick-links__item-link"
       tabindex="-1"
       :href="safeUrl"
-      :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
-      :rel="settings.quickLinks.openInNewTab ? 'noopener noreferrer' : undefined"
+      :target="presentation.linkTarget"
+      :rel="presentation.linkRel"
       @contextmenu.stop.prevent="onContextMenu"
     >
-      <div
-        class="quick-links__icon-container"
-        :style="{ marginBottom: `${settings.quickLinks.spacing.iconTitleGap}px` }"
-      >
+      <div class="quick-links__icon-container" :style="{ marginBottom: presentation.iconTitleGap }">
         <div
-          v-if="pined && settings.quickLinks.pinnedIcon && settings.quickLinks.topSites"
+          v-if="pined && presentation.showPinnedIcon"
           class="quick-links__pin-icon"
-          :class="pinIconClass"
+          :class="presentation.pinIconClass"
         >
           <el-icon size="11">
             <pin12-regular />
@@ -61,7 +49,7 @@ const pinIconClass = perf('quick-links__pin-icon')
         </div>
         <div
           class="quick-links__icon"
-          :class="[iconClass, { border: settings.quickLinks.style.border }]"
+          :class="[presentation.iconClass, { border: presentation.iconBorder }]"
         >
           <span
             class="span"
@@ -73,9 +61,9 @@ const pinIconClass = perf('quick-links__pin-icon')
       </div>
       <el-text
         :data-content="title"
-        v-if="settings.quickLinks.title.show"
+        v-if="presentation.showTitle"
         class="quick-links__title"
-        :style="{ width: `calc(var(--icon_size) + ${settings.quickLinks.title.extraWidth}px)` }"
+        :style="{ width: presentation.titleWidth }"
         truncated
       >
         {{ title }}
@@ -87,8 +75,8 @@ const pinIconClass = perf('quick-links__pin-icon')
       class="quick-links__item-link"
       tabindex="-1"
       :href="safeUrl"
-      :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
-      :rel="settings.quickLinks.openInNewTab ? 'noopener noreferrer' : undefined"
+      :target="presentation.linkTarget"
+      :rel="presentation.linkRel"
       @contextmenu.stop.prevent="onContextMenu"
       @trigger="
         (e: PointerEvent) => {
@@ -96,14 +84,11 @@ const pinIconClass = perf('quick-links__pin-icon')
         }
       "
     >
-      <div
-        class="quick-links__icon-container"
-        :style="{ marginBottom: `${settings.quickLinks.spacing.iconTitleGap}px` }"
-      >
+      <div class="quick-links__icon-container" :style="{ marginBottom: presentation.iconTitleGap }">
         <div
-          v-if="pined && settings.quickLinks.pinnedIcon && settings.quickLinks.topSites"
+          v-if="pined && presentation.showPinnedIcon"
           class="quick-links__pin-icon"
-          :class="pinIconClass"
+          :class="presentation.pinIconClass"
         >
           <el-icon size="11">
             <pin12-regular />
@@ -111,7 +96,7 @@ const pinIconClass = perf('quick-links__pin-icon')
         </div>
         <div
           class="quick-links__icon"
-          :class="[iconClass, { border: settings.quickLinks.style.border }]"
+          :class="[presentation.iconClass, { border: presentation.iconBorder }]"
         >
           <span
             class="span"
@@ -123,9 +108,9 @@ const pinIconClass = perf('quick-links__pin-icon')
       </div>
       <el-text
         :data-content="title"
-        v-if="settings.quickLinks.title.show"
+        v-if="presentation.showTitle"
         class="quick-links__title"
-        :style="{ width: `calc(var(--icon_size) + ${settings.quickLinks.title.extraWidth}px)` }"
+        :style="{ width: presentation.titleWidth }"
         truncated
       >
         {{ title }}
