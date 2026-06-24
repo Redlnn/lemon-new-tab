@@ -10,6 +10,10 @@
       }
     },
     "cache": {
+      "askEnable": {
+        "message": "Caching reduces repeated downloads and keeps cached wallpapers available offline. Enable wallpaper caching?",
+        "title": "Enable wallpaper caching?"
+      },
       "disabledTip": "Only available when the background type is \"Online URL\" (Bing wallpaper is always cached by default)",
       "duration": "Cache expiration duration",
       "label": "Online wallpaper cache",

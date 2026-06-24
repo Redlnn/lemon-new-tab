@@ -315,7 +315,9 @@ function beforeLocalBgSwitch() {
           </li>
           <template v-if="isOnlineBg">
             <li>{{ t('background.onlineTips.a') }}</li>
-            <li>{{ t('background.onlineTips.b') }}</li>
+            <li v-if="!settings.background.online.cache.enabled">
+              {{ t('background.onlineTips.b') }}
+            </li>
             <li>{{ t('background.onlineTips.c') }}</li>
             <li>{{ t('background.onlineTips.d') }}</li>
           </template>
