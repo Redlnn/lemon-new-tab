@@ -24,16 +24,10 @@ const emit = defineEmits<{
 const { t } = useTranslation()
 const settings = useSettingsStore()
 
-// Derive dropdown placement from the effective button corner position.
-// Dock forces top; left/right preference is preserved.
 const dropdownPlacement = computed(() => {
   const pos = settings.layout.actionBtnPosition
-  const effectivePos =
-    settings.dock.enabled && pos.startsWith('bottom')
-      ? (pos.replace('bottom', 'top') as typeof pos)
-      : pos
-  const vertical = effectivePos.startsWith('top') ? 'bottom' : 'top'
-  const horizontal = effectivePos.endsWith('left') ? 'start' : 'end'
+  const vertical = pos.startsWith('top') ? 'bottom' : 'top'
+  const horizontal = pos.endsWith('left') ? 'start' : 'end'
   return `${vertical}-${horizontal}` as const
 })
 
