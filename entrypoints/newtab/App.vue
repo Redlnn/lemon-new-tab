@@ -203,15 +203,17 @@ watch(
   [() => settings.dock.enabled, () => settings.layout.actionBtnPosition],
   ([dockEnabled, actionBtnPosition]) => {
     if (!dockEnabled || !actionBtnPosition.startsWith('bottom')) return
-    settings.layout.actionBtnPosition = actionBtnPosition.replace('bottom', 'top') as typeof actionBtnPosition
+    settings.layout.actionBtnPosition = actionBtnPosition.replace(
+      'bottom',
+      'top',
+    ) as typeof actionBtnPosition
   },
   { immediate: true },
 )
 
 const actionClass = computed(() => {
   const perf = settings.perf
-  const enableTransparent =
-    perf.actionBtns.transparent && perf.actionBtns.transparency > 0
+  const enableTransparent = perf.actionBtns.transparent && perf.actionBtns.transparency > 0
   const enableBlur = perf.actionBtns.blur && enableTransparent
 
   return {

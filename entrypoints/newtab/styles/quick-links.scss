@@ -209,7 +209,6 @@
         opacity: 1;
       }
     }
-
   }
 
   &__container {
@@ -344,7 +343,6 @@
           &--blur {
             @include acrylic.acrylic(var(--le-quick-links-backdrop-blur, 10px));
           }
-
         }
 
         .quick-links__icon {
@@ -449,8 +447,7 @@ html.colorful .quick-links {
 
 html.light .quick-links {
   --quick-links-light-title-color: var(--el-color-white);
-  --quick-links-light-title-shadow:
-    1px 1px 4px rgb(0 0 0 / 50%), 0 0 6px rgb(0 0 0 / 10%);
+  --quick-links-light-title-shadow: 1px 1px 4px rgb(0 0 0 / 50%), 0 0 6px rgb(0 0 0 / 10%);
   --quick-links-add-light-color: rgb(255 255 255 / 70%);
   --quick-links-add-light-hover-color: var(--el-color-white);
   --quick-links-add-light-icon-hover-color: var(--el-text-color-regular);

@@ -24,9 +24,6 @@ importers:
 
   .:
     dependencies:
-      '@dnd-kit/helpers':
-        specifier: ^0.5.0
-        version: 0.5.0
       '@dnd-kit/vue':
         specifier: ^0.5.0
         version: 0.5.0(vue@3.5.38(typescript@6.0.3))
@@ -323,9 +320,6 @@ packages:
 
   '@dnd-kit/geometry@0.5.0':
     resolution: {integrity: sha512-ubHQS1CiSDH8ssYH2xG5BnpwPSFP1tStXXjug7/Ba6qnQdu/EUH47l6QXKIksQnnanfVfDf0aGeevRxgZlj28A==}
-
-  '@dnd-kit/helpers@0.5.0':
-    resolution: {integrity: sha512-i4y+51/icSw+OHMr/su19qhnmNhAzh8PnBwXvapFYTd+64oodIyJRiRkB+hhfxAfnur7RYSW8qacDTrXjg2XOg==}
 
   '@dnd-kit/state@0.5.0':
     resolution: {integrity: sha512-y7XbabQqjF58Lk8YmDQuR8l6QjN+Kh4qlGEjUvHuIeasLk1QP+9L5diXS98VMxQIivyMmUtX2//f+3N7qPJX4w==}
@@ -3895,11 +3889,6 @@ snapshots:
   '@dnd-kit/geometry@0.5.0':
     dependencies:
       '@dnd-kit/state': 0.5.0
-      tslib: 2.8.1
-
-  '@dnd-kit/helpers@0.5.0':
-    dependencies:
-      '@dnd-kit/abstract': 0.5.0
       tslib: 2.8.1
 
   '@dnd-kit/state@0.5.0':

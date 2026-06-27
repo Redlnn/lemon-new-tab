@@ -3,8 +3,8 @@ import { defineStore } from 'pinia'
 import type { CURRENT_CONFIG_SCHEMA } from '../settings'
 import { defaultSettings } from '../settings'
 
-import { settingsStorage } from './settingsStorage'
 import { normalizeCurrentSettings } from './normalize'
+import { settingsStorage } from './settingsStorage'
 
 export const useSettingsStore = defineStore('option', () => {
   const state = reactive(structuredClone(defaultSettings as CURRENT_CONFIG_SCHEMA))

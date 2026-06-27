@@ -19,11 +19,7 @@ function handleEmailClick() {
 </script>
 
 <template>
-  <base-dialog
-    v-model="opened"
-    :title="t('newtab:menu.help')"
-    container-class="faq__dialog"
-  >
+  <base-dialog v-model="opened" :title="t('newtab:menu.help')" container-class="faq__dialog">
     <div class="issue-container noselect">
       <div>{{ t('help.title') }}</div>
       <div class="issue-links">
@@ -196,7 +192,6 @@ html.colorful.dialog-transparent .faq__dialog {
       background-color: var(--faq-icon-background);
       border-radius: 8px;
       transition: background-color var(--el-transition-duration-fast) ease;
-
     }
 
     &:hover {
@@ -210,7 +205,6 @@ html.colorful.dialog-transparent .faq__dialog {
     &:active {
       transform: scale(0.95);
     }
-
   }
 }
 
@@ -234,7 +228,6 @@ html.colorful.dialog-transparent .faq__dialog {
     &__title {
       font-weight: bold;
     }
-
   }
 }
 </style>

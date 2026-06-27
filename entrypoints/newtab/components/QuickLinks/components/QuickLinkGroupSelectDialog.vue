@@ -72,10 +72,7 @@ defineExpose({ open })
 .quick-link-group-select-dialog {
   --quick-link-group-dialog-background: var(--el-dialog-bg-color);
 
-  background-color: var(
-    --le-dialog-background,
-    var(--quick-link-group-dialog-background)
-  );
+  background-color: var(--le-dialog-background, var(--quick-link-group-dialog-background));
 }
 
 html.colorful .quick-link-group-select-dialog {

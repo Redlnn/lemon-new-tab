@@ -12,7 +12,8 @@ export function getPerfClasses(
   prefix: string,
   options?: { blurIndependent?: boolean; withoutPrefix?: boolean },
 ): string {
-  const transparentOn = opts.transparent && (opts.transparency === undefined || opts.transparency > 0)
+  const transparentOn =
+    opts.transparent && (opts.transparency === undefined || opts.transparency > 0)
   const blurOn = opts.blur && (transparentOn || options?.blurIndependent === true)
 
   if (!transparentOn && !blurOn) {

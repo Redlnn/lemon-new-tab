@@ -152,7 +152,7 @@ provide(
   (options) => groupSelectDialogRef.value?.open(options) ?? Promise.resolve(null),
 )
 
-function onDrawerResize(evt: MouseEvent, size: number): void {
+function onDrawerResize(_e: MouseEvent, size: number): void {
   drawerWidth.value = size
 }
 

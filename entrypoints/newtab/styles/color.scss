@@ -60,10 +60,7 @@ $semantic-overlay-roles: (
   @include gen-var-opacity('le-bg-color-page', 'el-bg-color-page', (60));
   @include gen-var-opacity('le-fill-color-lighter', 'el-fill-color-lighter', (20));
   @include gen-var-opacity('le-fill-color-dark', 'el-fill-color-dark', (20));
-  @include gen-semantic-overlay-colors(
-    var(--el-bg-color-overlay),
-    $semantic-overlay-roles
-  );
+  @include gen-semantic-overlay-colors(var(--el-bg-color-overlay), $semantic-overlay-roles);
 }
 
 html.colorful {

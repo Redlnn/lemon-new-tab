@@ -12,12 +12,7 @@ const value = defineModel<number>({ required: true })
   <div class="settings__item settings__item--horizontal">
     <div class="settings__label">{{ label }}</div>
     <div class="transparency-control">
-      <el-slider
-        v-model="value"
-        :max="max"
-        :step="1"
-        :format-tooltip="formatTooltip"
-      />
+      <el-slider v-model="value" :max="max" :step="1" :format-tooltip="formatTooltip" />
       <span>{{ formatTooltip(value) }}</span>
     </div>
   </div>

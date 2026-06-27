@@ -221,11 +221,7 @@ function useBackgroundSwitcher() {
       return
     }
 
-    const result = await checkAndRequestPermission(
-      hostname,
-      true,
-      PermissionContext.WallpaperCache,
-    )
+    const result = await checkAndRequestPermission(hostname, true, PermissionContext.WallpaperCache)
     if (result === PermissionResult.GrantedAll) {
       settings.background.online.cache.enabled = true
     } else {

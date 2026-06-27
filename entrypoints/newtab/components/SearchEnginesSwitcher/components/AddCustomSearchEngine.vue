@@ -183,10 +183,7 @@ defineExpose({
 
   --el-dialog-padding-primary: 25px;
 
-  background-color: var(
-    --le-dialog-background,
-    var(--add-search-engine-dialog-background)
-  );
+  background-color: var(--le-dialog-background, var(--add-search-engine-dialog-background));
 
   .el-form-item--label-top .el-form-item__label {
     margin-bottom: 6px;

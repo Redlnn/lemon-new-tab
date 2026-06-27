@@ -297,7 +297,7 @@ async function deleteBookmark() {
   }
 }
 
-function collapseOther(e: Event | undefined, all: boolean = false) {
+function collapseOther(_e: Event | undefined, all: boolean = false) {
   const map = activeMap?.value
   if (!map) return
 
