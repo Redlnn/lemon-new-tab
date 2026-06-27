@@ -37,6 +37,11 @@ const props = defineProps<{
   onOpenEditDialog?: (target: QuickLinkTarget) => void
 }>()
 
+const { t } = useTranslation()
+const focusStore = useFocusState()
+const settings = useSettingsStore()
+const quickLinksStore = useQuickLinksStore()
+
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.quickLinks.transparent,
   transparency: settings.perf.quickLinks.transparency,
@@ -44,11 +49,6 @@ const perf = usePerfClasses(() => ({
 }))
 
 const popperClass = perf('quick-links__menu-popper')
-
-const { t } = useTranslation()
-const focusStore = useFocusState()
-const settings = useSettingsStore()
-const quickLinksStore = useQuickLinksStore()
 
 const quickLinksTransparencyEnabled = computed(
   () => settings.perf.quickLinks.transparent && settings.perf.quickLinks.transparency > 0,

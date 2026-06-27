@@ -5,6 +5,8 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { isOnlyTouchDevice } from '@newtab/shared/touch'
 
+import TransparencySettingItem from './TransparencySettingItem.vue'
+
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
@@ -109,21 +111,13 @@ function toggleAnimationSettings(enable: boolean) {
       <div class="settings__label">{{ t('perf.bookmark.transparent') }}</div>
       <el-switch v-model="settings.perf.bookmark.transparent" />
     </div>
-    <div
+    <TransparencySettingItem
       v-if="settings.perf.bookmark.transparent"
-      class="settings__item settings__item--horizontal"
-    >
-      <div class="settings__label">{{ t('perf.transparency') }}</div>
-      <div class="transparency-control">
-        <el-slider
-          v-model="settings.perf.bookmark.transparency"
-          :max="MAX_TRANSPARENCY"
-          :step="1"
-          :format-tooltip="formatTransparency"
-        />
-        <span>{{ formatTransparency(settings.perf.bookmark.transparency) }}</span>
-      </div>
-    </div>
+      v-model="settings.perf.bookmark.transparency"
+      :label="t('perf.transparency')"
+      :max="MAX_TRANSPARENCY"
+      :format-tooltip="formatTransparency"
+    />
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('perf.bookmark.blur') }}</div>
       <el-switch
@@ -137,21 +131,13 @@ function toggleAnimationSettings(enable: boolean) {
       <div class="settings__label">{{ t('perf.dialog.transparent') }}</div>
       <el-switch v-model="settings.perf.dialog.transparent" />
     </div>
-    <div
+    <TransparencySettingItem
       v-if="settings.perf.dialog.transparent"
-      class="settings__item settings__item--horizontal"
-    >
-      <div class="settings__label">{{ t('perf.transparency') }}</div>
-      <div class="transparency-control">
-        <el-slider
-          v-model="settings.perf.dialog.transparency"
-          :max="MAX_TRANSPARENCY"
-          :step="1"
-          :format-tooltip="formatTransparency"
-        />
-        <span>{{ formatTransparency(settings.perf.dialog.transparency) }}</span>
-      </div>
-    </div>
+      v-model="settings.perf.dialog.transparency"
+      :label="t('perf.transparency')"
+      :max="MAX_TRANSPARENCY"
+      :format-tooltip="formatTransparency"
+    />
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('perf.dialog.blur') }}</div>
       <el-switch
@@ -179,21 +165,13 @@ function toggleAnimationSettings(enable: boolean) {
       <div class="settings__label">{{ t('perf.searchBar.transparent') }}</div>
       <el-switch v-model="settings.perf.searchBar.transparent" />
     </div>
-    <div
+    <TransparencySettingItem
       v-if="settings.perf.searchBar.transparent"
-      class="settings__item settings__item--horizontal"
-    >
-      <div class="settings__label">{{ t('perf.transparency') }}</div>
-      <div class="transparency-control">
-        <el-slider
-          v-model="settings.perf.searchBar.transparency"
-          :max="MAX_TRANSPARENCY"
-          :step="1"
-          :format-tooltip="formatTransparency"
-        />
-        <span>{{ formatTransparency(settings.perf.searchBar.transparency) }}</span>
-      </div>
-    </div>
+      v-model="settings.perf.searchBar.transparency"
+      :label="t('perf.transparency')"
+      :max="MAX_TRANSPARENCY"
+      :format-tooltip="formatTransparency"
+    />
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('perf.searchBar.blur') }}</div>
       <el-switch
@@ -207,21 +185,13 @@ function toggleAnimationSettings(enable: boolean) {
       <div class="settings__label">{{ t('perf.quickLinks.transparent') }}</div>
       <el-switch v-model="settings.perf.quickLinks.transparent" />
     </div>
-    <div
+    <TransparencySettingItem
       v-if="settings.perf.quickLinks.transparent"
-      class="settings__item settings__item--horizontal"
-    >
-      <div class="settings__label">{{ t('perf.transparency') }}</div>
-      <div class="transparency-control">
-        <el-slider
-          v-model="settings.perf.quickLinks.transparency"
-          :max="MAX_TRANSPARENCY"
-          :step="1"
-          :format-tooltip="formatTransparency"
-        />
-        <span>{{ formatTransparency(settings.perf.quickLinks.transparency) }}</span>
-      </div>
-    </div>
+      v-model="settings.perf.quickLinks.transparency"
+      :label="t('perf.transparency')"
+      :max="MAX_TRANSPARENCY"
+      :format-tooltip="formatTransparency"
+    />
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('perf.quickLinks.blur') }}</div>
       <el-switch
@@ -235,21 +205,13 @@ function toggleAnimationSettings(enable: boolean) {
       <div class="settings__label">{{ t('perf.yiyan.transparent') }}</div>
       <el-switch v-model="settings.perf.yiyan.transparent" />
     </div>
-    <div
+    <TransparencySettingItem
       v-if="settings.perf.yiyan.transparent"
-      class="settings__item settings__item--horizontal"
-    >
-      <div class="settings__label">{{ t('perf.transparency') }}</div>
-      <div class="transparency-control">
-        <el-slider
-          v-model="settings.perf.yiyan.transparency"
-          :max="MAX_TRANSPARENCY"
-          :step="1"
-          :format-tooltip="formatTransparency"
-        />
-        <span>{{ formatTransparency(settings.perf.yiyan.transparency) }}</span>
-      </div>
-    </div>
+      v-model="settings.perf.yiyan.transparency"
+      :label="t('perf.transparency')"
+      :max="MAX_TRANSPARENCY"
+      :format-tooltip="formatTransparency"
+    />
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('perf.yiyan.blur') }}</div>
       <el-switch
@@ -265,21 +227,13 @@ function toggleAnimationSettings(enable: boolean) {
       <div class="settings__label">{{ t('perf.actionBtns.transparent') }}</div>
       <el-switch v-model="settings.perf.actionBtns.transparent" />
     </div>
-    <div
+    <TransparencySettingItem
       v-if="settings.perf.actionBtns.transparent"
-      class="settings__item settings__item--horizontal"
-    >
-      <div class="settings__label">{{ t('perf.transparency') }}</div>
-      <div class="transparency-control">
-        <el-slider
-          v-model="settings.perf.actionBtns.transparency"
-          :max="MAX_TRANSPARENCY"
-          :step="1"
-          :format-tooltip="formatTransparency"
-        />
-        <span>{{ formatTransparency(settings.perf.actionBtns.transparency) }}</span>
-      </div>
-    </div>
+      v-model="settings.perf.actionBtns.transparency"
+      :label="t('perf.transparency')"
+      :max="MAX_TRANSPARENCY"
+      :format-tooltip="formatTransparency"
+    />
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('perf.actionBtns.blur') }}</div>
       <el-switch
@@ -302,15 +256,3 @@ function toggleAnimationSettings(enable: boolean) {
     </p>
   </div>
 </template>
-
-<style scoped lang="scss">
-.transparency-control {
-  display: grid;
-  grid-template-columns: minmax(110px, 180px) 3em;
-  gap: 10px;
-  align-items: center;
-  width: min(240px, 55%);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-</style>
