@@ -361,7 +361,6 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
   min-width: 0;
   padding: 15px;
   background-color: var(--settings-group-active-background);
-  border: 1px solid var(--el-border-color-lighter);
   border-radius: 10px;
 }
 

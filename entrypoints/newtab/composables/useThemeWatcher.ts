@@ -33,7 +33,9 @@ function deriveBackdropBlur(
   maxValue = MAX_BACKDROP_BLUR,
 ): number {
   if (defaultValue <= 0) return roundBackdropBlur(Math.min(maxValue, Math.max(0, value)))
-  return roundBackdropBlur(Math.min(maxValue, Math.max(0, (value * childDefaultValue) / defaultValue)))
+  return roundBackdropBlur(
+    Math.min(maxValue, Math.max(0, (value * childDefaultValue) / defaultValue)),
+  )
 }
 
 function setTransparencyVariable(name: string, value: number) {
@@ -65,6 +67,42 @@ function applyBookmarkBackdropBlur(value: number) {
 function applyDialogTransparency(value: number) {
   setTransparencyVariable('dialog', value)
   setTransparencyVariable(
+    'dialog-settings-back',
+    deriveTransparency(
+      value,
+      defaultSettings.perf.dialog.transparency,
+      20,
+      DENSE_SURFACE_MAX_TRANSPARENCY,
+    ),
+  )
+  setTransparencyVariable(
+    'dialog-settings-back-hover',
+    deriveTransparency(
+      value,
+      defaultSettings.perf.dialog.transparency,
+      15,
+      DENSE_SURFACE_MAX_TRANSPARENCY,
+    ),
+  )
+  setTransparencyVariable(
+    'dialog-settings-items',
+    deriveTransparency(
+      value,
+      defaultSettings.perf.dialog.transparency,
+      20,
+      DENSE_SURFACE_MAX_TRANSPARENCY,
+    ),
+  )
+  setTransparencyVariable(
+    'dialog-settings-option-background',
+    deriveTransparency(
+      value,
+      defaultSettings.perf.dialog.transparency,
+      25,
+      DENSE_SURFACE_MAX_TRANSPARENCY,
+    ),
+  )
+  setTransparencyVariable(
     'dialog-secondary',
     deriveTransparency(
       value,
@@ -74,11 +112,47 @@ function applyDialogTransparency(value: number) {
     ),
   )
   setTransparencyVariable(
+    'dialog-settings-group',
+    deriveTransparency(
+      value,
+      defaultSettings.perf.dialog.transparency,
+      30,
+      DENSE_SURFACE_MAX_TRANSPARENCY,
+    ),
+  )
+  setTransparencyVariable(
     'dialog-menu',
     deriveTransparency(
       value,
       defaultSettings.perf.dialog.transparency,
       30,
+      DENSE_SURFACE_MAX_TRANSPARENCY,
+    ),
+  )
+  setTransparencyVariable(
+    'dialog-settings-menu-hover',
+    deriveTransparency(
+      value,
+      defaultSettings.perf.dialog.transparency,
+      45,
+      DENSE_SURFACE_MAX_TRANSPARENCY,
+    ),
+  )
+  setTransparencyVariable(
+    'dialog-settings-menu-active',
+    deriveTransparency(
+      value - 10,
+      defaultSettings.perf.dialog.transparency - 10,
+      30,
+      DENSE_SURFACE_MAX_TRANSPARENCY,
+    ),
+  )
+  setTransparencyVariable(
+    'dialog-settings-option',
+    deriveTransparency(
+      value,
+      defaultSettings.perf.dialog.transparency,
+      35,
       DENSE_SURFACE_MAX_TRANSPARENCY,
     ),
   )
@@ -226,9 +300,13 @@ export function useThemeWatcher() {
     { immediate: true },
   )
 
-  watch(dialogTransparencyEnabled, (enabled) => toggleDocumentClass('dialog-transparent', enabled), {
-    immediate: true,
-  })
+  watch(
+    dialogTransparencyEnabled,
+    (enabled) => toggleDocumentClass('dialog-transparent', enabled),
+    {
+      immediate: true,
+    },
+  )
 
   watch(
     [dialogTransparencyEnabled, () => settings.perf.dialog.blur],
@@ -238,65 +316,41 @@ export function useThemeWatcher() {
     { immediate: true },
   )
 
-  watch(
-    () => getEnabledTransparency(settings.perf.bookmark),
-    applyBookmarkTransparency,
-    { immediate: true },
-  )
-  watch(
-    () => getEnabledTransparency(settings.perf.dialog),
-    applyDialogTransparency,
-    { immediate: true },
-  )
-  watch(
-    () => getEnabledTransparency(settings.perf.searchBar),
-    applySearchTransparency,
-    { immediate: true },
-  )
-  watch(
-    () => getEnabledTransparency(settings.perf.quickLinks),
-    applyQuickLinksTransparency,
-    { immediate: true },
-  )
-  watch(
-    () => getEnabledTransparency(settings.perf.yiyan),
-    applyYiyanTransparency,
-    { immediate: true },
-  )
-  watch(
-    () => getEnabledTransparency(settings.perf.actionBtns),
-    applyActionBtnsTransparency,
-    { immediate: true },
-  )
+  watch(() => getEnabledTransparency(settings.perf.bookmark), applyBookmarkTransparency, {
+    immediate: true,
+  })
+  watch(() => getEnabledTransparency(settings.perf.dialog), applyDialogTransparency, {
+    immediate: true,
+  })
+  watch(() => getEnabledTransparency(settings.perf.searchBar), applySearchTransparency, {
+    immediate: true,
+  })
+  watch(() => getEnabledTransparency(settings.perf.quickLinks), applyQuickLinksTransparency, {
+    immediate: true,
+  })
+  watch(() => getEnabledTransparency(settings.perf.yiyan), applyYiyanTransparency, {
+    immediate: true,
+  })
+  watch(() => getEnabledTransparency(settings.perf.actionBtns), applyActionBtnsTransparency, {
+    immediate: true,
+  })
 
-  watch(
-    () => getEnabledBackdropBlur(settings.perf.bookmark),
-    applyBookmarkBackdropBlur,
-    { immediate: true },
-  )
-  watch(
-    () => getEnabledBackdropBlur(settings.perf.dialog),
-    applyDialogBackdropBlur,
-    { immediate: true },
-  )
-  watch(
-    () => getEnabledBackdropBlur(settings.perf.searchBar),
-    applySearchBackdropBlur,
-    { immediate: true },
-  )
-  watch(
-    () => getEnabledBackdropBlur(settings.perf.quickLinks),
-    applyQuickLinksBackdropBlur,
-    { immediate: true },
-  )
-  watch(
-    () => getEnabledBackdropBlur(settings.perf.yiyan),
-    applyYiyanBackdropBlur,
-    { immediate: true },
-  )
-  watch(
-    () => getEnabledBackdropBlur(settings.perf.actionBtns),
-    applyActionBtnsBackdropBlur,
-    { immediate: true },
-  )
+  watch(() => getEnabledBackdropBlur(settings.perf.bookmark), applyBookmarkBackdropBlur, {
+    immediate: true,
+  })
+  watch(() => getEnabledBackdropBlur(settings.perf.dialog), applyDialogBackdropBlur, {
+    immediate: true,
+  })
+  watch(() => getEnabledBackdropBlur(settings.perf.searchBar), applySearchBackdropBlur, {
+    immediate: true,
+  })
+  watch(() => getEnabledBackdropBlur(settings.perf.quickLinks), applyQuickLinksBackdropBlur, {
+    immediate: true,
+  })
+  watch(() => getEnabledBackdropBlur(settings.perf.yiyan), applyYiyanBackdropBlur, {
+    immediate: true,
+  })
+  watch(() => getEnabledBackdropBlur(settings.perf.actionBtns), applyActionBtnsBackdropBlur, {
+    immediate: true,
+  })
 }
