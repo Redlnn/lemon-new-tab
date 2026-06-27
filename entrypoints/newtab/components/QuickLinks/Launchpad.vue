@@ -91,7 +91,8 @@ const quickLinksBlurEnabled = computed(
     settings.perf.quickLinks.blur,
 )
 const launchpadOverlayClass = computed(
-  () => `launchpad-overlay noselect${quickLinksBlurEnabled.value ? ' launchpad-overlay--blur' : ''}`,
+  () =>
+    `launchpad-overlay noselect${quickLinksBlurEnabled.value ? ' launchpad-overlay--blur' : ''}`,
 )
 const hideBackgroundContent = computed(() => model.value && !quickLinksBlurEnabled.value)
 
@@ -115,7 +116,6 @@ const { width: windowWidth } = useWindowSize({ type: 'visual' })
 const query = ref('')
 const page = ref(0)
 const containerRef = useTemplateRef<HTMLElement>('container')
-const searchInputRef = useTemplateRef<{ focus: () => void }>('searchInput')
 const { height: containerHeight } = useElementSize(containerRef)
 
 const COLS = computed(() => {
@@ -290,8 +290,6 @@ watch(
       query.value = ''
       page.value = 0
       await refresh()
-      await nextTick()
-      searchInputRef.value?.focus()
     }
   },
   { immediate: true },
@@ -636,12 +634,8 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <Transition name="launchpad-fade">
-      <el-overlay
-        v-show="model"
-        :overlay-class="launchpadOverlayClass"
-        :z-index="1"
-      >
+    <Transition name="launchpad-fade" appear>
+      <el-overlay v-show="model" :overlay-class="launchpadOverlayClass" :z-index="1">
         <div
           class="launchpad-wrapper"
           ref="container"
