@@ -9,6 +9,7 @@ const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
 const MAX_TRANSPARENCY = 95
+const MAX_BACKDROP_BLUR = 40
 
 type EffectItem = {
   key: string
@@ -16,6 +17,7 @@ type EffectItem = {
   transparent: Ref<boolean>
   transparency: Ref<number>
   blur: Ref<boolean>
+  blurIntensity: Ref<number>
 }
 
 type SwitchItem = {
@@ -27,6 +29,10 @@ type SwitchItem = {
 
 function formatTransparency(value: number) {
   return `${value}%`
+}
+
+function formatBackdropBlur(value: number) {
+  return `${value}px`
 }
 
 function toggleTransparentSettings(enable: boolean) {
@@ -67,6 +73,7 @@ const effectItems = computed<EffectItem[]>(() => [
     transparent: toRef(settings.perf.searchBar, 'transparent'),
     transparency: toRef(settings.perf.searchBar, 'transparency'),
     blur: toRef(settings.perf.searchBar, 'blur'),
+    blurIntensity: toRef(settings.perf.searchBar, 'blurIntensity'),
   },
   {
     key: 'quickLinks',
@@ -74,6 +81,7 @@ const effectItems = computed<EffectItem[]>(() => [
     transparent: toRef(settings.perf.quickLinks, 'transparent'),
     transparency: toRef(settings.perf.quickLinks, 'transparency'),
     blur: toRef(settings.perf.quickLinks, 'blur'),
+    blurIntensity: toRef(settings.perf.quickLinks, 'blurIntensity'),
   },
   {
     key: 'yiyan',
@@ -81,6 +89,7 @@ const effectItems = computed<EffectItem[]>(() => [
     transparent: toRef(settings.perf.yiyan, 'transparent'),
     transparency: toRef(settings.perf.yiyan, 'transparency'),
     blur: toRef(settings.perf.yiyan, 'blur'),
+    blurIntensity: toRef(settings.perf.yiyan, 'blurIntensity'),
   },
   {
     key: 'bookmark',
@@ -88,6 +97,7 @@ const effectItems = computed<EffectItem[]>(() => [
     transparent: toRef(settings.perf.bookmark, 'transparent'),
     transparency: toRef(settings.perf.bookmark, 'transparency'),
     blur: toRef(settings.perf.bookmark, 'blur'),
+    blurIntensity: toRef(settings.perf.bookmark, 'blurIntensity'),
   },
   {
     key: 'dialog',
@@ -95,6 +105,7 @@ const effectItems = computed<EffectItem[]>(() => [
     transparent: toRef(settings.perf.dialog, 'transparent'),
     transparency: toRef(settings.perf.dialog, 'transparency'),
     blur: toRef(settings.perf.dialog, 'blur'),
+    blurIntensity: toRef(settings.perf.dialog, 'blurIntensity'),
   },
   {
     key: 'actionBtns',
@@ -102,6 +113,7 @@ const effectItems = computed<EffectItem[]>(() => [
     transparent: toRef(settings.perf.actionBtns, 'transparent'),
     transparency: toRef(settings.perf.actionBtns, 'transparency'),
     blur: toRef(settings.perf.actionBtns, 'blur'),
+    blurIntensity: toRef(settings.perf.actionBtns, 'blurIntensity'),
   },
 ])
 
@@ -199,6 +211,9 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
       <p class="settings__item--note perf-panel-note">
         {{ t('perf.transparencyTip') }}
       </p>
+      <p class="settings__item--note perf-panel-note">
+        {{ t('perf.blurIntensityTip') }}
+      </p>
 
       <div class="perf-effect-list">
         <article v-for="item in effectItems" :key="item.key" class="perf-effect-item">
@@ -227,6 +242,26 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
               v-model="item.blur.value"
               :disabled="!item.transparent.value || item.transparency.value === 0"
             />
+          </div>
+
+          <div
+            class="perf-slider-row"
+            :class="{
+              'is-disabled':
+                !item.transparent.value || item.transparency.value === 0 || !item.blur.value,
+            }"
+          >
+            <span>{{ t('perf.blurIntensity') }}</span>
+            <el-slider
+              v-model="item.blurIntensity.value"
+              :disabled="
+                !item.transparent.value || item.transparency.value === 0 || !item.blur.value
+              "
+              :max="MAX_BACKDROP_BLUR"
+              :step="1"
+              :format-tooltip="formatBackdropBlur"
+            />
+            <span>{{ formatBackdropBlur(item.blurIntensity.value) }}</span>
           </div>
         </article>
       </div>

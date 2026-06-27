@@ -180,7 +180,7 @@ defineExpose({ hide, showEngineToast })
     }
 
     &.search-engine-menu--blur {
-      @include acrylic.acrylic;
+      @include acrylic.acrylic(var(--le-search-menu-backdrop-blur, 10px));
     }
   }
 

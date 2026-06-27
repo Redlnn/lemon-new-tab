@@ -440,7 +440,7 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
   }
 
   &--blur.el-drawer {
-    @include acrylic.acrylic;
+    @include acrylic.acrylic(var(--le-bookmark-backdrop-blur, 10px));
   }
 
   .el-drawer__body {
@@ -669,7 +669,7 @@ html.colorful .bookmark {
   }
 
   &.bookmark__menu-popper--blur {
-    @include acrylic.acrylic;
+    @include acrylic.acrylic(var(--le-bookmark-menu-backdrop-blur, 10px));
   }
 
   .el-dropdown-menu {

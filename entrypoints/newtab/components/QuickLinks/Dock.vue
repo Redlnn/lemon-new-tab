@@ -560,7 +560,7 @@ defineExpose({ refresh })
     background-color var(--el-transition-duration-fast) ease;
 
   &--blur {
-    @include acrylic.acrylic(10px, 1.2, 1.1);
+    @include acrylic.acrylic(var(--le-quick-links-backdrop-blur, 10px), 1.2, 1.1);
   }
 
   &--opacity {
@@ -650,7 +650,7 @@ html.colorful .dock:not(.dock--opacity) {
   }
 
   &.dock-tooltip--blur {
-    @include acrylic.acrylic(10px, 1.3, 1.4);
+    @include acrylic.acrylic(var(--le-quick-links-tooltip-backdrop-blur, 10px), 1.3, 1.4);
   }
 }
 

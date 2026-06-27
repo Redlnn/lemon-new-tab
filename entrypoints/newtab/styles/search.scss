@@ -43,7 +43,7 @@
     }
 
     &--blur {
-      @include acrylic.acrylic;
+      @include acrylic.acrylic(var(--le-search-backdrop-blur, 10px));
     }
 
     &:hover:not(.search-box__form--focus) {

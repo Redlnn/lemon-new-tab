@@ -1051,10 +1051,10 @@ onBeforeUnmount(() => {
   overflow: hidden;
 
   &--blur {
-    backdrop-filter: blur(40px) saturate(1.5);
+    backdrop-filter: blur(var(--le-quick-links-launchpad-backdrop-blur, 40px)) saturate(1.5);
 
     .launchpad-search__input .el-input__wrapper {
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(var(--le-quick-links-backdrop-blur, 10px));
     }
   }
 }

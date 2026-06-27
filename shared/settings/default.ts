@@ -190,11 +190,13 @@ export const defaultSettings = {
       transparent: true,
       transparency: 15,
       blur: true,
+      blurIntensity: 10,
     },
     dialog: {
       transparent: true,
       transparency: 15,
       blur: true,
+      blurIntensity: 10,
       animation: true,
     },
     focus: {
@@ -205,23 +207,27 @@ export const defaultSettings = {
       transparent: true,
       transparency: 60,
       blur: true,
+      blurIntensity: 10,
     },
     searchBar: {
       transparent: true,
       transparency: 50,
       blur: true,
+      blurIntensity: 10,
       launchAnim: false,
     },
     yiyan: {
       transparent: true,
       transparency: 80,
       blur: true,
+      blurIntensity: 10,
       ripple: true,
     },
     actionBtns: {
       blur: true,
       transparent: true,
       transparency: 90,
+      blurIntensity: 5,
     },
   },
 

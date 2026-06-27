@@ -254,7 +254,7 @@ async function copyToClipboard() {
     }
 
     &.yiyan--blur {
-      @include acrylic.acrylic(10px, 1.2, 1.1);
+      @include acrylic.acrylic(var(--le-yiyan-backdrop-blur, 10px), 1.2, 1.1);
     }
 
     .yiyan__extra {

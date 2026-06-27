@@ -77,7 +77,8 @@ html.dialog-transparent .el-message-box {
 
 html.dialog-acrylic .el-dialog,
 html.dialog-acrylic .el-message-box {
-  --le-dialog-backdrop-filter: blur(10px) saturate(1.4) brightness(1.1);
+  --le-dialog-backdrop-filter: blur(var(--le-dialog-backdrop-blur, 10px)) saturate(1.4)
+    brightness(1.1);
 }
 
 .app {

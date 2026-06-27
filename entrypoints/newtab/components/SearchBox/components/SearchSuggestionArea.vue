@@ -296,7 +296,7 @@ defineExpose({
   }
 
   &.search-suggestion-area--blur {
-    @include acrylic.acrylic(30px);
+    @include acrylic.acrylic(var(--le-search-suggestion-backdrop-blur, 30px));
   }
 
   &__item {

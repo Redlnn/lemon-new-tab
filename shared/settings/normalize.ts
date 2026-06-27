@@ -3,6 +3,8 @@ import { defaultSettings } from './default'
 
 const MIN_TRANSPARENCY = 0
 const MAX_TRANSPARENCY = 95
+const MIN_BACKDROP_BLUR = 0
+const MAX_BACKDROP_BLUR = 40
 type PerfTransparencyKey =
   | 'bookmark'
   | 'dialog'
@@ -19,6 +21,11 @@ type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
 function normalizeTransparency(value: unknown, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
   return Math.min(MAX_TRANSPARENCY, Math.max(MIN_TRANSPARENCY, Math.round(value)))
+}
+
+function normalizeBackdropBlur(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
+  return Math.min(MAX_BACKDROP_BLUR, Math.max(MIN_BACKDROP_BLUR, Math.round(value)))
 }
 
 function normalizePerfSurface<K extends PerfTransparencyKey>(
@@ -40,6 +47,10 @@ function normalizePerfSurface<K extends PerfTransparencyKey>(
     normalized.transparency,
     // 无效或缺失时回退到该性能分组的默认透明度。
     defaultSettings.perf[key].transparency,
+  )
+  normalized.blurIntensity = normalizeBackdropBlur(
+    normalized.blurIntensity,
+    defaultSettings.perf[key].blurIntensity,
   )
   // 将补齐并规范化后的分组写回原设置对象，保持调用方拿到的是完整配置。
   perf[key] = normalized

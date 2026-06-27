@@ -42,7 +42,7 @@
     }
 
     &.action-btn-container--blur {
-      @include acrylic.acrylic(5px, 1.4, 1);
+      @include acrylic.acrylic(var(--le-action-btns-backdrop-blur, 5px), 1.4, 1);
     }
   }
 
@@ -155,7 +155,7 @@ html.colorful .action-btn-container {
     }
 
     &.setting-btn__popper--blur {
-      @include acrylic.acrylic;
+      @include acrylic.acrylic(var(--le-action-btns-menu-backdrop-blur, 10px));
     }
   }
 }

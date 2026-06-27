@@ -78,7 +78,8 @@ html.dialog-transparent .el-message {
 }
 
 html.dialog-acrylic .el-message {
-  --le-message-backdrop-filter: blur(10px) saturate(1.4) brightness(1.1);
+  --le-message-backdrop-filter: blur(var(--le-dialog-secondary-backdrop-blur, 10px))
+    saturate(1.4) brightness(1.1);
 }
 
 .el-notification {
@@ -110,7 +111,8 @@ html.colorful.dialog-transparent .el-notification {
 }
 
 html.dialog-acrylic .el-notification {
-  --le-notification-backdrop-filter: blur(10px) saturate(1.4) brightness(1.1);
+  --le-notification-backdrop-filter: blur(var(--le-dialog-secondary-backdrop-blur, 10px))
+    saturate(1.4) brightness(1.1);
 }
 
 .el-popper.el-color-picker__panel {
@@ -143,7 +145,8 @@ html.dialog-acrylic .el-notification {
 }
 
 html.dialog-acrylic .el-backtop {
-  --le-backtop-backdrop-filter: blur(3px) saturate(1.4) brightness(1.1);
+  --le-backtop-backdrop-filter: blur(var(--le-dialog-backtop-backdrop-blur, 3px))
+    saturate(1.4) brightness(1.1);
 }
 
 .el-switch:not(.el-switch--small, .el-switch--large) {

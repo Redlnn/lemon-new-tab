@@ -2,6 +2,7 @@ import type { SettingsSchemaV10 } from './v10'
 
 type WithTransparency<T> = T & {
   transparency: number
+  blurIntensity: number
 }
 
 export interface SettingsSchemaV11 extends Omit<

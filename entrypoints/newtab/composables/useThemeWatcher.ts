@@ -3,8 +3,13 @@ import { changeTheme, toggleDocumentClass } from '@/shared/theme'
 
 const MAX_TRANSPARENCY = 95
 const DENSE_SURFACE_MAX_TRANSPARENCY = 80
+const MAX_BACKDROP_BLUR = 40
 
 function roundTransparency(value: number): number {
+  return Math.round(value * 100) / 100
+}
+
+function roundBackdropBlur(value: number): number {
   return Math.round(value * 100) / 100
 }
 
@@ -21,8 +26,22 @@ function deriveTransparency(
   return roundTransparency(Math.min(maxValue, Math.max(0, derived)))
 }
 
+function deriveBackdropBlur(
+  value: number,
+  defaultValue: number,
+  childDefaultValue: number,
+  maxValue = MAX_BACKDROP_BLUR,
+): number {
+  if (defaultValue <= 0) return roundBackdropBlur(Math.min(maxValue, Math.max(0, value)))
+  return roundBackdropBlur(Math.min(maxValue, Math.max(0, (value * childDefaultValue) / defaultValue)))
+}
+
 function setTransparencyVariable(name: string, value: number) {
   document.documentElement.style.setProperty(`--le-${name}-transparency`, `${value}%`)
+}
+
+function setBackdropBlurVariable(name: string, value: number) {
+  document.documentElement.style.setProperty(`--le-${name}-backdrop-blur`, `${value}px`)
 }
 
 function applyBookmarkTransparency(value: number) {
@@ -36,6 +55,11 @@ function applyBookmarkTransparency(value: number) {
       DENSE_SURFACE_MAX_TRANSPARENCY,
     ),
   )
+}
+
+function applyBookmarkBackdropBlur(value: number) {
+  setBackdropBlurVariable('bookmark', value)
+  setBackdropBlurVariable('bookmark-menu', value)
 }
 
 function applyDialogTransparency(value: number) {
@@ -57,6 +81,15 @@ function applyDialogTransparency(value: number) {
       30,
       DENSE_SURFACE_MAX_TRANSPARENCY,
     ),
+  )
+}
+
+function applyDialogBackdropBlur(value: number) {
+  setBackdropBlurVariable('dialog', value)
+  setBackdropBlurVariable('dialog-secondary', value)
+  setBackdropBlurVariable(
+    'dialog-backtop',
+    deriveBackdropBlur(value, defaultSettings.perf.dialog.blurIntensity, 3),
   )
 }
 
@@ -84,6 +117,15 @@ function applySearchTransparency(value: number) {
   )
 }
 
+function applySearchBackdropBlur(value: number) {
+  setBackdropBlurVariable('search', value)
+  setBackdropBlurVariable('search-menu', value)
+  setBackdropBlurVariable(
+    'search-suggestion',
+    deriveBackdropBlur(value, defaultSettings.perf.searchBar.blurIntensity, 30),
+  )
+}
+
 function applyQuickLinksTransparency(value: number) {
   setTransparencyVariable('quick-links', value)
   setTransparencyVariable(
@@ -104,12 +146,25 @@ function applyQuickLinksTransparency(value: number) {
   )
 }
 
+function applyQuickLinksBackdropBlur(value: number) {
+  setBackdropBlurVariable('quick-links', value)
+  setBackdropBlurVariable('quick-links-tooltip', value)
+  setBackdropBlurVariable(
+    'quick-links-launchpad',
+    deriveBackdropBlur(value, defaultSettings.perf.quickLinks.blurIntensity, 40),
+  )
+}
+
 function applyYiyanTransparency(value: number) {
   setTransparencyVariable('yiyan', value)
   setTransparencyVariable(
     'yiyan-control',
     deriveTransparency(value, defaultSettings.perf.yiyan.transparency, 60, 80),
   )
+}
+
+function applyYiyanBackdropBlur(value: number) {
+  setBackdropBlurVariable('yiyan', value)
 }
 
 function applyActionBtnsTransparency(value: number) {
@@ -124,8 +179,25 @@ function applyActionBtnsTransparency(value: number) {
   )
 }
 
+function applyActionBtnsBackdropBlur(value: number) {
+  setBackdropBlurVariable('action-btns', value)
+  setBackdropBlurVariable(
+    'action-btns-menu',
+    deriveBackdropBlur(value, defaultSettings.perf.actionBtns.blurIntensity, 10),
+  )
+}
+
 function getEnabledTransparency(config: { transparent: boolean; transparency: number }) {
   return config.transparent ? config.transparency : 0
+}
+
+function getEnabledBackdropBlur(config: {
+  transparent: boolean
+  transparency: number
+  blur: boolean
+  blurIntensity: number
+}) {
+  return config.transparent && config.transparency > 0 && config.blur ? config.blurIntensity : 0
 }
 
 /**
@@ -194,6 +266,37 @@ export function useThemeWatcher() {
   watch(
     () => getEnabledTransparency(settings.perf.actionBtns),
     applyActionBtnsTransparency,
+    { immediate: true },
+  )
+
+  watch(
+    () => getEnabledBackdropBlur(settings.perf.bookmark),
+    applyBookmarkBackdropBlur,
+    { immediate: true },
+  )
+  watch(
+    () => getEnabledBackdropBlur(settings.perf.dialog),
+    applyDialogBackdropBlur,
+    { immediate: true },
+  )
+  watch(
+    () => getEnabledBackdropBlur(settings.perf.searchBar),
+    applySearchBackdropBlur,
+    { immediate: true },
+  )
+  watch(
+    () => getEnabledBackdropBlur(settings.perf.quickLinks),
+    applyQuickLinksBackdropBlur,
+    { immediate: true },
+  )
+  watch(
+    () => getEnabledBackdropBlur(settings.perf.yiyan),
+    applyYiyanBackdropBlur,
+    { immediate: true },
+  )
+  watch(
+    () => getEnabledBackdropBlur(settings.perf.actionBtns),
+    applyActionBtnsBackdropBlur,
     { immediate: true },
   )
 }
