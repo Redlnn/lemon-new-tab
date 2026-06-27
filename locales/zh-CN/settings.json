@@ -255,9 +255,7 @@
     "effectsTitle": "效果设置",
     "title": "性能与效果",
     "blurIntensity": "背景模糊度",
-    "blurIntensityTip": "用于调节透明界面的毛玻璃背景模糊强度，不影响壁纸自身的模糊设置。",
     "transparency": "背景透明度",
-    "transparencyTip": "0% 为不透明，数值越高越能透出壁纸；菜单和内容密集面板会保留最低背景以确保可读性。",
     "toggleAll": {
       "animation": "动画",
       "blur": "模糊效果",

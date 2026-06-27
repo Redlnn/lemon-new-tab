@@ -255,9 +255,7 @@
     "effectsTitle": "Effect Settings",
     "title": "Performance & Effects",
     "blurIntensity": "Background blur",
-    "blurIntensityTip": "Adjusts the frosted-glass blur behind transparent UI surfaces without changing the wallpaper blur setting.",
     "transparency": "Background transparency",
-    "transparencyTip": "0% is opaque. Higher values reveal more of the wallpaper; dense menus and panels retain a minimum background for readability.",
     "toggleAll": {
       "animation": "Animation",
       "blur": "Blur",

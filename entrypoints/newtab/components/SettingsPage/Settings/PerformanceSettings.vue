@@ -208,13 +208,6 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
 
     <section class="perf-panel">
       <h3 class="perf-panel-title">{{ t('perf.effectsTitle') }}</h3>
-      <p class="settings__item--note perf-panel-note">
-        {{ t('perf.transparencyTip') }}
-      </p>
-      <p class="settings__item--note perf-panel-note">
-        {{ t('perf.blurIntensityTip') }}
-      </p>
-
       <div class="perf-effect-list">
         <article v-for="item in effectItems" :key="item.key" class="perf-effect-item">
           <div class="perf-effect-header">{{ item.title }}</div>
