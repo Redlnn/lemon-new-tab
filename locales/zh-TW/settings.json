@@ -238,6 +238,7 @@
     "dialog": {
       "animation": "對話框動畫",
       "blur": "對話框背景模糊",
+      "title": "對話框",
       "transparent": "對話框背景透明"
     },
     "dock": {
@@ -251,6 +252,7 @@
       "blur": "搜尋框模糊",
       "transparent": "搜尋框透明"
     },
+    "effectsTitle": "效果設定",
     "title": "效能與效果",
     "transparency": "背景透明度",
     "transparencyTip": "0% 為不透明，數值越高越能透出壁紙；選單和內容密集面板會保留最低背景以確保可讀性。",
@@ -261,6 +263,7 @@
       "enable": "一鍵啟用所有",
       "transparent": "透明效果"
     },
+    "wallpaper": "壁紙",
     "yiyan": {
       "blur": "一言背景模糊",
       "ripple": "一言水波紋動畫",

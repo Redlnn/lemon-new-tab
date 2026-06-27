@@ -229,8 +229,8 @@
       "blur": "Action buttons blur",
       "transparent": "Action buttons transparency"
     },
-    "bgSwitchAnim": "Background switch animation",
-    "bgSwitchAnimTip": "When disabled, there will be no fade-in/fade-out animation when switching backgrounds, which can slightly improve switching speed. Background animation on startup will also be disabled",
+    "bgSwitchAnim": "Wallpaper switch animation",
+    "bgSwitchAnimTip": "When disabled, there will be no fade-in/fade-out animation when switching wallpapers, which can slightly improve switching speed. Wallpaper animation on startup will also be disabled",
     "bookmark": {
       "blur": "Bookmarks sidebar blur",
       "transparent": "Bookmarks sidebar transparency"
@@ -238,6 +238,7 @@
     "dialog": {
       "animation": "Dialog animation",
       "blur": "Dialog blur",
+      "title": "Dialog",
       "transparent": "Dialog transparency"
     },
     "dock": {
@@ -251,6 +252,7 @@
       "blur": "Search bar blur",
       "transparent": "Search bar transparency"
     },
+    "effectsTitle": "Effect Settings",
     "title": "Performance & Effects",
     "transparency": "Background transparency",
     "transparencyTip": "0% is opaque. Higher values reveal more of the wallpaper; dense menus and panels retain a minimum background for readability.",
@@ -261,6 +263,7 @@
       "enable": "Enable All",
       "transparent": "Transparency"
     },
+    "wallpaper": "Wallpaper",
     "yiyan": {
       "blur": "Quote blur",
       "ripple": "Quote ripple animation",
