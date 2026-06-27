@@ -15,6 +15,7 @@ const settings = useSettingsStore()
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.yiyan.transparent,
+  transparency: settings.perf.yiyan.transparency,
   blur: settings.perf.yiyan.blur,
 }))
 const yiyanPerfClass = perf('yiyan', { withoutPrefix: true })
@@ -213,7 +214,7 @@ async function copyToClipboard() {
     &:hover,
     &:focus-visible {
       color: #fff;
-      background-color: var(--le-bg-color-overlay-opacity-60);
+      background-color: var(--le-bg-color-overlay-yiyan-control);
     }
   }
 
@@ -249,7 +250,7 @@ async function copyToClipboard() {
 
     &.yiyan--opacity {
       color: var(--el-fill-color-blank);
-      background-color: var(--le-bg-color-overlay-opacity-80);
+      background-color: var(--le-bg-color-overlay-yiyan);
     }
 
     &.yiyan--blur {

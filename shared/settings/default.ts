@@ -188,10 +188,12 @@ export const defaultSettings = {
     dockScale: true,
     bookmark: {
       transparent: true,
+      transparency: 15,
       blur: true,
     },
     dialog: {
       transparent: true,
+      transparency: 15,
       blur: true,
       animation: true,
     },
@@ -201,21 +203,25 @@ export const defaultSettings = {
     },
     quickLinks: {
       transparent: true,
+      transparency: 60,
       blur: true,
     },
     searchBar: {
       transparent: true,
+      transparency: 50,
       blur: true,
       launchAnim: false,
     },
     yiyan: {
       transparent: true,
+      transparency: 80,
       blur: true,
       ripple: true,
     },
     actionBtns: {
       blur: true,
       transparent: true,
+      transparency: 90,
     },
   },
 

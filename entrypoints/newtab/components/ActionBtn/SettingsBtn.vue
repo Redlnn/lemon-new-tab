@@ -33,6 +33,7 @@ const dropdownPlacement = computed(() => {
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.actionBtns.transparent,
+  transparency: settings.perf.actionBtns.transparency,
   blur: settings.perf.actionBtns.blur,
 }))
 const popperPerfClass = perf('setting-btn__popper')

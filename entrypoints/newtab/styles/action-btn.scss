@@ -33,12 +33,12 @@
 
   &--tran {
     color: rgb(from var(--el-text-color-secondary) r g b / 30%);
-    background-color: var(--le-bg-color-overlay-opacity-90);
+    background-color: var(--le-bg-color-overlay-action-btns);
 
     &:hover,
     &:focus-within {
       color: var(--el-text-color-regular);
-      background-color: var(--le-bg-color-overlay-opacity-60);
+      background-color: var(--le-bg-color-overlay-action-btns-hover);
     }
 
     &.action-btn-container--blur {
@@ -151,7 +151,7 @@ html.colorful .action-btn-container {
     }
 
     &.setting-btn__popper--opacity {
-      background-color: var(--le-bg-color-overlay-opacity-20);
+      background-color: var(--le-bg-color-overlay-action-btns-menu);
     }
 
     &.setting-btn__popper--blur {

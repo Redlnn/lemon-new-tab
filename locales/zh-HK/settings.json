@@ -226,8 +226,8 @@
   },
   "perf": {
     "actionBtns": {
-      "blur": "右下按鈕模糊",
-      "transparent": "右下按鈕透明"
+      "blur": "功能按鈕模糊",
+      "transparent": "功能按鈕透明"
     },
     "bgSwitchAnim": "背景切換動效",
     "bgSwitchAnimTip": "關閉後切換背景時將不再有淡入淡出動效，能微弱提升切換速度。同時啟動時的背景動效也會被停用",
@@ -251,7 +251,9 @@
       "blur": "搜尋框模糊",
       "transparent": "搜尋框透明"
     },
-    "title": "效能",
+    "title": "效能與效果",
+    "transparency": "背景透明度",
+    "transparencyTip": "0% 為不透明，數值越高越能透出背景圖片；選單和內容密集面板會保留最低背景以確保可讀性。",
     "toggleAll": {
       "animation": "動效",
       "blur": "模糊效果",

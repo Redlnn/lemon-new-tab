@@ -1,6 +1,6 @@
 .settings__dialog.el-dialog {
   --settings-dialog-background: var(--el-bg-color-page);
-  --le-dialog-transparent-background: var(--le-bg-color-overlay-opacity-20);
+  --le-dialog-transparent-background: var(--le-bg-color-overlay-dialog-secondary);
   --settings-close-hover-background: var(--el-fill-color-blank);
   --settings-back-background: var(--el-fill-color-blank);
   --settings-back-hover-background: var(--el-fill-color-blank);
@@ -48,18 +48,26 @@ html.colorful .settings__dialog {
 }
 
 html.dialog-transparent .settings__dialog {
-  --settings-items-background: var(--le-bg-color-overlay-opacity-20);
-  --settings-aside-background: var(--le-fill-color-dark-opacity-20);
+  --settings-items-background: var(--le-bg-color-overlay-dialog-secondary);
+  --settings-aside-background: color-mix(
+    in oklch,
+    var(--el-fill-color-dark),
+    transparent var(--le-dialog-secondary-transparency)
+  );
 }
 
 html.dark.dialog-transparent .settings__dialog {
-  --settings-aside-background: var(--le-fill-color-lighter-opacity-20);
+  --settings-aside-background: color-mix(
+    in oklch,
+    var(--el-fill-color-lighter),
+    transparent var(--le-dialog-secondary-transparency)
+  );
 }
 
 html.colorful.dialog-transparent .settings__dialog {
   --settings-items-background: var(--el-color-primary-light-9);
   --settings-group-active-background: var(--el-color-primary-light-8);
-  --settings-aside-background: var(--le-bg-color-overlay-opacity-30);
+  --settings-aside-background: var(--le-bg-color-overlay-dialog-menu);
   --settings-option-active-background: var(--el-color-primary-light-8);
 }
 

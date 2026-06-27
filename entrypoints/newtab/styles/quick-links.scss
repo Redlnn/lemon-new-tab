@@ -151,15 +151,15 @@
     }
 
     &--opacity {
-      background-color: var(--le-bg-color-overlay-opacity-60);
+      background-color: var(--le-bg-color-overlay-quick-links);
 
       &:not(.quick-links__nav-btn--disabled):hover {
-        background-color: var(--le-bg-color-overlay-opacity-30);
+        background-color: var(--le-bg-color-overlay-quick-links-hover);
       }
     }
 
     &:not(&--disabled):hover &--opacity {
-      background-color: var(--le-bg-color-overlay-opacity-30);
+      background-color: var(--le-bg-color-overlay-quick-links-hover);
     }
 
     &--disabled {
@@ -338,7 +338,7 @@
           box-shadow: var(--el-box-shadow-light);
 
           &--opacity {
-            background-color: var(--le-bg-color-overlay-opacity-80);
+            background-color: var(--le-bg-color-overlay-quick-links-subtle);
           }
 
           &--blur {
@@ -373,11 +373,11 @@
           }
 
           &--opacity {
-            background: var(--le-bg-color-overlay-opacity-60);
+            background: var(--le-bg-color-overlay-quick-links);
           }
 
           .quick-links__item:hover &--opacity {
-            background: var(--le-bg-color-overlay-opacity-30);
+            background: var(--le-bg-color-overlay-quick-links-hover);
           }
 
           &:not(.quick-links__icon--opacity) {
@@ -461,7 +461,7 @@ html.light .quick-links {
 
   &.quick-links__menu-popper--opacity.quick-links__menu-popper--blur {
     // 只有模糊时才有透明度效果，否则会影响可读性
-    background-color: var(--le-bg-color-overlay-opacity-30);
+    background-color: var(--le-bg-color-overlay-quick-links-hover);
   }
 
   &.quick-links__menu-popper--blur {
@@ -534,14 +534,14 @@ html.light .quick-links {
   }
 
   &--opacity .quick-links__category-item {
-    background-color: var(--le-bg-color-overlay-opacity-60);
+    background-color: var(--le-bg-color-overlay-quick-links);
 
     &:hover {
-      background-color: var(--le-bg-color-overlay-opacity-30);
+      background-color: var(--le-bg-color-overlay-quick-links-hover);
     }
 
     &--active {
-      background-color: var(--le-bg-color-overlay-opacity-30);
+      background-color: var(--le-bg-color-overlay-quick-links-hover);
     }
   }
 
@@ -603,7 +603,7 @@ html.light .quick-links {
   max-width: 110px;
   padding: 8px;
   pointer-events: none;
-  background-color: var(--le-bg-color-overlay-opacity-60);
+  background-color: var(--le-bg-color-overlay-quick-links);
   border-radius: 12px;
   box-shadow: var(--el-box-shadow-light);
 

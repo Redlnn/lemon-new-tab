@@ -71,7 +71,7 @@ html.dialog-transparent .el-dialog,
 html.dialog-transparent .el-message-box {
   --le-dialog-background: var(
     --le-dialog-transparent-background,
-    var(--le-bg-color-overlay-opacity-15)
+    var(--le-bg-color-overlay-dialog)
   );
 }
 

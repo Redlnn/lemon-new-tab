@@ -402,6 +402,7 @@ function goToGroupPage(pageInGroup: number) {
 // ---- 共享右键菜单 ----
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.quickLinks.transparent,
+  transparency: settings.perf.quickLinks.transparency,
   blur: settings.perf.quickLinks.blur,
 }))
 const popperClass = perf('quick-links__menu-popper')
@@ -1006,6 +1007,7 @@ const scrollGridStyle = computed(() => ({
 
 const categoryPerf = usePerfClasses(() => ({
   transparent: settings.perf.quickLinks.transparent,
+  transparency: settings.perf.quickLinks.transparency,
   blur: settings.perf.quickLinks.blur,
 }))
 

@@ -27,6 +27,7 @@ const { getCustomEngineFavicon } = useCustomEngineFavicon()
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.dialog.transparent,
+  transparency: settings.perf.dialog.transparency,
   blur: settings.perf.dialog.blur,
 }))
 const customEnginePopperClass = perf('se-switcher-item__menu-popper')
@@ -304,7 +305,7 @@ html.colorful .se-switcher__dialog {
 
   &.se-switcher-item__menu-popper--opacity.se-switcher-item__menu-popper--blur {
     // 只有模糊时才有透明度效果，否则会影响可读性
-    background-color: var(--le-bg-color-overlay-opacity-30);
+    background-color: var(--le-bg-color-overlay-dialog-menu);
   }
 
   &.se-switcher-item__menu-popper--blur {

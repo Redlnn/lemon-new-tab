@@ -40,6 +40,7 @@ const emit = defineEmits<{
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.searchBar.transparent,
+  transparency: settings.perf.searchBar.transparency,
   blur: settings.perf.searchBar.blur,
 }))
 
@@ -291,7 +292,7 @@ defineExpose({
   }
 
   &.search-suggestion-area--opacity {
-    background-color: var(--le-bg-color-overlay-opacity-50);
+    background-color: var(--le-bg-color-overlay-search);
   }
 
   &.search-suggestion-area--blur {
@@ -317,7 +318,7 @@ defineExpose({
 
     &--active {
       padding-left: 40px;
-      background-color: var(--le-bg-color-overlay-opacity-60);
+      background-color: var(--le-bg-color-overlay-search-subtle);
     }
   }
 
@@ -334,7 +335,7 @@ defineExpose({
 
     &:hover {
       padding-left: 30px;
-      background-color: var(--le-bg-color-overlay-opacity-60);
+      background-color: var(--le-bg-color-overlay-search-subtle);
     }
   }
 }

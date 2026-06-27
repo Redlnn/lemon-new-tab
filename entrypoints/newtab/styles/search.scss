@@ -67,14 +67,14 @@
 
     // 透明时搜索框背景变化
     &--opacity {
-      background-color: var(--le-bg-color-overlay-opacity-50);
+      background-color: var(--le-bg-color-overlay-search);
 
       &:hover:not(.search-box__form--focus) {
-        background-color: var(--le-bg-color-overlay-opacity-35);
+        background-color: var(--le-bg-color-overlay-search-hover);
       }
 
       &.search-box__form--focus {
-        background-color: var(--le-bg-color-overlay-opacity-20);
+        background-color: var(--le-bg-color-overlay-search-focus);
       }
     }
 

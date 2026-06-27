@@ -85,7 +85,10 @@ type GroupView = {
 const { t } = useTranslation()
 const settings = useSettingsStore()
 const quickLinksBlurEnabled = computed(
-  () => settings.perf.quickLinks.transparent && settings.perf.quickLinks.blur,
+  () =>
+    settings.perf.quickLinks.transparent &&
+    settings.perf.quickLinks.transparency > 0 &&
+    settings.perf.quickLinks.blur,
 )
 const launchpadOverlayClass = computed(
   () => `launchpad-overlay noselect${quickLinksBlurEnabled.value ? ' launchpad-overlay--blur' : ''}`,
@@ -317,6 +320,7 @@ watch(
 // ---- 右键菜单 ----
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.quickLinks.transparent,
+  transparency: settings.perf.quickLinks.transparency,
   blur: settings.perf.quickLinks.blur,
 }))
 

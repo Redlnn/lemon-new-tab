@@ -226,8 +226,8 @@
   },
   "perf": {
     "actionBtns": {
-      "blur": "右下按钮模糊",
-      "transparent": "右下按钮透明"
+      "blur": "功能按钮模糊",
+      "transparent": "功能按钮透明"
     },
     "bgSwitchAnim": "背景切换动画",
     "bgSwitchAnimTip": "关闭后切换背景时将不再有淡入淡出动画，能微弱提升切换速度。同时启动时的背景动画也会被禁用",
@@ -251,7 +251,9 @@
       "blur": "搜索框模糊",
       "transparent": "搜索框透明"
     },
-    "title": "性能",
+    "title": "性能与效果",
+    "transparency": "背景透明度",
+    "transparencyTip": "0% 为不透明，数值越高越能透出壁纸；菜单和内容密集面板会保留最低背景以确保可读性。",
     "toggleAll": {
       "animation": "动画",
       "blur": "模糊效果",

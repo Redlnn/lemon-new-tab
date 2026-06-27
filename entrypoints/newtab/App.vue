@@ -210,7 +210,8 @@ watch(
 
 const actionClass = computed(() => {
   const perf = settings.perf
-  const enableTransparent = perf.actionBtns.transparent
+  const enableTransparent =
+    perf.actionBtns.transparent && perf.actionBtns.transparency > 0
   const enableBlur = perf.actionBtns.blur && enableTransparent
 
   return {

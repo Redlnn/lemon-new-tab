@@ -122,6 +122,7 @@ const settings = useSettingsStore()
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.bookmark.transparent,
+  transparency: settings.perf.bookmark.transparency,
   blur: settings.perf.bookmark.blur,
 }))
 
@@ -435,7 +436,7 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
   }
 
   &--opacity.el-drawer {
-    background-color: var(--le-bg-color-overlay-opacity-15);
+    background-color: var(--le-bg-color-overlay-bookmark);
   }
 
   &--blur.el-drawer {
@@ -664,7 +665,7 @@ html.colorful .bookmark {
   border-radius: 15px;
 
   &.bookmark__menu-popper--opacity.bookmark__menu-popper--blur {
-    background-color: var(--le-bg-color-overlay-opacity-30);
+    background-color: var(--le-bg-color-overlay-bookmark-menu);
   }
 
   &.bookmark__menu-popper--blur {

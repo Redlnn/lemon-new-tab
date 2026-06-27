@@ -39,6 +39,7 @@ const props = defineProps<{
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.quickLinks.transparent,
+  transparency: settings.perf.quickLinks.transparency,
   blur: settings.perf.quickLinks.blur,
 }))
 
@@ -49,12 +50,16 @@ const focusStore = useFocusState()
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
 
+const quickLinksTransparencyEnabled = computed(
+  () => settings.perf.quickLinks.transparent && settings.perf.quickLinks.transparency > 0,
+)
 const quickLinksBlurEnabled = computed(
-  () => settings.perf.quickLinks.transparent && settings.perf.quickLinks.blur,
+  () => quickLinksTransparencyEnabled.value && settings.perf.quickLinks.blur,
 )
 const dockClass = perf('dock')
 const dockTooltipClass = computed(
-  () => `dock-tooltip noselect${quickLinksBlurEnabled.value ? ' dock-tooltip--blur' : ''}`,
+  () =>
+    `dock-tooltip noselect${quickLinksTransparencyEnabled.value ? ' dock-tooltip--opacity' : ''}${quickLinksBlurEnabled.value ? ' dock-tooltip--blur' : ''}`,
 )
 
 const { updateMaxCols, maxFitCols } = useDockLayout()
@@ -559,8 +564,8 @@ defineExpose({ refresh })
   }
 
   &--opacity {
-    --dock-background: var(--le-bg-color-overlay-opacity-60);
-    --dock-item-background: var(--le-bg-color-overlay-opacity-20);
+    --dock-background: var(--le-bg-color-overlay-quick-links);
+    --dock-item-background: var(--le-bg-color-overlay-quick-links-strong);
   }
 }
 
@@ -635,10 +640,14 @@ html.colorful .dock:not(.dock--opacity) {
 }
 
 .dock-tooltip.el-popper {
-  --dock-tooltip-background: rgb(from var(--el-bg-color-overlay) r g b/ 50%);
+  --dock-tooltip-background: var(--el-bg-color-overlay);
 
   background: var(--dock-tooltip-background);
   border: none;
+
+  &.dock-tooltip--opacity {
+    --dock-tooltip-background: var(--le-bg-color-overlay-quick-links-tooltip);
+  }
 
   &.dock-tooltip--blur {
     @include acrylic.acrylic(10px, 1.3, 1.4);
@@ -646,6 +655,10 @@ html.colorful .dock:not(.dock--opacity) {
 }
 
 html.colorful .dock-tooltip {
-  --dock-tooltip-background: rgb(from var(--el-color-primary-light-7) r g b/ 50%);
+  --dock-tooltip-background: var(--el-color-primary-light-7);
+
+  &.dock-tooltip--opacity {
+    --dock-tooltip-background: var(--le-bg-color-overlay-quick-links-tooltip);
+  }
 }
 </style>

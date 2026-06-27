@@ -226,8 +226,8 @@
   },
   "perf": {
     "actionBtns": {
-      "blur": "Bottom-right button blur",
-      "transparent": "Bottom-right button transparency"
+      "blur": "Action buttons blur",
+      "transparent": "Action buttons transparency"
     },
     "bgSwitchAnim": "Background switch animation",
     "bgSwitchAnimTip": "When disabled, there will be no fade-in/fade-out animation when switching backgrounds, which can slightly improve switching speed. Background animation on startup will also be disabled",
@@ -251,7 +251,9 @@
       "blur": "Search bar blur",
       "transparent": "Search bar transparency"
     },
-    "title": "Performance",
+    "title": "Performance & Effects",
+    "transparency": "Background transparency",
+    "transparencyTip": "0% is opaque. Higher values reveal more of the wallpaper; dense menus and panels retain a minimum background for readability.",
     "toggleAll": {
       "animation": "Animation",
       "blur": "Blur",
