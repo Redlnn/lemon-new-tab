@@ -99,7 +99,7 @@
       "title": "提示：图标缓存未开启"
     },
     "wallpaperCache": {
-      "message": "无法缓存在线壁纸：${error}",
+      "message": "无法缓存在线壁纸：{error}",
       "title": "缓存在线壁纸失败"
     },
     "welcome": {
