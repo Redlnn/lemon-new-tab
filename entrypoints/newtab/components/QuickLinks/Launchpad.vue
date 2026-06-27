@@ -96,7 +96,6 @@ const { width: windowWidth } = useWindowSize({ type: 'visual' })
 const query = ref('')
 const page = ref(0)
 const containerRef = useTemplateRef<HTMLElement>('container')
-const searchInputRef = useTemplateRef<{ focus: () => void }>('searchInput')
 const { height: containerHeight } = useElementSize(containerRef)
 
 const COLS = computed(() => {
@@ -271,8 +270,6 @@ watch(
       query.value = ''
       page.value = 0
       await refresh()
-      await nextTick()
-      searchInputRef.value?.focus()
     }
   },
   { immediate: true },
@@ -615,7 +612,7 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <Transition name="launchpad-fade">
+    <Transition name="launchpad-fade" appear>
       <el-overlay v-show="model" :overlay-class="['launchpad-overlay', 'noselect']" :z-index="1">
         <div
           class="launchpad-wrapper"
