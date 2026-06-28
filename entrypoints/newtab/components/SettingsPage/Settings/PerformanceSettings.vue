@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTranslation } from 'i18next-vue'
 
-import { useSettingsStore } from '@/shared/settings'
+import { defaultSettings, useSettingsStore } from '@/shared/settings'
 
 import { isOnlyTouchDevice } from '@newtab/shared/touch'
 
@@ -11,9 +11,19 @@ const settings = useSettingsStore()
 const MAX_TRANSPARENCY = 95
 const MAX_BACKDROP_BLUR = 40
 const MAX_WALLPAPER_BLUR = 100
+const EFFECT_SETTING_KEYS = [
+  'searchBar',
+  'quickLinks',
+  'yiyan',
+  'bookmark',
+  'dialog',
+  'actionBtns',
+] as const
+
+type EffectSettingKey = (typeof EFFECT_SETTING_KEYS)[number]
 
 type EffectItem = {
-  key: string
+  key: EffectSettingKey
   title: string
   transparent: Ref<boolean>
   transparency: Ref<number>
@@ -65,6 +75,16 @@ function toggleAnimationSettings(enable: boolean) {
   settings.perf.dockScale = enable
   settings.perf.yiyan.ripple = enable
   settings.background.parallax = enable && !isOnlyTouchDevice.value
+}
+
+function resetTransparencyAndBlur() {
+  for (const key of EFFECT_SETTING_KEYS) {
+    settings.perf[key].transparency = defaultSettings.perf[key].transparency
+    settings.perf[key].blurIntensity = defaultSettings.perf[key].blurIntensity
+  }
+
+  settings.clock.style.transparency = defaultSettings.clock.style.transparency
+  settings.background.blur = defaultSettings.background.blur
 }
 
 const effectItems = computed<EffectItem[]>(() => [
@@ -208,7 +228,12 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
     </section>
 
     <section class="perf-panel">
-      <h3 class="perf-panel-title">{{ t('perf.effectsTitle') }}</h3>
+      <div class="perf-panel-header">
+        <h3 class="perf-panel-title">{{ t('perf.effectsTitle') }}</h3>
+        <el-button @click="resetTransparencyAndBlur">
+          {{ t('perf.resetTransparencyAndBlur') }}
+        </el-button>
+      </div>
       <div class="perf-effect-list">
         <article v-for="item in effectItems" :key="item.key" class="perf-effect-item">
           <div class="perf-effect-header">{{ item.title }}</div>
@@ -288,7 +313,9 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
     </section>
 
     <section class="perf-panel">
-      <h3 class="perf-panel-title">{{ t('perf.toggleAll.animation') }}</h3>
+      <div class="perf-panel-header">
+        <h3 class="perf-panel-title">{{ t('perf.toggleAll.animation') }}</h3>
+      </div>
       <div class="perf-animation-list">
         <article class="perf-animation-card">
           <h4>{{ t('perf.wallpaper') }}</h4>
@@ -358,8 +385,22 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
   justify-content: flex-end;
 }
 
+.perf-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  margin-bottom: 8px;
+
+  .el-button {
+    margin-left: auto;
+  }
+}
+
 .perf-panel-title {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: var(--el-font-size-base);
   line-height: 1.4;
 }

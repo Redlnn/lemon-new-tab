@@ -254,6 +254,7 @@
       "transparent": "搜尋框透明"
     },
     "effectsTitle": "效果設定",
+    "resetTransparencyAndBlur": "重設透明與模糊",
     "title": "效能與效果",
     "blurIntensity": "背景模糊度",
     "transparency": "背景透明度",

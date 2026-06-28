@@ -254,6 +254,7 @@
       "transparent": "搜索框透明"
     },
     "effectsTitle": "效果设置",
+    "resetTransparencyAndBlur": "重置透明与模糊",
     "title": "性能与效果",
     "blurIntensity": "背景模糊度",
     "transparency": "背景透明度",

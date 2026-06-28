@@ -254,6 +254,7 @@
       "transparent": "Search bar transparency"
     },
     "effectsTitle": "Effect Settings",
+    "resetTransparencyAndBlur": "Reset transparency and blur",
     "title": "Performance & Effects",
     "blurIntensity": "Background blur",
     "transparency": "Background transparency",
