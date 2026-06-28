@@ -124,6 +124,7 @@
       "title": "Clock size"
     },
     "title": "Clock",
+    "transparency": "Clock transparency",
     "weight": {
       "black": "Heaviest (900)",
       "bold": "Bold (600)",

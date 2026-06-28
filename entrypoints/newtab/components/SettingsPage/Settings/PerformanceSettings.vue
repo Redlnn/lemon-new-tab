@@ -10,6 +10,7 @@ const { t } = useTranslation('settings')
 const settings = useSettingsStore()
 const MAX_TRANSPARENCY = 95
 const MAX_BACKDROP_BLUR = 40
+const MAX_WALLPAPER_BLUR = 100
 
 type EffectItem = {
   key: string
@@ -257,6 +258,32 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
             <span>{{ formatBackdropBlur(item.blurIntensity.value) }}</span>
           </div>
         </article>
+
+        <article class="perf-effect-item">
+          <div class="perf-effect-header">{{ t('other.title') }}</div>
+
+          <div class="perf-slider-row">
+            <span>{{ t('clock.transparency') }}</span>
+            <el-slider
+              v-model="settings.clock.style.transparency"
+              :max="MAX_TRANSPARENCY"
+              :step="1"
+              :format-tooltip="formatTransparency"
+            />
+            <span>{{ formatTransparency(settings.clock.style.transparency) }}</span>
+          </div>
+
+          <div class="perf-slider-row">
+            <span>{{ t('background.blur') }}</span>
+            <el-slider
+              v-model="settings.background.blur"
+              :max="MAX_WALLPAPER_BLUR"
+              :step="1"
+              :format-tooltip="formatBackdropBlur"
+            />
+            <span>{{ formatBackdropBlur(settings.background.blur) }}</span>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -407,7 +434,6 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
   min-width: 0;
   padding: 15px;
   background-color: var(--settings-group-active-background);
-  border: 1px solid var(--el-border-color-lighter);
   border-radius: 10px;
 
   h4 {

@@ -124,6 +124,7 @@
       "title": "時鐘大小"
     },
     "title": "時鐘",
+    "transparency": "時鐘透明度",
     "weight": {
       "black": "最粗（900）",
       "bold": "粗體（600）",

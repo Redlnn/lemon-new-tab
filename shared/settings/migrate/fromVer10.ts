@@ -6,6 +6,13 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
 
   return {
     ...rest,
+    clock: {
+      ...rest.clock,
+      style: {
+        ...rest.clock.style,
+        transparency: defaultSettings.clock.style.transparency,
+      },
+    },
     quickLinks: shortcut,
     perf: {
       ...restPerf,

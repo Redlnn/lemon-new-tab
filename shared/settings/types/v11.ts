@@ -7,8 +7,14 @@ type WithTransparency<T> = T & {
 
 export interface SettingsSchemaV11 extends Omit<
   SettingsSchemaV10,
-  'version' | 'shortcut' | 'perf'
+  'version' | 'shortcut' | 'clock' | 'perf'
 > {
+  clock: SettingsSchemaV10['clock'] & {
+    style: SettingsSchemaV10['clock']['style'] & {
+      transparency: number
+    }
+  }
+
   quickLinks: SettingsSchemaV10['shortcut']
 
   perf: Omit<

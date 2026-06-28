@@ -14,6 +14,11 @@ type PerfTransparencyKey =
   | 'actionBtns'
 
 type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
+  clock?: CURRENT_CONFIG_SCHEMA['clock'] & {
+    style?: CURRENT_CONFIG_SCHEMA['clock']['style'] & {
+      transparency?: number
+    }
+  }
   quickLinks?: CURRENT_CONFIG_SCHEMA['quickLinks']
   perf?: CURRENT_CONFIG_SCHEMA['perf']
 }
@@ -64,8 +69,15 @@ function normalizePerfSurface<K extends PerfTransparencyKey>(
  */
 export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRENT_CONFIG_SCHEMA {
   const normalized = settings as MutableCurrentSettings
+  normalized.clock ??= structuredClone(defaultSettings.clock)
+  normalized.clock.style ??= structuredClone(defaultSettings.clock.style)
   normalized.quickLinks ??= structuredClone(defaultSettings.quickLinks)
   normalized.perf ??= structuredClone(defaultSettings.perf)
+
+  normalized.clock.style.transparency = normalizeTransparency(
+    normalized.clock.style.transparency,
+    defaultSettings.clock.style.transparency,
+  )
 
   normalized.quickLinks.grouping ??= defaultSettings.quickLinks.grouping
   normalized.quickLinks.useScroll ??= defaultSettings.quickLinks.useScroll

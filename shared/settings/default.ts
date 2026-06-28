@@ -35,6 +35,7 @@ export const defaultSettings = {
     style: {
       shadow: true,
       blink: true,
+      transparency: 0,
 
       invertColor: {
         light: false,
