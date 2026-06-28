@@ -27,6 +27,9 @@ importers:
       '@dnd-kit/vue':
         specifier: ^0.5.0
         version: 0.5.0(vue@3.5.38(typescript@6.0.3))
+      '@material/material-color-utilities':
+        specifier: ^0.4.0
+        version: 0.4.0
       '@vueuse/components':
         specifier: ^14.3.0
         version: 14.3.0(vue@3.5.38(typescript@6.0.3))
@@ -60,6 +63,9 @@ importers:
       vue:
         specifier: ^3.5.38
         version: 3.5.38(typescript@6.0.3)
+      webextension-polyfill:
+        specifier: ^0.12.0
+        version: 0.12.0
     devDependencies:
       '@iconify-json/ant-design':
         specifier: ^1.2.5
@@ -76,9 +82,6 @@ importers:
       '@iconify-json/ic':
         specifier: ^1.2.4
         version: 1.2.4
-      '@material/material-color-utilities':
-        specifier: ^0.4.0
-        version: 0.4.0
       '@tsconfig/node24':
         specifier: ^24.0.4
         version: 24.0.4
@@ -181,9 +184,6 @@ importers:
       vue-tsc:
         specifier: ^3.3.5
         version: 3.3.5(typescript@6.0.3)
-      webextension-polyfill:
-        specifier: ^0.12.0
-        version: 0.12.0
       wxt:
         specifier: ^0.21.0
         version: 0.21.0(@types/node@26.0.0)(eslint@10.5.0(jiti@2.7.0))(jiti@2.7.0)(sass-embedded@1.100.0)
