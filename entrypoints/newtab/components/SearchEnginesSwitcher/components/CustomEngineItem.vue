@@ -88,12 +88,16 @@ defineExpose({ open, close })
     role="button"
     tabindex="0"
     class="se-switcher-item se-switcher-item--custom"
+    :aria-label="engine.name"
+    :aria-pressed="isActive"
     :class="{ 'is-active': isActive }"
     @click="handleClick"
+    @keydown.enter.prevent="handleClick"
+    @keydown.space.prevent="handleClick"
     @contextmenu.stop.prevent="handleContextmenu"
   >
     <div class="se-switcher-item__icon">
-      <img :src="iconUrl" />
+      <img :src="iconUrl" alt="" />
     </div>
     <div class="se-switcher-item__content">
       <div class="se-switcher-item__label">{{ engine.name }}</div>

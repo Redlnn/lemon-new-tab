@@ -2,6 +2,26 @@
   "about": {
     "yiyanProvider": "一言API由 {api} 提供"
   },
+  "a11y": {
+    "actions": "頁面操作",
+    "addQuickLinksGroup": "新增快速連結分組",
+    "copyYiyan": "複製一言",
+    "deleteGroup": "刪除分組 {{name}}",
+    "downloadBackground": "下載背景",
+    "goToPage": "前往第 {{page}} 頁",
+    "main": "新分頁內容",
+    "moveGroupDown": "下移分組 {{name}}",
+    "moveGroupUp": "上移分組 {{name}}",
+    "nextPage": "下一頁",
+    "openActionsMenu": "開啟頁面操作選單",
+    "openBookmarks": "開啟書籤",
+    "previousPage": "上一頁",
+    "quickLinksGroups": "快速連結分組",
+    "quickLinksPagination": "快速連結分頁",
+    "refreshBackground": "重新整理背景",
+    "searchInput": "搜尋關鍵字",
+    "searchSuggestions": "搜尋建議"
+  },
   "bookmark": {
     "404": "乜都搵唔到",
     "addToQuickLinks": "新增至快速連結",

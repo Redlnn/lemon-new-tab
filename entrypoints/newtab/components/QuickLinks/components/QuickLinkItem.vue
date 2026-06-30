@@ -24,10 +24,22 @@ const props = defineProps<{
 const faviconRef = getFaviconURL(toRef(props, 'url'))
 const iconUrl = computed(() => props.favicon || faviconRef.value)
 const safeUrl = computed(() => (isValidUrl(props.url) ? props.url : '#'))
+
+function openFocusedLink(event: KeyboardEvent) {
+  const link = (event.currentTarget as HTMLElement | null)?.querySelector('a')
+  link?.click()
+}
 </script>
 
 <template>
-  <div role="button" class="quick-links__item noselect" :class="[{ pined: pined }]">
+  <div
+    role="link"
+    class="quick-links__item noselect"
+    :class="[{ pined: pined }]"
+    :aria-label="title"
+    @keydown.enter.prevent="openFocusedLink"
+    @keydown.space.prevent="openFocusedLink"
+  >
     <a
       v-if="pined"
       class="quick-links__item-link"
@@ -35,6 +47,7 @@ const safeUrl = computed(() => (isValidUrl(props.url) ? props.url : '#'))
       :href="safeUrl"
       :target="presentation.linkTarget"
       :rel="presentation.linkRel"
+      :aria-label="title"
       @contextmenu.stop.prevent="onContextMenu"
     >
       <div class="quick-links__icon-container" :style="{ marginBottom: presentation.iconTitleGap }">
@@ -77,6 +90,7 @@ const safeUrl = computed(() => (isValidUrl(props.url) ? props.url : '#'))
       :href="safeUrl"
       :target="presentation.linkTarget"
       :rel="presentation.linkRel"
+      :aria-label="title"
       @contextmenu.stop.prevent="onContextMenu"
       @trigger="
         (e: PointerEvent) => {

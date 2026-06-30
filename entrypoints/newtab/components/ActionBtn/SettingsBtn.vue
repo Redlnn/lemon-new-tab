@@ -38,6 +38,10 @@ const perf = usePerfClasses(() => ({
 }))
 const popperPerfClass = perf('setting-btn__popper')
 
+function clickCurrentTarget(event: KeyboardEvent) {
+  ;(event.currentTarget as HTMLElement | null)?.click()
+}
+
 function sponsorMessage() {
   ElMessageBox.alert(t('sponsor'), t('newtab:menu.sponsor'), {
     closeOnPressEscape: true,
@@ -55,7 +59,15 @@ function sponsorMessage() {
     trigger="click"
     @contextmenu.prevent.stop
   >
-    <div role="button" tabindex="0" class="action-btn setting-btn">
+    <div
+      role="button"
+      tabindex="0"
+      class="action-btn setting-btn"
+      :aria-label="t('a11y.openActionsMenu')"
+      aria-haspopup="menu"
+      @keydown.enter.prevent="clickCurrentTarget"
+      @keydown.space.prevent="clickCurrentTarget"
+    >
       <el-badge is-dot :offset="[2, 1]" :hidden="settings.readChangeLog">
         <el-icon><settings-round /></el-icon>
       </el-badge>

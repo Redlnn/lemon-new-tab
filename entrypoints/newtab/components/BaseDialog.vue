@@ -2,7 +2,7 @@
 import '@newtab/styles/dialog.scss'
 import { useElementVisibility, useWindowSize } from '@vueuse/core'
 
-import type { DialogInstance, ScrollbarInstance } from 'element-plus'
+import { useLocale, type DialogInstance, type ScrollbarInstance } from 'element-plus'
 import CloseRound from '~icons/ic/round-close'
 
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
@@ -33,6 +33,7 @@ const { isComposing } = useImeAwareDialog()
 
 const headerIsVisible = useElementVisibility(headerRef)
 const { width: windowWidth } = useWindowSize({ type: 'visual' })
+const { t } = useLocale()
 
 function onClose() {
   emit('close')
@@ -90,9 +91,11 @@ const dialogId = computed(() => {
       <div
         role="button"
         tabindex="0"
+        :aria-label="t('el.dialog.close')"
         class="base-dialog-close-btn"
         @click="onClose"
         @keydown.enter="onClose"
+        @keydown.space.prevent="onClose"
       >
         <component :is="CloseRound" />
       </div>

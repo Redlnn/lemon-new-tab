@@ -152,7 +152,7 @@ defineExpose({
             :before-upload="beforeFaviconUpload"
             accept="image/*"
           >
-            <img v-if="data.icon" :src="data.icon" class="search-engine-icon-uploader-img" />
+            <img v-if="data.icon" :src="data.icon" class="search-engine-icon-uploader-img" alt="" />
             <el-icon v-else class="search-engine-icon-uploader-icon"><plus /></el-icon>
           </el-upload>
           <div>ICO、SVG、PNG、JPG、WebP</div>

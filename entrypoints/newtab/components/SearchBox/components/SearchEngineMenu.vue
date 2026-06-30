@@ -150,7 +150,7 @@ defineExpose({ hide, showEngineToast })
         <search />
       </el-icon>
       <div v-else class="search-engine-menu__icon search-engine-menu__icon--custom">
-        <img :src="getCustomEngineFavicon(currentCustomEngine!)" />
+        <img :src="getCustomEngineFavicon(currentCustomEngine!)" alt="" />
       </div>
     </el-tooltip>
     <transition name="engine-toast" mode="out-in">

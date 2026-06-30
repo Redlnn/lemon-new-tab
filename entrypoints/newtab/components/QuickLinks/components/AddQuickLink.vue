@@ -25,14 +25,13 @@ withDefaults(
     v-if="showButton"
     role="button"
     :tabindex="tabindex ? '0' : '-1'"
+    :aria-label="t('quickLinks.addLink')"
     class="quick-links__item quick-links__item--add-quick-link noselect"
+    @click="onOpen?.()"
+    @keydown.enter.prevent="onOpen?.()"
+    @keydown.space.prevent="onOpen?.()"
   >
-    <div
-      class="quick-links__item-link"
-      style="cursor: pointer"
-      @click="onOpen?.()"
-      @keydown.enter="onOpen?.()"
-    >
+    <div class="quick-links__item-link" style="cursor: pointer">
       <div class="quick-links__icon-container" :style="{ marginBottom: presentation.iconTitleGap }">
         <div
           class="quick-links__icon"

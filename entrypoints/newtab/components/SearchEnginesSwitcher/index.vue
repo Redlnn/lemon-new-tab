@@ -98,9 +98,12 @@ function handleScroll() {
             role="button"
             tabindex="0"
             class="se-switcher-item"
+            :aria-label="t(searchEngines[key].nameKey)"
+            :aria-pressed="settings.search.engine === key"
             :class="{ 'is-active': settings.search.engine === key }"
             @click="settings.search.engine = key"
             @keydown.enter="settings.search.engine = key"
+            @keydown.space.prevent="settings.search.engine = key"
           >
             <el-icon size="16" class="se-switcher-item__icon">
               <component :is="searchEngines[key].icon" />
@@ -144,8 +147,10 @@ function handleScroll() {
             role="button"
             tabindex="0"
             class="se-switcher-item se-switcher-item--add"
+            :aria-label="t('customSearchEngine.add')"
             @click="addCustomSearchEngineRef?.openAddDialog"
             @keydown.enter="addCustomSearchEngineRef?.openAddDialog"
+            @keydown.space.prevent="addCustomSearchEngineRef?.openAddDialog"
           >
             <el-icon size="16" class="se-switcher-item__icon">
               <plus />

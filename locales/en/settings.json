@@ -1,4 +1,7 @@
 {
+  "a11y": {
+    "back": "Back to previous settings view"
+  },
   "background": {
     "alwaysFresh": "Always something new",
     "bingFrom": "Image source: Bing",

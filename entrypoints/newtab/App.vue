@@ -2,6 +2,8 @@
 import { useIdle } from '@vueuse/core'
 import { shallowRef, type StyleValue } from 'vue'
 
+import { useTranslation } from 'i18next-vue'
+
 import { BgType } from '@/shared/enums'
 import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import { addSyncEventCallback } from '@/shared/sync/syncEvents'
@@ -48,6 +50,7 @@ import { useThemeWatcher } from './composables/useThemeWatcher'
 const BackgroundRef = ref<InstanceType<typeof Background>>()
 const QuickLinksRef = ref<InstanceType<typeof QuickLinks>>()
 const DockRef = ref<InstanceType<typeof Dock>>()
+const { t } = useTranslation()
 
 const {
   SettingsPageRef, // 这些 Ref 看着是灰的但模板里有用
@@ -311,6 +314,7 @@ async function refreshQuickLinks() {
       class="app"
       :class="mainClass"
       ref="appRef"
+      :aria-label="t('a11y.main')"
       @contextmenu.prevent="openBookmarkSidebar"
     >
       <clock v-if="settings.clock.enabled" @contextmenu.stop />
@@ -331,7 +335,12 @@ async function refreshQuickLinks() {
       />
     </main>
     <background ref="BackgroundRef" />
-    <div class="action-btn-container" :class="actionClass">
+    <div
+      class="action-btn-container"
+      :class="actionClass"
+      role="toolbar"
+      :aria-label="t('a11y.actions')"
+    >
       <settings-btn
         @open-settings="toggleSettingsPage"
         @open-changelog="showChangelog"

@@ -156,6 +156,7 @@ defineExpose({ openAddDialog, openEditDialog })
               v-if="data.favicon"
               :src="data.favicon"
               class="quick-links__favicon-uploader-img"
+              alt=""
             />
             <el-icon v-else class="quick-links__favicon-uploader-icon"><plus /></el-icon>
           </el-upload>

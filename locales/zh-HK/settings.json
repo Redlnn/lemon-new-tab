@@ -1,4 +1,7 @@
 {
+  "a11y": {
+    "back": "返回上一層設定"
+  },
   "background": {
     "alwaysFresh": "永遠都有新鮮感",
     "bingFrom": "圖片來源：Bing",

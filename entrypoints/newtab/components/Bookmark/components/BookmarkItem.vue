@@ -376,7 +376,7 @@ function collapseOther(_e: Event | undefined, all: boolean = false) {
       :class="{ 'is-no-drag': isDragDisabled }"
       :href="node.url"
     >
-      <img :src="faviconRef" />
+      <img :src="faviconRef" alt="" />
       <el-text line-clamp="2">
         {{ node.title }}
       </el-text>

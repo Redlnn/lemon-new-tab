@@ -592,6 +592,7 @@ function onImgLoaded() {
   <div
     ref="backgroundWrapper"
     class="background-wrapper noselect"
+    aria-hidden="true"
     :style="{
       '--mask-color__light': settings.background.mask.light,
       '--mask-color__night': settings.background.mask.night,
@@ -629,6 +630,7 @@ function onImgLoaded() {
           class="background"
           ref="imageRef"
           :src="bgURL.startsWith('url') ? bgURL.replace(bgURLreg, '$2') : bgURL"
+          alt=""
           @load="onImgLoaded"
         />
       </div>

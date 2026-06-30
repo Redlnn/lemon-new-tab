@@ -152,7 +152,9 @@ const beforeMonetChange = async () => {
     </div>
     <div class="settings__item theme-mode-selector">
       <button
+        type="button"
         class="theme-mode-card"
+        :aria-pressed="currentMode === 'auto'"
         :class="{ 'theme-mode-card--active': currentMode === 'auto' }"
         @click="setColorMode('auto')"
       >
@@ -160,7 +162,9 @@ const beforeMonetChange = async () => {
         <span>{{ t('theme.mode.system') }}</span>
       </button>
       <button
+        type="button"
         class="theme-mode-card"
+        :aria-pressed="currentMode === 'dark'"
         :class="{ 'theme-mode-card--active': currentMode === 'dark' }"
         @click="setColorMode('dark')"
       >
@@ -168,7 +172,9 @@ const beforeMonetChange = async () => {
         <span>{{ t('theme.mode.alwaysOn') }}</span>
       </button>
       <button
+        type="button"
         class="theme-mode-card"
+        :aria-pressed="currentMode === 'light'"
         :class="{ 'theme-mode-card--active': currentMode === 'light' }"
         @click="setColorMode('light')"
       >

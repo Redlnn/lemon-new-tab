@@ -4,6 +4,7 @@ import '@newtab/styles/dialog.scss'
 import '@newtab/styles/settings.scss'
 import { useWindowSize } from '@vueuse/core'
 
+import { useLocale } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import CloseRound from '~icons/ic/round-close'
 import KeyboardArrowLeftRound from '~icons/ic/round-keyboard-arrow-left'
@@ -23,6 +24,7 @@ const COLLAPSE_BREAKPOINT = 850
 const DESKTOP_DIALOG_WIDTH = 850
 
 const { t } = useTranslation('settings')
+const { t: tElement } = useLocale()
 const router = useSettingsRouter()
 const settings = useSettingsStore()
 const { width: windowWidth } = useWindowSize({ type: 'visual' })
@@ -109,9 +111,11 @@ defineExpose({ show: customShow, hide, toggle: customToggle })
       <button
         v-if="isMobile ? router.canGoBack.value : true"
         class="settings-back-btn"
+        :aria-label="t('a11y.back')"
         :disabled="!isMobile && !router.canGoBack.value"
         @click="handleBack"
         @keydown.enter="handleBack"
+        @keydown.space.prevent="handleBack"
       >
         <el-icon color="currentColor" :size="20">
           <component :is="KeyboardArrowLeftRound" />
@@ -124,9 +128,11 @@ defineExpose({ show: customShow, hide, toggle: customToggle })
       <div
         role="button"
         tabindex="0"
+        :aria-label="tElement('el.dialog.close')"
         class="base-dialog-close-btn"
         @click="close"
         @keydown.enter="close"
+        @keydown.space.prevent="close"
       >
         <component :is="CloseRound" />
       </div>

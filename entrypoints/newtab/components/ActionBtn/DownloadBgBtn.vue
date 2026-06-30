@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 
+import { useTranslation } from 'i18next-vue'
+
 import { downloadBlob } from '@/shared/download'
 import { useSettingsStore } from '@/shared/settings'
 
@@ -8,6 +10,7 @@ import { bingWallpaperURLGetter, getCachedOnlineWallpaper } from '@newtab/shared
 
 const playing = ref(false)
 const canAnimation = ref(true)
+const { t } = useTranslation()
 
 function play() {
   if (playing.value) return
@@ -81,11 +84,13 @@ async function download() {
   <div
     role="button"
     tabindex="0"
+    :aria-label="t('a11y.downloadBackground')"
     class="action-btn"
     @mouseenter="play"
     @mouseleave="play"
     @click="download"
     @keydown.enter="download"
+    @keydown.space.prevent="download"
   >
     <el-icon>
       <svg viewBox="0 0 24 24">

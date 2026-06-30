@@ -183,10 +183,11 @@ function beforeLocalBgSwitch() {
               <video
                 v-if="settings.background.local.mediaType === 'video'"
                 :src="localBgUrl"
+                aria-hidden="true"
                 muted
                 playsinline
               ></video>
-              <img v-else :src="localBgUrl" />
+              <img v-else :src="localBgUrl" alt="" />
             </div>
           </template>
           <el-icon v-else class="bg-switcher-preview__placeholder"><upload-round /></el-icon>
@@ -205,16 +206,23 @@ function beforeLocalBgSwitch() {
               <video
                 v-if="settings.background.localDark.mediaType === 'video'"
                 :src="localDarkBgUrl"
+                aria-hidden="true"
                 muted
                 playsinline
               ></video>
-              <img v-else :src="localDarkBgUrl" />
+              <img v-else :src="localDarkBgUrl" alt="" />
             </div>
           </template>
           <el-icon v-else class="bg-switcher-preview__placeholder"><upload-round /></el-icon>
         </el-upload>
         <!-- 删除本地壁纸按钮 -->
-        <button v-if="isShowDeleteIcon" class="bg-switcher-uploader-delete" @click="deleteLocalBg">
+        <button
+          v-if="isShowDeleteIcon"
+          type="button"
+          class="bg-switcher-uploader-delete"
+          :aria-label="t('newtab:common.delete')"
+          @click="deleteLocalBg"
+        >
           <el-icon><close-round /></el-icon>
         </button>
         <!-- 本地浅色壁纸信息 -->

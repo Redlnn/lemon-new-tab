@@ -89,7 +89,9 @@ function selectActionBtn(pos: ActionBtnPosition) {
       <button
         v-for="opt in actionBtnOptions"
         :key="opt.value"
+        type="button"
         class="layout-corner-btn"
+        :aria-pressed="settings.layout.actionBtnPosition === opt.value"
         :class="{
           'layout-corner-btn--active': settings.layout.actionBtnPosition === opt.value,
           'layout-corner-btn--disabled': dockEnabled && !opt.topOnly,

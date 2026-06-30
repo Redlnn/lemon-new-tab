@@ -15,7 +15,7 @@ const activeView = computed(() => getSettingsView(props.currentRoute))
 </script>
 
 <template>
-  <el-main class="settings-main noselect">
+  <el-main class="settings-main noselect" :aria-label="title">
     <el-scrollbar class="settings-content">
       <Transition :name="disableTransition ? undefined : 'settings-fade'" mode="out-in">
         <KeepAlive>

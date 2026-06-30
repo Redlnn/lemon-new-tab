@@ -72,6 +72,7 @@ function handleClickCapture(event: MouseEvent) {
     ref="elementRef"
     v-bind="$attrs"
     class="quick-link-dnd-sortable"
+    tabindex="-1"
     :class="{
       'quick-link-dnd-sortable--dragging': isDragging,
       'quick-link-dnd-sortable--drop-target': isDropTarget,

@@ -32,10 +32,13 @@ let historyRequestVersion = 0
 const props = defineProps<{
   searchText: string
   searchFormWidth: number
+  listId: string
 }>()
 
 const emit = defineEmits<{
   doSearchWithText: [text: string]
+  activeOptionChange: [id: string | undefined]
+  expandedChange: [expanded: boolean]
 }>()
 
 const perf = usePerfClasses(() => ({
@@ -69,6 +72,14 @@ const displayedSuggestions = computed(() =>
     ? searchSuggestions.value.slice(0, 10)
     : searchSuggestions.value,
 )
+const activeOptionId = computed(() => {
+  const index = currentActiveSuggest.value
+  if (index === null || index >= displayedSuggestions.value.length) {
+    return undefined
+  }
+  return `${props.listId}-option-${index}`
+})
+const isExpanded = computed(() => displayedSuggestions.value.length > 0)
 
 function handleInput() {
   if (focusStore.isFocused && !props.searchText) {
@@ -162,7 +173,7 @@ function clearActiveSuggest() {
 }
 
 function activateSuggest(index: number): string | null {
-  const nextText = searchSuggestions.value[index]
+  const nextText = displayedSuggestions.value[index]
   if (!nextText) {
     return null
   }
@@ -190,7 +201,7 @@ async function clearSearchHistories() {
 }
 
 function navigateActiveSuggest(direction: number, currentText: string, originText: string | null) {
-  const suggestionsLength = searchSuggestions.value.length
+  const suggestionsLength = displayedSuggestions.value.length
   if (suggestionsLength <= 0) {
     return null
   }
@@ -227,6 +238,9 @@ watch(
   },
 )
 
+watch(activeOptionId, (id) => emit('activeOptionChange', id), { immediate: true })
+watch(isExpanded, (expanded) => emit('expandedChange', expanded), { immediate: true })
+
 defineExpose({
   clearSearchSuggestions,
   hideSearchHistories,
@@ -239,7 +253,10 @@ defineExpose({
 <template>
   <div
     ref="searchSuggestionArea"
+    :id="listId"
     class="search-suggestion-area"
+    role="listbox"
+    :aria-label="t('newtab:a11y.searchSuggestions')"
     :class="suggestionAreaPerfClass"
     :style="{
       width: `${searchFormWidth}px`,
@@ -249,6 +266,7 @@ defineExpose({
     <suggest-list-item
       v-for="(item, index) in displayedSuggestions"
       :key="index"
+      :id="`${listId}-option-${index}`"
       :text="item"
       :active="currentActiveSuggest === index"
       @click="emit('doSearchWithText', item)"
@@ -258,6 +276,8 @@ defineExpose({
     <div
       v-show="isShowSearchHistories"
       class="search-suggestion-area__item search-suggestion-area__clear-history noselect"
+      role="button"
+      :aria-label="t('newtab:search.purgeSearchHistory')"
       style="display: none"
       @click="clearSearchHistories()"
     >

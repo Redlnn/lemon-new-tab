@@ -40,6 +40,9 @@ const searchForm = useTemplateRef('searchForm')
 const searchInput = useTemplateRef('searchInput')
 const suggestionArea = ref<SearchSuggestionAreaController>()
 const searchEngineMenuRef = ref<typeof SearchEngineMenu>()
+const searchSuggestionListId = 'search-suggestion-list'
+const activeSuggestionOptionId = ref<string>()
+const searchSuggestionsExpanded = ref(false)
 
 const { t } = useTranslation()
 
@@ -258,6 +261,13 @@ onMounted(() => {
         v-model="searchText"
         :placeholder="searchPlaceholder"
         class="search-box__input"
+        role="combobox"
+        :aria-label="t('a11y.searchInput')"
+        :aria-controls="searchSuggestionListId"
+        :aria-activedescendant="activeSuggestionOptionId"
+        :aria-expanded="searchSuggestionsExpanded"
+        aria-autocomplete="list"
+        autocomplete="off"
         @input="handleInput"
         @focus="handleFocus"
         @compositionstart="handleCompositionStart"
@@ -273,14 +283,17 @@ onMounted(() => {
         tabindex="-1"
         :style="{ opacity: focusStore.isFocused || settings.search.showIconAlways ? 1 : 0 }"
       >
-        <el-icon @click="doSearch"><search /></el-icon>
+        <el-icon @click="doSearch"><search aria-hidden="true" /></el-icon>
       </div>
     </form>
     <search-suggestion-area
       ref="suggestionArea"
+      :list-id="searchSuggestionListId"
       :search-text="searchText"
       :search-form-width="searchFormWidth"
       @do-search-with-text="doSearchWithText"
+      @active-option-change="activeSuggestionOptionId = $event"
+      @expanded-change="searchSuggestionsExpanded = $event"
     />
   </section>
 </template>

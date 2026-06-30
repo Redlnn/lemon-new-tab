@@ -1,4 +1,7 @@
 {
+  "a11y": {
+    "back": "返回上一层设置"
+  },
   "background": {
     "alwaysFresh": "永远都有新鲜感",
     "bingFrom": "图片来源：必应",

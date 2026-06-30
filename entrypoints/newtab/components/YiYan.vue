@@ -126,7 +126,12 @@ async function copyToClipboard() {
       ref="yiyan"
       @pointerdown="onPointerDown"
     >
-      <button class="yiyan__copy-btn" @click="copyToClipboard">
+      <button
+        type="button"
+        class="yiyan__copy-btn"
+        :aria-label="i18next.t('newtab:a11y.copyYiyan')"
+        @click="copyToClipboard"
+      >
         <el-icon>
           <content-copy-twotone />
         </el-icon>

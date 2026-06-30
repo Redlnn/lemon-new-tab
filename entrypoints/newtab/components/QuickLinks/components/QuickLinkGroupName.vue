@@ -73,6 +73,7 @@ defineExpose({ beginEdit })
       'quick-links__category-item--active': active,
       'quick-links__category-item--plain': plain,
     }"
+    :aria-current="active ? 'page' : undefined"
     @click="emit('select')"
     @dblclick.stop="beginEdit"
   >

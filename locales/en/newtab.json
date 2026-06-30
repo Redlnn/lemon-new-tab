@@ -2,6 +2,26 @@
   "about": {
     "yiyanProvider": "Chinese poetry API provided by {api}"
   },
+  "a11y": {
+    "actions": "Page actions",
+    "addQuickLinksGroup": "Add Quick Links group",
+    "copyYiyan": "Copy quote",
+    "deleteGroup": "Delete group {{name}}",
+    "downloadBackground": "Download background",
+    "goToPage": "Go to page {{page}}",
+    "main": "New tab content",
+    "moveGroupDown": "Move group {{name}} down",
+    "moveGroupUp": "Move group {{name}} up",
+    "nextPage": "Next page",
+    "openActionsMenu": "Open page actions menu",
+    "openBookmarks": "Open bookmarks",
+    "previousPage": "Previous page",
+    "quickLinksGroups": "Quick Links groups",
+    "quickLinksPagination": "Quick Links pagination",
+    "refreshBackground": "Refresh background",
+    "searchInput": "Search keywords",
+    "searchSuggestions": "Search suggestions"
+  },
   "bookmark": {
     "404": "Nothing found",
     "addToQuickLinks": "Add to Quick Links",

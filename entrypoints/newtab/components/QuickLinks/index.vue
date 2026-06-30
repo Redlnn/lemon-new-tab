@@ -11,6 +11,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/vue'
 import i18next from 'i18next'
+import { useTranslation } from 'i18next-vue'
 import PlusIcon from '~icons/fa6-solid/plus'
 import ChevronLeft20Filled from '~icons/fluent/chevron-left-20-filled'
 import ChevronRight20Filled from '~icons/fluent/chevron-right-20-filled'
@@ -64,6 +65,7 @@ import { useTopSitesMerge } from './composables/useTopSitesMerge'
 const focusStore = useFocusState()
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
+const { t } = useTranslation()
 
 const { height } = useWindowSize({ type: 'visual' })
 
@@ -1019,6 +1021,7 @@ defineExpose({ refresh })
 <template>
   <section
     class="quick-links"
+    :aria-label="t('quickLinks.title')"
     :class="{
       'quick-links--scroll': settings.quickLinks.useScroll,
       'quick-links--dragging': isDragging,
@@ -1110,6 +1113,8 @@ defineExpose({ refresh })
           v-if="!settings.quickLinks.useScroll && settings.quickLinks.grouping"
           class="noselect"
           :class="categoryClass"
+          role="navigation"
+          :aria-label="t('newtab:a11y.quickLinksGroups')"
         >
           <div class="quick-links__category-groups">
             <quick-link-sortable-item
@@ -1158,11 +1163,17 @@ defineExpose({ refresh })
             :class="{
               'quick-links__category-item--active': currentPageData?.groupId === topSitesGroupId,
             }"
+            :aria-current="currentPageData?.groupId === topSitesGroupId ? 'page' : undefined"
             @click="selectGroup(topSitesGroupId)"
           >
             {{ topSitesGroupName }}
           </button>
-          <button type="button" class="quick-links__category-item" @click="createGroupInline">
+          <button
+            type="button"
+            class="quick-links__category-item"
+            :aria-label="t('newtab:a11y.addQuickLinksGroup')"
+            @click="createGroupInline"
+          >
             <el-icon><PlusIcon /></el-icon>
           </button>
         </el-space>
@@ -1170,7 +1181,9 @@ defineExpose({ refresh })
           <!-- 左翻页按钮 -->
           <button
             v-if="showPagination && !isOnlyTouchDevice"
+            type="button"
             class="quick-links__nav-btn--prev"
+            :aria-label="t('newtab:a11y.previousPage')"
             :class="[
               {
                 'quick-links__nav-btn--disabled':
@@ -1355,7 +1368,9 @@ defineExpose({ refresh })
           <!-- 右翻页按钮 -->
           <button
             v-if="showPagination && !isOnlyTouchDevice"
+            type="button"
             class="quick-links__nav-btn--next"
+            :aria-label="t('newtab:a11y.nextPage')"
             :class="[
               {
                 'quick-links__nav-btn--disabled':

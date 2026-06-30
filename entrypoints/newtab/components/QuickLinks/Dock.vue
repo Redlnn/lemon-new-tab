@@ -427,8 +427,11 @@ defineExpose({ refresh })
           role="button"
           tabindex="0"
           class="dock-item"
+          :aria-label="t('dock.launchpad.title')"
           :ref="setLaunchpadBtnRef"
           @click="toggleLaunchpad"
+          @keydown.enter.prevent="toggleLaunchpad"
+          @keydown.space.prevent="toggleLaunchpad"
         >
           <apps24-regular />
         </div>
@@ -451,10 +454,12 @@ defineExpose({ refresh })
           class="dock-item"
           :href="item.url"
           :ref="setScalableRef"
+          :aria-label="item.title"
           :target="settings.dock.openInNewTab ? '_blank' : '_self'"
+          :rel="settings.dock.openInNewTab ? 'noopener noreferrer' : undefined"
           @contextmenu.stop.prevent="onItemContextmenu($event, item, true, idx)"
         >
-          <img :src="item.favicon || getOrCreateFaviconRef(item.url)" alt="favicon" />
+          <img :src="item.favicon || getOrCreateFaviconRef(item.url)" alt="" />
         </a>
       </el-tooltip>
       <div
@@ -485,11 +490,13 @@ defineExpose({ refresh })
           class="dock-item"
           :href="item.url"
           :ref="setScalableRef"
+          :aria-label="item.title"
           :target="settings.dock.openInNewTab ? '_blank' : '_self'"
+          :rel="settings.dock.openInNewTab ? 'noopener noreferrer' : undefined"
           @contextmenu.stop.prevent="onItemContextmenu($event, item, false, j)"
           @trigger="onItemLongPress($event, item, false, j)"
         >
-          <img :src="item.favicon || getOrCreateFaviconRef(item.url)" alt="favicon" />
+          <img :src="item.favicon || getOrCreateFaviconRef(item.url)" alt="" />
         </OnLongPress>
       </el-tooltip>
       <div v-if="j !== visibleTopSites.length - 1" class="dock-gap" :ref="setScalableRef"></div>
