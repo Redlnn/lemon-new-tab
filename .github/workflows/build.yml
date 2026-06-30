@@ -13,12 +13,12 @@ jobs:
       matrix:
         node-version: [24]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 11
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -55,14 +55,14 @@ jobs:
           fi
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.ARTIFACT_NAME }}
           include-hidden-files: true
           path: .output/lemon-new-tab-*.zip
 
       - name: Release Tag
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         if: github.ref_type == 'tag'
         with:
           files: .output/lemon-new-tab-*.zip
@@ -71,7 +71,7 @@ jobs:
 
       - name: Delete existing dev-release (release and tag)
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -91,7 +91,7 @@ jobs:
             }
 
       - name: Release Dev
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         if: github.event_name == 'workflow_dispatch'
         with:
           files: .output/lemon-new-tab-*.zip
