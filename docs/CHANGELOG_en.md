@@ -2,6 +2,24 @@
 
 > Translated by AI from Chinese.
 
+## 3.3.3 (Jun 30, 2026)
+
+### New Features✨
+
+- **Performance & Effects:** Added separate background transparency and blur controls for the search box, Quick Links, Dock, Launchpad, bookmarks sidebar, dialogs, quote widget, action buttons, and other components.
+- **Clock:** Added transparency control.
+
+### Improvements⚡️
+
+- Reorganized the Performance settings page so animation, transparency, and blur effects are managed together, with a one-click reset for transparency and blur.
+- Improved accessibility semantics and keyboard interactions.
+- When Dock is enabled, page messages now appear from the top to avoid covering the bottom Dock.
+
+### Bug Fixes🐛
+
+- Fixed an issue where the action button position setting could still show bottom options after Dock was enabled.
+- Fixed an issue where Launchpad could miss its opening animation the first time it was opened.
+
 ## 3.3.2 (Jun 24, 2026)
 
 ### New Features✨
