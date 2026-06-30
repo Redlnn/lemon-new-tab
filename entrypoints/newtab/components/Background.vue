@@ -638,6 +638,8 @@ function onImgLoaded() {
 
 <style lang="scss">
 .background-wrapper {
+  --background-mask-color: var(--mask-color__light);
+
   position: fixed;
   top: 0;
   left: 0;
@@ -651,12 +653,12 @@ function onImgLoaded() {
   position: absolute;
   width: 100%;
   height: 100%;
-  background-color: var(--mask-color__light);
+  background-color: var(--background-mask-color);
   transition: background-color var(--el-transition-duration-fast) cubic-bezier(0.65, 0.05, 0.1, 1);
+}
 
-  html.dark & {
-    background-color: var(--mask-color__night);
-  }
+html.dark .background-wrapper {
+  --background-mask-color: var(--mask-color__night);
 }
 
 .background-container {

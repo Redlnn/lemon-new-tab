@@ -1,27 +1,26 @@
-@use '@newtab/styles/mixins/acrylic.scss' as acrylic;
-
 .settings__dialog.el-dialog {
+  --settings-dialog-background: var(--el-bg-color-page);
+  --le-dialog-transparent-background: var(--le-bg-color-overlay-dialog-secondary);
+  --settings-close-hover-background: var(--el-fill-color-blank);
+  --settings-back-background: var(--el-fill-color-blank);
+  --settings-back-hover-background: var(--el-fill-color-blank);
+  --settings-items-background: var(--el-bg-color);
+  --settings-group-active-background: var(--el-fill-color-dark);
+  --settings-aside-background: #e9e9e9;
+  --settings-menu-hover-background: var(--le-fill-color-dark-opacity-20);
+  --settings-menu-active-background: var(--el-color-primary-light-9);
+  --settings-option-background: var(--el-bg-color-page);
+  --settings-option-active-background: var(--el-color-primary-light-9);
+
   display: flex;
   max-width: 93%;
   height: 500px;
   padding: 0;
   overflow: hidden;
-  background-color: var(--el-bg-color-page);
+  background-color: var(--le-dialog-background, var(--settings-dialog-background));
   border-radius: 20px;
   box-shadow: 0 0 15px 0 var(--le-bg-color-page-opacity-60);
   transition: background-color var(--el-transition-duration-fast) ease;
-
-  html.dialog-acrylic & {
-    @include acrylic.acrylic;
-  }
-
-  html.colorful & {
-    background-color: var(--el-color-primary-light-9);
-  }
-
-  html.dialog-transparent & {
-    background-color: var(--le-bg-color-overlay-opacity-20);
-  }
 
   .el-dialog__body {
     position: relative;
@@ -30,6 +29,142 @@
     flex-direction: column;
     transition: color var(--el-transition-duration-fast) ease;
   }
+}
+
+html.dark:not(.colorful) .settings__dialog {
+  --settings-aside-background: var(--el-fill-color-lighter);
+}
+
+html.colorful .settings__dialog {
+  --settings-dialog-background: var(--el-color-primary-light-9);
+  --settings-close-hover-background: var(--el-color-primary-light-9);
+  --settings-back-background: var(--el-color-primary-light-8);
+  --settings-back-hover-background: var(--el-color-primary-light-9);
+  --settings-items-background: var(--el-color-primary-light-8);
+  --settings-group-active-background: var(--el-color-primary-light-9);
+  --settings-aside-background: var(--el-color-primary-light-8);
+  --settings-menu-hover-background: var(--el-color-primary-light-9);
+  --settings-option-background: var(--el-fill-color-lighter);
+  --settings-option-active-background: var(--el-color-primary-light-7);
+}
+
+html.dialog-transparent .settings__dialog {
+  --settings-back-background: color-mix(
+    in oklch,
+    var(--el-fill-color-blank),
+    transparent var(--le-dialog-settings-back-transparency, var(--le-dialog-secondary-transparency))
+  );
+  --settings-back-hover-background: color-mix(
+    in oklch,
+    var(--el-fill-color-blank),
+    transparent var(--le-dialog-settings-back-hover-transparency, var(--le-dialog-transparency))
+  );
+  --settings-items-background: color-mix(
+    in oklch,
+    var(--el-bg-color),
+    transparent
+      var(--le-dialog-settings-items-transparency, var(--le-dialog-secondary-transparency))
+  );
+  --settings-group-active-background: color-mix(
+    in oklch,
+    var(--el-fill-color-dark),
+    transparent var(--le-dialog-settings-group-transparency, var(--le-dialog-menu-transparency))
+  );
+  --settings-option-active-background: color-mix(
+    in oklch,
+    var(--el-color-primary-light-9),
+    transparent var(--le-dialog-settings-option-transparency, var(--le-dialog-menu-transparency))
+  );
+  --settings-option-background: color-mix(
+    in oklch,
+    var(--el-bg-color-page),
+    transparent
+      var(
+        --le-dialog-settings-option-background-transparency,
+        var(--le-dialog-secondary-transparency)
+      )
+  );
+  --settings-menu-hover-background: color-mix(
+    in oklch,
+    var(--el-menu-hover-bg-color),
+    transparent
+      var(--le-dialog-settings-menu-hover-transparency, var(--le-dialog-menu-transparency))
+  );
+  --settings-menu-active-background: color-mix(
+    in oklch,
+    var(--el-color-primary-light-9),
+    transparent
+      var(--le-dialog-settings-menu-active-transparency, var(--le-dialog-menu-transparency))
+  );
+  --settings-aside-background: color-mix(
+    in oklch,
+    var(--el-fill-color-dark),
+    transparent var(--le-dialog-secondary-transparency)
+  );
+}
+
+html.dark.dialog-transparent .settings__dialog {
+  --settings-group-active-background: color-mix(
+    in oklch,
+    var(--el-fill-color-dark),
+    transparent var(--le-dialog-settings-group-transparency, var(--le-dialog-menu-transparency))
+  );
+  --settings-aside-background: color-mix(
+    in oklch,
+    var(--el-fill-color-lighter),
+    transparent var(--le-dialog-secondary-transparency)
+  );
+}
+
+html.colorful.dialog-transparent .settings__dialog {
+  --settings-back-background: color-mix(
+    in oklch,
+    var(--el-color-primary-light-8),
+    transparent var(--le-dialog-settings-back-transparency, var(--le-dialog-secondary-transparency))
+  );
+  --settings-back-hover-background: color-mix(
+    in oklch,
+    var(--el-color-primary-light-9),
+    transparent var(--le-dialog-settings-back-hover-transparency, var(--le-dialog-transparency))
+  );
+  --settings-items-background: color-mix(
+    in oklch,
+    var(--el-color-primary-light-9),
+    transparent
+      var(--le-dialog-settings-items-transparency, var(--le-dialog-secondary-transparency))
+  );
+  --settings-group-active-background: color-mix(
+    in oklch,
+    var(--el-color-primary-light-8),
+    transparent var(--le-dialog-settings-group-transparency, var(--le-dialog-menu-transparency))
+  );
+  --settings-aside-background: var(--le-bg-color-overlay-dialog-menu);
+  --settings-option-active-background: color-mix(
+    in oklch,
+    var(--el-color-primary-light-8),
+    transparent var(--le-dialog-settings-option-transparency, var(--le-dialog-menu-transparency))
+  );
+  --settings-option-background: color-mix(
+    in oklch,
+    var(--el-fill-color-lighter),
+    transparent
+      var(
+        --le-dialog-settings-option-background-transparency,
+        var(--le-dialog-secondary-transparency)
+      )
+  );
+  --settings-menu-hover-background: color-mix(
+    in oklch,
+    var(--el-color-primary-light-9),
+    transparent
+      var(--le-dialog-settings-menu-hover-transparency, var(--le-dialog-menu-transparency))
+  );
+  --settings-menu-active-background: color-mix(
+    in oklch,
+    var(--el-color-primary-light-9),
+    transparent
+      var(--le-dialog-settings-menu-active-transparency, var(--le-dialog-menu-transparency))
+  );
 }
 
 .settings-header {
@@ -49,11 +184,8 @@
     position: static;
 
     &:hover {
+      background-color: var(--settings-close-hover-background);
       box-shadow: var(--el-box-shadow-light);
-
-      html.colorful & {
-        background-color: var(--el-color-primary-light-9);
-      }
     }
   }
 
@@ -71,15 +203,11 @@
     margin-right: 20px;
     color: var(--el-text-color-secondary);
     cursor: pointer;
-    background-color: var(--el-fill-color-blank);
+    background-color: var(--settings-back-background);
     border: none;
     border-radius: 15px;
     box-shadow: var(--el-box-shadow-light);
     transition: var(--el-transition-duration-fast) ease;
-
-    html.colorful & {
-      background-color: var(--el-color-primary-light-8);
-    }
 
     &:disabled {
       cursor: auto;
@@ -88,10 +216,7 @@
     &:not(:disabled):hover,
     &:focus-visible {
       color: var(--el-text-color-primary);
-
-      html.colorful & {
-        background-color: var(--el-color-primary-light-9);
-      }
+      background-color: var(--settings-back-hover-background);
     }
 
     &:focus-visible {
@@ -112,24 +237,12 @@
 .settings__items-container {
   padding: 14px 25px;
   margin-bottom: 10px;
-  background-color: var(--el-bg-color);
+  background-color: var(--settings-items-background);
   border-radius: 15px;
   transition: background-color var(--el-transition-duration-fast) ease;
 
   .is-mobile & {
     margin-bottom: 25px;
-  }
-
-  html.colorful & {
-    background-color: var(--el-color-primary-light-8);
-  }
-
-  html.dialog-transparent & {
-    background-color: var(--le-bg-color-overlay-opacity-20);
-  }
-
-  html.colorful.dialog-transparent & {
-    background-color: var(--el-color-primary-light-9);
   }
 }
 
@@ -201,7 +314,7 @@
 
   &.active {
     padding: 10px 20px;
-    background-color: var(--el-fill-color-dark);
+    background-color: var(--settings-group-active-background);
     border-radius: 10px;
 
     &.settings__item:first-of-type {
@@ -211,14 +324,6 @@
     &.settings__item:last-of-type {
       margin-bottom: 10px;
     }
-  }
-
-  html.colorful &.active {
-    background-color: var(--el-color-primary-light-9);
-  }
-
-  html.colorful.dialog-transparent &.active {
-    background-color: var(--el-color-primary-light-8);
   }
 }
 
@@ -254,7 +359,7 @@
   height: calc(100% - 20px);
   padding: 10px;
   margin: 10px 0 10px 10px;
-  background-color: #e9e9e9;
+  background-color: var(--settings-aside-background);
   border-radius: 15px;
   box-shadow: var(--el-box-shadow);
   transition:
@@ -268,26 +373,6 @@
     margin: 0;
     background-color: initial !important;
     box-shadow: none;
-  }
-
-  html.colorful & {
-    background-color: var(--el-color-primary-light-8);
-  }
-
-  html.dialog-transparent & {
-    background-color: var(--le-fill-color-dark-opacity-20);
-  }
-
-  html.dark:not(.colorful) & {
-    background-color: var(--el-fill-color-lighter);
-  }
-
-  html.dark.dialog-transparent & {
-    background-color: var(--le-fill-color-lighter-opacity-20);
-  }
-
-  html.dialog-transparent.colorful :not(.is-mobile) & {
-    background-color: var(--le-bg-color-overlay-opacity-30);
   }
 }
 
@@ -327,7 +412,7 @@
   .settings-menu-item {
     --el-menu-item-height: 32px;
     --el-menu-active-color: var(--el-color-primary);
-    --el-menu-hover-bg-color: var(--le-fill-color-dark-opacity-20);
+    --el-menu-hover-bg-color: var(--settings-menu-hover-background);
     position: relative;
     border-radius: 10px;
     transition: var(--el-transition-duration-fast) ease;
@@ -353,10 +438,8 @@
       }
     }
 
-    &.is-active,
-    html.colorful &:hover,
-    html.colorful &:focus-visible {
-      background-color: var(--el-color-primary-light-9);
+    &.is-active {
+      background-color: var(--settings-menu-active-background);
     }
 
     .menu-chevron {
@@ -373,6 +456,13 @@
 
   .menu-title {
     flex: 1;
+  }
+}
+
+html.colorful .settings__dialog {
+  .settings-menu-item:hover,
+  .settings-menu-item:focus-visible {
+    background-color: var(--settings-menu-hover-background);
   }
 }
 

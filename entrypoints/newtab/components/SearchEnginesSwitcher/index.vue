@@ -27,6 +27,7 @@ const { getCustomEngineFavicon } = useCustomEngineFavicon()
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.dialog.transparent,
+  transparency: settings.perf.dialog.transparency,
   blur: settings.perf.dialog.blur,
 }))
 const customEnginePopperClass = perf('se-switcher-item__menu-popper')
@@ -82,8 +83,7 @@ function handleScroll() {
   <base-dialog
     v-model="opened"
     :title="t('menu.searchEnginePreference')"
-    acrylic
-    opacity
+    container-class="se-switcher__dialog"
     @scroll="handleScroll"
   >
     <div style="width: 100%; margin-top: 20px; overflow: hidden">
@@ -167,6 +167,27 @@ function handleScroll() {
 <style lang="scss">
 @use '@newtab/styles/mixins/acrylic.scss' as acrylic;
 
+.se-switcher__dialog {
+  --se-item-background: var(--el-bg-color);
+  --se-item-hover-background: var(--el-fill-color-dark);
+  --se-item-active-background: var(--el-color-primary);
+  --se-icon-background: var(--el-fill-color-blank);
+  --se-icon-active-background: var(--se-icon-background);
+  --se-active-url-color: var(--el-fill-color);
+}
+
+html.dark .se-switcher__dialog {
+  --se-item-active-background: var(--el-color-primary-light-3);
+  --se-icon-background: var(--le-text-color-primary-opacity-65);
+  --se-icon-active-background: var(--el-text-color-primary);
+  --se-active-url-color: var(--el-text-color-secondary);
+}
+
+html.colorful .se-switcher__dialog {
+  --se-item-background: var(--el-color-primary-light-8);
+  --se-item-hover-background: var(--el-color-primary-light-7);
+}
+
 .se-switcher-divider {
   display: flex;
   align-items: center;
@@ -202,28 +223,16 @@ function handleScroll() {
   height: 65px;
   padding: 16px 18px;
   cursor: pointer;
-  background-color: var(--el-bg-color);
+  background-color: var(--se-item-background);
   border-radius: 15px;
 
   &:hover {
-    background-color: var(--el-fill-color-dark);
+    background-color: var(--se-item-hover-background);
   }
 
   &.is-active {
     color: var(--el-color-white);
-    background-color: var(--el-color-primary);
-
-    html.dark & {
-      background-color: var(--el-color-primary-light-3);
-    }
-  }
-
-  html.colorful &:not(.is-active) {
-    background-color: var(--el-color-primary-light-8);
-
-    &:hover {
-      background-color: var(--el-color-primary-light-7);
-    }
+    background-color: var(--se-item-active-background);
   }
 
   &--add {
@@ -236,7 +245,7 @@ function handleScroll() {
     width: 30px;
     height: 30px;
     margin-right: 8px;
-    background-color: var(--el-fill-color-blank);
+    background-color: var(--se-icon-background);
     border-radius: 50%;
 
     &:has(img) {
@@ -255,13 +264,9 @@ function handleScroll() {
       opacity: 0.5;
     }
 
-    html.dark & {
-      background-color: var(--le-text-color-primary-opacity-65);
-    }
-
-    html.dark .se-switcher-item:hover &,
-    html.dark .se-switcher-item.is-active & {
-      background-color: var(--el-text-color-primary);
+    .se-switcher-item:hover &,
+    .se-switcher-item.is-active & {
+      background-color: var(--se-icon-active-background);
     }
   }
 
@@ -281,11 +286,7 @@ function handleScroll() {
   }
 
   &.is-active &__url {
-    color: var(--el-fill-color);
-  }
-
-  html.dark &.is-active &__url {
-    color: var(--el-text-color-secondary);
+    color: var(--se-active-url-color);
   }
 
   &__checked {
@@ -304,7 +305,7 @@ function handleScroll() {
 
   &.se-switcher-item__menu-popper--opacity.se-switcher-item__menu-popper--blur {
     // 只有模糊时才有透明度效果，否则会影响可读性
-    background-color: var(--le-bg-color-overlay-opacity-30);
+    background-color: var(--le-bg-color-overlay-dialog-menu);
   }
 
   &.se-switcher-item__menu-popper--blur {

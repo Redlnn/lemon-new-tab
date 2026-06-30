@@ -63,6 +63,7 @@ function showEngineToast() {
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.searchBar.transparent,
+  transparency: settings.perf.searchBar.transparency,
   blur: settings.perf.searchBar.blur,
 }))
 
@@ -175,11 +176,11 @@ defineExpose({ hide, showEngineToast })
       opacity var(--el-transition-duration-fast) ease;
 
     &.search-engine-menu--opacity {
-      background-color: var(--le-bg-color-overlay-opacity-30);
+      background-color: var(--le-bg-color-overlay-search-menu);
     }
 
     &.search-engine-menu--blur {
-      @include acrylic.acrylic;
+      @include acrylic.acrylic(var(--le-search-menu-backdrop-blur, 10px));
     }
   }
 
@@ -196,11 +197,11 @@ defineExpose({ hide, showEngineToast })
 
     &:hover,
     &:focus-visible {
-      background: var(--le-bg-color-overlay-opacity-30);
+      background: var(--le-bg-color-overlay-search-menu);
     }
 
     &--active {
-      background: var(--le-bg-color-overlay-opacity-20);
+      background: var(--le-bg-color-overlay-search-menu-active);
     }
 
     .search-engine-menu-item__icon {

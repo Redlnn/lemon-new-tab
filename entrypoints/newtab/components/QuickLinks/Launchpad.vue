@@ -26,6 +26,7 @@ import {
   type QuickLinkTarget,
 } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
+import { toggleDocumentClass } from '@/shared/theme'
 
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import { usePerfClasses } from '@newtab/composables/usePerfClasses'
@@ -83,6 +84,25 @@ type GroupView = {
 
 const { t } = useTranslation()
 const settings = useSettingsStore()
+const quickLinksBlurEnabled = computed(
+  () =>
+    settings.perf.quickLinks.transparent &&
+    settings.perf.quickLinks.transparency > 0 &&
+    settings.perf.quickLinks.blur,
+)
+const launchpadOverlayClass = computed(
+  () =>
+    `launchpad-overlay noselect${quickLinksBlurEnabled.value ? ' launchpad-overlay--blur' : ''}`,
+)
+const hideBackgroundContent = computed(() => model.value && !quickLinksBlurEnabled.value)
+
+watch(
+  hideBackgroundContent,
+  (hidden) => {
+    toggleDocumentClass('launchpad-no-blur', hidden)
+  },
+  { immediate: true },
+)
 const quickLinksStore = useQuickLinksStore()
 const legacyDndGroupId = FLAT_QUICK_LINK_DND_GROUP_ID
 const topSitesGroupId = TOP_SITES_DND_GROUP_ID
@@ -298,6 +318,7 @@ watch(
 // ---- 右键菜单 ----
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.quickLinks.transparent,
+  transparency: settings.perf.quickLinks.transparency,
   blur: settings.perf.quickLinks.blur,
 }))
 
@@ -607,13 +628,14 @@ function handleLaunchpadTouchMenu(event: PointerEvent, data: QuickLinkDndData) {
 
 onBeforeUnmount(() => {
   clearPageSwitchTimer()
+  toggleDocumentClass('launchpad-no-blur', false)
 })
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="launchpad-fade" appear>
-      <el-overlay v-show="model" :overlay-class="['launchpad-overlay', 'noselect']" :z-index="1">
+      <el-overlay v-show="model" :overlay-class="launchpadOverlayClass" :z-index="1">
         <div
           class="launchpad-wrapper"
           ref="container"
@@ -1027,7 +1049,14 @@ onBeforeUnmount(() => {
 <style lang="scss">
 .launchpad-overlay {
   overflow: hidden;
-  backdrop-filter: blur(40px) saturate(1.5);
+
+  &--blur {
+    backdrop-filter: blur(var(--le-quick-links-launchpad-backdrop-blur, 40px)) saturate(1.5);
+
+    .launchpad-search__input .el-input__wrapper {
+      backdrop-filter: blur(var(--le-quick-links-backdrop-blur, 10px));
+    }
+  }
 }
 
 .launchpad-wrapper {
@@ -1064,10 +1093,6 @@ onBeforeUnmount(() => {
     --el-input-text-color: #fff;
     --el-input-placeholder-color: rgb(255 255 255 / 55%);
     --el-input-clear-hover-color: #fff;
-
-    .el-input__wrapper {
-      backdrop-filter: blur(10px);
-    }
   }
 }
 

@@ -1,6 +1,5 @@
 @use './element.scss';
 @use './color.scss';
-@use './mixins/acrylic.scss' as acrylic;
 @use './transitions.scss';
 @use './action-btn.scss';
 @use '@/assets/styles/font.scss';
@@ -49,25 +48,37 @@ body {
   text-underline-offset: 0.25em;
 }
 
-html.colorful {
-  .el-message-box,
-  .base-dialog {
-    background-color: var(--el-color-primary-light-9);
-  }
+.el-dialog,
+.el-message-box {
+  --le-dialog-backdrop-filter: none;
+
+  backdrop-filter: var(--le-dialog-backdrop-filter);
 }
 
-html.dialog-transparent {
-  .el-message-box,
-  .base-dialog--opacity {
-    background-color: var(--le-bg-color-overlay-opacity-15);
-  }
+.el-dialog {
+  background-color: var(--le-dialog-background, var(--el-dialog-bg-color));
 }
 
-html.dialog-acrylic {
-  .el-message-box,
-  .base-dialog--blur {
-    @include acrylic.acrylic;
-  }
+.el-message-box {
+  background-color: var(--le-dialog-background, var(--el-bg-color-overlay));
+}
+
+html.colorful .el-message-box {
+  --le-dialog-background: var(--el-color-primary-light-9);
+}
+
+html.dialog-transparent .el-dialog,
+html.dialog-transparent .el-message-box {
+  --le-dialog-background: var(
+    --le-dialog-transparent-background,
+    var(--le-bg-color-overlay-dialog)
+  );
+}
+
+html.dialog-acrylic .el-dialog,
+html.dialog-acrylic .el-message-box {
+  --le-dialog-backdrop-filter: blur(var(--le-dialog-backdrop-blur, 10px)) saturate(1.4)
+    brightness(1.1);
 }
 
 .app {
@@ -86,6 +97,15 @@ html.dialog-acrylic {
     padding-bottom: calc(env(safe-area-inset-bottom) + 96px);
     overflow: hidden auto;
     overscroll-behavior-y: contain;
+  }
+}
+
+html.launchpad-no-blur {
+  .app,
+  .action-btn-container {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
   }
 }
 

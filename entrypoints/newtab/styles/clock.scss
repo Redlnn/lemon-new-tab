@@ -10,7 +10,17 @@
 }
 
 .clock {
-  color: var(--el-fill-color-blank);
+  --clock-color: var(--el-fill-color-blank);
+  --clock-colorful-number: var(--el-color-primary-light-5);
+  --clock-time-shadow:
+    0 6px 13px color-mix(in oklch, var(--el-color-black), transparent 80%),
+    1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);
+  --clock-date-shadow:
+    0 3px 6px color-mix(in oklch, var(--el-color-black), transparent 70%),
+    1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);
+  --clock-night-invert-color: var(--clock-color);
+
+  color: var(--clock-color);
   text-align: center;
   transition:
     font-size 0.25s cubic-bezier(0.5, 0, 0.5, 2),
@@ -59,11 +69,7 @@
 
     .clock__time {
       & .colorful {
-        color: var(--el-color-primary-light-5);
-
-        html.dark & {
-          color: var(--el-color-primary-light-3);
-        }
+        color: var(--clock-colorful-number);
       }
     }
 
@@ -90,38 +96,33 @@
 
   &--shadow {
     .clock__time-container {
-      text-shadow:
-        0 6px 13px color-mix(in oklch, var(--el-color-black), transparent 80%),
-        1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);
-
-      html.dark & {
-        text-shadow:
-          0 1px 8px color-mix(in oklch, var(--el-color-black), transparent 50%),
-          1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);
-      }
+      text-shadow: var(--clock-time-shadow);
     }
 
     .clock__date {
-      text-shadow:
-        0 3px 6px color-mix(in oklch, var(--el-color-black), transparent 70%),
-        1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);
-
-      html.dark & {
-        text-shadow:
-          0 1px 4px color-mix(in oklch, var(--el-color-black), transparent 50%),
-          1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);
-      }
+      text-shadow: var(--clock-date-shadow);
     }
   }
 
-  &--invert.clock--light,
-  html.dark & {
+  &--invert.clock--light {
     color: var(--el-text-color-primary);
   }
 
-  html.dark &.clock--invert.clock--night {
-    color: var(--el-fill-color-extra-light);
+  &--invert.clock--night {
+    color: var(--clock-night-invert-color);
   }
+}
+
+html.dark .clock {
+  --clock-color: var(--el-text-color-primary);
+  --clock-colorful-number: var(--el-color-primary-light-3);
+  --clock-time-shadow:
+    0 1px 8px color-mix(in oklch, var(--el-color-black), transparent 50%),
+    1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);
+  --clock-date-shadow:
+    0 1px 4px color-mix(in oklch, var(--el-color-black), transparent 50%),
+    1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);
+  --clock-night-invert-color: var(--el-fill-color-extra-light);
 }
 
 @media (width <= 600px) {

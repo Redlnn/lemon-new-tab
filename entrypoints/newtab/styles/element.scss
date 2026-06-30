@@ -1,4 +1,3 @@
-@use '@newtab/styles/mixins/acrylic.scss' as acrylic;
 @use 'element-plus/theme-chalk/src/dark/css-vars.scss' as *;
 
 body {
@@ -62,9 +61,33 @@ body {
   }
 }
 
+.el-message {
+  --le-message-background: var(--el-message-bg-color);
+  --le-message-backdrop-filter: none;
+
+  background-color: var(--le-message-background);
+  backdrop-filter: var(--le-message-backdrop-filter);
+}
+
+html.dialog-transparent .el-message {
+  --le-message-background: color-mix(
+    in oklch,
+    var(--el-message-bg-color),
+    transparent var(--le-dialog-secondary-transparency)
+  );
+}
+
+html.dialog-acrylic .el-message {
+  --le-message-backdrop-filter: blur(var(--le-dialog-secondary-backdrop-blur, 10px)) saturate(1.4)
+    brightness(1.1);
+}
+
 .el-notification {
-  @include acrylic.acrylic;
-  background-color: var(--le-bg-color-overlay-opacity-20);
+  --le-notification-background: var(--el-bg-color-overlay);
+  --le-notification-backdrop-filter: none;
+
+  background-color: var(--le-notification-background);
+  backdrop-filter: var(--le-notification-backdrop-filter);
   transition:
     background-color var(--el-transition-duration-fast) ease,
     opacity var(--el-transition-duration),
@@ -73,6 +96,23 @@ body {
     right var(--el-transition-duration),
     top 0.4s,
     bottom var(--el-transition-duration);
+}
+
+html.dialog-transparent .el-notification {
+  --le-notification-background: var(--le-bg-color-overlay-dialog-secondary);
+}
+
+html.colorful .el-notification {
+  --le-notification-background: var(--el-color-primary-light-9);
+}
+
+html.colorful.dialog-transparent .el-notification {
+  --le-notification-background: var(--le-bg-color-overlay-dialog-secondary);
+}
+
+html.dialog-acrylic .el-notification {
+  --le-notification-backdrop-filter: blur(var(--le-dialog-secondary-backdrop-blur, 10px))
+    saturate(1.4) brightness(1.1);
 }
 
 .el-popper.el-color-picker__panel {
@@ -96,10 +136,17 @@ body {
 }
 
 .el-backtop {
-  @include acrylic.acrylic(3px);
+  --le-backtop-backdrop-filter: none;
+
+  backdrop-filter: var(--le-backtop-backdrop-filter);
   transition:
     background-color var(--el-transition-duration-fast) ease,
     opacity var(--el-transition-duration) cubic-bezier(0.55, 0, 0.1, 1); // .el-fade-in
+}
+
+html.dialog-acrylic .el-backtop {
+  --le-backtop-backdrop-filter: blur(var(--le-dialog-backtop-backdrop-blur, 3px)) saturate(1.4)
+    brightness(1.1);
 }
 
 .el-switch:not(.el-switch--small, .el-switch--large) {

@@ -19,7 +19,7 @@ function handleEmailClick() {
 </script>
 
 <template>
-  <base-dialog v-model="opened" :title="t('newtab:menu.help')" acrylic opacity>
+  <base-dialog v-model="opened" :title="t('newtab:menu.help')" container-class="faq__dialog">
     <div class="issue-container noselect">
       <div>{{ t('help.title') }}</div>
       <div class="issue-links">
@@ -133,6 +133,29 @@ function handleEmailClick() {
 </template>
 
 <style lang="scss">
+.faq__dialog {
+  --faq-link-background: var(--el-bg-color);
+  --faq-link-hover-background: var(--el-fill-color-lighter);
+  --faq-icon-background: var(--el-fill-color-darker);
+  --faq-icon-hover-background: var(--faq-icon-background);
+  --faq-item-background: var(--el-bg-color);
+}
+
+html.colorful .faq__dialog {
+  --faq-link-background: var(--el-color-primary-light-8);
+  --faq-link-hover-background: var(--el-color-primary-light-7);
+  --faq-icon-background: var(--el-color-primary-light-9);
+  --faq-icon-hover-background: var(--el-color-primary-light-8);
+  --faq-item-background: var(--el-color-primary-light-8);
+}
+
+html.colorful.dialog-transparent .faq__dialog {
+  --faq-link-background: var(--el-color-primary-light-9);
+  --faq-icon-background: var(--el-color-primary-light-8);
+  --faq-icon-hover-background: var(--el-color-primary-light-9);
+  --faq-item-background: var(--el-color-primary-light-9);
+}
+
 .issue-container {
   padding-top: 1.3em;
 }
@@ -153,7 +176,7 @@ function handleEmailClick() {
     color: var(--el-text-color-primary);
     text-decoration: none;
     cursor: pointer;
-    background-color: var(--el-bg-color);
+    background-color: var(--faq-link-background);
     border-radius: 15px;
     transition:
       background-color var(--el-transition-duration-fast) ease,
@@ -166,49 +189,21 @@ function handleEmailClick() {
       width: 28px;
       height: 28px;
       font-size: 18px;
-      background-color: var(--el-fill-color-darker);
+      background-color: var(--faq-icon-background);
       border-radius: 8px;
       transition: background-color var(--el-transition-duration-fast) ease;
-
-      html.colorful & {
-        background-color: var(--el-color-primary-light-9);
-      }
-
-      html.dialog-transparent.colorful & {
-        background-color: var(--el-color-primary-light-8);
-      }
     }
 
     &:hover {
-      background-color: var(--el-fill-color-lighter);
+      background-color: var(--faq-link-hover-background);
+
+      .issue-link-icon {
+        background-color: var(--faq-icon-hover-background);
+      }
     }
 
     &:active {
       transform: scale(0.95);
-    }
-
-    html.colorful & {
-      background-color: var(--el-color-primary-light-8);
-
-      &:hover {
-        background-color: var(--el-color-primary-light-7);
-
-        .issue-link-icon {
-          background-color: var(--el-color-primary-light-8);
-        }
-      }
-    }
-
-    html.dialog-transparent.colorful & {
-      background-color: var(--el-color-primary-light-9);
-
-      &:hover {
-        background-color: var(--el-color-primary-light-7);
-
-        .issue-link-icon {
-          background-color: var(--el-color-primary-light-9);
-        }
-      }
     }
   }
 }
@@ -223,7 +218,7 @@ function handleEmailClick() {
   .faq-item {
     padding: 20px 22px;
     margin-bottom: 10px;
-    background-color: var(--el-bg-color);
+    background-color: var(--faq-item-background);
     border-radius: 15px;
 
     &:last-child {
@@ -232,14 +227,6 @@ function handleEmailClick() {
 
     &__title {
       font-weight: bold;
-    }
-
-    html.colorful & {
-      background-color: var(--el-color-primary-light-8);
-    }
-
-    html.dialog-transparent.colorful & {
-      background-color: var(--el-color-primary-light-9);
     }
   }
 }

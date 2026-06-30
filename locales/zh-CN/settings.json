@@ -124,6 +124,7 @@
       "title": "时钟大小"
     },
     "title": "时钟",
+    "transparency": "时钟透明度",
     "weight": {
       "black": "最粗（900）",
       "bold": "粗体（600）",
@@ -226,11 +227,11 @@
   },
   "perf": {
     "actionBtns": {
-      "blur": "右下按钮模糊",
-      "transparent": "右下按钮透明"
+      "blur": "功能按钮模糊",
+      "transparent": "功能按钮透明"
     },
-    "bgSwitchAnim": "背景切换动画",
-    "bgSwitchAnimTip": "关闭后切换背景时将不再有淡入淡出动画，能微弱提升切换速度。同时启动时的背景动画也会被禁用",
+    "bgSwitchAnim": "壁纸切换动画",
+    "bgSwitchAnimTip": "关闭后切换壁纸时将不再有淡入淡出动画，能微弱提升切换速度。同时启动时的壁纸动画也会被禁用",
     "bookmark": {
       "blur": "书签栏背景模糊",
       "transparent": "书签栏背景透明"
@@ -238,6 +239,7 @@
     "dialog": {
       "animation": "弹窗动画",
       "blur": "弹窗背景模糊",
+      "title": "弹窗",
       "transparent": "弹窗背景透明"
     },
     "dock": {
@@ -251,7 +253,11 @@
       "blur": "搜索框模糊",
       "transparent": "搜索框透明"
     },
-    "title": "性能",
+    "effectsTitle": "效果设置",
+    "resetTransparencyAndBlur": "重置透明与模糊",
+    "title": "性能与效果",
+    "blurIntensity": "背景模糊度",
+    "transparency": "背景透明度",
     "toggleAll": {
       "animation": "动画",
       "blur": "模糊效果",
@@ -259,14 +265,15 @@
       "enable": "一键启用所有",
       "transparent": "透明效果"
     },
+    "wallpaper": "壁纸",
     "yiyan": {
       "blur": "一言背景模糊",
       "ripple": "一言水波纹动画",
       "transparent": "一言背景透明"
     },
     "quickLinks": {
-      "blur": "快速导航图标模糊",
-      "transparent": "快速导航图标透明"
+      "blur": "快速导航、Dock 和启动台模糊",
+      "transparent": "快速导航和 Dock 透明"
     }
   },
   "search": {

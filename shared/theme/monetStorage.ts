@@ -8,7 +8,7 @@ export interface MonetColors {
 }
 
 // 使用 wxt storage 存储莫奈颜色
-export const monetColorsStorage = storage.defineItem<MonetColors | null>('local:monetColors', {
+const monetColorsStorage = storage.defineItem<MonetColors | null>('local:monetColors', {
   fallback: null,
 })
 
@@ -38,9 +38,9 @@ export async function getMonetColors(): Promise<MonetColors | null> {
 /**
  * 清除存储的莫奈颜色
  */
-export async function clearMonetColors() {
-  await monetColorsStorage.setValue(null)
-}
+// export async function clearMonetColors() {
+//   await monetColorsStorage.setValue(null)
+// }
 
 /**
  * 应用已存储的莫奈颜色到当前页面

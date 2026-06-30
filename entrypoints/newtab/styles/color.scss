@@ -18,7 +18,41 @@
   }
 }
 
+@mixin gen-semantic-overlay-colors($base-color, $roles) {
+  @each $role, $default-transparency in $roles {
+    --le-#{$role}-transparency: #{$default-transparency}%;
+    --le-bg-color-overlay-#{$role}: color-mix(
+      in oklch,
+      #{$base-color},
+      transparent var(--le-#{$role}-transparency)
+    );
+  }
+}
+
 $opacities: (15, 20, 30, 35, 50, 60, 80, 90);
+$semantic-overlay-roles: (
+  'bookmark': 15,
+  'bookmark-menu': 30,
+  'dialog': 15,
+  'dialog-secondary': 20,
+  'dialog-menu': 30,
+  'search': 50,
+  'search-hover': 35,
+  'search-focus': 20,
+  'search-subtle': 60,
+  'search-menu': 30,
+  'search-menu-active': 20,
+  'quick-links': 60,
+  'quick-links-hover': 30,
+  'quick-links-strong': 20,
+  'quick-links-subtle': 80,
+  'quick-links-tooltip': 50,
+  'yiyan': 80,
+  'yiyan-control': 60,
+  'action-btns': 90,
+  'action-btns-hover': 60,
+  'action-btns-menu': 20,
+);
 
 :root {
   @include gen-var-opacity('le-bg-color-overlay', 'el-bg-color-overlay', $opacities);
@@ -26,8 +60,13 @@ $opacities: (15, 20, 30, 35, 50, 60, 80, 90);
   @include gen-var-opacity('le-bg-color-page', 'el-bg-color-page', (60));
   @include gen-var-opacity('le-fill-color-lighter', 'el-fill-color-lighter', (20));
   @include gen-var-opacity('le-fill-color-dark', 'el-fill-color-dark', (20));
+  @include gen-semantic-overlay-colors(var(--el-bg-color-overlay), $semantic-overlay-roles);
 }
 
 html.colorful {
   @include gen-colorful-var-opacity('le-bg-color-overlay', 'el-bg-color-overlay', 30, $opacities);
+  @include gen-semantic-overlay-colors(
+    color-mix(in oklch, var(--el-bg-color-overlay) 100%, var(--el-color-primary) 30%),
+    $semantic-overlay-roles
+  );
 }

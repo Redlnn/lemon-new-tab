@@ -1,6 +1,21 @@
 @use '@newtab/styles/mixins/acrylic.scss' as acrylic;
 
 .quick-links {
+  --quick-links-nav-background: var(--el-fill-color-darker);
+  --quick-links-nav-hover-background: var(--el-fill-color-extra-light);
+  --quick-links-pagination-background: var(--el-fill-color-darker);
+  --quick-links-pin-background: var(--el-fill-color);
+  --quick-links-icon-background: var(--el-fill-color-darker);
+  --quick-links-icon-hover-background: var(--el-fill-color-extra-light);
+  --quick-links-icon-border-color: rgb(255 255 255 / 50%);
+  --quick-links-icon-shadow: var(--el-box-shadow);
+  --quick-links-light-title-color: var(--el-text-color-primary);
+  --quick-links-light-title-shadow: none;
+  --quick-links-add-light-color: var(--le-text-color-primary-opacity-65);
+  --quick-links-add-light-hover-color: var(--el-text-color-primary);
+  --quick-links-add-light-icon-color: var(--le-text-color-primary-opacity-65);
+  --quick-links-add-light-icon-hover-color: var(--el-text-color-primary);
+
   max-width: 85%;
   transition: opacity 0.1s ease;
 
@@ -35,11 +50,9 @@
     color: var(--el-text-color-primary);
     text-align: center;
 
-    html.light .quick-links__container--white-in-light & {
-      color: var(--el-color-white);
-      text-shadow:
-        1px 1px 4px rgb(0 0 0 / 50%),
-        0 0 6px rgb(0 0 0 / 10%);
+    .quick-links__container--white-in-light & {
+      color: var(--quick-links-light-title-color);
+      text-shadow: var(--quick-links-light-title-shadow);
     }
   }
 
@@ -87,7 +100,7 @@
     padding: 0;
     color: var(--el-text-color-primary);
     cursor: pointer;
-    background-color: var(--el-fill-color-darker);
+    background-color: var(--quick-links-nav-background);
     border: none;
     border-radius: 50%;
     opacity: 0;
@@ -130,39 +143,23 @@
     }
 
     &--blur {
-      @include acrylic.acrylic;
+      @include acrylic.acrylic(var(--le-quick-links-backdrop-blur, 10px));
     }
 
     &:not(&--disabled):hover {
-      background-color: var(--el-fill-color-extra-light);
+      background-color: var(--quick-links-nav-hover-background);
     }
 
     &--opacity {
-      background-color: var(--le-bg-color-overlay-opacity-60);
+      background-color: var(--le-bg-color-overlay-quick-links);
 
       &:not(.quick-links__nav-btn--disabled):hover {
-        background-color: var(--le-bg-color-overlay-opacity-30);
+        background-color: var(--le-bg-color-overlay-quick-links-hover);
       }
     }
 
     &:not(&--disabled):hover &--opacity {
-      background-color: var(--le-bg-color-overlay-opacity-30);
-    }
-
-    html.dark &:not(&--opacity) {
-      background-color: var(--el-fill-color-extra-light);
-    }
-
-    html.colorful &:not(&--opacity) {
-      background-color: var(--el-color-primary-light-9);
-    }
-
-    html.dark &:not(&--opacity, &--disabled):hover {
-      background-color: var(--el-fill-color-light);
-    }
-
-    html.colorful &:not(&--opacity, &--disabled):hover {
-      background-color: var(--el-color-primary-light-8);
+      background-color: var(--le-bg-color-overlay-quick-links-hover);
     }
 
     &--disabled {
@@ -190,7 +187,7 @@
     height: 8px;
     padding: 0;
     cursor: pointer;
-    background-color: var(--el-fill-color-darker);
+    background-color: var(--quick-links-pagination-background);
     border: none;
     border-radius: 50%;
     opacity: 0.5;
@@ -210,14 +207,6 @@
 
       &:hover {
         opacity: 1;
-      }
-    }
-
-    html.dark & {
-      background-color: var(--el-fill-color-light);
-
-      &--active {
-        background-color: var(--el-color-primary);
       }
     }
   }
@@ -343,20 +332,16 @@
           width: 17px;
           height: 17px;
           color: var(--el-color-primary);
-          background-color: var(--el-fill-color);
+          background-color: var(--quick-links-pin-background);
           border-radius: 50%;
           box-shadow: var(--el-box-shadow-light);
 
           &--opacity {
-            background-color: var(--le-bg-color-overlay-opacity-80);
+            background-color: var(--le-bg-color-overlay-quick-links-subtle);
           }
 
           &--blur {
-            @include acrylic.acrylic;
-          }
-
-          html.colorful &:not(.quick-links__pin-icon--opacity) {
-            background-color: var(--el-color-primary-light-8);
+            @include acrylic.acrylic(var(--le-quick-links-backdrop-blur, 10px));
           }
         }
 
@@ -374,53 +359,36 @@
           transition: background-color 0.1s ease;
 
           &.border {
-            border: solid 1px rgb(255 255 255 / 50%);
-
-            html.dark & {
-              border: solid 1px rgb(255 255 255 / 10%);
-            }
+            border: solid 1px var(--quick-links-icon-border-color);
           }
 
           &--blur {
-            @include acrylic.acrylic;
+            @include acrylic.acrylic(var(--le-quick-links-backdrop-blur, 10px));
           }
 
           .quick-links__item:hover & {
-            background: var(--el-fill-color-extra-light);
+            background: var(--quick-links-icon-hover-background);
           }
 
           &--opacity {
-            background: var(--le-bg-color-overlay-opacity-60);
+            background: var(--le-bg-color-overlay-quick-links);
           }
 
           .quick-links__item:hover &--opacity {
-            background: var(--le-bg-color-overlay-opacity-30);
+            background: var(--le-bg-color-overlay-quick-links-hover);
           }
 
-          html.dark &:not(.quick-links__icon--opacity) {
-            background: var(--el-fill-color-extra-light);
+          &:not(.quick-links__icon--opacity) {
+            background: var(--quick-links-icon-background);
           }
 
-          html.colorful &:not(.quick-links__icon--opacity) {
-            background: var(--el-color-primary-light-9);
-          }
-
-          html.dark .quick-links__item:hover &:not(.quick-links__icon--opacity) {
-            background: var(--el-fill-color-light);
-          }
-
-          html.colorful .quick-links__item:hover &:not(.quick-links__icon--opacity) {
-            background: var(--el-color-primary-light-8);
+          .quick-links__item:hover &:not(.quick-links__icon--opacity) {
+            background: var(--quick-links-icon-hover-background);
           }
 
           /* stylelint-disable-next-line no-descending-specificity */
           .quick-links__container--item-shadow & {
-            box-shadow: var(--el-box-shadow);
-
-            /* stylelint-disable-next-line no-descending-specificity */
-            html.dark & {
-              box-shadow: var(--el-box-shadow-light);
-            }
+            box-shadow: var(--quick-links-icon-shadow);
           }
 
           .span {
@@ -451,12 +419,38 @@
             0 0 6px rgb(0 0 0 / 10%);
         }
 
-        html.light .quick-links__container--white-in-light & {
-          color: var(--el-color-white);
+        .quick-links__container--white-in-light & {
+          color: var(--quick-links-light-title-color);
         }
       }
     }
   }
+}
+
+html.dark .quick-links {
+  --quick-links-nav-background: var(--el-fill-color-extra-light);
+  --quick-links-nav-hover-background: var(--el-fill-color-light);
+  --quick-links-pagination-background: var(--el-fill-color-light);
+  --quick-links-icon-background: var(--el-fill-color-extra-light);
+  --quick-links-icon-hover-background: var(--el-fill-color-light);
+  --quick-links-icon-border-color: rgb(255 255 255 / 10%);
+  --quick-links-icon-shadow: var(--el-box-shadow-light);
+}
+
+html.colorful .quick-links {
+  --quick-links-nav-background: var(--el-color-primary-light-9);
+  --quick-links-nav-hover-background: var(--el-color-primary-light-8);
+  --quick-links-pin-background: var(--el-color-primary-light-8);
+  --quick-links-icon-background: var(--el-color-primary-light-9);
+  --quick-links-icon-hover-background: var(--el-color-primary-light-8);
+}
+
+html.light .quick-links {
+  --quick-links-light-title-color: var(--el-color-white);
+  --quick-links-light-title-shadow: 1px 1px 4px rgb(0 0 0 / 50%), 0 0 6px rgb(0 0 0 / 10%);
+  --quick-links-add-light-color: rgb(255 255 255 / 70%);
+  --quick-links-add-light-hover-color: var(--el-color-white);
+  --quick-links-add-light-icon-hover-color: var(--el-text-color-regular);
 }
 
 .quick-links__menu-popper.el-dropdown__popper.el-popper {
@@ -464,11 +458,11 @@
 
   &.quick-links__menu-popper--opacity.quick-links__menu-popper--blur {
     // 只有模糊时才有透明度效果，否则会影响可读性
-    background-color: var(--le-bg-color-overlay-opacity-30);
+    background-color: var(--le-bg-color-overlay-quick-links-hover);
   }
 
   &.quick-links__menu-popper--blur {
-    @include acrylic.acrylic;
+    @include acrylic.acrylic(var(--le-quick-links-backdrop-blur, 10px));
   }
 
   .el-dropdown-menu {
@@ -537,19 +531,19 @@
   }
 
   &--opacity .quick-links__category-item {
-    background-color: var(--le-bg-color-overlay-opacity-60);
+    background-color: var(--le-bg-color-overlay-quick-links);
 
     &:hover {
-      background-color: var(--le-bg-color-overlay-opacity-30);
+      background-color: var(--le-bg-color-overlay-quick-links-hover);
     }
 
     &--active {
-      background-color: var(--le-bg-color-overlay-opacity-30);
+      background-color: var(--le-bg-color-overlay-quick-links-hover);
     }
   }
 
   &--blur .quick-links__category-item {
-    @include acrylic.acrylic;
+    @include acrylic.acrylic(var(--le-quick-links-backdrop-blur, 10px));
   }
 }
 
@@ -606,7 +600,7 @@
   max-width: 110px;
   padding: 8px;
   pointer-events: none;
-  background-color: var(--le-bg-color-overlay-opacity-60);
+  background-color: var(--le-bg-color-overlay-quick-links);
   border-radius: 12px;
   box-shadow: var(--el-box-shadow-light);
 

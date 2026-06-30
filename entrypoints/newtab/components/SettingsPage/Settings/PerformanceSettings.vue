@@ -1,13 +1,50 @@
 <script setup lang="ts">
 import { useTranslation } from 'i18next-vue'
 
-import { useSettingsStore } from '@/shared/settings'
+import { defaultSettings, useSettingsStore } from '@/shared/settings'
 
 import { isOnlyTouchDevice } from '@newtab/shared/touch'
 
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
+const MAX_TRANSPARENCY = 95
+const MAX_BACKDROP_BLUR = 40
+const MAX_WALLPAPER_BLUR = 100
+const EFFECT_SETTING_KEYS = [
+  'searchBar',
+  'quickLinks',
+  'yiyan',
+  'bookmark',
+  'dialog',
+  'actionBtns',
+] as const
+
+type EffectSettingKey = (typeof EFFECT_SETTING_KEYS)[number]
+
+type EffectItem = {
+  key: EffectSettingKey
+  title: string
+  transparent: Ref<boolean>
+  transparency: Ref<number>
+  blur: Ref<boolean>
+  blurIntensity: Ref<number>
+}
+
+type SwitchItem = {
+  key: string
+  label: string
+  model: Ref<boolean>
+  disabled?: Ref<boolean>
+}
+
+function formatTransparency(value: number) {
+  return `${value}%`
+}
+
+function formatBackdropBlur(value: number) {
+  return `${value}px`
+}
 
 function toggleTransparentSettings(enable: boolean) {
   settings.perf.bookmark.transparent = enable
@@ -39,15 +76,131 @@ function toggleAnimationSettings(enable: boolean) {
   settings.perf.yiyan.ripple = enable
   settings.background.parallax = enable && !isOnlyTouchDevice.value
 }
+
+function resetTransparencyAndBlur() {
+  for (const key of EFFECT_SETTING_KEYS) {
+    settings.perf[key].transparency = defaultSettings.perf[key].transparency
+    settings.perf[key].blurIntensity = defaultSettings.perf[key].blurIntensity
+  }
+
+  settings.clock.style.transparency = defaultSettings.clock.style.transparency
+  settings.background.blur = defaultSettings.background.blur
+}
+
+const effectItems = computed<EffectItem[]>(() => [
+  {
+    key: 'searchBar',
+    title: t('search.title'),
+    transparent: toRef(settings.perf.searchBar, 'transparent'),
+    transparency: toRef(settings.perf.searchBar, 'transparency'),
+    blur: toRef(settings.perf.searchBar, 'blur'),
+    blurIntensity: toRef(settings.perf.searchBar, 'blurIntensity'),
+  },
+  {
+    key: 'quickLinks',
+    title: `${t('quickLinks.title')} / Dock`,
+    transparent: toRef(settings.perf.quickLinks, 'transparent'),
+    transparency: toRef(settings.perf.quickLinks, 'transparency'),
+    blur: toRef(settings.perf.quickLinks, 'blur'),
+    blurIntensity: toRef(settings.perf.quickLinks, 'blurIntensity'),
+  },
+  {
+    key: 'yiyan',
+    title: t('yiyan.title'),
+    transparent: toRef(settings.perf.yiyan, 'transparent'),
+    transparency: toRef(settings.perf.yiyan, 'transparency'),
+    blur: toRef(settings.perf.yiyan, 'blur'),
+    blurIntensity: toRef(settings.perf.yiyan, 'blurIntensity'),
+  },
+  {
+    key: 'bookmark',
+    title: t('bookmark.title'),
+    transparent: toRef(settings.perf.bookmark, 'transparent'),
+    transparency: toRef(settings.perf.bookmark, 'transparency'),
+    blur: toRef(settings.perf.bookmark, 'blur'),
+    blurIntensity: toRef(settings.perf.bookmark, 'blurIntensity'),
+  },
+  {
+    key: 'dialog',
+    title: t('perf.dialog.title'),
+    transparent: toRef(settings.perf.dialog, 'transparent'),
+    transparency: toRef(settings.perf.dialog, 'transparency'),
+    blur: toRef(settings.perf.dialog, 'blur'),
+    blurIntensity: toRef(settings.perf.dialog, 'blurIntensity'),
+  },
+  {
+    key: 'actionBtns',
+    title: t('perf.actionBtns.transparent').replace(/透明$/, ''),
+    transparent: toRef(settings.perf.actionBtns, 'transparent'),
+    transparency: toRef(settings.perf.actionBtns, 'transparency'),
+    blur: toRef(settings.perf.actionBtns, 'blur'),
+    blurIntensity: toRef(settings.perf.actionBtns, 'blurIntensity'),
+  },
+])
+
+const wallpaperAnimationItems = computed<SwitchItem[]>(() => [
+  {
+    key: 'pauseOnBlur',
+    label: t('background.pauseWhenBlur'),
+    model: toRef(settings.background, 'pauseOnBlur'),
+  },
+  {
+    key: 'bgSwitchAnim',
+    label: t('perf.bgSwitchAnim'),
+    model: toRef(settings.perf, 'bgSwitchAnim'),
+  },
+  {
+    key: 'focusScale',
+    label: t('perf.focus.scale'),
+    model: toRef(settings.perf.focus, 'scale'),
+  },
+  {
+    key: 'focusBlur',
+    label: t('perf.focus.blur'),
+    model: toRef(settings.perf.focus, 'blur'),
+  },
+  {
+    key: 'parallax',
+    label: t('background.parallax'),
+    model: toRef(settings.background, 'parallax'),
+    disabled: isOnlyTouchDevice,
+  },
+])
+
+const interfaceAnimationItems = computed<SwitchItem[]>(() => [
+  {
+    key: 'clockBlink',
+    label: t('clock.blink'),
+    model: toRef(settings.clock.style, 'blink'),
+  },
+  {
+    key: 'launchAnim',
+    label: t('search.launchAnim'),
+    model: toRef(settings.perf.searchBar, 'launchAnim'),
+  },
+  {
+    key: 'dockScale',
+    label: t('perf.dock.scale'),
+    model: toRef(settings.perf, 'dockScale'),
+  },
+  {
+    key: 'ripple',
+    label: t('perf.yiyan.ripple'),
+    model: toRef(settings.perf.yiyan, 'ripple'),
+  },
+  {
+    key: 'dialogAnimation',
+    label: t('perf.dialog.animation'),
+    model: toRef(settings.perf.dialog, 'animation'),
+  },
+])
 </script>
 
 <template>
-  <div class="settings__items-container">
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label" style="color: var(--el-color-danger-dark-2)">
-        {{ t('perf.toggleAll.disable') }}
-      </div>
-      <span class="button-group">
+  <div class="performance-preview">
+    <section class="perf-panel perf-panel--compact">
+      <div class="perf-section-title">{{ t('perf.toggleAll.disable') }}</div>
+      <el-space class="perf-action-grid">
         <el-button @click="toggleAnimationSettings(false)">
           {{ t('perf.toggleAll.animation') }}
         </el-button>
@@ -57,13 +210,11 @@ function toggleAnimationSettings(enable: boolean) {
         <el-button @click="toggleBlurSettings(false)">
           {{ t('perf.toggleAll.blur') }}
         </el-button>
-      </span>
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label" style="color: var(--el-color-success-dark-2)">
+      </el-space>
+      <div class="perf-section-title perf-section-title--success">
         {{ t('perf.toggleAll.enable') }}
       </div>
-      <span class="button-group">
+      <el-space class="perf-action-grid">
         <el-button @click="toggleAnimationSettings(true)">
           {{ t('perf.toggleAll.animation') }}
         </el-button>
@@ -73,123 +224,312 @@ function toggleAnimationSettings(enable: boolean) {
         <el-button @click="toggleBlurSettings(true)">
           {{ t('perf.toggleAll.blur') }}
         </el-button>
-      </span>
-    </div>
-    <el-divider></el-divider>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('background.pauseWhenBlur') }}</div>
-      <el-switch v-model="settings.background.pauseOnBlur" />
-    </div>
-    <p class="settings__item--note">
-      {{ t('background.video.blurTip') }}
-    </p>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('clock.blink') }}</div>
-      <el-switch v-model="settings.clock.style.blink" />
-    </div>
-    <p class="settings__item--note">
-      {{ t('clock.blinkingTip') }}
-    </p>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.bgSwitchAnim') }}</div>
-      <el-switch v-model="settings.perf.bgSwitchAnim" />
-    </div>
-    <p class="settings__item--note">
-      {{ t('perf.bgSwitchAnimTip') }}
-    </p>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.bookmark.transparent') }}</div>
-      <el-switch v-model="settings.perf.bookmark.transparent" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.bookmark.blur') }}</div>
-      <el-switch
-        :disabled="!settings.perf.bookmark.transparent"
-        v-model="settings.perf.bookmark.blur"
-      />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.dialog.transparent') }}</div>
-      <el-switch v-model="settings.perf.dialog.transparent" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.dialog.blur') }}</div>
-      <el-switch
-        :disabled="!settings.perf.dialog.transparent"
-        v-model="settings.perf.dialog.blur"
-      />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.dialog.animation') }}</div>
-      <el-switch v-model="settings.perf.dialog.animation" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('search.launchAnim') }}</div>
-      <el-switch v-model="settings.perf.searchBar.launchAnim" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.focus.scale') }}</div>
-      <el-switch v-model="settings.perf.focus.scale" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.focus.blur') }}</div>
-      <el-switch v-model="settings.perf.focus.blur" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.searchBar.transparent') }}</div>
-      <el-switch v-model="settings.perf.searchBar.transparent" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.searchBar.blur') }}</div>
-      <el-switch
-        :disabled="!settings.perf.searchBar.transparent"
-        v-model="settings.perf.searchBar.blur"
-      />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.quickLinks.transparent') }}</div>
-      <el-switch v-model="settings.perf.quickLinks.transparent" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.quickLinks.blur') }}</div>
-      <el-switch
-        :disabled="!settings.perf.quickLinks.transparent"
-        v-model="settings.perf.quickLinks.blur"
-      />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.yiyan.transparent') }}</div>
-      <el-switch v-model="settings.perf.yiyan.transparent" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.yiyan.blur') }}</div>
-      <el-switch :disabled="!settings.perf.yiyan.transparent" v-model="settings.perf.yiyan.blur" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.yiyan.ripple') }}</div>
-      <el-switch v-model="settings.perf.yiyan.ripple" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.actionBtns.transparent') }}</div>
-      <el-switch v-model="settings.perf.actionBtns.transparent" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.actionBtns.blur') }}</div>
-      <el-switch
-        :disabled="!settings.perf.actionBtns.transparent"
-        v-model="settings.perf.actionBtns.blur"
-      />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('perf.dock.scale') }}</div>
-      <el-switch v-model="settings.perf.dockScale" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('background.parallax') }}</div>
-      <el-switch v-model="settings.background.parallax" :disabled="isOnlyTouchDevice" />
-    </div>
-    <p v-if="isOnlyTouchDevice" class="settings__item--note">
-      {{ t('common.touchDeviceDisabledNote') }}
-    </p>
+      </el-space>
+    </section>
+
+    <section class="perf-panel">
+      <div class="perf-panel-header">
+        <h3 class="perf-panel-title">{{ t('perf.effectsTitle') }}</h3>
+        <el-button @click="resetTransparencyAndBlur">
+          {{ t('perf.resetTransparencyAndBlur') }}
+        </el-button>
+      </div>
+      <div class="perf-effect-list">
+        <article v-for="item in effectItems" :key="item.key" class="perf-effect-item">
+          <div class="perf-effect-header">{{ item.title }}</div>
+
+          <div class="perf-effect-row">
+            <span>{{ t('perf.toggleAll.transparent') }}</span>
+            <el-switch v-model="item.transparent.value" />
+          </div>
+
+          <div class="perf-slider-row" :class="{ 'is-disabled': !item.transparent.value }">
+            <span>{{ t('perf.transparency') }}</span>
+            <el-slider
+              v-model="item.transparency.value"
+              :disabled="!item.transparent.value"
+              :max="MAX_TRANSPARENCY"
+              :step="1"
+              :format-tooltip="formatTransparency"
+            />
+            <span>{{ formatTransparency(item.transparency.value) }}</span>
+          </div>
+
+          <div class="perf-effect-row">
+            <span>{{ t('perf.toggleAll.blur') }}</span>
+            <el-switch
+              v-model="item.blur.value"
+              :disabled="!item.transparent.value || item.transparency.value === 0"
+            />
+          </div>
+
+          <div
+            class="perf-slider-row"
+            :class="{
+              'is-disabled':
+                !item.transparent.value || item.transparency.value === 0 || !item.blur.value,
+            }"
+          >
+            <span>{{ t('perf.blurIntensity') }}</span>
+            <el-slider
+              v-model="item.blurIntensity.value"
+              :disabled="
+                !item.transparent.value || item.transparency.value === 0 || !item.blur.value
+              "
+              :max="MAX_BACKDROP_BLUR"
+              :step="1"
+              :format-tooltip="formatBackdropBlur"
+            />
+            <span>{{ formatBackdropBlur(item.blurIntensity.value) }}</span>
+          </div>
+        </article>
+
+        <article class="perf-effect-item">
+          <div class="perf-effect-header">{{ t('other.title') }}</div>
+
+          <div class="perf-slider-row">
+            <span>{{ t('clock.transparency') }}</span>
+            <el-slider
+              v-model="settings.clock.style.transparency"
+              :max="MAX_TRANSPARENCY"
+              :step="1"
+              :format-tooltip="formatTransparency"
+            />
+            <span>{{ formatTransparency(settings.clock.style.transparency) }}</span>
+          </div>
+
+          <div class="perf-slider-row">
+            <span>{{ t('background.blur') }}</span>
+            <el-slider
+              v-model="settings.background.blur"
+              :max="MAX_WALLPAPER_BLUR"
+              :step="1"
+              :format-tooltip="formatBackdropBlur"
+            />
+            <span>{{ formatBackdropBlur(settings.background.blur) }}</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="perf-panel">
+      <div class="perf-panel-header">
+        <h3 class="perf-panel-title">{{ t('perf.toggleAll.animation') }}</h3>
+      </div>
+      <div class="perf-animation-list">
+        <article class="perf-animation-card">
+          <h4>{{ t('perf.wallpaper') }}</h4>
+          <div class="perf-behavior-list">
+            <div v-for="item in wallpaperAnimationItems" :key="item.key" class="perf-behavior-row">
+              <span>{{ item.label }}</span>
+              <el-switch v-model="item.model.value" :disabled="item.disabled?.value" />
+            </div>
+          </div>
+          <p v-if="isOnlyTouchDevice" class="perf-touch-note">
+            {{ t('common.touchDeviceDisabledNote') }}
+          </p>
+        </article>
+
+        <article class="perf-animation-card">
+          <h4>{{ t('other.title') }}</h4>
+          <div class="perf-behavior-list">
+            <div v-for="item in interfaceAnimationItems" :key="item.key" class="perf-behavior-row">
+              <span>{{ item.label }}</span>
+              <el-switch v-model="item.model.value" />
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
   </div>
 </template>
+
+<style scoped lang="scss">
+.performance-preview {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 10px;
+
+  .is-mobile & {
+    margin-bottom: 25px;
+  }
+}
+
+.perf-panel {
+  padding: 18px 25px;
+  background-color: var(--settings-items-background);
+  border-radius: 15px;
+  transition: background-color var(--el-transition-duration-fast) ease;
+}
+
+.perf-panel--compact {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 14px;
+  align-items: center;
+}
+
+.perf-section-title {
+  font-size: var(--el-font-size-small);
+  font-weight: 600;
+  color: var(--el-color-danger-dark-2);
+  white-space: nowrap;
+}
+
+.perf-section-title--success {
+  color: var(--el-color-success-dark-2);
+}
+
+.perf-action-grid {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.perf-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  margin-bottom: 8px;
+
+  .el-button {
+    margin-left: auto;
+  }
+}
+
+.perf-panel-title {
+  margin: 0;
+  font-size: var(--el-font-size-base);
+  line-height: 1.4;
+}
+
+.perf-panel-note {
+  margin-bottom: 12px;
+}
+
+.perf-effect-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.perf-effect-item {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  min-width: 0;
+  padding: 15px;
+  background-color: var(--settings-group-active-background);
+  border-radius: 10px;
+}
+
+.perf-effect-header,
+.perf-effect-row,
+.perf-behavior-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.perf-effect-header {
+  height: 24px;
+  font-size: var(--el-font-size-small);
+  font-weight: bold;
+  color: var(--el-text-color-primary);
+}
+
+.perf-effect-row,
+.perf-behavior-row,
+.perf-slider-row {
+  font-size: var(--el-font-size-small);
+  color: var(--el-text-color-regular);
+}
+
+.perf-slider-row {
+  display: grid;
+  grid-template-columns: auto minmax(96px, 1fr) min-content;
+  gap: 10px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+  transition: opacity var(--el-transition-duration-fast) ease;
+
+  &.is-disabled {
+    opacity: 0.45;
+  }
+}
+
+.perf-animation-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.perf-animation-card {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+  padding: 15px;
+  background-color: var(--settings-group-active-background);
+  border-radius: 10px;
+
+  h4 {
+    margin: 0 0 2px;
+    font-size: var(--el-font-size-small);
+    line-height: 1.4;
+    color: var(--el-text-color-primary);
+  }
+}
+
+.perf-behavior-list {
+  display: grid;
+  gap: 8px;
+}
+
+.perf-touch-note {
+  padding: 8px 10px;
+  margin: 2px 0 0;
+  font-size: var(--el-font-size-extra-small);
+  line-height: 1.5;
+  color: var(--el-text-color-secondary);
+  background-color: var(--settings-items-background);
+  border-radius: 8px;
+}
+
+@media (width <= 720px) {
+  .perf-effect-list,
+  .perf-animation-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (width <= 520px) {
+  .perf-panel--compact {
+    grid-template-columns: 1fr;
+  }
+
+  .perf-action-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .perf-action-grid .el-button {
+    min-width: 0;
+    padding-inline: 8px;
+    margin: 0;
+  }
+
+  .perf-slider-row {
+    grid-template-columns: 1fr 3em;
+
+    .el-slider {
+      grid-row: 2;
+      grid-column: 1 / -1;
+    }
+  }
+}
+</style>

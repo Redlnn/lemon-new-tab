@@ -2,20 +2,12 @@
 import { useTranslation } from 'i18next-vue'
 
 import { DEFAULT_QUICK_LINK_GROUP_ID, useQuickLinksStore } from '@/shared/quickLinks'
-import { useSettingsStore } from '@/shared/settings'
 
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
-import usePerfClasses from '@newtab/composables/usePerfClasses'
 
 const { t } = useTranslation()
 const quickLinksStore = useQuickLinksStore()
-const settings = useSettingsStore()
 const { isComposing } = useImeAwareDialog()
-const perf = usePerfClasses(() => ({
-  transparent: settings.perf.quickLinks.transparent,
-  blur: settings.perf.quickLinks.blur,
-}))
-const dialogPerfClass = perf('quick-link-group-select-dialog')
 
 const visible = ref(false)
 const selectedGroupId = ref(DEFAULT_QUICK_LINK_GROUP_ID)
@@ -55,7 +47,7 @@ defineExpose({ open })
     v-model="visible"
     :title="title"
     width="360"
-    :class="[dialogPerfClass, 'noselect']"
+    class="quick-link-group-select-dialog noselect"
     append-to-body
     destroy-on-close
     :close-on-press-escape="!isComposing"
@@ -77,23 +69,13 @@ defineExpose({ open })
 </template>
 
 <style lang="scss">
-@use '@newtab/styles/mixins/acrylic.scss' as acrylic;
+.quick-link-group-select-dialog {
+  --quick-link-group-dialog-background: var(--el-dialog-bg-color);
 
-html.colorful {
-  .quick-link-group-select-dialog {
-    background-color: var(--el-color-primary-light-9);
-  }
+  background-color: var(--le-dialog-background, var(--quick-link-group-dialog-background));
 }
 
-html.dialog-transparent {
-  .quick-link-group-select-dialog--opacity {
-    background-color: var(--le-bg-color-overlay-opacity-15);
-  }
-}
-
-html.dialog-acrylic {
-  .quick-link-group-select-dialog--blur {
-    @include acrylic.acrylic;
-  }
+html.colorful .quick-link-group-select-dialog {
+  --quick-link-group-dialog-background: var(--el-color-primary-light-9);
 }
 </style>

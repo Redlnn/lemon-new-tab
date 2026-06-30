@@ -123,7 +123,7 @@ defineExpose({
   <el-dialog
     v-model="showDialog"
     :title="dialogTitle"
-    class="add-custom-search-engine-dialog base-dialog--blur base-dialog--opacity noselect"
+    class="add-custom-search-engine-dialog noselect"
     width="450"
     append-to-body
     destroy-on-close
@@ -176,14 +176,14 @@ defineExpose({
 
 <style lang="scss">
 .add-custom-search-engine-dialog {
+  --add-search-engine-dialog-background: var(--el-dialog-bg-color);
+
   max-width: 93%;
   padding: 30px;
 
   --el-dialog-padding-primary: 25px;
 
-  html.colorful:not(.dialog-transparent) & {
-    background-color: var(--el-color-primary-light-9);
-  }
+  background-color: var(--le-dialog-background, var(--add-search-engine-dialog-background));
 
   .el-form-item--label-top .el-form-item__label {
     margin-bottom: 6px;
@@ -207,6 +207,10 @@ defineExpose({
       line-height: 1.4;
     }
   }
+}
+
+html.colorful .add-custom-search-engine-dialog {
+  --add-search-engine-dialog-background: var(--el-color-primary-light-9);
 }
 
 // 上传图标和图片

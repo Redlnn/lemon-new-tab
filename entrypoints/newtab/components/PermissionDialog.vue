@@ -64,7 +64,7 @@ function onDeny() {
     v-model="model"
     :title="t('background.permission.request.title')"
     width="400px"
-    class="permission-dialog base-dialog--blur base-dialog--opacity noselect"
+    class="permission-dialog noselect"
     :close-on-press-escape="!isComposing"
   >
     <div class="permission-dialog-content">

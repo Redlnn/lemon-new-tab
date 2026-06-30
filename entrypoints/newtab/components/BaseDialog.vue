@@ -6,13 +6,10 @@ import type { DialogInstance, ScrollbarInstance } from 'element-plus'
 import CloseRound from '~icons/ic/round-close'
 
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
-import usePerfClasses from '@newtab/composables/usePerfClasses'
 
 interface Props {
   title?: string
   containerClass?: string
-  acrylic?: boolean
-  opacity?: boolean
   appendToBody?: boolean
   destroyOnClose?: boolean
   style?: object | string
@@ -56,13 +53,6 @@ function onScroll(e: { scrollLeft: number; scrollTop: number }) {
   emit('scroll', e)
 }
 
-const perf = usePerfClasses(() => ({
-  transparent: props.opacity,
-  blur: props.acrylic,
-}))
-
-const dialogPerfClass = perf('base-dialog')
-
 const dialogId = computed(() => {
   return (
     (dialogRef.value?.$el as HTMLElement)?.nextElementSibling?.firstElementChild?.getAttribute(
@@ -77,7 +67,7 @@ const dialogId = computed(() => {
     ref="dialogRef"
     v-model="model"
     :width="windowWidth < 650 ? '93%' : (props.width ?? 600)"
-    :class="[containerClass, dialogPerfClass]"
+    :class="[containerClass, 'base-dialog']"
     :style="style"
     :show-close="false"
     draggable

@@ -99,7 +99,7 @@
       "title": "提示：圖示快取未開啟"
     },
     "wallpaperCache": {
-      "message": "無法快取線上壁紙：${error}",
+      "message": "無法快取線上壁紙：{error}",
       "title": "快取線上壁紙失敗"
     },
     "welcome": {

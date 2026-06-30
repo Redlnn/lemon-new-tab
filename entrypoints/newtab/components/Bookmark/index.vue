@@ -122,6 +122,7 @@ const settings = useSettingsStore()
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.bookmark.transparent,
+  transparency: settings.perf.bookmark.transparency,
   blur: settings.perf.bookmark.blur,
 }))
 
@@ -151,7 +152,7 @@ provide(
   (options) => groupSelectDialogRef.value?.open(options) ?? Promise.resolve(null),
 )
 
-function onDrawerResize(evt: MouseEvent, size: number): void {
+function onDrawerResize(_e: MouseEvent, size: number): void {
   drawerWidth.value = size
 }
 
@@ -409,6 +410,7 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
   max-width: calc(100% - 20px);
   margin: 10px;
   overflow: hidden;
+  background-color: var(--bookmark-background, var(--el-drawer-bg-color));
   border-radius: 20px;
 
   &.el-drawer.ltr,
@@ -434,15 +436,11 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
   }
 
   &--opacity.el-drawer {
-    background-color: var(--le-bg-color-overlay-opacity-15);
-  }
-
-  html.colorful &:not(.bookmark--opacity) {
-    background-color: var(--el-color-primary-light-9);
+    background-color: var(--le-bg-color-overlay-bookmark);
   }
 
   &--blur.el-drawer {
-    @include acrylic.acrylic;
+    @include acrylic.acrylic(var(--le-bookmark-backdrop-blur, 10px));
   }
 
   .el-drawer__body {
@@ -469,6 +467,10 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
       }
     }
   }
+}
+
+html.colorful .bookmark {
+  --bookmark-background: var(--el-color-primary-light-9);
 }
 
 @media (width <= 600px) {
@@ -663,11 +665,11 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
   border-radius: 15px;
 
   &.bookmark__menu-popper--opacity.bookmark__menu-popper--blur {
-    background-color: var(--le-bg-color-overlay-opacity-30);
+    background-color: var(--le-bg-color-overlay-bookmark-menu);
   }
 
   &.bookmark__menu-popper--blur {
-    @include acrylic.acrylic;
+    @include acrylic.acrylic(var(--le-bookmark-menu-backdrop-blur, 10px));
   }
 
   .el-dropdown-menu {

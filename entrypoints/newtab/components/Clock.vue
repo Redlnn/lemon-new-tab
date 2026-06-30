@@ -79,6 +79,9 @@ const weightMap = {
 }
 
 const clockClass = computed(() => [settings.clock.newStyle ? 'clock__new' : undefined])
+const clockRootStyle = computed(() => ({
+  opacity: (100 - settings.clock.style.transparency) / 100,
+}))
 const clockStyle = computed(() => {
   return {
     fontWeight: weightMap[settings.clock.weight.time],
@@ -101,6 +104,7 @@ const calcStyle = computed(() => {
       settings.clock.style.invertColor.light ? ['clock--invert', 'clock--light'] : undefined,
       settings.clock.style.invertColor.night ? ['clock--invert', 'clock--night'] : undefined,
     ]"
+    :style="clockRootStyle"
   >
     <div class="clock__time-container" :class="clockClass" :style="clockStyle">
       <div

@@ -124,6 +124,7 @@
       "title": "時鐘大小"
     },
     "title": "時鐘",
+    "transparency": "時鐘透明度",
     "weight": {
       "black": "最粗（900）",
       "bold": "粗體（600）",
@@ -226,8 +227,8 @@
   },
   "perf": {
     "actionBtns": {
-      "blur": "右下按鈕模糊",
-      "transparent": "右下按鈕透明"
+      "blur": "功能按鈕模糊",
+      "transparent": "功能按鈕透明"
     },
     "bgSwitchAnim": "壁紙切換動畫",
     "bgSwitchAnimTip": "關閉後切換壁紙時將不再有淡入淡出動畫，能微弱提升切換速度。同時啟動時的壁紙動畫也會被停用",
@@ -238,6 +239,7 @@
     "dialog": {
       "animation": "對話框動畫",
       "blur": "對話框背景模糊",
+      "title": "對話框",
       "transparent": "對話框背景透明"
     },
     "dock": {
@@ -251,7 +253,11 @@
       "blur": "搜尋框模糊",
       "transparent": "搜尋框透明"
     },
-    "title": "效能",
+    "effectsTitle": "效果設定",
+    "resetTransparencyAndBlur": "重設透明與模糊",
+    "title": "效能與效果",
+    "blurIntensity": "背景模糊度",
+    "transparency": "背景透明度",
     "toggleAll": {
       "animation": "動畫",
       "blur": "模糊效果",
@@ -259,14 +265,15 @@
       "enable": "一鍵啟用所有",
       "transparent": "透明效果"
     },
+    "wallpaper": "壁紙",
     "yiyan": {
       "blur": "一言背景模糊",
       "ripple": "一言水波紋動畫",
       "transparent": "一言背景透明"
     },
     "quickLinks": {
-      "blur": "快速連結圖示模糊",
-      "transparent": "快速連結圖示透明"
+      "blur": "快速連結、Dock 和啟動台模糊",
+      "transparent": "快速連結和 Dock 透明"
     }
   },
   "search": {

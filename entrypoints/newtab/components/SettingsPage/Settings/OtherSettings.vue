@@ -13,7 +13,12 @@ import { storage } from '#imports'
 import { downloadJSON } from '@/shared/download'
 import { clearFaviconCache } from '@/shared/media'
 import { type QuickLinksData, useQuickLinksStore } from '@/shared/quickLinks'
-import { type CURRENT_CONFIG_SCHEMA, defaultSettings, useSettingsStore } from '@/shared/settings'
+import {
+  type CURRENT_CONFIG_SCHEMA,
+  defaultSettings,
+  normalizeCurrentSettings,
+  useSettingsStore,
+} from '@/shared/settings'
 import { idbDropDatabase } from '@/shared/storage/idb'
 import { useSyncDataStore } from '@/shared/sync'
 
@@ -281,7 +286,7 @@ function handleFileChange(event: Event) {
       data.settings.background.bing = settings.$state.background.bing
       data.settings.background.online.url = settings.$state.background.online.url
 
-      settings.$patch(data.settings)
+      settings.$patch(normalizeCurrentSettings(data.settings))
       if (originalSyncState && !nextSyncEnabled) {
         syncStore.deinit()
       }

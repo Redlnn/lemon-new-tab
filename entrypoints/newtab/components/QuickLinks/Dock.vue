@@ -37,17 +37,30 @@ const props = defineProps<{
   onOpenEditDialog?: (target: QuickLinkTarget) => void
 }>()
 
+const { t } = useTranslation()
+const focusStore = useFocusState()
+const settings = useSettingsStore()
+const quickLinksStore = useQuickLinksStore()
+
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.quickLinks.transparent,
+  transparency: settings.perf.quickLinks.transparency,
   blur: settings.perf.quickLinks.blur,
 }))
 
 const popperClass = perf('quick-links__menu-popper')
 
-const { t } = useTranslation()
-const focusStore = useFocusState()
-const settings = useSettingsStore()
-const quickLinksStore = useQuickLinksStore()
+const quickLinksTransparencyEnabled = computed(
+  () => settings.perf.quickLinks.transparent && settings.perf.quickLinks.transparency > 0,
+)
+const quickLinksBlurEnabled = computed(
+  () => quickLinksTransparencyEnabled.value && settings.perf.quickLinks.blur,
+)
+const dockClass = perf('dock')
+const dockTooltipClass = computed(
+  () =>
+    `dock-tooltip noselect${quickLinksTransparencyEnabled.value ? ' dock-tooltip--opacity' : ''}${quickLinksBlurEnabled.value ? ' dock-tooltip--blur' : ''}`,
+)
 
 const { updateMaxCols, maxFitCols } = useDockLayout()
 
@@ -383,6 +396,7 @@ defineExpose({ refresh })
   <div
     ref="dockRef"
     class="dock noselect"
+    :class="dockClass"
     :style="{
       opacity: isHideDock,
       pointerEvents: isHideDock === '0' ? 'none' : 'auto',
@@ -407,7 +421,7 @@ defineExpose({ refresh })
         :enterable="false"
         :disabled="isUsingTouch"
         transition="none"
-        popper-class="dock-tooltip noselect"
+        :popper-class="dockTooltipClass"
       >
         <div
           role="button"
@@ -431,7 +445,7 @@ defineExpose({ refresh })
         :enterable="false"
         :disabled="isUsingTouch"
         transition="none"
-        popper-class="dock-tooltip noselect"
+        :popper-class="dockTooltipClass"
       >
         <a
           class="dock-item"
@@ -464,7 +478,7 @@ defineExpose({ refresh })
         :enterable="false"
         :disabled="isUsingTouch"
         transition="none"
-        popper-class="dock-tooltip noselect"
+        :popper-class="dockTooltipClass"
       >
         <OnLongPress
           as="a"
@@ -524,6 +538,9 @@ defineExpose({ refresh })
 @use '@newtab/styles/mixins/acrylic.scss' as acrylic;
 
 .dock {
+  --dock-background: var(--el-bg-color-overlay);
+  --dock-item-background: var(--el-color-primary-light-9);
+
   position: fixed;
   bottom: 20px;
   left: 50%;
@@ -533,7 +550,7 @@ defineExpose({ refresh })
   max-width: 93%;
   height: calc(var(--item-size) + 10px);
   padding: 5px;
-  background-color: var(--le-bg-color-overlay-opacity-60);
+  background-color: var(--dock-background);
   border-radius: 15px;
   box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
   transform: translateX(-50%);
@@ -542,7 +559,19 @@ defineExpose({ refresh })
     bottom var(--el-transition-duration-fast) ease,
     background-color var(--el-transition-duration-fast) ease;
 
-  @include acrylic.acrylic(10px, 1.2, 1.1);
+  &--blur {
+    @include acrylic.acrylic(var(--le-quick-links-backdrop-blur, 10px), 1.2, 1.1);
+  }
+
+  &--opacity {
+    --dock-background: var(--le-bg-color-overlay-quick-links);
+    --dock-item-background: var(--le-bg-color-overlay-quick-links-strong);
+  }
+}
+
+html.colorful .dock:not(.dock--opacity) {
+  --dock-background: var(--el-color-primary-light-9);
+  --dock-item-background: var(--el-color-primary-light-8);
 }
 
 .app:has(.yiyan) {
@@ -563,7 +592,7 @@ defineExpose({ refresh })
   height: calc(var(--scale, 1) * var(--item-size));
   overflow: hidden;
   cursor: pointer;
-  background-color: var(--le-bg-color-overlay-opacity-20);
+  background-color: var(--dock-item-background);
   border-radius: calc(var(--scale, 1) * var(--item-size) * 0.25);
   transition:
     width var(--td, 0s),
@@ -611,13 +640,25 @@ defineExpose({ refresh })
 }
 
 .dock-tooltip.el-popper {
-  background: rgb(from var(--el-bg-color-overlay) r g b/ 50%);
+  --dock-tooltip-background: var(--el-bg-color-overlay);
+
+  background: var(--dock-tooltip-background);
   border: none;
 
-  html.colorful & {
-    background: rgb(from var(--el-color-primary-light-7) r g b/ 50%);
+  &.dock-tooltip--opacity {
+    --dock-tooltip-background: var(--le-bg-color-overlay-quick-links-tooltip);
   }
 
-  @include acrylic.acrylic(10px, 1.3, 1.4);
+  &.dock-tooltip--blur {
+    @include acrylic.acrylic(var(--le-quick-links-tooltip-backdrop-blur, 10px), 1.3, 1.4);
+  }
+}
+
+html.colorful .dock-tooltip {
+  --dock-tooltip-background: var(--el-color-primary-light-7);
+
+  &.dock-tooltip--opacity {
+    --dock-tooltip-background: var(--le-bg-color-overlay-quick-links-tooltip);
+  }
 }
 </style>

@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import type { CURRENT_CONFIG_SCHEMA } from '../settings'
 import { defaultSettings } from '../settings'
 
+import { normalizeCurrentSettings } from './normalize'
 import { settingsStorage } from './settingsStorage'
 
 export const useSettingsStore = defineStore('option', () => {
@@ -18,10 +19,7 @@ export const useSettingsStore = defineStore('option', () => {
     if (settings.background.localDark.url) settings.background.localDark.url = ''
     if (settings.background.bing.url) settings.background.bing.url = ''
 
-    Object.assign(state, settings)
-    state.quickLinks.grouping ??= defaultSettings.quickLinks.grouping
-    state.quickLinks.useScroll ??= defaultSettings.quickLinks.useScroll
-    state.quickLinks.pagingLoop ??= defaultSettings.quickLinks.pagingLoop
+    Object.assign(state, normalizeCurrentSettings(settings))
 
     // 清理之前的 watcher（幂等性）
     unwatchStorage?.()
@@ -29,10 +27,7 @@ export const useSettingsStore = defineStore('option', () => {
     // 监听其他标签页对设置的更改，实时同步到当前标签页的 store
     unwatchStorage = settingsStorage.watch((newSettings) => {
       if (!newSettings) return
-      Object.assign(state, newSettings)
-      state.quickLinks.grouping ??= defaultSettings.quickLinks.grouping
-      state.quickLinks.useScroll ??= defaultSettings.quickLinks.useScroll
-      state.quickLinks.pagingLoop ??= defaultSettings.quickLinks.pagingLoop
+      Object.assign(state, normalizeCurrentSettings(newSettings))
     })
   }
 

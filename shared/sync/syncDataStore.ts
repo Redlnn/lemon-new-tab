@@ -23,6 +23,7 @@ import {
   migrateFromVer7To8,
   migrateFromVer8To9,
   migrateFromVer9To10,
+  normalizeCurrentSettings,
   useSettingsStore,
 } from '../settings'
 
@@ -234,9 +235,7 @@ export const useSyncDataStore = defineStore('sync', () => {
       throw new Error(`Unexpected cloud config version after migration: ${current.version}`)
     }
 
-    const normalized = current as CURRENT_CONFIG_SCHEMA
-    normalized.quickLinks.grouping ??= defaultSettings.quickLinks.grouping
-    normalized.quickLinks.pagingLoop ??= defaultSettings.quickLinks.pagingLoop
+    const normalized = normalizeCurrentSettings(current as CURRENT_CONFIG_SCHEMA)
 
     return {
       settings: normalized,

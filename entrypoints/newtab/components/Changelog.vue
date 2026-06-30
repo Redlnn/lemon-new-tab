@@ -31,8 +31,6 @@ function handleClose() {
     :title="t('changelog.title')"
     container-class="changelog__dialog"
     @closed="handleClose"
-    acrylic
-    opacity
   >
     <div class="changelog-wrapper">
       <div class="changelog-hide-major noselect">

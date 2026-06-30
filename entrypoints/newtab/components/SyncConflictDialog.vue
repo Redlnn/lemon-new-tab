@@ -29,7 +29,7 @@ const formatTime = (time: number) => {
     v-model="model"
     :title="t('conflict.title')"
     width="400px"
-    class="sync-conflict-dialog base-dialog--blur base-dialog--opacity noselect"
+    class="sync-conflict-dialog noselect"
     :close-on-click-modal="false"
     :close-on-press-escape="!isComposing"
     :show-close="false"

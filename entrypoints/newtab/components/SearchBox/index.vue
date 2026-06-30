@@ -60,6 +60,7 @@ const { width: searchFormWidth } = useElementSize(searchForm)
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.searchBar.transparent,
+  transparency: settings.perf.searchBar.transparency,
   blur: settings.perf.searchBar.blur,
 }))
 

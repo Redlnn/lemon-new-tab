@@ -44,6 +44,10 @@ function handleNewStyleChange(val: string | number | boolean) {
     settings.clock.hour12 = true
   }
 }
+
+function formatTransparency(value: number) {
+  return `${value}%`
+}
 </script>
 <template>
   <div class="settings__items-container">
@@ -141,6 +145,15 @@ function handleNewStyleChange(val: string | number | boolean) {
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('clock.shadow') }}</div>
         <el-switch v-model="settings.clock.style.shadow" />
+      </div>
+      <div class="settings__item settings__item--vertical">
+        <div class="settings__label">{{ t('clock.transparency') }}</div>
+        <el-slider
+          v-model="settings.clock.style.transparency"
+          :max="95"
+          :step="1"
+          :format-tooltip="formatTransparency"
+        />
       </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('clock.blink') }}</div>

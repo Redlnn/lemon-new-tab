@@ -99,7 +99,7 @@
       "title": "Tip: Favicon cache is disabled"
     },
     "wallpaperCache": {
-      "message": "Unable to cache online wallpaper: ${error}",
+      "message": "Unable to cache online wallpaper: {error}",
       "title": "Failed to cache online wallpaper"
     },
     "welcome": {
