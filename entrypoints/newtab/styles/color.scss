@@ -20,7 +20,7 @@
 
 @mixin gen-semantic-overlay-colors($base-color, $roles) {
   @each $role, $default-transparency in $roles {
-    --le-#{$role}-transparency: #{$default-transparency}%;
+    --le-#{$role}-transparency: #{$default-transparency} * 1%;
     --le-bg-color-overlay-#{$role}: color-mix(
       in oklch,
       #{$base-color},
