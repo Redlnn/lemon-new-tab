@@ -1,5 +1,6 @@
 import { promiseTimeout } from '@vueuse/core'
 
+import { ElButton } from 'element-plus'
 import i18next from 'i18next'
 
 import { browser, storage } from '#imports'
@@ -19,7 +20,6 @@ async function downloadBackup() {
 
 export async function handleInvaildSettings(): Promise<boolean> {
   const { default: DownloadRound } = await import('~icons/ic/round-download')
-  const { ElButton } = await import('element-plus')
   const { idbDropDatabase } = await import('@/shared/storage/idb')
 
   await ElMessageBox.alert(
