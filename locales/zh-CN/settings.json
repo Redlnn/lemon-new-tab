@@ -162,6 +162,7 @@
       "bottomRight": "右下",
       "dockNote": "开启 Dock 后功能按钮只能放在顶部",
       "label": "功能按钮位置",
+      "borderRadius": "操作按钮圆角",
       "topLeft": "左上",
       "topRight": "右上"
     },
@@ -174,6 +175,7 @@
       "pxValue": "距顶部距离（px）",
       "quickLinksScrollNote": "快速导航使用滚动时不能使用居中定位。"
     },
+    "radiusTitle": "圆角设置",
     "title": "布局"
   },
   "other": {
@@ -283,6 +285,7 @@
     "alwaysExpandSearchBar": "一直展开搜索框",
     "alwaysShowIcon": "始终显示搜索引擎图标",
     "border": "显示搜索框边框",
+    "borderRadius": "搜索框圆角",
     "clickToChange": "点击更改",
     "defaultSearchEngine": "搜索引擎",
     "expandWidth": "展开后宽度",
@@ -347,6 +350,7 @@
     "customLinesLabel": "自定义内容",
     "customLinesNote": "每行为一条，行内使用「\\n」表示换行",
     "customLinesPlaceholder": "每行一条，行内使用 \\n 表示换行",
+    "borderRadius": "一言背景圆角",
     "description": "",
     "invertColor": {
       "dark": "【一言】深色模式下使用深色文字",
@@ -372,6 +376,7 @@
   "quickLinks": {
     "border": "显示图标边框",
     "iconCacheTip": "Tip：建议打开「设置-其他-图标缓存」以尝试获取更高清晰度的图标。",
+    "iconBorderRadius": "图标背景圆角",
     "iconRatio": "图标填充比例",
     "iconSize": "图标大小",
     "grouping": "启用分组",

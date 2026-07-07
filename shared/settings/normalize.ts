@@ -5,6 +5,14 @@ const MIN_TRANSPARENCY = 0
 const MAX_TRANSPARENCY = 95
 const MIN_BACKDROP_BLUR = 0
 const MAX_BACKDROP_BLUR = 40
+const MIN_ICON_BORDER_RADIUS = 0
+const MAX_ICON_BORDER_RADIUS = 50
+const MIN_SEARCH_BORDER_RADIUS = 0
+const MAX_SEARCH_BORDER_RADIUS = 50
+const MIN_YIYAN_BORDER_RADIUS = 0
+const MAX_YIYAN_BORDER_RADIUS = 40
+const MIN_ACTION_BTN_BORDER_RADIUS = 0
+const MAX_ACTION_BTN_BORDER_RADIUS = 50
 type PerfTransparencyKey =
   | 'bookmark'
   | 'dialog'
@@ -19,7 +27,10 @@ type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
       transparency?: number
     }
   }
+  search?: CURRENT_CONFIG_SCHEMA['search']
   quickLinks?: CURRENT_CONFIG_SCHEMA['quickLinks']
+  yiyan?: CURRENT_CONFIG_SCHEMA['yiyan']
+  layout?: CURRENT_CONFIG_SCHEMA['layout']
   perf?: CURRENT_CONFIG_SCHEMA['perf']
 }
 
@@ -31,6 +42,29 @@ function normalizeTransparency(value: unknown, fallback: number): number {
 function normalizeBackdropBlur(value: unknown, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
   return Math.min(MAX_BACKDROP_BLUR, Math.max(MIN_BACKDROP_BLUR, Math.round(value)))
+}
+
+function normalizeIconBorderRadius(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
+  return Math.min(MAX_ICON_BORDER_RADIUS, Math.max(MIN_ICON_BORDER_RADIUS, Math.round(value)))
+}
+
+function normalizeSearchBorderRadius(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
+  return Math.min(MAX_SEARCH_BORDER_RADIUS, Math.max(MIN_SEARCH_BORDER_RADIUS, Math.round(value)))
+}
+
+function normalizeYiyanBorderRadius(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
+  return Math.min(MAX_YIYAN_BORDER_RADIUS, Math.max(MIN_YIYAN_BORDER_RADIUS, Math.round(value)))
+}
+
+function normalizeActionBtnBorderRadius(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
+  return Math.min(
+    MAX_ACTION_BTN_BORDER_RADIUS,
+    Math.max(MIN_ACTION_BTN_BORDER_RADIUS, Math.round(value)),
+  )
 }
 
 function normalizePerfSurface<K extends PerfTransparencyKey>(
@@ -71,17 +105,36 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
   const normalized = settings as MutableCurrentSettings
   normalized.clock ??= structuredClone(defaultSettings.clock)
   normalized.clock.style ??= structuredClone(defaultSettings.clock.style)
+  normalized.search ??= structuredClone(defaultSettings.search)
   normalized.quickLinks ??= structuredClone(defaultSettings.quickLinks)
+  normalized.yiyan ??= structuredClone(defaultSettings.yiyan)
+  normalized.layout ??= structuredClone(defaultSettings.layout)
   normalized.perf ??= structuredClone(defaultSettings.perf)
 
   normalized.clock.style.transparency = normalizeTransparency(
     normalized.clock.style.transparency,
     defaultSettings.clock.style.transparency,
   )
+  normalized.search.borderRadius = normalizeSearchBorderRadius(
+    normalized.search.borderRadius,
+    defaultSettings.search.borderRadius,
+  )
 
   normalized.quickLinks.grouping ??= defaultSettings.quickLinks.grouping
   normalized.quickLinks.useScroll ??= defaultSettings.quickLinks.useScroll
   normalized.quickLinks.pagingLoop ??= defaultSettings.quickLinks.pagingLoop
+  normalized.quickLinks.iconBorderRadius = normalizeIconBorderRadius(
+    normalized.quickLinks.iconBorderRadius,
+    defaultSettings.quickLinks.iconBorderRadius,
+  )
+  normalized.yiyan.borderRadius = normalizeYiyanBorderRadius(
+    normalized.yiyan.borderRadius,
+    defaultSettings.yiyan.borderRadius,
+  )
+  normalized.layout.actionBtnBorderRadius = normalizeActionBtnBorderRadius(
+    normalized.layout.actionBtnBorderRadius,
+    defaultSettings.layout.actionBtnBorderRadius,
+  )
 
   normalizePerfSurface(normalized.perf, 'bookmark')
   normalizePerfSurface(normalized.perf, 'dialog')

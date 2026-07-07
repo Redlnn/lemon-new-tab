@@ -15,6 +15,10 @@ import { searchEngines } from '@newtab/shared/search'
 
 const { t } = useTranslation()
 
+const props = defineProps<{
+  borderRadius: string
+}>()
+
 const focusStore = useFocusState()
 const settings = useSettingsStore()
 const customSearchEngineStore = useCustomSearchEngineStore()
@@ -68,6 +72,9 @@ const perf = usePerfClasses(() => ({
 }))
 
 const popperPerfClass = perf('search-engine-menu')
+const popperStyle = computed(() => ({
+  '--search-border-radius': props.borderRadius,
+}))
 
 defineExpose({ hide, showEngineToast })
 </script>
@@ -80,6 +87,7 @@ defineExpose({ hide, showEngineToast })
       :disabled="!focusStore.isFocused && !settings.search.showIconAlways"
       :show-arrow="false"
       :popper-class="popperPerfClass"
+      :popper-style="popperStyle"
       placement="bottom-start"
       effect="customized"
     >
@@ -166,10 +174,12 @@ defineExpose({ hide, showEngineToast })
 
 .search-engine-menu {
   &.is-customized {
-    --el-popper-border-radius: 15px;
+    --search-engine-menu-padding: 5px;
+    --el-popper-border-radius: var(--search-border-radius, 15px);
 
+    left: -5px !important; // 覆盖 element-plus 的 popper 样式 0px
     min-width: 210px;
-    padding: 5px;
+    padding: var(--search-engine-menu-padding);
     background-color: var(--el-bg-color-overlay);
     transition:
       background-color var(--el-transition-duration-fast) ease,
@@ -193,7 +203,10 @@ defineExpose({ hide, showEngineToast })
     font-size: var(--el-font-size-extra-small);
     color: var(--el-text-color-primary);
     cursor: pointer;
-    border-radius: 10px;
+    border-radius: max(
+      4px,
+      calc(var(--search-border-radius, 15px) - var(--search-engine-menu-padding, 5px))
+    );
 
     &:hover,
     &:focus-visible {

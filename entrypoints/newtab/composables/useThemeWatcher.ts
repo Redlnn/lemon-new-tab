@@ -46,6 +46,26 @@ function setBackdropBlurVariable(name: string, value: number) {
   document.documentElement.style.setProperty(`--le-${name}-backdrop-blur`, `${value}px`)
 }
 
+const ACTION_BTN_SIZE = 33
+const ACTION_BTN_CONTAINER_PADDING = 5
+
+function setActionBtnBorderRadiusVariable(name: string, value: number) {
+  document.documentElement.style.setProperty(name, `${value}px`)
+}
+
+function applyActionBtnBorderRadius(value: number) {
+  const buttonRadius = Math.round((ACTION_BTN_SIZE * value) / 100)
+  setActionBtnBorderRadiusVariable('--le-action-btn-border-radius', buttonRadius)
+  setActionBtnBorderRadiusVariable(
+    '--le-action-btn-container-border-radius',
+    buttonRadius + ACTION_BTN_CONTAINER_PADDING,
+  )
+  setActionBtnBorderRadiusVariable(
+    '--le-action-btn-menu-item-border-radius',
+    Math.max(4, buttonRadius - ACTION_BTN_CONTAINER_PADDING),
+  )
+}
+
 function applyBookmarkTransparency(value: number) {
   setTransparencyVariable('bookmark', value)
   setTransparencyVariable(
@@ -299,6 +319,10 @@ export function useThemeWatcher() {
     },
     { immediate: true },
   )
+
+  watch(() => settings.layout.actionBtnBorderRadius, applyActionBtnBorderRadius, {
+    immediate: true,
+  })
 
   watch(
     dialogTransparencyEnabled,

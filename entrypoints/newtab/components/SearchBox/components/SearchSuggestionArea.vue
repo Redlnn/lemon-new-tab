@@ -300,11 +300,12 @@ defineExpose({
   overflow: hidden;
   font-size: var(--el-font-size-small);
   background-color: var(--search-suggestion-background);
-  border-radius: 20px;
+  border-radius: var(--search-border-radius, 20px);
   transition:
     height 0.1s var(--cubic-bezier),
     background-color var(--el-transition-duration-fast) ease,
     border var(--el-transition-duration-fast) ease,
+    border-radius var(--el-transition-duration-fast) ease,
     box-shadow var(--el-transition-duration-fast) ease;
 
   &--shadow {

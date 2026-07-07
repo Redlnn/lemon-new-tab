@@ -62,6 +62,7 @@ export const defaultSettings = {
 
     placeholder: '',
     expandWidth: 500,
+    borderRadius: 50,
   },
   background: {
     bgType: BgType.Bing,
@@ -119,6 +120,7 @@ export const defaultSettings = {
 
     iconSize: 50,
     iconRatio: 0.5,
+    iconBorderRadius: 50,
 
     style: {
       shadow: true,
@@ -175,6 +177,7 @@ export const defaultSettings = {
 
     provider: 'jinrishici',
     customLines: '',
+    borderRadius: 20,
 
     style: {
       shadow: true,
@@ -238,6 +241,7 @@ export const defaultSettings = {
       value: 30,
     },
     actionBtnPosition: 'bottom-right',
+    actionBtnBorderRadius: 50,
   },
 
   bookmark: {

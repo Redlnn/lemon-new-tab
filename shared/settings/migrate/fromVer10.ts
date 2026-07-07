@@ -13,7 +13,22 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
         transparency: defaultSettings.clock.style.transparency,
       },
     },
-    quickLinks: shortcut,
+    search: {
+      ...rest.search,
+      borderRadius: defaultSettings.search.borderRadius,
+    },
+    quickLinks: {
+      ...shortcut,
+      iconBorderRadius: defaultSettings.quickLinks.iconBorderRadius,
+    },
+    yiyan: {
+      ...rest.yiyan,
+      borderRadius: defaultSettings.yiyan.borderRadius,
+    },
+    layout: {
+      ...rest.layout,
+      actionBtnBorderRadius: defaultSettings.layout.actionBtnBorderRadius,
+    },
     perf: {
       ...restPerf,
       bookmark: {

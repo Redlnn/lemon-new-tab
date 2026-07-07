@@ -7,7 +7,7 @@ type WithTransparency<T> = T & {
 
 export interface SettingsSchemaV11 extends Omit<
   SettingsSchemaV10,
-  'version' | 'shortcut' | 'clock' | 'perf'
+  'version' | 'shortcut' | 'clock' | 'search' | 'yiyan' | 'layout' | 'perf'
 > {
   clock: SettingsSchemaV10['clock'] & {
     style: SettingsSchemaV10['clock']['style'] & {
@@ -15,7 +15,21 @@ export interface SettingsSchemaV11 extends Omit<
     }
   }
 
-  quickLinks: SettingsSchemaV10['shortcut']
+  search: SettingsSchemaV10['search'] & {
+    borderRadius: number
+  }
+
+  quickLinks: SettingsSchemaV10['shortcut'] & {
+    iconBorderRadius: number
+  }
+
+  yiyan: SettingsSchemaV10['yiyan'] & {
+    borderRadius: number
+  }
+
+  layout: SettingsSchemaV10['layout'] & {
+    actionBtnBorderRadius: number
+  }
 
   perf: Omit<
     SettingsSchemaV10['perf'],

@@ -355,8 +355,10 @@
           color: var(--el-text-color-regular);
           background: var(--el-fill-color-darker);
           border: solid 1px rgb(255 255 255 / 10%);
-          border-radius: 50%;
-          transition: background-color 0.1s ease;
+          border-radius: var(--icon_border_radius, 50%);
+          transition:
+            background-color 0.1s ease,
+            border-radius 0.1s ease;
 
           &.border {
             border: solid 1px var(--quick-links-icon-border-color);

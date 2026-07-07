@@ -162,6 +162,7 @@
       "bottomRight": "右下",
       "dockNote": "開啟 Dock 後功能按鈕只能放在頂部",
       "label": "功能按鈕位置",
+      "borderRadius": "操作按鈕圓角",
       "topLeft": "左上",
       "topRight": "右上"
     },
@@ -174,6 +175,7 @@
       "pxValue": "距頂部距離（px）",
       "quickLinksScrollNote": "快速連結使用捲動時不能使用置中定位。"
     },
+    "radiusTitle": "圓角設定",
     "title": "佈局"
   },
   "other": {
@@ -283,6 +285,7 @@
     "alwaysExpandSearchBar": "一直展開搜尋框",
     "alwaysShowIcon": "始終顯示搜尋引擎圖示",
     "border": "顯示搜尋框邊框",
+    "borderRadius": "搜尋框圓角",
     "clickToChange": "點擊更改",
     "defaultSearchEngine": "預設搜尋引擎",
     "expandWidth": "展開後寬度",
@@ -347,6 +350,7 @@
     "customLinesLabel": "自定義內容",
     "customLinesNote": "每一行為一則，行內使用「\\n」表示換行",
     "customLinesPlaceholder": "每行一條，行內使用 \\n 表示換行",
+    "borderRadius": "一言背景圓角",
     "description": "",
     "invertColor": {
       "dark": "【一言】深色模式下使用深色文字",
@@ -372,6 +376,7 @@
   "quickLinks": {
     "border": "顯示圖示邊框",
     "iconCacheTip": "Tip：建議開啟「設定-其他-圖示快取」以嘗試取得更高清晰度的圖示。",
+    "iconBorderRadius": "圖示背景圓角",
     "iconRatio": "圖示填充比例",
     "iconSize": "圖示大小",
     "grouping": "啟用分組",

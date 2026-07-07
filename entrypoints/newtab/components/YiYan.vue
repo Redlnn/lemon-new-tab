@@ -124,6 +124,7 @@ async function copyToClipboard() {
         yiyanPerfClass,
       ]"
       ref="yiyan"
+      :style="{ '--yiyan-border-radius': `${settings.yiyan.borderRadius}px` }"
       @pointerdown="onPointerDown"
     >
       <button
@@ -174,11 +175,12 @@ async function copyToClipboard() {
   overflow: hidden;
   color: var(--yiyan-color);
   text-align: center;
-  border-radius: 20px;
+  border-radius: var(--yiyan-border-radius, 20px);
   transition: bottom var(--el-transition-duration-fast) ease;
   transition:
     background-color var(--el-transition-duration-fast) ease,
     backdrop-filter var(--el-transition-duration-fast) ease,
+    border-radius var(--el-transition-duration-fast) ease,
     color var(--el-transition-duration-fast) ease,
     bottom var(--el-transition-duration-fast) ease;
   animation: delayedFadeIn 0.25s;

@@ -97,6 +97,18 @@ const openSearchEnginePreference = inject(OPEN_SEARCH_ENGINE_PREFERENCE)
         <div class="settings__label">{{ t('search.border') }}</div>
         <el-switch v-model="settings.search.style.border" />
       </div>
+      <div class="settings__item settings__item--vertical">
+        <div class="settings__label">{{ t('search.borderRadius') }}</div>
+        <el-slider
+          v-model="settings.search.borderRadius"
+          :min="0"
+          :max="50"
+          :step="1"
+          show-input
+          :show-input-controls="false"
+          :show-tooltip="false"
+        />
+      </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('search.recordSearchHistory') }}</div>
         <el-switch v-model="settings.search.recordHistory" />

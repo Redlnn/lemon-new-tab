@@ -164,6 +164,18 @@ function handlePagingChange(enabled: boolean | string | number) {
           />
         </div>
         <div class="settings__item settings__item--vertical">
+          <div class="settings__label">{{ t('quickLinks.iconBorderRadius') }}</div>
+          <el-slider
+            v-model="settings.quickLinks.iconBorderRadius"
+            :min="0"
+            :max="50"
+            :step="1"
+            show-input
+            :show-input-controls="false"
+            :show-tooltip="false"
+          />
+        </div>
+        <div class="settings__item settings__item--vertical">
           <div class="settings__label">{{ t('quickLinks.spacing.iconTitleGap') }}</div>
           <el-slider
             v-model="settings.quickLinks.spacing.iconTitleGap"

@@ -998,6 +998,7 @@ const containerGridStyle = computed(() => ({
   gridGap: `${settings.quickLinks.spacing.itemGapY}px ${settings.quickLinks.spacing.itemGapX}px`,
   '--icon_size': `${settings.quickLinks.iconSize}px`,
   '--icon_ratio': `${settings.quickLinks.iconRatio}`,
+  '--icon_border_radius': `${settings.quickLinks.iconBorderRadius}%`,
 }))
 
 const scrollGridStyle = computed(() => ({
@@ -1005,6 +1006,7 @@ const scrollGridStyle = computed(() => ({
   gridGap: `${settings.quickLinks.spacing.itemGapY}px ${settings.quickLinks.spacing.itemGapX}px`,
   '--icon_size': `${settings.quickLinks.iconSize}px`,
   '--icon_ratio': `${settings.quickLinks.iconRatio}`,
+  '--icon_border_radius': `${settings.quickLinks.iconBorderRadius}%`,
 }))
 
 const categoryPerf = usePerfClasses(() => ({

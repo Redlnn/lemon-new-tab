@@ -59,7 +59,13 @@ const isWindowFocused = useWindowFocus()
 const activeElement = useActiveElement()
 const { addHistory, ensureLoaded: ensureHistoryLoaded } = useSearchHistoryCache()
 
-const { width: searchFormWidth } = useElementSize(searchForm)
+const SEARCH_FORM_FALLBACK_HEIGHT = 44
+
+const { width: searchFormWidth, height: searchFormHeight } = useElementSize(searchForm)
+const searchBorderRadius = computed(() => {
+  const height = searchFormHeight.value || SEARCH_FORM_FALLBACK_HEIGHT
+  return `${Math.round((height * settings.search.borderRadius) / 100)}px`
+})
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.searchBar.transparent,
@@ -242,7 +248,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <section ref="searchBox" class="search-box">
+  <section
+    ref="searchBox"
+    class="search-box"
+    :style="{ '--search-border-radius': searchBorderRadius }"
+  >
     <form
       ref="searchForm"
       role="search"
@@ -254,7 +264,7 @@ onMounted(() => {
       }"
       @submit.prevent="doSearch"
     >
-      <search-engine-menu ref="searchEngineMenuRef" />
+      <search-engine-menu ref="searchEngineMenuRef" :border-radius="searchBorderRadius" />
       <input
         ref="searchInput"
         name="search-input"

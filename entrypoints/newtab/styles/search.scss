@@ -30,11 +30,12 @@
     height: var(--height);
     font-size: 15px;
     color: transparent;
-    border-radius: var(--height);
+    border-radius: var(--search-border-radius, var(--height));
     transition:
       background-color var(--el-transition-duration-fast) ease,
       box-shadow var(--el-transition-duration-fast) ease,
       border var(--el-transition-duration-fast) ease,
+      border-radius var(--el-transition-duration-fast) ease,
       width var(--el-transition-duration-fast) var(--cubic-bezier);
     animation: delayedFadeIn 0.25s;
 

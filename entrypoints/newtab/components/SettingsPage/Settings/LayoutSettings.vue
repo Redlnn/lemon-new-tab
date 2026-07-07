@@ -106,6 +106,59 @@ function selectActionBtn(pos: ActionBtnPosition) {
       {{ t('layout.actionBtn.dockNote') }}
     </p>
 
+    <!-- 圆角设置集中入口 -->
+    <div class="settings__item settings__item--horizontal">
+      <div class="settings__label">{{ t('layout.radiusTitle') }}</div>
+    </div>
+    <div class="settings__item settings__item--vertical">
+      <div class="settings__label">{{ t('search.borderRadius') }}</div>
+      <el-slider
+        v-model="settings.search.borderRadius"
+        :min="0"
+        :max="50"
+        :step="1"
+        show-input
+        :show-input-controls="false"
+        :show-tooltip="false"
+      />
+    </div>
+    <div class="settings__item settings__item--vertical">
+      <div class="settings__label">{{ t('quickLinks.iconBorderRadius') }}</div>
+      <el-slider
+        v-model="settings.quickLinks.iconBorderRadius"
+        :min="0"
+        :max="50"
+        :step="1"
+        show-input
+        :show-input-controls="false"
+        :show-tooltip="false"
+      />
+    </div>
+    <div class="settings__item settings__item--vertical">
+      <div class="settings__label">{{ t('layout.actionBtn.borderRadius') }}</div>
+      <el-slider
+        v-model="settings.layout.actionBtnBorderRadius"
+        :min="0"
+        :max="50"
+        :step="1"
+        show-input
+        :show-input-controls="false"
+        :show-tooltip="false"
+      />
+    </div>
+    <div class="settings__item settings__item--vertical">
+      <div class="settings__label">{{ t('yiyan.borderRadius') }}</div>
+      <el-slider
+        v-model="settings.yiyan.borderRadius"
+        :min="0"
+        :max="40"
+        :step="1"
+        show-input
+        :show-input-controls="false"
+        :show-tooltip="false"
+      />
+    </div>
+
     <!-- 不活动时淡出（UI 仅在此处，storage path 仍为 theme.idleHide） -->
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('theme.idleHide') }}</div>

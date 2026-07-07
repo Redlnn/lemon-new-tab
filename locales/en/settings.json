@@ -162,6 +162,7 @@
       "bottomRight": "Bottom Right",
       "dockNote": "Dock is on — button bar is fixed to the top",
       "label": "Button bar position",
+      "borderRadius": "Action button radius",
       "topLeft": "Top Left",
       "topRight": "Top Right"
     },
@@ -174,6 +175,7 @@
       "pxValue": "Distance from top (px)",
       "quickLinksScrollNote": "Center positioning is unavailable while Quick Links scrolling is enabled."
     },
+    "radiusTitle": "Radius settings",
     "title": "Layout"
   },
   "other": {
@@ -283,6 +285,7 @@
     "alwaysExpandSearchBar": "Always expand search bar",
     "alwaysShowIcon": "Always show search engine icon",
     "border": "Show search box border",
+    "borderRadius": "Search box radius",
     "clickToChange": "Click to change",
     "defaultSearchEngine": "Search engine",
     "expandWidth": "Expanded width",
@@ -347,6 +350,7 @@
     "customLinesLabel": "Custom content",
     "customLinesNote": "Each line represents one quote. Use \"\\n\" within a line to indicate a line break.",
     "customLinesPlaceholder": "One quote per line; use \\n within a line for line breaks",
+    "borderRadius": "Quote background radius",
     "description": "Display a random Chinese quote below the search bar. Give it a try — you can always turn it off later!",
     "invertColor": {
       "dark": "[Quote] Use dark text in dark mode",
@@ -372,6 +376,7 @@
   "quickLinks": {
     "border": "Show icon border",
     "iconCacheTip": "Tip: Consider enabling Settings → Other → Icon cache to attempt fetching higher-resolution icons.",
+    "iconBorderRadius": "Icon background radius",
     "iconRatio": "Icon ratio",
     "iconSize": "Icon size",
     "grouping": "Enable groups",

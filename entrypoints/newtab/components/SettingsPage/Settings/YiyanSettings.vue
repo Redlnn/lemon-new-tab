@@ -39,6 +39,18 @@ const currentProviderNote = computed(() => {
         <div class="settings__label">{{ t('yiyan.shadow') }}</div>
         <el-switch v-model="settings.yiyan.style.shadow" />
       </div>
+      <div class="settings__item settings__item--vertical">
+        <div class="settings__label">{{ t('yiyan.borderRadius') }}</div>
+        <el-slider
+          v-model="settings.yiyan.borderRadius"
+          :min="0"
+          :max="40"
+          :step="1"
+          show-input
+          :show-input-controls="false"
+          :show-tooltip="false"
+        />
+      </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('yiyan.provider') }}</div>
         <el-select

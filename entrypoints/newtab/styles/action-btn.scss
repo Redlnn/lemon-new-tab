@@ -11,7 +11,7 @@
   padding: 5px;
   color: var(--el-text-color-secondary);
   background-color: var(--action-btn-container-background);
-  border-radius: 100px;
+  border-radius: var(--le-action-btn-container-border-radius, 100px);
   transition: var(--el-transition-duration-fast) ease-in-out;
 
   &--top-right {
@@ -63,6 +63,7 @@ html.colorful .action-btn-container {
   font-size: 25px;
   line-height: 1em;
   cursor: pointer;
+  border-radius: var(--le-action-btn-border-radius, 50%);
   transition: var(--el-transition-duration-fast) ease-in-out;
 
   &:hover,
@@ -83,7 +84,7 @@ html.colorful .action-btn-container {
       pointer-events: none;
       content: '';
       border: 2px solid var(--el-color-primary);
-      border-radius: 50%;
+      border-radius: var(--le-action-btn-border-radius, 50%);
     }
   }
 
@@ -123,6 +124,8 @@ html.colorful .action-btn-container {
   }
 
   &__popper.el-popper {
+    --el-popper-border-radius: var(--le-action-btn-container-border-radius, 20px);
+
     .el-dropdown-menu {
       padding: 8px;
       background-color: transparent;
@@ -131,7 +134,7 @@ html.colorful .action-btn-container {
     .el-dropdown-menu__item {
       padding: 5px 30px 5px 10px;
       font-size: var(--el-font-size-extra-small);
-      border-radius: 12px;
+      border-radius: var(--le-action-btn-menu-item-border-radius, 12px);
 
       .el-icon {
         margin-right: 10px;
