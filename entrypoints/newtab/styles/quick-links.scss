@@ -77,7 +77,7 @@
   &__slide-viewport {
     position: relative;
     padding: 10px;
-    border-radius: 25px;
+    border-radius: calc(var(--le-radius-base, 20px) * 1.25);
 
     // 只允许垂直滚动和缩放，水平滑动由 JS 处理
     @media (pointer: coarse) {
@@ -297,7 +297,7 @@
 
   &__item {
     position: relative;
-    border-radius: 5px;
+    border-radius: var(--le-radius-tiny, 5px);
 
     &:focus-visible {
       outline: none;
@@ -308,7 +308,7 @@
         pointer-events: none;
         content: '';
         border: 2px solid var(--el-color-primary);
-        border-radius: 10px;
+        border-radius: var(--le-radius-inner, 10px);
         box-shadow: 0 0 0 2px var(--el-border-color-extra-light);
       }
     }
@@ -400,7 +400,7 @@
             background-repeat: no-repeat;
             background-position: center center;
             background-size: cover;
-            border-radius: 3px;
+            border-radius: var(--le-radius-micro, 3px);
 
             svg {
               width: calc(var(--icon_size) * var(--icon_ratio));
@@ -456,7 +456,12 @@ html.light .quick-links {
 }
 
 .quick-links__menu-popper.el-dropdown__popper.el-popper {
-  border-radius: 15px;
+  --le-radius-popper: var(--le-quick-link-menu-border-radius, 20px);
+  --le-menu-padding: 4px;
+  --el-popper-border-radius: var(--le-radius-popper);
+  --le-radius-menu-item: max(0px, calc(var(--le-radius-popper) - var(--le-menu-padding)));
+
+  border-radius: var(--le-radius-popper);
 
   &.quick-links__menu-popper--opacity.quick-links__menu-popper--blur {
     // 只有模糊时才有透明度效果，否则会影响可读性
@@ -468,7 +473,7 @@ html.light .quick-links {
   }
 
   .el-dropdown-menu {
-    padding: 4px;
+    padding: var(--le-menu-padding);
     background-color: initial;
   }
 
@@ -476,7 +481,7 @@ html.light .quick-links {
     min-width: 150px;
     padding: 3px 30px 2px 10px;
     font-size: var(--el-font-size-extra-small);
-    border-radius: 11px;
+    border-radius: var(--le-radius-menu-item);
   }
 }
 
@@ -505,7 +510,7 @@ html.light .quick-links {
     cursor: pointer;
     background-color: var(--el-fill-color);
     border: none;
-    border-radius: 10px;
+    border-radius: var(--le-radius-inner, 10px);
 
     &--active {
       background-color: var(--el-color-primary-light-9);
@@ -522,7 +527,7 @@ html.light .quick-links {
 
     .el-input__wrapper {
       min-height: 22px;
-      border-radius: 10px;
+      border-radius: var(--le-radius-inner, 10px);
     }
   }
 
@@ -577,7 +582,7 @@ html.light .quick-links {
   &--active {
     outline: 1px solid color-mix(in srgb, var(--el-color-primary), transparent 45%);
     outline-offset: 4px;
-    border-radius: 12px;
+    border-radius: var(--le-radius-medium, 12px);
   }
 }
 
@@ -590,7 +595,7 @@ html.light .quick-links {
 }
 
 .quick-links__category-groups .quick-link-dnd-sortable--drop-target {
-  border-radius: 10px;
+  border-radius: var(--le-radius-inner, 10px);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--el-color-primary), transparent 45%);
 }
 
@@ -603,7 +608,7 @@ html.light .quick-links {
   padding: 8px;
   pointer-events: none;
   background-color: var(--le-bg-color-overlay-quick-links);
-  border-radius: 12px;
+  border-radius: var(--le-radius-medium, 12px);
   box-shadow: var(--el-box-shadow-light);
 
   &__icon {
@@ -623,7 +628,7 @@ html.light .quick-links {
       background-repeat: no-repeat;
       background-position: center;
       background-size: contain;
-      border-radius: 6px;
+      border-radius: calc(var(--le-radius-base, 20px) * 0.3);
     }
   }
 
@@ -640,7 +645,7 @@ html.light .quick-links {
     min-width: 44px;
     max-width: 64px;
     padding: 4px;
-    border-radius: 10px;
+    border-radius: var(--le-radius-inner, 10px);
 
     .quick-link-dnd-overlay__icon {
       width: 34px;

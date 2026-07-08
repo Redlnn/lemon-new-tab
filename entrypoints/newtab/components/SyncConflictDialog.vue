@@ -92,7 +92,7 @@ const formatTime = (time: number) => {
   overflow: hidden;
   border-collapse: collapse;
   background-color: rgb(from var(--el-bg-color) r g b / 50%);
-  border-radius: 10px;
+  border-radius: var(--le-radius-inner, 10px);
 
   tr:first-child,
   tr:not(:last-child) {

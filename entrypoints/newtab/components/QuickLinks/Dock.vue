@@ -558,7 +558,7 @@ defineExpose({ refresh })
   height: calc(var(--item-size) + 10px);
   padding: 5px;
   background-color: var(--dock-background);
-  border-radius: 15px;
+  border-radius: var(--le-radius-surface, 15px);
   box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
   transform: translateX(-50%);
   transition:

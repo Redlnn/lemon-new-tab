@@ -85,7 +85,7 @@
         pointer-events: none;
         content: '';
         border: 2px solid var(--el-color-primary);
-        border-radius: 50%;
+        border-radius: inherit;
       }
     }
 

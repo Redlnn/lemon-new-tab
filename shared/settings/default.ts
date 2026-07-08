@@ -242,6 +242,7 @@ export const defaultSettings = {
     },
     actionBtnPosition: 'bottom-right',
     actionBtnBorderRadius: 50,
+    globalBorderRadius: 20,
   },
 
   bookmark: {

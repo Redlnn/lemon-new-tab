@@ -1,0 +1,112 @@
+:root {
+  --le-radius-base: 20px;
+  --le-radius-surface: calc(var(--le-radius-base, 20px) * 0.75);
+  --le-radius-medium: calc(var(--le-radius-base, 20px) * 0.6);
+  --le-radius-inner: calc(var(--le-radius-base, 20px) * 0.5);
+  --le-radius-small: calc(var(--le-radius-base, 20px) * 0.4);
+  --le-radius-tiny: calc(var(--le-radius-base, 20px) * 0.25);
+  --le-radius-micro: calc(var(--le-radius-base, 20px) * 0.15);
+  --le-radius-popper: var(--le-radius-surface);
+  --le-menu-padding: 4px;
+  --le-radius-menu-item: max(0px, calc(var(--le-radius-popper) - var(--le-menu-padding)));
+  --el-border-radius-base: var(--le-radius-base);
+  --el-border-radius-small: var(--le-radius-small);
+  --el-border-radius-round: var(--le-radius-base);
+  --el-messagebox-border-radius: var(--le-radius-base);
+  --el-popper-border-radius: var(--le-radius-popper);
+  --el-popover-border-radius: var(--le-radius-popper);
+  --el-notification-radius: var(--le-radius-base);
+  --el-alert-border-radius-base: var(--le-radius-base);
+  --el-input-border-radius: var(--le-radius-base);
+}
+
+.el-dialog:not(.is-fullscreen) {
+  --el-dialog-border-radius: var(--le-radius-base);
+
+  border-radius: var(--el-dialog-border-radius);
+}
+
+.el-message-box {
+  --el-messagebox-border-radius: var(--le-radius-base);
+
+  border-radius: var(--el-messagebox-border-radius);
+}
+
+.el-message,
+.el-notification,
+.el-alert {
+  border-radius: var(--le-radius-base);
+}
+
+.el-notification {
+  --el-notification-radius: var(--le-radius-base);
+}
+
+.el-alert {
+  --el-alert-border-radius-base: var(--le-radius-base);
+}
+
+.el-popper {
+  --el-popper-border-radius: var(--le-radius-popper);
+
+  border-radius: var(--el-popper-border-radius);
+}
+
+.el-popover.el-popper {
+  --el-popover-border-radius: var(--le-radius-popper);
+
+  border-radius: var(--el-popover-border-radius);
+}
+
+.el-button:not(.is-circle) {
+  --el-border-radius-base: var(--le-radius-base);
+  --el-border-radius-round: var(--le-radius-base);
+
+  border-radius: var(--le-radius-base);
+}
+
+.el-input {
+  --el-input-border-radius: var(--le-radius-base);
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner {
+  border-radius: var(--le-radius-base);
+}
+
+.el-select-dropdown {
+  --le-radius-popper: var(--le-radius-surface);
+  --le-menu-padding: 6px;
+
+  border-radius: var(--le-radius-popper);
+}
+
+.el-select-dropdown__item {
+  border-radius: max(0px, calc(var(--le-radius-popper) - var(--le-menu-padding)));
+}
+
+.el-drawer {
+  border-radius: var(--le-radius-base);
+}
+
+:where(.el-dropdown__popper.el-popper) {
+  --le-radius-popper: var(--le-radius-surface);
+  --el-popper-border-radius: var(--le-radius-popper);
+  --le-radius-menu-item: max(0px, calc(var(--le-radius-popper) - var(--le-menu-padding)));
+
+  border-radius: var(--le-radius-popper);
+}
+
+:where(.el-dropdown__popper.el-popper) .el-dropdown-menu {
+  border-radius: inherit;
+}
+
+:where(.el-dropdown__popper.el-popper) .el-dropdown-menu__item {
+  border-radius: var(--le-radius-menu-item);
+}
+
+.settings-item-popper.el-popper {
+  --le-radius-popper: var(--le-radius-surface);
+  --le-menu-padding: 6px;
+}

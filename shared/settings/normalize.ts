@@ -13,6 +13,8 @@ const MIN_YIYAN_BORDER_RADIUS = 0
 const MAX_YIYAN_BORDER_RADIUS = 40
 const MIN_ACTION_BTN_BORDER_RADIUS = 0
 const MAX_ACTION_BTN_BORDER_RADIUS = 50
+const MIN_GLOBAL_BORDER_RADIUS = 0
+const MAX_GLOBAL_BORDER_RADIUS = 40
 type PerfTransparencyKey =
   | 'bookmark'
   | 'dialog'
@@ -65,6 +67,11 @@ function normalizeActionBtnBorderRadius(value: unknown, fallback: number): numbe
     MAX_ACTION_BTN_BORDER_RADIUS,
     Math.max(MIN_ACTION_BTN_BORDER_RADIUS, Math.round(value)),
   )
+}
+
+function normalizeGlobalBorderRadius(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
+  return Math.min(MAX_GLOBAL_BORDER_RADIUS, Math.max(MIN_GLOBAL_BORDER_RADIUS, Math.round(value)))
 }
 
 function normalizePerfSurface<K extends PerfTransparencyKey>(
@@ -134,6 +141,10 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
   normalized.layout.actionBtnBorderRadius = normalizeActionBtnBorderRadius(
     normalized.layout.actionBtnBorderRadius,
     defaultSettings.layout.actionBtnBorderRadius,
+  )
+  normalized.layout.globalBorderRadius = normalizeGlobalBorderRadius(
+    normalized.layout.globalBorderRadius,
+    defaultSettings.layout.globalBorderRadius,
   )
 
   normalizePerfSurface(normalized.perf, 'bookmark')

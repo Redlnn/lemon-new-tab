@@ -195,7 +195,7 @@ defineExpose({
   }
 
   .el-input {
-    --el-input-border-radius: 12px;
+    --el-input-border-radius: var(--le-radius-medium, 12px);
   }
 
   .el-alert--info {
@@ -247,7 +247,7 @@ html.colorful .add-custom-search-engine-dialog {
     cursor: pointer;
     background-color: var(--el-fill-color-blank);
     border: 1px dashed var(--el-border-color);
-    border-radius: 12px;
+    border-radius: var(--le-radius-medium, 12px);
     transition: var(--el-transition-duration-fast);
 
     &:hover,

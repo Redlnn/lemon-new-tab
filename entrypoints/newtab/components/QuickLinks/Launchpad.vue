@@ -1204,7 +1204,7 @@ onBeforeUnmount(() => {
 
 .launchpad-group__title-drop {
   display: inline-flex;
-  border-radius: 8px;
+  border-radius: var(--le-radius-small, 8px);
 }
 
 .launchpad-group__title.quick-links__category-item {
@@ -1276,7 +1276,7 @@ onBeforeUnmount(() => {
   padding: 10px 8px;
   overflow: hidden;
   cursor: pointer;
-  border-radius: 16px;
+  border-radius: calc(var(--le-radius-base, 20px) * 0.8);
   transition:
     background-color 0.15s ease,
     transform 0.15s ease;
@@ -1304,26 +1304,26 @@ onBeforeUnmount(() => {
     height: 72px;
     margin-bottom: 8px;
     overflow: hidden;
-    border-radius: 18px;
+    border-radius: calc(var(--le-radius-base, 20px) * 0.9);
     transition: 0.15s ease;
 
     @media (width <= 800px) {
       width: 64px;
       height: 64px;
-      border-radius: 14px;
+      border-radius: calc(var(--le-radius-base, 20px) * 0.7);
     }
 
     @media (width <= 500px) {
       width: 56px;
       height: 56px;
-      border-radius: 12px;
+      border-radius: var(--le-radius-medium, 12px);
     }
 
     img {
       width: 75%;
       height: 75%;
       object-fit: contain;
-      border-radius: 10px;
+      border-radius: var(--le-radius-inner, 10px);
     }
 
     &--add {

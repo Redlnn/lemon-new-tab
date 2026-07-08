@@ -229,7 +229,7 @@ html.colorful .se-switcher__dialog {
   padding: 16px 18px;
   cursor: pointer;
   background-color: var(--se-item-background);
-  border-radius: 15px;
+  border-radius: var(--le-radius-surface, 15px);
 
   &:hover {
     background-color: var(--se-item-hover-background);
@@ -306,7 +306,11 @@ html.colorful .se-switcher__dialog {
 }
 
 .se-switcher-item__menu-popper.el-dropdown__popper.el-popper {
-  border-radius: 15px;
+  --le-radius-popper: var(--le-radius-surface, 15px);
+  --le-menu-padding: 4px;
+  --el-popper-border-radius: var(--le-radius-popper);
+
+  border-radius: var(--le-radius-popper);
 
   &.se-switcher-item__menu-popper--opacity.se-switcher-item__menu-popper--blur {
     // 只有模糊时才有透明度效果，否则会影响可读性
@@ -318,14 +322,14 @@ html.colorful .se-switcher__dialog {
   }
 
   .el-dropdown-menu {
-    padding: 4px;
+    padding: var(--le-menu-padding);
     background-color: initial;
   }
 
   .el-dropdown-menu__item {
     padding: 3px 30px 2px 10px;
     font-size: var(--el-font-size-extra-small);
-    border-radius: 11px;
+    border-radius: var(--le-radius-menu-item);
   }
 }
 </style>

@@ -411,7 +411,7 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
   margin: 10px;
   overflow: hidden;
   background-color: var(--bookmark-background, var(--el-drawer-bg-color));
-  border-radius: 20px;
+  border-radius: var(--le-radius-base, 20px);
 
   &.el-drawer.ltr,
   &.el-drawer.rtl {
@@ -422,7 +422,7 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
       height: calc(100% - 40px);
 
       &::before {
-        border-radius: 4px;
+        border-radius: var(--le-radius-tiny, 5px);
       }
     }
   }
@@ -567,7 +567,7 @@ html.colorful .bookmark {
         pointer-events: none;
         content: '';
         border: 2px solid var(--el-color-primary);
-        border-radius: 10px;
+        border-radius: var(--le-radius-inner, 10px);
       }
     }
 
@@ -595,7 +595,7 @@ html.colorful .bookmark {
 
 .bookmark-dnd-children {
   min-height: 6px;
-  border-radius: 8px;
+  border-radius: var(--le-radius-small, 8px);
 
   &--drop-target {
     box-shadow: inset 0 0 0 1px var(--el-color-primary-light-5);
@@ -643,7 +643,7 @@ html.colorful .bookmark {
   img {
     height: 1em;
     margin-right: 10px;
-    border-radius: 3px;
+    border-radius: var(--le-radius-micro, 3px);
   }
 
   .el-text {
@@ -662,7 +662,11 @@ html.colorful .bookmark {
 }
 
 .bookmark__menu-popper.el-dropdown__popper.el-popper {
-  border-radius: 15px;
+  --le-radius-popper: var(--le-radius-surface, 15px);
+  --le-menu-padding: 4px;
+  --el-popper-border-radius: var(--le-radius-popper);
+
+  border-radius: var(--le-radius-popper);
 
   &.bookmark__menu-popper--opacity.bookmark__menu-popper--blur {
     background-color: var(--le-bg-color-overlay-bookmark-menu);
@@ -673,14 +677,14 @@ html.colorful .bookmark {
   }
 
   .el-dropdown-menu {
-    padding: 4px;
+    padding: var(--le-menu-padding);
     background-color: initial;
   }
 
   .el-dropdown-menu__item {
     padding: 3px 30px 2px 10px;
     font-size: var(--el-font-size-extra-small);
-    border-radius: 11px;
+    border-radius: var(--le-radius-menu-item);
   }
 }
 

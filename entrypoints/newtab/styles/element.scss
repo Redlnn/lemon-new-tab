@@ -126,7 +126,7 @@ html.dialog-acrylic .el-notification {
 .el-color-picker .el-color-picker__trigger {
   padding: 0;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: var(--le-radius-inner, 10px);
   transition: border var(--el-transition-duration-fast) ease;
 
   .el-color-picker__color {

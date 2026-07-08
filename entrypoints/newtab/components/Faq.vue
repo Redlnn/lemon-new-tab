@@ -177,7 +177,7 @@ html.colorful.dialog-transparent .faq__dialog {
     text-decoration: none;
     cursor: pointer;
     background-color: var(--faq-link-background);
-    border-radius: 15px;
+    border-radius: var(--le-radius-surface, 15px);
     transition:
       background-color var(--el-transition-duration-fast) ease,
       transform var(--el-transition-duration-fast) ease;
@@ -190,7 +190,7 @@ html.colorful.dialog-transparent .faq__dialog {
       height: 28px;
       font-size: 18px;
       background-color: var(--faq-icon-background);
-      border-radius: 8px;
+      border-radius: var(--le-radius-small, 8px);
       transition: background-color var(--el-transition-duration-fast) ease;
     }
 
@@ -219,7 +219,7 @@ html.colorful.dialog-transparent .faq__dialog {
     padding: 20px 22px;
     margin-bottom: 10px;
     background-color: var(--faq-item-background);
-    border-radius: 15px;
+    border-radius: var(--le-radius-surface, 15px);
 
     &:last-child {
       margin-bottom: 0;

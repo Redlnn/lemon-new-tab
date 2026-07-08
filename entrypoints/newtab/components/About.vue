@@ -114,7 +114,7 @@ const currentYiyanProvider = computed(() => {
       background-position: center;
       background-size: 80%;
       border: var(--el-border);
-      border-radius: 15px;
+      border-radius: var(--le-radius-surface, 15px);
     }
   }
 
@@ -131,7 +131,7 @@ const currentYiyanProvider = computed(() => {
     font-size: var(--el-font-size-small);
     color: var(--el-color-primary);
     background-color: color-mix(in oklch, var(--el-color-primary-light-8), transparent 10%);
-    border-radius: 5px;
+    border-radius: var(--le-radius-tiny, 5px);
   }
 
   .ext-links {

@@ -166,6 +166,7 @@
       "topLeft": "Top Left",
       "topRight": "Top Right"
     },
+    "globalBorderRadius": "Other component radius",
     "mainPosition": {
       "center": "Center",
       "dvh": "From top (%)",
@@ -175,7 +176,6 @@
       "pxValue": "Distance from top (px)",
       "quickLinksScrollNote": "Center positioning is unavailable while Quick Links scrolling is enabled."
     },
-    "radiusTitle": "Radius settings",
     "title": "Layout"
   },
   "other": {

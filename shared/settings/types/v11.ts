@@ -29,6 +29,7 @@ export interface SettingsSchemaV11 extends Omit<
 
   layout: SettingsSchemaV10['layout'] & {
     actionBtnBorderRadius: number
+    globalBorderRadius: number
   }
 
   perf: Omit<

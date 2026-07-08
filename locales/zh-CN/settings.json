@@ -166,6 +166,7 @@
       "topLeft": "左上",
       "topRight": "右上"
     },
+    "globalBorderRadius": "其他组件圆角",
     "mainPosition": {
       "center": "居中",
       "dvh": "距顶部（%）",
@@ -175,7 +176,6 @@
       "pxValue": "距顶部距离（px）",
       "quickLinksScrollNote": "快速导航使用滚动时不能使用居中定位。"
     },
-    "radiusTitle": "圆角设置",
     "title": "布局"
   },
   "other": {

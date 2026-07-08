@@ -358,7 +358,7 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
 .perf-panel {
   padding: 18px 25px;
   background-color: var(--settings-items-background);
-  border-radius: 15px;
+  border-radius: var(--le-radius-surface, 15px);
   transition: background-color var(--el-transition-duration-fast) ease;
 }
 
@@ -422,7 +422,7 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
   min-width: 0;
   padding: 15px;
   background-color: var(--settings-group-active-background);
-  border-radius: 10px;
+  border-radius: var(--le-radius-inner, 10px);
 }
 
 .perf-effect-header,
@@ -475,7 +475,7 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
   min-width: 0;
   padding: 15px;
   background-color: var(--settings-group-active-background);
-  border-radius: 10px;
+  border-radius: var(--le-radius-inner, 10px);
 
   h4 {
     margin: 0 0 2px;
@@ -497,7 +497,7 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
   line-height: 1.5;
   color: var(--el-text-color-secondary);
   background-color: var(--settings-items-background);
-  border-radius: 8px;
+  border-radius: var(--le-radius-small, 8px);
 }
 
 @media (width <= 720px) {

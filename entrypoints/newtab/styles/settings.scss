@@ -204,7 +204,7 @@ html.colorful.dialog-transparent .settings__dialog {
     cursor: pointer;
     background-color: var(--settings-back-background);
     border: none;
-    border-radius: 15px;
+    border-radius: var(--le-radius-surface, 15px);
     box-shadow: var(--el-box-shadow-light);
     transition: var(--el-transition-duration-fast) ease;
 
@@ -227,7 +227,7 @@ html.colorful.dialog-transparent .settings__dialog {
         pointer-events: none;
         content: '';
         border: 2px solid var(--el-color-primary);
-        border-radius: 50%;
+        border-radius: inherit;
       }
     }
   }
@@ -237,7 +237,7 @@ html.colorful.dialog-transparent .settings__dialog {
   padding: 14px 25px;
   margin-bottom: 10px;
   background-color: var(--settings-items-background);
-  border-radius: 15px;
+  border-radius: var(--le-radius-surface, 15px);
   transition: background-color var(--el-transition-duration-fast) ease;
 
   .is-mobile & {
@@ -314,7 +314,7 @@ html.colorful.dialog-transparent .settings__dialog {
   &.active {
     padding: 10px 20px;
     background-color: var(--settings-group-active-background);
-    border-radius: 10px;
+    border-radius: var(--le-radius-inner, 10px);
 
     &.settings__item:first-of-type {
       margin-top: 10px;
@@ -359,7 +359,7 @@ html.colorful.dialog-transparent .settings__dialog {
   padding: 10px;
   margin: 10px 0 10px 10px;
   background-color: var(--settings-aside-background);
-  border-radius: 15px;
+  border-radius: var(--le-radius-surface, 15px);
   box-shadow: var(--el-box-shadow);
   transition:
     background-color var(--el-transition-duration-fast) ease,
@@ -413,7 +413,7 @@ html.colorful.dialog-transparent .settings__dialog {
     --el-menu-active-color: var(--el-color-primary);
     --el-menu-hover-bg-color: var(--settings-menu-hover-background);
     position: relative;
-    border-radius: 10px;
+    border-radius: var(--le-radius-inner, 10px);
     transition: var(--el-transition-duration-fast) ease;
 
     .is-mobile & {
@@ -433,7 +433,7 @@ html.colorful.dialog-transparent .settings__dialog {
         pointer-events: none;
         content: '';
         border: 2px solid var(--el-color-primary);
-        border-radius: 10px;
+        border-radius: inherit;
       }
     }
 

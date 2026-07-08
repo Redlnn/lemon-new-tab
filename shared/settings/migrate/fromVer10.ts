@@ -28,6 +28,7 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
     layout: {
       ...rest.layout,
       actionBtnBorderRadius: defaultSettings.layout.actionBtnBorderRadius,
+      globalBorderRadius: defaultSettings.layout.globalBorderRadius,
     },
     perf: {
       ...restPerf,

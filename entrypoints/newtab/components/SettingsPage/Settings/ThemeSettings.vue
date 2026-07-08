@@ -303,7 +303,7 @@ const beforeMonetChange = async () => {
   cursor: pointer;
   background-color: var(--settings-option-background);
   border: 1.5px solid var(--el-border-color);
-  border-radius: 10px;
+  border-radius: var(--le-radius-inner, 10px);
   transition:
     border-color var(--el-transition-duration-fast) ease,
     background-color var(--el-transition-duration-fast) ease,

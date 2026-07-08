@@ -4,6 +4,7 @@ import { changeTheme, toggleDocumentClass } from '@/shared/theme'
 const MAX_TRANSPARENCY = 95
 const DENSE_SURFACE_MAX_TRANSPARENCY = 80
 const MAX_BACKDROP_BLUR = 40
+const QUICK_LINK_MENU_MAX_RADIUS = 20
 
 function roundTransparency(value: number): number {
   return Math.round(value * 100) / 100
@@ -44,6 +45,18 @@ function setTransparencyVariable(name: string, value: number) {
 
 function setBackdropBlurVariable(name: string, value: number) {
   document.documentElement.style.setProperty(`--le-${name}-backdrop-blur`, `${value}px`)
+}
+
+function applyGlobalBorderRadius(value: number) {
+  document.documentElement.style.setProperty('--le-radius-base', `${Math.round(value)}px`)
+}
+
+function applyQuickLinkMenuBorderRadius(iconSize: number, iconBorderRadius: number) {
+  const radius = Math.min(
+    QUICK_LINK_MENU_MAX_RADIUS,
+    Math.max(0, Math.round((iconSize * iconBorderRadius) / 100)),
+  )
+  document.documentElement.style.setProperty('--le-quick-link-menu-border-radius', `${radius}px`)
 }
 
 const ACTION_BTN_SIZE = 33
@@ -320,9 +333,18 @@ export function useThemeWatcher() {
     { immediate: true },
   )
 
+  watch(() => settings.layout.globalBorderRadius, applyGlobalBorderRadius, {
+    immediate: true,
+  })
+
   watch(() => settings.layout.actionBtnBorderRadius, applyActionBtnBorderRadius, {
     immediate: true,
   })
+  watch(
+    () => [settings.quickLinks.iconSize, settings.quickLinks.iconBorderRadius] as const,
+    ([iconSize, iconBorderRadius]) => applyQuickLinkMenuBorderRadius(iconSize, iconBorderRadius),
+    { immediate: true },
+  )
 
   watch(
     dialogTransparencyEnabled,

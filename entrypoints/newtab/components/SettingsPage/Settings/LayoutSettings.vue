@@ -106,12 +106,18 @@ function selectActionBtn(pos: ActionBtnPosition) {
       {{ t('layout.actionBtn.dockNote') }}
     </p>
 
-    <!-- 圆角设置集中入口 -->
+    <!-- 不活动时淡出（UI 仅在此处，storage path 仍为 theme.idleHide） -->
     <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('layout.radiusTitle') }}</div>
+      <div class="settings__label">{{ t('theme.idleHide') }}</div>
+      <el-switch v-model="settings.theme.idleHide" :disabled="isOnlyTouchDevice" />
     </div>
+    <p v-if="isOnlyTouchDevice" class="settings__item--note">
+      {{ t('common.touchDeviceDisabledNote') }}
+    </p>
+
+    <!-- 圆角设置集中入口 -->
     <div class="settings__item settings__item--vertical">
-      <div class="settings__label">{{ t('search.borderRadius') }}</div>
+      <div class="settings__label">{{ t('search.borderRadius') }} (%)</div>
       <el-slider
         v-model="settings.search.borderRadius"
         :min="0"
@@ -123,7 +129,7 @@ function selectActionBtn(pos: ActionBtnPosition) {
       />
     </div>
     <div class="settings__item settings__item--vertical">
-      <div class="settings__label">{{ t('quickLinks.iconBorderRadius') }}</div>
+      <div class="settings__label">{{ t('quickLinks.iconBorderRadius') }} (%)</div>
       <el-slider
         v-model="settings.quickLinks.iconBorderRadius"
         :min="0"
@@ -135,7 +141,7 @@ function selectActionBtn(pos: ActionBtnPosition) {
       />
     </div>
     <div class="settings__item settings__item--vertical">
-      <div class="settings__label">{{ t('layout.actionBtn.borderRadius') }}</div>
+      <div class="settings__label">{{ t('layout.actionBtn.borderRadius') }} (%)</div>
       <el-slider
         v-model="settings.layout.actionBtnBorderRadius"
         :min="0"
@@ -147,7 +153,7 @@ function selectActionBtn(pos: ActionBtnPosition) {
       />
     </div>
     <div class="settings__item settings__item--vertical">
-      <div class="settings__label">{{ t('yiyan.borderRadius') }}</div>
+      <div class="settings__label">{{ t('yiyan.borderRadius') }} (px)</div>
       <el-slider
         v-model="settings.yiyan.borderRadius"
         :min="0"
@@ -158,15 +164,18 @@ function selectActionBtn(pos: ActionBtnPosition) {
         :show-tooltip="false"
       />
     </div>
-
-    <!-- 不活动时淡出（UI 仅在此处，storage path 仍为 theme.idleHide） -->
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('theme.idleHide') }}</div>
-      <el-switch v-model="settings.theme.idleHide" :disabled="isOnlyTouchDevice" />
+    <div class="settings__item settings__item--vertical">
+      <div class="settings__label">{{ t('layout.globalBorderRadius') }} (px)</div>
+      <el-slider
+        v-model="settings.layout.globalBorderRadius"
+        :min="0"
+        :max="40"
+        :step="1"
+        show-input
+        :show-input-controls="false"
+        :show-tooltip="false"
+      />
     </div>
-    <p v-if="isOnlyTouchDevice" class="settings__item--note">
-      {{ t('common.touchDeviceDisabledNote') }}
-    </p>
   </div>
 </template>
 
@@ -185,7 +194,7 @@ function selectActionBtn(pos: ActionBtnPosition) {
   cursor: pointer;
   background-color: var(--settings-option-background);
   border: 1.5px solid var(--el-border-color);
-  border-radius: 10px;
+  border-radius: var(--le-radius-inner, 10px);
   transition:
     border-color var(--el-transition-duration-fast) ease,
     background-color var(--el-transition-duration-fast) ease,
