@@ -119,6 +119,7 @@ html.dialog-acrylic .el-notification {
   overflow: hidden;
 
   .el-color-picker-panel {
+    box-sizing: content-box;
     padding: 15px;
   }
 }
