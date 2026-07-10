@@ -90,7 +90,7 @@ watchEffect(async () => {
 onMounted(async () => {
   const [settings] = await Promise.all([
     settingsStorage.getValue(),
-    quickLinksStore.init({ acquire: false }),
+    quickLinksStore.init(),
   ])
   groupingEnabled.value = settings.quickLinks.grouping ?? false
 

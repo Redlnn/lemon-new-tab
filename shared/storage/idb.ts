@@ -118,10 +118,46 @@ export async function idbSet<S extends StoreName>(
   await db.put(storeName, value, key)
 }
 
+/** 在一个事务中批量写入同一 store，避免为缓存整理创建大量事务。 */
+export async function idbSetMany<S extends StoreName>(
+  storeName: S,
+  entries: ReadonlyArray<readonly [string, LemonDBSchema[S]['value']]>,
+): Promise<void> {
+  if (entries.length === 0) return
+  const db = await getDB()
+  const transaction = db.transaction(storeName, 'readwrite')
+  await Promise.all([
+    ...entries.map(([key, value]) => transaction.store.put(value, key)),
+    transaction.done,
+  ])
+}
+
+/** 返回指定 store 的全部字符串键值对。 */
+export async function idbGetAllEntries<S extends StoreName>(
+  storeName: S,
+): Promise<Array<[string, LemonDBSchema[S]['value']]>> {
+  const db = await getDB()
+  const transaction = db.transaction(storeName, 'readonly')
+  const [keys, values] = await Promise.all([
+    transaction.store.getAllKeys(),
+    transaction.store.getAll(),
+    transaction.done,
+  ])
+  return values.map((value, index) => [String(keys[index]), value])
+}
+
 /** 删除指定 store 中某个 key */
 export async function idbDelete(storeName: StoreName, key: string): Promise<void> {
   const db = await getDB()
   await db.delete(storeName, key)
+}
+
+/** 在一个事务中批量删除同一 store 的多个键。 */
+export async function idbDeleteMany(storeName: StoreName, keys: readonly string[]): Promise<void> {
+  if (keys.length === 0) return
+  const db = await getDB()
+  const transaction = db.transaction(storeName, 'readwrite')
+  await Promise.all([...keys.map((key) => transaction.store.delete(key)), transaction.done])
 }
 
 /** 清空指定 store 的全部数据 */

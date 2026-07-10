@@ -3,10 +3,8 @@ import { unref, watch } from 'vue'
 
 export * from './verify'
 export {
-  acquireFaviconRef,
   clearFaviconCache,
   fetchFaviconWithCache,
-  releaseFaviconRef,
   setFaviconCacheEnabled,
   warmFaviconCache,
 } from './faviconFetch'

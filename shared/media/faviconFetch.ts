@@ -3,39 +3,69 @@ import { browser } from '#imports'
 
 import {
   clearFaviconCacheEntries,
-  deleteFaviconCacheEntry,
   FAVICON_CACHE_TTL,
   getFaviconCacheEntry,
+  pruneFaviconCacheEntries,
+  setFaviconCacheEntries,
   setFaviconCacheEntry,
   type FaviconCacheEntry,
 } from './faviconCache'
-
-const isChromium = import.meta.env.CHROME || import.meta.env.EDGE || import.meta.env.OPERA
 
 // ---------------------------------------------------------------------------
 // 图标缓存总开关（由设置控制，默认关闭）
 // ---------------------------------------------------------------------------
 let _cacheEnabled = false
 let cacheGeneration = 0
+let cleanupTimer: ReturnType<typeof setTimeout> | null = null
+let l2MutationQueue = Promise.resolve()
+
+function queueL2Mutation(task: () => Promise<void>): Promise<void> {
+  const next = l2MutationQueue.then(task, task)
+  l2MutationQueue = next.catch(() => {})
+  return next
+}
+
+function cancelScheduledCleanup(): void {
+  if (cleanupTimer) clearTimeout(cleanupTimer)
+  cleanupTimer = null
+}
+
+function schedulePersistentCleanup(generation: number): void {
+  if (cleanupTimer) return
+  cleanupTimer = setTimeout(() => {
+    cleanupTimer = null
+    void queueL2Mutation(async () => {
+      if (!_cacheEnabled || generation !== cacheGeneration) return
+      await pruneFaviconCacheEntries()
+    })
+  }, 250)
+}
+
+async function persistL1Cache(generation: number): Promise<void> {
+  const entries = [...l1Cache.entries()]
+  await queueL2Mutation(async () => {
+    if (!_cacheEnabled || generation !== cacheGeneration) return
+    await setFaviconCacheEntries(entries)
+  })
+  if (_cacheEnabled && generation === cacheGeneration) schedulePersistentCleanup(generation)
+}
 
 /** 由 newtab main.ts 在设置加载后调用以初始化缓存行为，并在设置变更时再次调用。 */
 export function setFaviconCacheEnabled(enabled: boolean): void {
+  if (_cacheEnabled === enabled) return
   _cacheEnabled = enabled
+  cacheGeneration += 1
+  cancelScheduledCleanup()
+  if (enabled) void persistL1Cache(cacheGeneration)
 }
 
 /** 清空 favicon 的内存缓存与持久化缓存。 */
 export async function clearFaviconCache(): Promise<void> {
   cacheGeneration += 1
-
-  for (const timer of cleanupTimers.values()) {
-    clearTimeout(timer)
-  }
-
-  cleanupTimers.clear()
-  refCounts.clear()
+  cancelScheduledCleanup()
+  pendingFetches.clear()
   l1Cache.clear()
-
-  await clearFaviconCacheEntries()
+  await queueL2Mutation(clearFaviconCacheEntries)
 }
 
 // ---------------------------------------------------------------------------
@@ -46,15 +76,6 @@ const l1Cache = new Map<string, FaviconCacheEntry>()
 
 // 去重：防止对同一 origin 发起多个并发请求
 const pendingFetches = new Map<string, Promise<string | null>>()
-
-// ---------------------------------------------------------------------------
-// 引用计数（会话生命周期）
-// ---------------------------------------------------------------------------
-const refCounts = new Map<string, number>()
-// 引用计数降到零后安排的清理定时器（避免立即对 L2 造成抖动）
-const cleanupTimers = new Map<string, ReturnType<typeof setTimeout>>()
-// 在最后一次 release 后真正移除 L1/L2 条目的延迟（毫秒）
-const CLEANUP_DELAY_MS = 10_000
 
 // ---------------------------------------------------------------------------
 // 常见 favicon 路径（策略 B/D 共用）
@@ -74,31 +95,43 @@ const HTML_ATTR_RE = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`
 // ---------------------------------------------------------------------------
 // L1 缓存 LRU 辅助
 // ---------------------------------------------------------------------------
-/** 写入 L1 缓存，超过上限时驱逐无引用的最旧条目 */
+/** 写入 L1 缓存，超过上限时驱逐最旧条目。 */
 function l1Set(key: string, entry: FaviconCacheEntry): void {
-  // Map 的插入顺序就是 LRU 顺序，删后重插可刷新位置
   l1Cache.delete(key)
   l1Cache.set(key, entry)
-  if (l1Cache.size <= L1_MAX_SIZE) return
-  // 驱逐最早插入且无引用的条目
-  for (const [k] of l1Cache) {
-    if ((refCounts.get(k) ?? 0) > 0) continue
-    l1Cache.delete(k)
-    if (l1Cache.size <= L1_MAX_SIZE) return
+  while (l1Cache.size > L1_MAX_SIZE) {
+    const oldestKey = l1Cache.keys().next().value
+    if (oldestKey === undefined) break
+    l1Cache.delete(oldestKey)
   }
+}
+
+function l1Get(key: string): FaviconCacheEntry | undefined {
+  const entry = l1Cache.get(key)
+  if (!entry) return undefined
+  l1Cache.delete(key)
+  l1Cache.set(key, entry)
+  return entry
 }
 
 function isFreshFaviconEntry(entry: FaviconCacheEntry): boolean {
   return Date.now() - entry.fetchedAt <= FAVICON_CACHE_TTL
 }
 
-async function writeFaviconCacheEntry(origin: string, entry: FaviconCacheEntry): Promise<void> {
-  // 始终保留到 L1（会话）；仅当该 origin 有引用时才持久化到 L2
+async function writeFaviconCacheEntry(
+  origin: string,
+  entry: FaviconCacheEntry,
+  generation: number,
+): Promise<void> {
+  if (generation !== cacheGeneration) return
   l1Set(origin, entry)
-  const refCount = refCounts.get(origin) ?? 0
-  if (refCount > 0) {
-    await setFaviconCacheEntry(origin, entry).catch(() => {})
-  }
+  if (!_cacheEnabled) return
+
+  await queueL2Mutation(async () => {
+    if (!_cacheEnabled || generation !== cacheGeneration) return
+    await setFaviconCacheEntry(origin, entry)
+  })
+  if (_cacheEnabled && generation === cacheGeneration) schedulePersistentCleanup(generation)
 }
 
 // ---------------------------------------------------------------------------
@@ -282,22 +315,6 @@ function probeImageUrl(url: string): Promise<boolean> {
 // 获取策略
 // ---------------------------------------------------------------------------
 
-/** 策略 _：使用 Chromium 内部的 /_favicon/ API（返回 base64） */
-async function fetchViaChromeFaviconApi(pageUrl: string): Promise<string | null> {
-  try {
-    const apiUrl = new URL(chrome.runtime.getURL('/_favicon/'))
-    apiUrl.searchParams.set('pageUrl', pageUrl)
-    apiUrl.searchParams.set('size', '128')
-    const resp = await fetch(apiUrl.toString())
-    if (!resp.ok) return null
-    const blob = await resp.blob()
-    if (blob.size === 0) return null
-    return blobToDataURL(blob)
-  } catch {
-    return null
-  }
-}
-
 /** 策略 C：并行请求第三方 favicon 服务（favicon.so & favicon.im），取最快且有效的一个，返回 base64 */
 async function fetchViaThirdPartyServices(pageUrl: string): Promise<string | null> {
   try {
@@ -448,64 +465,24 @@ export async function fetchFaviconWithCache(pageUrl: string): Promise<string | n
   const origin = toOrigin(pageUrl)
   if (!origin) return null
 
-  // 缓存未启用 → 直接抓取，结果仅写入 L1（会话级）以避免翻页时图标闪烁，不持久化到 L2
-  if (!_cacheEnabled) {
-    // L1 命中（会话内缓存）
-    const l1 = l1Cache.get(origin)
-    if (l1) return l1.data
-
-    // 去重：防止对同一 origin 发起多个并发请求
-    const existing = pendingFetches.get(origin)
-    if (existing) return existing
-
-    const promise = (async (): Promise<string | null> => {
-      let data: string | null = null
-      let type: FaviconCacheEntry['type'] = 'base64'
-      if (isChromium) {
-        data = await fetchViaChromeFaviconApi(pageUrl)
-      }
-      if (!data) {
-        data = await fetchViaThirdPartyServices(pageUrl)
-      }
-      // 最后回退到 Image 探测（仅返回 URL）
-      if (!data) {
-        data = await probeViaImageElement(pageUrl)
-        if (data) type = 'url'
-      }
-      // 写入 L1，供翻页等场景避免图标重复闪烁（不持久化到 L2）
-      if (data) {
-        l1Set(origin, { data, type, fetchedAt: Date.now() })
-      }
-      return data
-    })()
-
-    pendingFetches.set(origin, promise)
-    try {
-      return await promise
-    } finally {
-      pendingFetches.delete(origin)
-    }
-  }
-
-  // L1 hit
-  const l1 = l1Cache.get(origin)
+  const l1 = l1Get(origin)
   if (l1) {
     if (isFreshFaviconEntry(l1)) return l1.data
-    // 已过期 → 立即返回旧值，同时在后台刷新
     refreshInBackground(pageUrl, origin)
     return l1.data
   }
 
-  // L2 hit
-  const l2 = await getFaviconCacheEntry(origin)
-  if (l2) {
-    l1Set(origin, l2)
-    if (isFreshFaviconEntry(l2)) return l2.data
-    refreshInBackground(pageUrl, origin)
-    return l2.data
+  if (_cacheEnabled) {
+    const generationAtRead = cacheGeneration
+    const l2 = await getFaviconCacheEntry(origin)
+    if (_cacheEnabled && generationAtRead === cacheGeneration && l2) {
+      l1Set(origin, l2)
+      if (isFreshFaviconEntry(l2)) return l2.data
+      refreshInBackground(pageUrl, origin)
+      return l2.data
+    }
   }
 
-  // 缓存未命中 → 立即抓取（已去重）
   return doFetch(pageUrl, origin)
 }
 
@@ -528,12 +505,6 @@ async function doFetch(pageUrl: string, origin: string): Promise<string | null> 
     const hasHostPerm = await browser.permissions
       .contains({ origins: ['*://*/*'] })
       .catch(() => false)
-
-    // 不可信，会返回空的默认图标
-    // 策略 _：Chromium 内部的 /_favicon/ API（不需要主机权限）
-    // if (isChromium) {
-    //   data = await fetchViaChromeFaviconApi(pageUrl)
-    // }
 
     // 策略 A：读取页面声明的 icon 链接（需要主机权限）
     if (!data && hasHostPerm) {
@@ -558,7 +529,7 @@ async function doFetch(pageUrl: string, origin: string): Promise<string | null> 
 
     if (data && generationAtStart === cacheGeneration) {
       const entry: FaviconCacheEntry = { data, type, fetchedAt: Date.now() }
-      await writeFaviconCacheEntry(origin, entry)
+      await writeFaviconCacheEntry(origin, entry, generationAtStart)
     }
 
     return data
@@ -568,7 +539,7 @@ async function doFetch(pageUrl: string, origin: string): Promise<string | null> 
   try {
     return await promise
   } finally {
-    pendingFetches.delete(origin)
+    if (pendingFetches.get(origin) === promise) pendingFetches.delete(origin)
   }
 }
 
@@ -593,6 +564,7 @@ export async function warmFaviconCache(
   const l1 = l1Cache.get(origin)
   if (l1 && isFreshFaviconEntry(l1)) return null
   const l2 = await getFaviconCacheEntry(origin)
+  if (!_cacheEnabled || generationAtStart !== cacheGeneration) return null
   if (l2 && isFreshFaviconEntry(l2)) {
     // L2 命中但 L1 未命中 → 提升到 L1 避免下次重复 IDB 读取
     l1Set(origin, l2)
@@ -639,65 +611,10 @@ export async function warmFaviconCache(
 
   if (generationAtStart === cacheGeneration) {
     const entry: FaviconCacheEntry = { data: finalData, type: finalType, fetchedAt: Date.now() }
-    await writeFaviconCacheEntry(origin, entry)
+    await writeFaviconCacheEntry(origin, entry, generationAtStart)
   }
   if (finalType === 'base64') return finalData
   return null
-}
-
-/** 增加 pageUrl 对应 origin 的引用计数。 */
-export function acquireFaviconRef(pageUrl: string): void {
-  if (!_cacheEnabled) return
-  const origin = toOrigin(pageUrl)
-  if (!origin) return
-
-  // 取消该 origin 上任何挂起的清理定时器
-  const timer = cleanupTimers.get(origin)
-  if (timer) {
-    clearTimeout(timer)
-    cleanupTimers.delete(origin)
-  }
-
-  refCounts.set(origin, (refCounts.get(origin) ?? 0) + 1)
-}
-
-/**
- * 减少 pageUrl 对应 origin 的引用计数。
- * 当计数降为 0 时，会在短延迟后安排清理 L1/L2 缓存。
- * 若该 origin 有正在进行的抓取，会先等待抓取结束再执行最终删除。
- */
-export function releaseFaviconRef(pageUrl: string): void {
-  if (!_cacheEnabled) return
-  const origin = toOrigin(pageUrl)
-  if (!origin) return
-  const next = (refCounts.get(origin) ?? 0) - 1
-  if (next <= 0) {
-    refCounts.delete(origin)
-
-    // 安排延迟清理，避免与并发抓取或短暂的 UI 变化发生竞态
-    const performCleanup = async () => {
-      try {
-        // 如果该 origin 有正在进行的抓取，先等待其完成
-        const pending = pendingFetches.get(origin)
-        if (pending) {
-          await pending.catch(() => {})
-        }
-
-        // 若期间获取到新引用，则取消清理
-        if ((refCounts.get(origin) ?? 0) > 0) return
-
-        l1Cache.delete(origin)
-        await deleteFaviconCacheEntry(origin).catch(() => {})
-      } finally {
-        cleanupTimers.delete(origin)
-      }
-    }
-
-    const timer = setTimeout(performCleanup, CLEANUP_DELAY_MS)
-    cleanupTimers.set(origin, timer)
-  } else {
-    refCounts.set(origin, next)
-  }
 }
 
 /**

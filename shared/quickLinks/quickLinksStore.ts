@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 
 import i18next from 'i18next'
 
-import { acquireFaviconRef, releaseFaviconRef } from '@/shared/media'
 import { useSettingsStore } from '@/shared/settings'
 import { normalizeUrlForDedup } from '@/shared/url'
 
@@ -91,31 +90,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   const items = ref(structuredClone(defaultQuickLinksData.items))
   const groups = ref<QuickLinkGroup[]>(structuredClone(defaultQuickLinksData.groups ?? []))
   const loaded = ref(false)
-  const acquiredUrls = new Set<string>()
   let initTask: Promise<void> | null = null
-
-  const syncFaviconRefs = (nextUrls: string[]) => {
-    const nextUrlSet = new Set(nextUrls)
-
-    acquiredUrls.forEach((url) => {
-      if (!nextUrlSet.has(url)) {
-        releaseFaviconRef(url)
-        acquiredUrls.delete(url)
-      }
-    })
-
-    nextUrlSet.forEach((url) => {
-      if (!acquiredUrls.has(url)) {
-        acquireFaviconRef(url)
-        acquiredUrls.add(url)
-      }
-    })
-  }
-
-  const getQuickLinkUrls = (nextItems: QuickLink[], nextGroups: QuickLinkGroup[]) =>
-    (nextGroups.length > 0 ? nextGroups.flatMap((group) => group.items) : nextItems).map(
-      (item) => item.url,
-    )
 
   const getDefaultGroupName = () => i18next.t('newtab:quickLinks.groups.default')
 
@@ -188,26 +163,18 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     return null
   }
 
-  const applyItems = (
-    nextItems: QuickLinksData['items'],
-    options?: { acquire?: boolean; groups?: QuickLinkGroup[] },
-  ) => {
+  const applyItems = (nextItems: QuickLinksData['items'], nextGroups?: QuickLinkGroup[]) => {
     items.value = nextItems
-    groups.value = sanitizeGroups(options?.groups)
-    if (options?.acquire ?? true) {
-      syncFaviconRefs(getQuickLinkUrls(nextItems, groups.value))
-    } else {
-      syncFaviconRefs([])
-    }
+    groups.value = sanitizeGroups(nextGroups)
   }
 
-  const init = async (options?: { acquire?: boolean }) => {
+  const init = async () => {
     if (loaded.value) return
     if (initTask) return await initTask
 
     initTask = (async () => {
       const quickLinksData = await getQuickLinksStorageValue()
-      applyItems(quickLinksData.items, { ...options, groups: quickLinksData.groups })
+      applyItems(quickLinksData.items, quickLinksData.groups)
       loaded.value = true
     })()
 
@@ -218,17 +185,12 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     }
   }
 
-  const replace = (data: QuickLinksData, options?: { acquire?: boolean }) => {
+  const replace = (data: QuickLinksData) => {
     if (!loaded.value && !hasQuickLinksData(data)) {
       return
     }
-    applyItems(data.items, { ...options, groups: data.groups })
+    applyItems(data.items, data.groups)
     loaded.value = true
-  }
-
-  const deinit = () => {
-    acquiredUrls.forEach((url) => releaseFaviconRef(url))
-    acquiredUrls.clear()
   }
 
   const save = async (data?: QuickLinksData, options?: QuickLinksSaveOptions) => {
@@ -237,7 +199,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     }
     const groupingEnabled = options?.groupingEnabled ?? useSettingsStore().quickLinks.grouping
     if (data) {
-      applyItems(data.items, { groups: groupingEnabled ? data.groups : [] })
+      applyItems(data.items, groupingEnabled ? data.groups : [])
       loaded.value = true
     } else {
       if (groupingEnabled && groups.value.length > 0) {
@@ -245,7 +207,6 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
       } else if (!groupingEnabled && groups.value.length > 0) {
         groups.value = []
       }
-      syncFaviconRefs(getQuickLinkUrls(toRaw(items.value), toRaw(groups.value)))
     }
     await quickLinksStorage.setValue({
       items: toRaw(items.value),
@@ -278,9 +239,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
       if (!hasGroupedItems) group.items = structuredClone(toRaw(items.value))
     }
     syncItemsFromGroups()
-    // Save directly to bypass save()'s groupingEnabled check, which would clear groups if
-    // called before settings.quickLinks.grouping is set to true (as in handleGroupingChange).
-    syncFaviconRefs(getQuickLinkUrls(toRaw(items.value), toRaw(groups.value)))
+    // 直接写入，避免设置开关尚未更新时 save() 将刚创建的分组清空。
     await quickLinksStorage.setValue({
       items: toRaw(items.value),
       groups: toRaw(groups.value),
@@ -488,7 +447,6 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     loaded,
     init,
     replace,
-    deinit,
     save,
     getGroup,
     getDefaultGroupItems,

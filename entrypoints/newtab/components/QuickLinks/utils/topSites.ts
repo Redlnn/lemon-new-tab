@@ -3,12 +3,7 @@ import i18next from 'i18next'
 import type { TopSites } from 'webextension-polyfill'
 import browser from 'webextension-polyfill'
 
-import {
-  acquireFaviconRef,
-  fetchFaviconWithCache,
-  releaseFaviconRef,
-  warmFaviconCache,
-} from '@/shared/media'
+import { fetchFaviconWithCache, warmFaviconCache } from '@/shared/media'
 
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
@@ -38,15 +33,6 @@ async function cacheBrowserFavicons(sites: TopSites.MostVisitedURL[]): Promise<v
   await Promise.allSettled(tasks)
 }
 
-function releaseTopSiteFaviconRefs(sites: TopSites.MostVisitedURL[]) {
-  const releasedUrls = new Set<string>()
-  for (const site of sites) {
-    if (!site.url || releasedUrls.has(site.url)) continue
-    releasedUrls.add(site.url)
-    releaseFaviconRef(site.url)
-  }
-}
-
 async function fetchTopSites(): Promise<TopSites.MostVisitedURL[]> {
   let topSites
   if (import.meta.env.CHROME || import.meta.env.EDGE || import.meta.env.OPERA) {
@@ -72,22 +58,7 @@ async function getTopSites(force = false): Promise<TopSites.MostVisitedURL[]> {
   pendingTopSitesPromise = fetchTopSites()
 
   try {
-    const previousCache = cachedTopSites
     const value = await pendingTopSitesPromise
-    const activePreviousCache = cachedTopSites === previousCache ? previousCache : cachedTopSites
-    const previousUrls = activePreviousCache?.value.map((s) => s.url) ?? []
-    const newUrls = value.map((s) => s.url)
-    const previousUrlSet = new Set(previousUrls)
-    const newUrlSet = new Set(newUrls)
-
-    // 更新引用计数：新出现的站点 acquire，消失的站点 release
-    const disappeared = previousUrls.filter((u) => !newUrlSet.has(u))
-    const appeared = newUrls.filter((u) => !previousUrlSet.has(u))
-    disappeared.forEach((u) => releaseFaviconRef(u))
-    appeared.forEach((u) => acquireFaviconRef(u))
-
-    // 在已更新引用计数后，再预热浏览器提供或自行抓取的 favicon，
-    // 这样 `warmFaviconCache` 有机会将条目持久化到 L2。预热异步，不阻塞渲染。
     cacheBrowserFavicons(value).catch(() => {})
 
     cachedTopSites = { value, ts: Date.now() }
@@ -98,9 +69,6 @@ async function getTopSites(force = false): Promise<TopSites.MostVisitedURL[]> {
 }
 
 function invalidateTopSitesCache() {
-  if (cachedTopSites) {
-    releaseTopSiteFaviconRefs(cachedTopSites.value)
-  }
   cachedTopSites = null
 }
 

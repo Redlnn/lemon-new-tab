@@ -16,7 +16,7 @@ import OpenInNewRound from '~icons/ic/round-open-in-new'
 
 import { browser, type Browser } from 'wxt/browser'
 
-import { acquireFaviconRef, getFaviconURL, releaseFaviconRef } from '@/shared/media'
+import { getFaviconURL } from '@/shared/media'
 import { useQuickLinksStore } from '@/shared/quickLinks'
 
 import {
@@ -80,13 +80,6 @@ const canCollapseOther = computed(() => {
 })
 
 const faviconRef = props.node.url ? getFaviconURL(props.node.url) : ref('')
-
-onMounted(() => {
-  if (props.node.url) acquireFaviconRef(props.node.url)
-})
-onUnmounted(() => {
-  if (props.node.url) releaseFaviconRef(props.node.url)
-})
 
 // 右键菜单相关
 const openedMenuCloseFn = inject(BOOKMARK_OPENED_MENU_CLOSE_FN)
