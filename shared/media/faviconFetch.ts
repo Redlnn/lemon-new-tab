@@ -88,6 +88,19 @@ function l1Set(key: string, entry: FaviconCacheEntry): void {
   }
 }
 
+function isFreshFaviconEntry(entry: FaviconCacheEntry): boolean {
+  return Date.now() - entry.fetchedAt <= FAVICON_CACHE_TTL
+}
+
+async function writeFaviconCacheEntry(origin: string, entry: FaviconCacheEntry): Promise<void> {
+  // 始终保留到 L1（会话）；仅当该 origin 有引用时才持久化到 L2
+  l1Set(origin, entry)
+  const refCount = refCounts.get(origin) ?? 0
+  if (refCount > 0) {
+    await setFaviconCacheEntry(origin, entry).catch(() => {})
+  }
+}
+
 // ---------------------------------------------------------------------------
 // 辅助函数
 // ---------------------------------------------------------------------------
@@ -477,8 +490,7 @@ export async function fetchFaviconWithCache(pageUrl: string): Promise<string | n
   // L1 hit
   const l1 = l1Cache.get(origin)
   if (l1) {
-    const expired = Date.now() - l1.fetchedAt > FAVICON_CACHE_TTL
-    if (!expired) return l1.data
+    if (isFreshFaviconEntry(l1)) return l1.data
     // 已过期 → 立即返回旧值，同时在后台刷新
     refreshInBackground(pageUrl, origin)
     return l1.data
@@ -488,8 +500,7 @@ export async function fetchFaviconWithCache(pageUrl: string): Promise<string | n
   const l2 = await getFaviconCacheEntry(origin)
   if (l2) {
     l1Set(origin, l2)
-    const expired = Date.now() - l2.fetchedAt > FAVICON_CACHE_TTL
-    if (!expired) return l2.data
+    if (isFreshFaviconEntry(l2)) return l2.data
     refreshInBackground(pageUrl, origin)
     return l2.data
   }
@@ -547,12 +558,7 @@ async function doFetch(pageUrl: string, origin: string): Promise<string | null> 
 
     if (data && generationAtStart === cacheGeneration) {
       const entry: FaviconCacheEntry = { data, type, fetchedAt: Date.now() }
-      // 始终保留到 L1（会话）；仅当该 origin 有引用时才持久化到 L2
-      l1Set(origin, entry)
-      const refCount = refCounts.get(origin) ?? 0
-      if (refCount > 0) {
-        await setFaviconCacheEntry(origin, entry).catch(() => {})
-      }
+      await writeFaviconCacheEntry(origin, entry)
     }
 
     return data
@@ -585,9 +591,9 @@ export async function warmFaviconCache(
   const generationAtStart = cacheGeneration
 
   const l1 = l1Cache.get(origin)
-  if (l1 && Date.now() - l1.fetchedAt <= FAVICON_CACHE_TTL) return null
+  if (l1 && isFreshFaviconEntry(l1)) return null
   const l2 = await getFaviconCacheEntry(origin)
-  if (l2 && Date.now() - l2.fetchedAt <= FAVICON_CACHE_TTL) {
+  if (l2 && isFreshFaviconEntry(l2)) {
     // L2 命中但 L1 未命中 → 提升到 L1 避免下次重复 IDB 读取
     l1Set(origin, l2)
     return null
@@ -633,11 +639,7 @@ export async function warmFaviconCache(
 
   if (generationAtStart === cacheGeneration) {
     const entry: FaviconCacheEntry = { data: finalData, type: finalType, fetchedAt: Date.now() }
-    l1Set(origin, entry)
-    const refCount = refCounts.get(origin) ?? 0
-    if (refCount > 0) {
-      await setFaviconCacheEntry(origin, entry).catch(() => {})
-    }
+    await writeFaviconCacheEntry(origin, entry)
   }
   if (finalType === 'base64') return finalData
   return null

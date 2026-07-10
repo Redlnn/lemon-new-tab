@@ -39,7 +39,12 @@ import QuickLinkItem from './components/QuickLinkItem.vue'
 import type { QuickLinkItemPresentation } from './components/quickLinkItemPresentation'
 import QuickLinkSortableItem from './components/QuickLinkSortableItem.vue'
 import QuickLinksPaginationDots from './components/QuickLinksPaginationDots.vue'
-import { buildQuickLinkDisplayItems } from './composables/quickLinkDisplayItems'
+import {
+  buildQuickLinkDisplayItems,
+  buildQuickLinkGroupItems,
+  buildTopSiteDisplayItems,
+  withSortableIndexes,
+} from './composables/quickLinkDisplayItems'
 import { useGroupNameRefs } from './composables/useGroupNameRefs'
 import {
   FLAT_QUICK_LINK_DND_GROUP_ID,
@@ -49,6 +54,7 @@ import {
   getDndData,
   getPointerClientPoint,
   getSortableMoveState,
+  persistQuickLinkDndMove,
   quickLinkContainerDndId,
   quickLinkDndId,
   quickLinkGroupDndId,
@@ -121,30 +127,6 @@ const slotsPerPage = computed(() => maxFitCols.value * maxFitRows.value)
 const isDragging = ref(false)
 const dndRenderKey = ref(0)
 
-function buildGroupItems(group: QuickLinkGroup): DisplayItem[] {
-  return group.items.map((item, index) => ({
-    url: item.url,
-    title: item.title,
-    favicon: item.favicon,
-    isPinned: true,
-    originalIndex: index,
-    groupId: group.id,
-  }))
-}
-
-function withSortableIndexes(items: DisplayItem[]) {
-  const sortableStoreIndexes: number[] = []
-  return {
-    items: items.map((item) => {
-      if (!item.isPinned) return item
-      const sortableIndex = sortableStoreIndexes.length
-      sortableStoreIndexes.push(item.originalIndex)
-      return { ...item, sortableIndex }
-    }),
-    sortableStoreIndexes,
-  }
-}
-
 function splitIntoPages(
   groupId: string,
   items: DisplayItem[],
@@ -180,22 +162,11 @@ const pages = computed<QuickLinkPage[]>(() => {
   }
 
   const result = visibleCategoryGroups.value.flatMap((group) =>
-    splitIntoPages(group.id, buildGroupItems(group), false),
+    splitIntoPages(group.id, buildQuickLinkGroupItems(group), false),
   )
   if (hasTopSitesItems.value) {
     result.push(
-      ...splitIntoPages(
-        topSitesGroupId,
-        topSites.value.map((item, index) => ({
-          url: item.url,
-          title: item.title || '',
-          favicon: item.favicon,
-          isPinned: false,
-          originalIndex: index,
-          groupId: topSitesGroupId,
-        })),
-        true,
-      ),
+      ...splitIntoPages(topSitesGroupId, buildTopSiteDisplayItems(topSites.value, topSitesGroupId), true),
     )
   }
   return result.length > 0 ? result : splitIntoPages(DEFAULT_QUICK_LINK_GROUP_ID, [], false)
@@ -215,7 +186,7 @@ const scrollSections = computed<ScrollSection[]>(() => {
   }
 
   const sections: ScrollSection[] = visibleCategoryGroups.value.map((group) => {
-    const sectionItems = withSortableIndexes(buildGroupItems(group))
+    const sectionItems = withSortableIndexes(buildQuickLinkGroupItems(group))
     return {
       key: group.id,
       title: group.name,
@@ -227,16 +198,7 @@ const scrollSections = computed<ScrollSection[]>(() => {
   })
 
   if (hasTopSitesItems.value) {
-    const topSiteItems = withSortableIndexes(
-      topSites.value.map((item, index) => ({
-        url: item.url,
-        title: item.title || '',
-        favicon: item.favicon,
-        isPinned: false,
-        originalIndex: index,
-        groupId: topSitesGroupId,
-      })),
-    )
+    const topSiteItems = withSortableIndexes(buildTopSiteDisplayItems(topSites.value, topSitesGroupId))
     sections.push({
       key: topSitesGroupId,
       title: topSitesGroupName,
@@ -259,6 +221,22 @@ const scrollSections = computed<ScrollSection[]>(() => {
           sortableStoreIndexes: [],
         },
       ]
+})
+
+const pageLookup = computed(() => {
+  const map = new Map<string, QuickLinkPage>()
+  for (const page of pages.value) {
+    map.set(`${page.groupId}:${page.pageInGroup}`, page)
+  }
+  return map
+})
+
+const scrollSectionLookup = computed(() => {
+  const map = new Map<string, ScrollSection>()
+  for (const section of scrollSections.value) {
+    map.set(getDisplayGroupId(section.groupId), section)
+  }
+  return map
 })
 
 // 始终使用完整 pages 长度，以支持关闭翻页时也能切换分组
@@ -328,15 +306,14 @@ function getItemDndDisabled(item: DisplayItem) {
 
 function getSortableStoreIndexesForContext(groupId: string, pageIndex?: number) {
   if (settings.quickLinks.useScroll) {
-    const section = scrollSections.value.find(
-      (item) => getDisplayGroupId(item.groupId) === groupId && !item.isTopSites,
-    )
+    const section = scrollSectionLookup.value.get(groupId)
+    if (section?.isTopSites) return []
     return section?.sortableStoreIndexes ?? []
   }
 
   const page =
     pageIndex !== undefined
-      ? pages.value.find((item) => item.groupId === groupId && item.pageInGroup === pageIndex)
+      ? pageLookup.value.get(`${groupId}:${pageIndex}`)
       : currentPageData.value
 
   if (page && page.groupId === groupId && !page.isTopSites) {
@@ -610,7 +587,7 @@ function clearEdgeSwitchTimer() {
 
 function getItemGroupSize(groupId: string) {
   if (!settings.quickLinks.grouping) return quickLinksStore.items.length
-  return quickLinksStore.groups.find((group) => group.id === groupId)?.items.length ?? 0
+  return quickLinksStore.getGroupItemCount(groupId)
 }
 
 function buildDisplayItemFromDndData(data: Extract<QuickLinkDndData, { kind: 'quick-link' }>) {
@@ -793,36 +770,12 @@ async function handleQuickLinkDragEnd(event: DragEndEvent) {
     if (!moveTarget) return
 
     try {
-      const quickLink = {
-        url: source.url,
-        title: source.title,
-        favicon: source.favicon,
-      }
-      let changed: boolean
-      if (source.origin === 'top-sites') {
-        changed = settings.quickLinks.grouping
-          ? await quickLinksStore.insertQuickLinkToGroup({
-              groupId: moveTarget.groupId,
-              quickLink,
-              index: moveTarget.storeIndex,
-            })
-          : await quickLinksStore.insertFlatQuickLink({
-              quickLink,
-              index: moveTarget.storeIndex,
-            })
-      } else {
-        changed = !settings.quickLinks.grouping
-          ? await quickLinksStore.moveFlatQuickLink({
-              fromIndex: source.storeIndex,
-              toIndex: moveTarget.storeIndex,
-            })
-          : await quickLinksStore.moveQuickLink({
-              fromGroupId: source.groupId,
-              fromIndex: source.storeIndex,
-              toGroupId: moveTarget.groupId,
-              toIndex: moveTarget.storeIndex,
-            })
-      }
+      const changed = await persistQuickLinkDndMove({
+        store: quickLinksStore,
+        grouping: settings.quickLinks.grouping,
+        source,
+        moveTarget,
+      })
       if (source.origin === 'top-sites') {
         await refreshDebounced()
       } else if (changed) {

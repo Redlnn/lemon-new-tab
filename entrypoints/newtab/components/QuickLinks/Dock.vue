@@ -78,10 +78,7 @@ async function refresh() {
     await quickLinksStore.enableGroupingFromItems()
   }
   quickLinks.value = settings.quickLinks.grouping
-    ? (
-        quickLinksStore.groups.find((group) => group.id === DEFAULT_QUICK_LINK_GROUP_ID)?.items ??
-        []
-      ).slice()
+    ? quickLinksStore.getDefaultGroupItems().slice()
     : quickLinksStore.items.slice()
 
   // 合并最常访问
@@ -339,10 +336,7 @@ const { pinToGroup, moveToGroup } = useQuickLinkGroupActions({
 
 function getDockQuickLinkCount() {
   if (!settings.quickLinks.grouping) return quickLinksStore.items.length
-  return (
-    quickLinksStore.groups.find((group) => group.id === DEFAULT_QUICK_LINK_GROUP_ID)?.items
-      .length ?? 0
-  )
+  return quickLinksStore.getGroupItemCount(DEFAULT_QUICK_LINK_GROUP_ID)
 }
 
 function canMoveDockQuickLinkLeft(item: CtxQuickLinkItem) {

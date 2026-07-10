@@ -81,6 +81,17 @@ const activeOptionId = computed(() => {
 })
 const isExpanded = computed(() => displayedSuggestions.value.length > 0)
 
+function isLiveSuggestionResult(text: string) {
+  return text === latestLiveQuery.value && text === props.searchText && !isShowSearchHistories.value
+}
+
+function applyHistorySuggestions(list: readonly string[]) {
+  searchSuggestions.value = list.slice()
+  if (list.length > 0) {
+    isShowSearchHistories.value = true
+  }
+}
+
 function handleInput() {
   if (focusStore.isFocused && !props.searchText) {
     // 如果搜索词为空，则显示搜索历史
@@ -113,17 +124,14 @@ async function showSearchHistories() {
 
   const searchHistories = cachedHistories.value
   if (searchHistories.length > 0) {
-    searchSuggestions.value = searchHistories.slice()
-    isShowSearchHistories.value = true
+    applyHistorySuggestions(searchHistories)
   }
 }
 
 // 统一“请求 + 取消 + 防抖 + 重试”（重试统一在运行器层）
 const runner = createSuggestRunner({ debounceMs: 300, maxRetries: 2, retryDelay: 100 })
 runner.onResult(({ text, list }) => {
-  if (text !== latestLiveQuery.value || text !== props.searchText || isShowSearchHistories.value) {
-    return
-  }
+  if (!isLiveSuggestionResult(text)) return
 
   searchSuggestions.value = list
   // 缓存搜索建议结果
@@ -132,9 +140,7 @@ runner.onResult(({ text, list }) => {
   }
 })
 runner.onError((err, text) => {
-  if (text !== latestLiveQuery.value || text !== props.searchText || isShowSearchHistories.value) {
-    return
-  }
+  if (!isLiveSuggestionResult(text)) return
 
   console.error('Failed to fetch search suggestions:', err)
   searchSuggestions.value = []
@@ -233,7 +239,7 @@ watch(
   () => cachedHistories.value,
   (list) => {
     if (isShowSearchHistories.value && canShowHistory()) {
-      searchSuggestions.value = list.slice()
+      applyHistorySuggestions(list)
     }
   },
 )

@@ -64,58 +64,67 @@ const beforeFaviconCacheChange = async (): Promise<boolean> => {
   return granted
 }
 
-async function confirmClearExtensionData() {
+async function confirmAndRun(
+  message: string,
+  title: string,
+  onConfirm: () => void,
+  options?: { confirmButtonText?: string; cancelButtonText?: string },
+) {
   try {
-    await ElMessageBox.confirm(
-      t('other.purge.confirm.data.message'),
-      t('other.purge.confirm.data.title'),
-      {
-        confirmButtonText: t('newtab:common.confirm'),
-        cancelButtonText: t('newtab:common.no'),
-        type: 'warning',
-      },
-    )
+    await ElMessageBox.confirm(message, title, {
+      confirmButtonText: options?.confirmButtonText ?? t('newtab:common.confirm'),
+      cancelButtonText: options?.cancelButtonText ?? t('newtab:common.no'),
+      type: 'warning',
+    })
   } catch {
     return
   }
 
-  clearExtensionData()
+  onConfirm()
+}
+
+async function confirmClearExtensionData() {
+  await confirmAndRun(
+    t('other.purge.confirm.data.message'),
+    t('other.purge.confirm.data.title'),
+    clearExtensionData,
+  )
 }
 
 async function confirmClearWallpaperData() {
-  try {
-    await ElMessageBox.confirm(
-      t('other.purge.confirm.wallpaper.message'),
-      t('other.purge.confirm.wallpaper.title'),
-      {
-        confirmButtonText: t('newtab:common.confirm'),
-        cancelButtonText: t('newtab:common.no'),
-        type: 'warning',
-      },
-    )
-  } catch {
-    return
-  }
-
-  clearWallpaperData()
+  await confirmAndRun(
+    t('other.purge.confirm.wallpaper.message'),
+    t('other.purge.confirm.wallpaper.title'),
+    clearWallpaperData,
+  )
 }
 
 async function confirmClearIconCache() {
-  try {
-    await ElMessageBox.confirm(
-      t('other.purge.confirm.icon.message'),
-      t('other.purge.confirm.icon.title'),
-      {
-        confirmButtonText: t('newtab:common.confirm'),
-        cancelButtonText: t('newtab:common.no'),
-        type: 'warning',
-      },
-    )
-  } catch {
-    return
-  }
+  await confirmAndRun(
+    t('other.purge.confirm.icon.message'),
+    t('other.purge.confirm.icon.title'),
+    clearIconCache,
+  )
+}
 
-  clearIconCache()
+function showLoading(text: string) {
+  ElLoading.service({
+    lock: true,
+    text,
+    body: true,
+    background: 'var(--el-overlay-color-light)',
+  })
+}
+
+function reloadSoon() {
+  useTimeoutFn(() => {
+    location.reload()
+  }, 1000)
+}
+
+function runLoadingAndReload(text: string, task: () => Promise<unknown>) {
+  showLoading(text)
+  task().catch(console.error).finally(reloadSoon)
 }
 
 async function clearWallpaperData() {
@@ -132,12 +141,7 @@ async function clearWallpaperData() {
     }
   }
 
-  ElLoading.service({
-    lock: true,
-    text: t('other.purge.confirm.wallpaper.purging'),
-    body: true,
-    background: 'var(--el-overlay-color-light)',
-  })
+  showLoading(t('other.purge.confirm.wallpaper.purging'))
 
   resetSettings()
 
@@ -151,52 +155,26 @@ async function clearWallpaperData() {
     wallpaperUrlStore.clearUrl('bing'),
   ])
     .catch(console.error)
-    .finally(() => {
-      setTimeout(() => {
-        location.reload()
-      }, 1000)
-    })
+    .finally(reloadSoon)
 }
 
 function clearExtensionData() {
-  ElLoading.service({
-    lock: true,
-    text: t('other.purge.confirm.data.purging'),
-    body: true,
-    background: 'var(--el-overlay-color-light)',
-  })
-
-  Promise.all([
-    localStorage.clear(),
-    sessionStorage.clear(),
-    idbDropDatabase(),
-    storage.clear('local'),
-    storage.clear('session'),
-    storage.clear('sync'),
-  ])
-    .catch(console.error)
-    .finally(() => {
-      useTimeoutFn(() => {
-        location.reload()
-      }, 1000)
-    })
+  runLoadingAndReload(
+    t('other.purge.confirm.data.purging'),
+    () =>
+      Promise.all([
+        localStorage.clear(),
+        sessionStorage.clear(),
+        idbDropDatabase(),
+        storage.clear('local'),
+        storage.clear('session'),
+        storage.clear('sync'),
+      ]),
+  )
 }
 
 function clearIconCache() {
-  ElLoading.service({
-    lock: true,
-    text: t('other.purge.confirm.icon.purging'),
-    body: true,
-    background: 'var(--el-overlay-color-light)',
-  })
-
-  clearFaviconCache()
-    .catch(console.error)
-    .finally(() => {
-      useTimeoutFn(() => {
-        location.reload()
-      }, 1000)
-    })
+  runLoadingAndReload(t('other.purge.confirm.icon.purging'), clearFaviconCache)
 }
 
 function sendSyncMessage() {
@@ -225,18 +203,15 @@ type ImportBackup = Partial<Backup> & {
  * 通用文件选择器打开函数
  */
 async function openFilePicker() {
-  try {
-    await ElMessageBox.confirm(
-      t('other.importExport.warningDialog.content'),
-      t('other.importExport.warningDialog.title'),
-      {
-        confirmButtonText: t('other.importExport.warningDialog.yes'),
-        cancelButtonText: t('other.importExport.warningDialog.no'),
-        type: 'warning',
-      },
-    )
-    fileInput.value?.click()
-  } catch {}
+  await confirmAndRun(
+    t('other.importExport.warningDialog.content'),
+    t('other.importExport.warningDialog.title'),
+    () => fileInput.value?.click(),
+    {
+      confirmButtonText: t('other.importExport.warningDialog.yes'),
+      cancelButtonText: t('other.importExport.warningDialog.no'),
+    },
+  )
 }
 
 async function exportBackup() {
@@ -332,6 +307,10 @@ function handleFileImport<T>(
   let fileContent: T | null = null
   let parseError: string | null = null
 
+  const showImportFailure = (reason: string) => {
+    ElMessage.error(t('other.importExport.importFailed', { reason }))
+  }
+
   reader.onload = () => {
     try {
       const json = JSON.parse(reader.result as string)
@@ -339,11 +318,11 @@ function handleFileImport<T>(
         fileContent = json
       } else {
         parseError = t('other.importExport.invalidFileFormat')
-        ElMessage.error(t('other.importExport.importFailed', { reason: parseError }))
+        showImportFailure(parseError)
       }
     } catch {
       parseError = t('other.importExport.invalidJSON')
-      ElMessage.error(t('other.importExport.importFailed', { reason: parseError }))
+      showImportFailure(parseError)
     }
   }
 
@@ -355,19 +334,11 @@ function handleFileImport<T>(
           await onSuccess(fileContent)
           ElMessage.success(t('other.importExport.importSuccess'))
         } else {
-          ElMessage.error(
-            t('other.importExport.importFailed', {
-              reason: parseError || t('other.importExport.unknownError'),
-            }),
-          )
+          showImportFailure(parseError || t('other.importExport.unknownError'))
         }
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error)
-        ElMessage.error(
-          t('other.importExport.importFailed', {
-            reason: reason || t('other.importExport.unknownError'),
-          }),
-        )
+        showImportFailure(reason || t('other.importExport.unknownError'))
       } finally {
         // 重置 file input 以允许导入同一个文件
         if (inputRef.value) inputRef.value.value = ''

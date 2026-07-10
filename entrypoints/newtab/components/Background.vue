@@ -202,6 +202,21 @@ function getOnlineMonetSourceKey(rawUrl: string, timestamp: number | 'raw') {
   return rawUrl ? `online:${rawUrl}:${timestamp}` : ''
 }
 
+type CachedOnlineWallpaper = NonNullable<Awaited<ReturnType<typeof getCachedOnlineWallpaper>>>
+
+function isOnlineWallpaperCacheValid(cached: CachedOnlineWallpaper | null, now: number) {
+  if (!cached) return false
+  const ageHours = (now - cached.timestamp) / 36e5
+  const withinDuration = ageHours <= settings.background.online.cache.duration
+  return settings.background.online.cache.noExpires || withinDuration
+}
+
+function createOnlineWallpaperBlobUrl(rawUrl: string, cached: CachedOnlineWallpaper) {
+  setOnlineMonetSourceKey(getOnlineMonetSourceKey(rawUrl, cached.timestamp))
+  // Blob URL ownership transfers to updateBackgroundURL (tracked and revoked via lastBlobUrl).
+  return URL.createObjectURL(cached.blob)
+}
+
 // Monet 颜色和具体背景绑定，避免不同图片复用同一份缓存导致主题色错配。
 function getActiveMonetSourceKey() {
   if (settings.background.bgType === BgType.Bing) return getBingMonetSourceKey()
@@ -258,19 +273,8 @@ const bgTypeProviders: Record<
     // 如果开启了缓存，则尝试从缓存中获取
     const cached = useCache ? await getCachedOnlineWallpaper(rawUrl) : null
 
-    let isCacheValid = false
-
-    if (cached) {
-      const ageHours = (now - cached.timestamp) / 36e5
-      const withinDuration = ageHours <= settings.background.online.cache.duration
-
-      isCacheValid = settings.background.online.cache.noExpires || withinDuration
-    }
-
-    if (isCacheValid) {
-      setOnlineMonetSourceKey(getOnlineMonetSourceKey(rawUrl, cached!.timestamp))
-      // Blob URL ownership transfers to updateBackgroundURL (tracked and revoked via lastBlobUrl).
-      return URL.createObjectURL(cached!.blob)
+    if (cached && isOnlineWallpaperCacheValid(cached, now)) {
+      return createOnlineWallpaperBlobUrl(rawUrl, cached)
     }
 
     let blob: Blob | null = null
@@ -292,9 +296,7 @@ const bgTypeProviders: Record<
         message: i18next.t('newtab:notification.wallpaperCache.message', { error: e }),
       })
       if (cached) {
-        setOnlineMonetSourceKey(getOnlineMonetSourceKey(rawUrl, cached.timestamp))
-        // Blob URL ownership transfers to updateBackgroundURL (tracked and revoked via lastBlobUrl).
-        return URL.createObjectURL(cached.blob) // 如果下载失败，不管缓存是否过期都继续使用缓存
+        return createOnlineWallpaperBlobUrl(rawUrl, cached) // 如果下载失败，不管缓存是否过期都继续使用缓存
       }
       // Download failed and no cache is available. Return the raw URL as explicit degraded
       // behavior: Monet will not be applied (onImgLoaded already guards against HTTP URLs).
@@ -326,6 +328,22 @@ function assignMaybeRef<T>(target: Ref<T>, source: T | Ref<T>) {
 
   target.value = source
   return () => {}
+}
+
+function revokeDiscardedBlobUrl(type: BgType, url: string | Ref<string>) {
+  if (type === BgType.Online && !isRef(url) && url.startsWith('blob:')) {
+    URL.revokeObjectURL(url)
+  }
+}
+
+function trackBackgroundBlobUrl(type: BgType, url: string | Ref<string>) {
+  if (type === BgType.Online && !isRef(url) && url.startsWith('blob:')) {
+    revokeLastBlobUrl()
+    lastBlobUrl.value = url
+    return
+  }
+
+  revokeLastBlobUrl()
 }
 
 watch(
@@ -374,22 +392,11 @@ async function updateBackgroundURL(type: BgType): Promise<void> {
     return
   }
   if (requestVersion !== backgroundRequestVersion) {
-    if (type === BgType.Online && !isRef(newUrl) && newUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(newUrl)
-    }
+    revokeDiscardedBlobUrl(type, newUrl)
     return
   }
 
-  if (type === BgType.Online && !isRef(newUrl)) {
-    if (newUrl.startsWith('blob:')) {
-      revokeLastBlobUrl()
-      lastBlobUrl.value = newUrl
-    } else {
-      revokeLastBlobUrl()
-    }
-  } else {
-    revokeLastBlobUrl()
-  }
+  trackBackgroundBlobUrl(type, newUrl)
 
   // 只在URL真正变化时才执行切换动画
   if (type !== BgType.Online && !isRef(newUrl) && newUrl === bgURL.value) return
@@ -419,32 +426,27 @@ async function updateBackgroundURL(type: BgType): Promise<void> {
   shortenBgFadeDuration()
 }
 
-// 本地背景URL变化处理器
-async function handleLocalBgChange() {
-  await updateBackgroundURL(BgType.Local)
-}
+function watchCurrentBackgroundSource(type: BgType) {
+  if (type === BgType.Local) {
+    // 只在使用本地背景时监听本地背景变化
+    return watch(currentLocalUrl, () => updateBackgroundURL(BgType.Local))
+  }
 
-// 在线背景URL变化处理器
-async function handleOnlineBgChange() {
-  await updateBackgroundURL(BgType.Online)
+  if (type === BgType.Online) {
+    // 只在使用在线背景时监听在线URL变化
+    return watch(() => settings.background.online.url, () => updateBackgroundURL(BgType.Online))
+  }
+
+  // Bing类型：assignMaybeRef 已对 bingUrl ref 建立 watch，后台刷新完成时会自动更新 bgURL
+  // None类型：无需监听
+  return null
 }
 
 // 根据背景类型激活对应的watch
 function activateBackgroundWatch(type: BgType) {
   // 清理旧的watch
   stopBgTypeWatch?.()
-  stopBgTypeWatch = null
-
-  // 根据类型激活对应的watch
-  if (type === BgType.Local) {
-    // 只在使用本地背景时监听本地背景变化
-    stopBgTypeWatch = watch(currentLocalUrl, handleLocalBgChange)
-  } else if (type === BgType.Online) {
-    // 只在使用在线背景时监听在线URL变化
-    stopBgTypeWatch = watch(() => settings.background.online.url, handleOnlineBgChange)
-  }
-  // Bing类型：assignMaybeRef 已对 bingUrl ref 建立 watch，后台刷新完成时会自动更新 bgURL
-  // None类型：无需监听
+  stopBgTypeWatch = watchCurrentBackgroundSource(type)
 }
 
 // 监听背景类型切换，动态激活/停用对应的watch

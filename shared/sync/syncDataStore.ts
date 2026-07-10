@@ -103,6 +103,13 @@ const migrations: Partial<
 
 const BUILTIN_SEARCH_ENGINES = new Set(['google', 'baidu', 'bing', 'yandex', 'duckduckgo'])
 
+type SyncSnapshot = {
+  rawSettings: CURRENT_CONFIG_SCHEMA
+  sanitizedSettings: CURRENT_CONFIG_SCHEMA
+  quickLinksData: QuickLinksData
+  customSearchEngines: SyncedCustomSearchEngineStorage
+}
+
 const normalizeCustomSearchEngines = (
   input: SyncedCustomSearchEngineStorage,
 ): SyncedCustomSearchEngineStorage => {
@@ -171,19 +178,31 @@ export const useSyncDataStore = defineStore('sync', () => {
     return sanitized
   }
 
-  const computeSyncHash = (
+  const captureSyncSnapshot = (
     localSettings: ReturnType<typeof useSettingsStore>,
     quickLinksStore: ReturnType<typeof useQuickLinksStore>,
     customSearchEngineStore: ReturnType<typeof useCustomSearchEngineStore>,
-  ): string => {
-    const rawSettings = localSettings.getRawState()
-    const sanitizedSettings = sanitizeSettingsForCloud(rawSettings)
-    const quickLinksData = {
-      items: toRaw(quickLinksStore.items),
-      groups: toRaw(quickLinksStore.groups),
+  ): SyncSnapshot => {
+    const rawSettings = structuredClone(localSettings.getRawState())
+    return {
+      rawSettings,
+      sanitizedSettings: sanitizeSettingsForCloud(rawSettings),
+      quickLinksData: {
+        items: structuredClone(toRaw(quickLinksStore.items)),
+        groups: structuredClone(toRaw(quickLinksStore.groups)),
+      },
+      customSearchEngines: normalizeCustomSearchEngines({
+        items: structuredClone(toRaw(customSearchEngineStore.items)),
+      }),
     }
-    const customEnginesData = toRaw(customSearchEngineStore.items)
-    return JSON.stringify({ s: sanitizedSettings, q: quickLinksData, e: customEnginesData })
+  }
+
+  const computeSyncHash = (snapshot: SyncSnapshot): string => {
+    return JSON.stringify({
+      s: snapshot.sanitizedSettings,
+      q: snapshot.quickLinksData,
+      e: snapshot.customSearchEngines.items,
+    })
   }
 
   const restoreDeviceLocalFields = (
@@ -243,21 +262,16 @@ export const useSyncDataStore = defineStore('sync', () => {
     }
   }
 
-  const buildPayload = (timestamp: number, meta: LocalSyncMeta): SyncEnvelopeV2 => {
-    const localSettings = useSettingsStore()
-    const quickLinksStore = useQuickLinksStore()
-    const customSearchEngineStore = useCustomSearchEngineStore()
-
-    const rawSettings = localSettings.getRawState()
-    const sanitizedSettings = sanitizeSettingsForCloud(rawSettings)
-    const quickLinksSnapshot: QuickLinksData = {
-      items: structuredClone(toRaw(quickLinksStore.items)),
-      groups: structuredClone(toRaw(quickLinksStore.groups)),
-    }
-    const customSearchEngineSnapshot = normalizeCustomSearchEngines({
-      items: structuredClone(toRaw(customSearchEngineStore.items)),
-    })
-
+  const buildPayload = (
+    timestamp: number,
+    meta: LocalSyncMeta,
+    snapshot = captureSyncSnapshot(
+      useSettingsStore(),
+      useQuickLinksStore(),
+      useCustomSearchEngineStore(),
+    ),
+  ): SyncEnvelopeV2 => {
+    const { rawSettings, sanitizedSettings, quickLinksData, customSearchEngines } = snapshot
     return {
       _v: 2,
       configVersion: rawSettings.version,
@@ -265,10 +279,26 @@ export const useSyncDataStore = defineStore('sync', () => {
       fromDeviceName: meta.deviceName,
       lastUpdate: timestamp,
       settings: sanitizedSettings,
-      quickLinks: quickLinksSnapshot,
-      customSearchEngines: customSearchEngineSnapshot,
+      quickLinks: quickLinksData,
+      customSearchEngines,
       version: 0,
       baseVersion: 0,
+    }
+  }
+
+  const sendLocalChanged = async (payload: SyncEnvelopeV2) => {
+    const msg: SyncLocalChangedMessage = { type: 'SYNC_LOCAL_CHANGED', data: payload }
+    await browser.runtime.sendMessage(msg)
+  }
+
+  const resolveConflict = async (choice: SyncConflictResolveMessage['choice']) => {
+    conflictDialogVisible.value = false
+    conflictPayload.value = null
+    try {
+      const msg: SyncConflictResolveMessage = { type: 'SYNC_CONFLICT_RESOLVE', choice }
+      await browser.runtime.sendMessage(msg)
+    } catch (err) {
+      emitSyncError(err)
     }
   }
 
@@ -315,7 +345,9 @@ export const useSyncDataStore = defineStore('sync', () => {
       )
       await customSearchEngineStore.save(normalizedCustomSearchEngines)
       ensureSearchEngineAvailable(localSettings, normalizedCustomSearchEngines)
-      lastSyncHash = computeSyncHash(localSettings, quickLinksStore, customSearchEngineStore)
+      lastSyncHash = computeSyncHash(
+        captureSyncSnapshot(localSettings, quickLinksStore, customSearchEngineStore),
+      )
 
       const cloudVersion = cloudData.version ?? 0
       await setLocalSyncMeta({
@@ -366,16 +398,18 @@ export const useSyncDataStore = defineStore('sync', () => {
 
         // Initialise sync store refs from *local* state — never from the browser's potentially
         // stale cloud cache. applyCloudData() will update these once background decides to apply.
-        settings.value = structuredClone(localSettings.getRawState())
-        quickLinks.value = {
-          items: structuredClone(toRaw(quickLinksStore.items)),
-          groups: structuredClone(toRaw(quickLinksStore.groups)),
-        }
+        const initSnapshot = captureSyncSnapshot(
+          localSettings,
+          quickLinksStore,
+          customSearchEngineStore,
+        )
+        settings.value = structuredClone(initSnapshot.rawSettings)
+        quickLinks.value = initSnapshot.quickLinksData
         lastUpdate.value = meta.lastSyncedAt
 
         // Send SYNC_INITED with the current local snapshot so background can run
         // processSyncQueue immediately (covers SW-restart + watch()-missed-update cases).
-        const initPayload = buildPayload(meta.localModifiedAt, meta)
+        const initPayload = buildPayload(meta.localModifiedAt, meta, initSnapshot)
         const syncInitedMessage: SyncInitedMessage = { type: 'SYNC_INITED', payload: initPayload }
 
         handleBackgroundMessage = async (message: unknown) => {
@@ -415,7 +449,22 @@ export const useSyncDataStore = defineStore('sync', () => {
 
         // Cheap change-detection: only serialize sync-relevant data when checking for changes
         let prevSyncEnabled = localSettings.sync.enabled
-        lastSyncHash = computeSyncHash(localSettings, quickLinksStore, customSearchEngineStore)
+        lastSyncHash = computeSyncHash(initSnapshot)
+        let latestLocalChangeRequest = 0
+        let localChangeQueue: Promise<void> = Promise.resolve()
+
+        // 串行写入同步元数据，并且只允许最新变更进入防抖队列，避免旧快照覆盖新快照。
+        const scheduleLocalSnapshot = (timestamp: number, snapshot: SyncSnapshot) => {
+          const requestId = ++latestLocalChangeRequest
+          localChangeQueue = localChangeQueue
+            .then(async () => {
+              const meta = await setLocalSyncMeta({ localModifiedAt: timestamp })
+              if (generation !== initGeneration || requestId !== latestLocalChangeRequest) return
+              debouncedSend(buildPayload(timestamp, meta, snapshot))
+            })
+            .catch(emitSyncError)
+          return localChangeQueue
+        }
 
         const subChange = async () => {
           const nowEnabled = localSettings.sync.enabled
@@ -427,14 +476,18 @@ export const useSyncDataStore = defineStore('sync', () => {
 
           if (!nowEnabled) return
 
-          const syncHash = computeSyncHash(localSettings, quickLinksStore, customSearchEngineStore)
+          const syncSnapshot = captureSyncSnapshot(
+            localSettings,
+            quickLinksStore,
+            customSearchEngineStore,
+          )
+          const syncHash = computeSyncHash(syncSnapshot)
 
           if (!prevSyncEnabled && nowEnabled) {
             prevSyncEnabled = true
             lastSyncHash = syncHash
             const timestamp = Date.now()
-            const meta = await setLocalSyncMeta({ localModifiedAt: timestamp })
-            debouncedSend(buildPayload(timestamp, meta))
+            await scheduleLocalSnapshot(timestamp, syncSnapshot)
             return
           }
 
@@ -446,8 +499,7 @@ export const useSyncDataStore = defineStore('sync', () => {
 
           lastSyncHash = syncHash
           const timestamp = Date.now()
-          const meta = await setLocalSyncMeta({ localModifiedAt: timestamp })
-          debouncedSend(buildPayload(timestamp, meta))
+          await scheduleLocalSnapshot(timestamp, syncSnapshot)
         }
 
         const unsubSettings = localSettings.$subscribe(subChange)
@@ -515,8 +567,7 @@ export const useSyncDataStore = defineStore('sync', () => {
       const timestamp = Date.now()
       const meta = await setLocalSyncMeta({ localModifiedAt: timestamp })
       const payload = buildPayload(timestamp, meta)
-      const msg: SyncLocalChangedMessage = { type: 'SYNC_LOCAL_CHANGED', data: payload }
-      await browser.runtime.sendMessage(msg)
+      await sendLocalChanged(payload)
     } catch (err) {
       emitSyncError(err)
     }
@@ -536,8 +587,7 @@ export const useSyncDataStore = defineStore('sync', () => {
       const timestamp = Date.now()
       await setLocalSyncMeta({ localModifiedAt: timestamp })
       const payload = buildPayload(timestamp, meta)
-      const msg: SyncLocalChangedMessage = { type: 'SYNC_LOCAL_CHANGED', data: payload }
-      await browser.runtime.sendMessage(msg)
+      await sendLocalChanged(payload)
     } catch (err) {
       emitSyncError(err)
     } finally {
@@ -550,25 +600,11 @@ export const useSyncDataStore = defineStore('sync', () => {
   }
 
   const useCloudConflictData = async () => {
-    conflictDialogVisible.value = false
-    conflictPayload.value = null
-    try {
-      const msg: SyncConflictResolveMessage = { type: 'SYNC_CONFLICT_RESOLVE', choice: 'cloud' }
-      await browser.runtime.sendMessage(msg)
-    } catch (err) {
-      emitSyncError(err)
-    }
+    await resolveConflict('cloud')
   }
 
   const useLocalConflictData = async () => {
-    conflictDialogVisible.value = false
-    conflictPayload.value = null
-    try {
-      const msg: SyncConflictResolveMessage = { type: 'SYNC_CONFLICT_RESOLVE', choice: 'local' }
-      await browser.runtime.sendMessage(msg)
-    } catch (err) {
-      emitSyncError(err)
-    }
+    await resolveConflict('local')
   }
 
   const disableSyncAndDismissConflict = () => {

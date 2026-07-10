@@ -38,6 +38,15 @@ type SwitchItem = {
   disabled?: Ref<boolean>
 }
 
+const effectTitleGetters: Record<EffectSettingKey, () => string> = {
+  searchBar: () => t('search.title'),
+  quickLinks: () => `${t('quickLinks.title')} / Dock`,
+  yiyan: () => t('yiyan.title'),
+  bookmark: () => t('bookmark.title'),
+  dialog: () => t('perf.dialog.title'),
+  actionBtns: () => t('perf.actionBtns.transparent').replace(/透明$/, ''),
+}
+
 function formatTransparency(value: number) {
   return `${value}%`
 }
@@ -47,21 +56,15 @@ function formatBackdropBlur(value: number) {
 }
 
 function toggleTransparentSettings(enable: boolean) {
-  settings.perf.bookmark.transparent = enable
-  settings.perf.dialog.transparent = enable
-  settings.perf.searchBar.transparent = enable
-  settings.perf.actionBtns.transparent = enable
-  settings.perf.quickLinks.transparent = enable
-  settings.perf.yiyan.transparent = enable
+  for (const key of EFFECT_SETTING_KEYS) {
+    settings.perf[key].transparent = enable
+  }
 }
 
 function toggleBlurSettings(enable: boolean) {
-  settings.perf.bookmark.blur = enable
-  settings.perf.dialog.blur = enable
-  settings.perf.searchBar.blur = enable
-  settings.perf.actionBtns.blur = enable
-  settings.perf.quickLinks.blur = enable
-  settings.perf.yiyan.blur = enable
+  for (const key of EFFECT_SETTING_KEYS) {
+    settings.perf[key].blur = enable
+  }
   settings.perf.focus.blur = enable
 }
 
@@ -87,56 +90,16 @@ function resetTransparencyAndBlur() {
   settings.background.blur = defaultSettings.background.blur
 }
 
-const effectItems = computed<EffectItem[]>(() => [
-  {
-    key: 'searchBar',
-    title: t('search.title'),
-    transparent: toRef(settings.perf.searchBar, 'transparent'),
-    transparency: toRef(settings.perf.searchBar, 'transparency'),
-    blur: toRef(settings.perf.searchBar, 'blur'),
-    blurIntensity: toRef(settings.perf.searchBar, 'blurIntensity'),
-  },
-  {
-    key: 'quickLinks',
-    title: `${t('quickLinks.title')} / Dock`,
-    transparent: toRef(settings.perf.quickLinks, 'transparent'),
-    transparency: toRef(settings.perf.quickLinks, 'transparency'),
-    blur: toRef(settings.perf.quickLinks, 'blur'),
-    blurIntensity: toRef(settings.perf.quickLinks, 'blurIntensity'),
-  },
-  {
-    key: 'yiyan',
-    title: t('yiyan.title'),
-    transparent: toRef(settings.perf.yiyan, 'transparent'),
-    transparency: toRef(settings.perf.yiyan, 'transparency'),
-    blur: toRef(settings.perf.yiyan, 'blur'),
-    blurIntensity: toRef(settings.perf.yiyan, 'blurIntensity'),
-  },
-  {
-    key: 'bookmark',
-    title: t('bookmark.title'),
-    transparent: toRef(settings.perf.bookmark, 'transparent'),
-    transparency: toRef(settings.perf.bookmark, 'transparency'),
-    blur: toRef(settings.perf.bookmark, 'blur'),
-    blurIntensity: toRef(settings.perf.bookmark, 'blurIntensity'),
-  },
-  {
-    key: 'dialog',
-    title: t('perf.dialog.title'),
-    transparent: toRef(settings.perf.dialog, 'transparent'),
-    transparency: toRef(settings.perf.dialog, 'transparency'),
-    blur: toRef(settings.perf.dialog, 'blur'),
-    blurIntensity: toRef(settings.perf.dialog, 'blurIntensity'),
-  },
-  {
-    key: 'actionBtns',
-    title: t('perf.actionBtns.transparent').replace(/透明$/, ''),
-    transparent: toRef(settings.perf.actionBtns, 'transparent'),
-    transparency: toRef(settings.perf.actionBtns, 'transparency'),
-    blur: toRef(settings.perf.actionBtns, 'blur'),
-    blurIntensity: toRef(settings.perf.actionBtns, 'blurIntensity'),
-  },
-])
+const effectItems = computed<EffectItem[]>(() =>
+  EFFECT_SETTING_KEYS.map((key) => ({
+    key,
+    title: effectTitleGetters[key](),
+    transparent: toRef(settings.perf[key], 'transparent'),
+    transparency: toRef(settings.perf[key], 'transparency'),
+    blur: toRef(settings.perf[key], 'blur'),
+    blurIntensity: toRef(settings.perf[key], 'blurIntensity'),
+  })),
+)
 
 const wallpaperAnimationItems = computed<SwitchItem[]>(() => [
   {

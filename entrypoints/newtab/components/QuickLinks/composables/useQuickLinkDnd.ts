@@ -1,5 +1,7 @@
 import { KeyboardSensor, PointerSensor } from '@dnd-kit/vue'
 
+import type { QuickLink, useQuickLinksStore } from '@/shared/quickLinks'
+
 export const QUICK_LINK_GROUP_DND_TYPE = 'quick-link-group'
 export const QUICK_LINK_GROUPS_DND_ID = 'quick-link-groups'
 export const TOP_SITES_DND_GROUP_ID = '__top-sites__'
@@ -54,6 +56,13 @@ export type SortableMoveState = {
   toGroupId?: string
   fromSortableIndex?: number
   toSortableIndex?: number
+}
+
+type QuickLinksStore = ReturnType<typeof useQuickLinksStore>
+
+export type QuickLinkDndMoveTarget = {
+  groupId: string
+  storeIndex: number
 }
 
 type PointerActivationController = {
@@ -279,7 +288,12 @@ export function getSortableMoveState(source: unknown): SortableMoveState {
 export function getSortableStoreIndexes<T extends { isPinned: boolean; originalIndex: number }>(
   items: T[],
 ) {
-  return items.filter((item) => item.isPinned).map((item) => item.originalIndex)
+  const result: number[] = []
+  for (let i = 0, len = items.length; i < len; i++) {
+    const item = items[i]!
+    if (item.isPinned) result.push(item.originalIndex)
+  }
+  return result
 }
 
 export function resolveStoreIndexFromSortableIndex(
@@ -300,4 +314,49 @@ export function resolveStoreIndexFromSortableIndex(
   }
 
   return sortableStoreIndexes[sortableIndex] ?? fallbackStoreIndex
+}
+
+export function getQuickLinkFromDndData(
+  source: Extract<QuickLinkDndData, { kind: 'quick-link' }>,
+): QuickLink {
+  return {
+    url: source.url,
+    title: source.title,
+    favicon: source.favicon,
+  }
+}
+
+export async function persistQuickLinkDndMove(options: {
+  store: QuickLinksStore
+  grouping: boolean
+  source: Extract<QuickLinkDndData, { kind: 'quick-link' }>
+  moveTarget: QuickLinkDndMoveTarget
+}) {
+  const { store, grouping, source, moveTarget } = options
+
+  if (source.origin === 'top-sites') {
+    const quickLink = getQuickLinkFromDndData(source)
+    return grouping
+      ? await store.insertQuickLinkToGroup({
+          groupId: moveTarget.groupId,
+          quickLink,
+          index: moveTarget.storeIndex,
+        })
+      : await store.insertFlatQuickLink({
+          quickLink,
+          index: moveTarget.storeIndex,
+        })
+  }
+
+  return grouping
+    ? await store.moveQuickLink({
+        fromGroupId: source.groupId,
+        fromIndex: source.storeIndex,
+        toGroupId: moveTarget.groupId,
+        toIndex: moveTarget.storeIndex,
+      })
+    : await store.moveFlatQuickLink({
+        fromIndex: source.storeIndex,
+        toIndex: moveTarget.storeIndex,
+      })
 }

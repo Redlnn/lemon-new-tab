@@ -39,7 +39,7 @@ import QuickLinkDropTarget from './components/QuickLinkDropTarget.vue'
 import QuickLinkGroupName from './components/QuickLinkGroupName.vue'
 import QuickLinkGroupSelectDialog from './components/QuickLinkGroupSelectDialog.vue'
 import QuickLinkSortableItem from './components/QuickLinkSortableItem.vue'
-import { buildQuickLinkDisplayItems } from './composables/quickLinkDisplayItems'
+import { buildQuickLinkDisplayItems, buildTopSiteDisplayItems } from './composables/quickLinkDisplayItems'
 import { useGroupNameRefs } from './composables/useGroupNameRefs'
 import {
   FLAT_QUICK_LINK_DND_GROUP_ID,
@@ -49,6 +49,7 @@ import {
   getSortableMoveState,
   getSortableStoreIndexes,
   launchpadDndSensors,
+  persistQuickLinkDndMove,
   quickLinkContainerDndId,
   quickLinkDndId,
   resolveQuickLinkMoveTarget,
@@ -137,15 +138,7 @@ const pageSize = computed(() => COLS.value * ROWS.value)
 
 const allItems = computed(() => buildQuickLinkDisplayItems(quickLinks.value, topSites.value))
 const userGroups = computed(() => (settings.quickLinks.grouping ? quickLinksStore.groups : []))
-const topSitesItems = computed(() =>
-  topSites.value.map((item, index) => ({
-    url: item.url,
-    title: item.title || '',
-    favicon: item.favicon,
-    isPinned: false,
-    originalIndex: index,
-  })),
-)
+const topSitesItems = computed(() => buildTopSiteDisplayItems(topSites.value))
 const filteredTopSitesItems = computed(() => {
   const q = query.value.trim().toLowerCase()
   if (!q) return topSitesItems.value
@@ -500,7 +493,7 @@ function getLaunchpadMoveTarget(
 ) {
   const fallbackGroupId = settings.quickLinks.grouping ? source.groupId : legacyDndGroupId
   const fallbackStoreIndex = settings.quickLinks.grouping
-    ? (quickLinksStore.groups.find((group) => group.id === fallbackGroupId)?.items.length ?? 0)
+    ? quickLinksStore.getGroupItemCount(fallbackGroupId)
     : currentFlatContainerInsertIndex.value
   const fallbackTarget = {
     groupId: fallbackGroupId,
@@ -512,8 +505,7 @@ function getLaunchpadMoveTarget(
       ? {
           ...target,
           sortableIndex: getLaunchpadContextStoreIndexes(target.groupId).length,
-          storeIndex:
-            quickLinksStore.groups.find((group) => group.id === target.groupId)?.items.length ?? 0,
+          storeIndex: quickLinksStore.getGroupItemCount(target.groupId),
         }
       : target
   const moveTarget = resolveQuickLinkMoveTarget(targetForQuickLink, fallbackTarget)
@@ -576,36 +568,12 @@ async function handleLaunchpadDragEnd(event: DragEndEvent) {
   if (!moveTarget) return
 
   try {
-    const quickLink = {
-      url: source.url,
-      title: source.title,
-      favicon: source.favicon,
-    }
-    let changed: boolean
-    if (source.origin === 'top-sites') {
-      changed = settings.quickLinks.grouping
-        ? await quickLinksStore.insertQuickLinkToGroup({
-            groupId: moveTarget.groupId,
-            quickLink,
-            index: moveTarget.storeIndex,
-          })
-        : await quickLinksStore.insertFlatQuickLink({
-            quickLink,
-            index: moveTarget.storeIndex,
-          })
-    } else {
-      changed = !settings.quickLinks.grouping
-        ? await quickLinksStore.moveFlatQuickLink({
-            fromIndex: source.storeIndex,
-            toIndex: moveTarget.storeIndex,
-          })
-        : await quickLinksStore.moveQuickLink({
-            fromGroupId: source.groupId,
-            fromIndex: source.storeIndex,
-            toGroupId: moveTarget.groupId,
-            toIndex: moveTarget.storeIndex,
-          })
-    }
+    const changed = await persistQuickLinkDndMove({
+      store: quickLinksStore,
+      grouping: settings.quickLinks.grouping,
+      source,
+      moveTarget,
+    })
     if (source.origin === 'top-sites') {
       await refreshDebounced()
       dndRenderKey.value++

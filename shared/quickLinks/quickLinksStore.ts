@@ -78,6 +78,15 @@ function hasQuickLinksData(data: QuickLinksData): boolean {
   return data.items.length > 0 || (data.groups?.length ?? 0) > 0
 }
 
+function moveArrayItem<T>(items: T[], fromIndex: number, toIndex: number): T[] | null {
+  if (fromIndex === toIndex) return null
+  const nextItems = items.slice()
+  const [item] = nextItems.splice(fromIndex, 1)
+  if (!item) return null
+  nextItems.splice(Math.max(0, Math.min(toIndex, nextItems.length)), 0, item)
+  return nextItems
+}
+
 export const useQuickLinksStore = defineStore('quickLinks', () => {
   const items = ref(structuredClone(defaultQuickLinksData.items))
   const groups = ref<QuickLinkGroup[]>(structuredClone(defaultQuickLinksData.groups ?? []))
@@ -110,6 +119,8 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
 
   const getDefaultGroupName = () => i18next.t('newtab:quickLinks.groups.default')
 
+  const getGroup = (groupId: string) => groups.value.find((group) => group.id === groupId)
+
   const sanitizeGroups = (nextGroups?: QuickLinkGroup[]): QuickLinkGroup[] => {
     if (!nextGroups?.length) return []
 
@@ -138,7 +149,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const ensureDefaultGroup = (): QuickLinkGroup => {
-    let target = groups.value.find((group) => group.id === DEFAULT_QUICK_LINK_GROUP_ID)
+    let target = getGroup(DEFAULT_QUICK_LINK_GROUP_ID)
     if (!target) {
       target = { id: DEFAULT_QUICK_LINK_GROUP_ID, name: getDefaultGroupName(), items: [] }
       groups.value.unshift(target)
@@ -149,7 +160,16 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   const getGroupForInsert = (groupId: string): QuickLinkGroup | undefined => {
     return groupId === DEFAULT_QUICK_LINK_GROUP_ID
       ? ensureDefaultGroup()
-      : groups.value.find((item) => item.id === groupId)
+      : getGroup(groupId)
+  }
+
+  const getDefaultGroupItems = () => getGroup(DEFAULT_QUICK_LINK_GROUP_ID)?.items ?? []
+
+  const getGroupItemCount = (groupId: string) => {
+    if (groupId === DEFAULT_QUICK_LINK_GROUP_ID) {
+      return getDefaultGroupItems().length
+    }
+    return getGroup(groupId)?.items.length ?? 0
   }
 
   const findFlatQuickLinkIndexByUrl = (url: string) => {
@@ -237,7 +257,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     if (!loaded.value) {
       await init()
     }
-    const defaultGroup = groups.value.find((group) => group.id === DEFAULT_QUICK_LINK_GROUP_ID)
+    const defaultGroup = getGroup(DEFAULT_QUICK_LINK_GROUP_ID)
     const hasGroupedItems = groups.value.some((group) => group.items.length > 0)
     if (defaultGroup && (hasGroupedItems || items.value.length === 0)) {
       return
@@ -293,7 +313,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const renameGroup = async (groupId: string, name: string) => {
-    const group = groups.value.find((item) => item.id === groupId)
+    const group = getGroup(groupId)
     if (!group) return
     group.name = normalizeQuickLinkGroupName(
       name,
@@ -322,7 +342,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const updateQuickLinkInGroup = async (groupId: string, index: number, quickLink: QuickLink) => {
-    const group = groups.value.find((item) => item.id === groupId)
+    const group = getGroup(groupId)
     if (!group?.items[index]) return
     group.items.splice(index, 1, quickLink)
     await save()
@@ -332,7 +352,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     groupId: string,
     index: number,
   ): Promise<QuickLink | null> => {
-    const group = groups.value.find((item) => item.id === groupId)
+    const group = getGroup(groupId)
     if (!group?.items[index]) return null
     const [removed] = group.items.splice(index, 1)
     await save()
@@ -340,7 +360,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const moveQuickLinkToGroup = async (fromGroupId: string, index: number, toGroupId: string) => {
-    const fromGroup = groups.value.find((item) => item.id === fromGroupId)
+    const fromGroup = getGroup(fromGroupId)
     const toGroup = getGroupForInsert(toGroupId)
     if (!fromGroup?.items[index] || !toGroup) return
     const [quickLink] = fromGroup.items.splice(index, 1)
@@ -355,16 +375,13 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     toGroupId,
     toIndex,
   }: MoveQuickLinkOptions) => {
-    const fromGroup = groups.value.find((item) => item.id === fromGroupId)
+    const fromGroup = getGroup(fromGroupId)
     const toGroup = getGroupForInsert(toGroupId)
     if (!fromGroup?.items[fromIndex] || !toGroup) return false
 
     if (fromGroup.id === toGroup.id) {
-      if (fromIndex === toIndex) return false
-      const nextItems = fromGroup.items.slice()
-      const [quickLink] = nextItems.splice(fromIndex, 1)
-      if (!quickLink) return false
-      nextItems.splice(Math.max(0, Math.min(toIndex, nextItems.length)), 0, quickLink)
+      const nextItems = moveArrayItem(fromGroup.items, fromIndex, toIndex)
+      if (!nextItems) return false
       fromGroup.items = nextItems
       await save()
       return true
@@ -378,11 +395,8 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const moveFlatQuickLink = async ({ fromIndex, toIndex }: MoveFlatQuickLinkOptions) => {
-    if (fromIndex === toIndex) return false
-    const nextItems = items.value.slice()
-    const [quickLink] = nextItems.splice(fromIndex, 1)
-    if (!quickLink) return false
-    nextItems.splice(Math.max(0, Math.min(toIndex, nextItems.length)), 0, quickLink)
+    const nextItems = moveArrayItem(items.value, fromIndex, toIndex)
+    if (!nextItems) return false
     items.value = nextItems
     await save()
     return true
@@ -465,7 +479,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     if (typeof target === 'number') {
       return items.value[target]
     }
-    return groups.value.find((group) => group.id === target.groupId)?.items[target.index]
+    return getGroup(target.groupId)?.items[target.index]
   }
 
   return {
@@ -476,6 +490,9 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     replace,
     deinit,
     save,
+    getGroup,
+    getDefaultGroupItems,
+    getGroupItemCount,
     enableGroupingFromItems,
     disableGroupingToItems,
     ensureDefaultGroup,

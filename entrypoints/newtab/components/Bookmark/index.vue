@@ -5,8 +5,6 @@ import { DragDropProvider, type DragEndEvent } from '@dnd-kit/vue'
 import { useTranslation } from 'i18next-vue'
 import SearchRound from '~icons/ic/round-search'
 
-import type { Browser } from 'wxt/browser'
-
 import { SortMode } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 
@@ -27,90 +25,18 @@ import { useBookmarkStore } from './bookmarks'
 import BookmarkEditDialog from './components/BookmarkEditDialog.vue'
 import BookmarkItem from './components/BookmarkItem.vue'
 import { provideBookmarkItemContext } from './composables/bookmarkItemContext'
-import { getBookmarkDndData } from './composables/useBookmarkDnd'
-
-type SortableLike = {
-  initialGroup?: unknown
-  group?: unknown
-  initialIndex?: unknown
-  index?: unknown
-  sortable?: {
-    initialGroup?: unknown
-    group?: unknown
-    initialIndex?: unknown
-    index?: unknown
-  }
-}
-
-function getSortableString(value: SortableLike | null, key: 'initialGroup' | 'group') {
-  const direct = value?.[key]
-  if (typeof direct === 'string') return direct
-  const nested = value?.sortable?.[key]
-  return typeof nested === 'string' ? nested : null
-}
-
-function getSortableNumber(value: SortableLike | null, key: 'initialIndex' | 'index') {
-  const direct = value?.[key]
-  if (typeof direct === 'number') return direct
-  const nested = value?.sortable?.[key]
-  return typeof nested === 'number' ? nested : null
-}
+import {
+  getBookmarkDndData,
+  getSortableNumber,
+  getSortableString,
+  resolveBookmarkMoveIndex,
+  type SortableLike,
+} from './composables/useBookmarkDnd'
 
 function snapshotActiveMap(map: Record<number, string[]>) {
   return Object.fromEntries(
     Object.entries(toRaw(map)).map(([depth, ids]) => [depth, [...toRaw(ids)]]),
   ) as Record<number, string[]>
-}
-
-function findBookmarkNode(
-  nodes: Browser.bookmarks.BookmarkTreeNode[],
-  id: string,
-): Browser.bookmarks.BookmarkTreeNode | null {
-  for (const node of nodes) {
-    if (node.id === id) return node
-    const matched = node.children ? findBookmarkNode(node.children, id) : null
-    if (matched) return matched
-  }
-  return null
-}
-
-function getBookmarkChildrenCount(parentId: string) {
-  const parentNode = findBookmarkNode(store.tree, parentId)
-  return parentNode?.children?.length ?? null
-}
-
-function isBookmarkSelfOrDescendant(id: string, maybeDescendantId: string) {
-  if (id === maybeDescendantId) return true
-
-  const node = findBookmarkNode(store.tree, id)
-  if (!node?.children) return false
-
-  return Boolean(findBookmarkNode(node.children, maybeDescendantId))
-}
-
-function clampBookmarkMoveIndex(index: number, parentId: string) {
-  const childrenCount = getBookmarkChildrenCount(parentId)
-  if (childrenCount === null) return Math.max(0, index)
-
-  const maxIndex = Math.max(0, childrenCount)
-  return Math.min(Math.max(0, index), maxIndex)
-}
-
-function resolveBookmarkMoveIndex(options: {
-  fromParentId: string | undefined
-  fromIndex: number
-  nextParentId: string
-  nextIndex: number
-}) {
-  const { fromParentId, fromIndex, nextParentId, nextIndex } = options
-  if (fromParentId !== nextParentId || nextIndex <= fromIndex) {
-    return clampBookmarkMoveIndex(nextIndex, nextParentId)
-  }
-
-  // dnd-kit 的同级排序 index 描述拖拽列表位置，bookmarks.move 接收的是移除源节点后的插入位置。
-  const offset = nextIndex - fromIndex
-  const browserMoveIndex = offset === 1 ? nextIndex - 1 : nextIndex + 1
-  return clampBookmarkMoveIndex(browserMoveIndex, nextParentId)
 }
 
 const { opened, show, hide, toggle } = useDialog()
@@ -296,10 +222,11 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
     fromIndex,
     nextParentId,
     nextIndex,
+    getChildrenCount: store.getBookmarkChildrenCount,
   })
 
   if (fromParentId === nextParentId && fromIndex === nextIndex) return
-  if (source.isFolder && isBookmarkSelfOrDescendant(source.id, nextParentId)) return
+  if (source.isFolder && store.isBookmarkSelfOrDescendant(source.id, nextParentId)) return
 
   try {
     const expandedSnapshot = snapshotActiveMap(activeMap.value)

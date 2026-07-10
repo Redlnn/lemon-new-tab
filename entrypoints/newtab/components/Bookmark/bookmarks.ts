@@ -40,8 +40,49 @@ const bookmarkListeners: {
   importEnded?: () => void
 } = {}
 
+type BookmarkListenerKey = keyof typeof bookmarkListeners
+
 const suppressedMoveReloadIds = new Set<string>()
 type BookmarkTreeNode = Browser.bookmarks.BookmarkTreeNode
+let bookmarkNodeIndex = new Map<string, BookmarkTreeNode>()
+
+function setBookmarkListener<K extends BookmarkListenerKey>(
+  key: K,
+  listener: NonNullable<(typeof bookmarkListeners)[K]>,
+  addListener: (listener: NonNullable<(typeof bookmarkListeners)[K]>) => void,
+  errorLabel?: string,
+) {
+  if (bookmarkListeners[key]) return
+  bookmarkListeners[key] = listener
+  try {
+    addListener(listener)
+  } catch (error) {
+    if (errorLabel) {
+      console.warn(`[bookmark] ${errorLabel}:`, error)
+      return
+    }
+
+    delete bookmarkListeners[key]
+    throw error
+  }
+}
+
+function unsetBookmarkListener<K extends BookmarkListenerKey>(
+  key: K,
+  removeListener: (listener: NonNullable<(typeof bookmarkListeners)[K]>) => void,
+  eventName: string,
+) {
+  const listener = bookmarkListeners[key]
+  if (!listener) return
+
+  try {
+    removeListener(listener as NonNullable<(typeof bookmarkListeners)[K]>)
+  } catch (error) {
+    console.warn(`[bookmark] Failed to remove ${eventName} listener:`, error)
+  }
+
+  delete bookmarkListeners[key]
+}
 
 function cloneBookmarkTree(nodes: BookmarkTreeNode[]): BookmarkTreeNode[] {
   return nodes.map((node) => ({
@@ -81,6 +122,23 @@ function hasBookmarkContent(nodes: BookmarkTreeNode[]) {
   return nodes.some((node) => Boolean(node.url) || Boolean(node.children?.length))
 }
 
+function buildBookmarkNodeIndex(nodes: BookmarkTreeNode[]) {
+  const nextIndex = new Map<string, BookmarkTreeNode>()
+  const stack = nodes.slice()
+
+  while (stack.length) {
+    const node = stack.pop()!
+    nextIndex.set(node.id, node)
+    if (node.children?.length) {
+      for (let i = 0, len = node.children.length; i < len; i++) {
+        stack.push(node.children[i]!)
+      }
+    }
+  }
+
+  bookmarkNodeIndex = nextIndex
+}
+
 export const useBookmarkStore = defineStore('bookmark', () => {
   const tree = ref<Browser.bookmarks.BookmarkTreeNode[]>([])
   const loaded = ref(false)
@@ -96,6 +154,54 @@ export const useBookmarkStore = defineStore('bookmark', () => {
   const reloadBookmarks = (reason: string) => {
     void loadBookmarks().catch((error) => {
       console.error(`[bookmark] Failed to reload bookmarks after ${reason}:`, error)
+    })
+  }
+
+  const getBookmarkNode = (id: string) => bookmarkNodeIndex.get(id) ?? null
+
+  const getBookmarkChildrenCount = (parentId: string) => {
+    return getBookmarkNode(parentId)?.children?.length ?? null
+  }
+
+  const isBookmarkSelfOrDescendant = (id: string, maybeDescendantId: string) => {
+    if (id === maybeDescendantId) return true
+
+    const node = getBookmarkNode(id)
+    if (!node?.children?.length) return false
+
+    const stack = node.children.slice()
+    while (stack.length) {
+      const current = stack.pop()!
+      if (current.id === maybeDescendantId) return true
+      if (current.children?.length) {
+        for (let i = 0, len = current.children.length; i < len; i++) {
+          stack.push(current.children[i]!)
+        }
+      }
+    }
+
+    return false
+  }
+
+  const postWorkerInit = (nodes: BookmarkTreeNode[]) => {
+    worker?.postMessage({
+      type: 'INIT',
+      payload: {
+        tree: nodes,
+        language: i18next.language,
+        sortMode: sortMode.value,
+      },
+    })
+  }
+
+  const postWorkerFilter = () => {
+    worker?.postMessage({
+      type: 'FILTER',
+      payload: {
+        query: searchQuery.value,
+        sortMode: sortMode.value,
+        language: i18next.language,
+      },
     })
   }
 
@@ -145,53 +251,36 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     }
 
     // 添加书签变更监听，变更时重新加载书签并刷新 worker 缓存
-    if (!bookmarkListeners.created) {
-      bookmarkListeners.created = () => {
-        reloadBookmarks('onCreated')
-      }
-      browser.bookmarks.onCreated.addListener(bookmarkListeners.created)
-    }
-
-    if (!bookmarkListeners.removed) {
-      bookmarkListeners.removed = () => {
-        reloadBookmarks('onRemoved')
-      }
-      browser.bookmarks.onRemoved.addListener(bookmarkListeners.removed)
-    }
-
-    if (!bookmarkListeners.changed) {
-      bookmarkListeners.changed = () => {
-        reloadBookmarks('onChanged')
-      }
-      browser.bookmarks.onChanged.addListener(bookmarkListeners.changed)
-    }
-
-    if (!bookmarkListeners.moved) {
-      bookmarkListeners.moved = (id) => {
+    setBookmarkListener('created', () => reloadBookmarks('onCreated'), (listener) =>
+      browser.bookmarks.onCreated.addListener(listener),
+    )
+    setBookmarkListener('removed', () => reloadBookmarks('onRemoved'), (listener) =>
+      browser.bookmarks.onRemoved.addListener(listener),
+    )
+    setBookmarkListener('changed', () => reloadBookmarks('onChanged'), (listener) =>
+      browser.bookmarks.onChanged.addListener(listener),
+    )
+    setBookmarkListener(
+      'moved',
+      (id) => {
         if (suppressedMoveReloadIds.delete(id)) return
         reloadBookmarks('onMoved')
-      }
-      browser.bookmarks.onMoved.addListener(bookmarkListeners.moved)
-    }
-
-    if (!bookmarkListeners.importEnded) {
-      bookmarkListeners.importEnded = () => {
-        reloadBookmarks('onImportEnded')
-      }
-      // importEnded 在导入书签完成时触发（可选）
-      try {
-        browser.bookmarks.onImportEnded.addListener(bookmarkListeners.importEnded)
-      } catch (error) {
-        // 某些浏览器/环境可能不支持该事件
-        console.warn('[bookmark] onImportEnded listener is unavailable in this browser:', error)
-      }
-    }
+      },
+      (listener) => browser.bookmarks.onMoved.addListener(listener),
+    )
+    setBookmarkListener(
+      'importEnded',
+      () => reloadBookmarks('onImportEnded'),
+      (listener) => browser.bookmarks.onImportEnded.addListener(listener),
+      'onImportEnded listener is unavailable in this browser',
+    )
   }
 
   const loadBookmarks = async () => {
     const _tree = await browser.bookmarks.getTree()
     const children = _tree[0]?.children ?? []
     tree.value = children
+    buildBookmarkNodeIndex(children)
 
     if (!hasBookmarkContent(children)) {
       filteredResult.value = []
@@ -202,14 +291,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
 
     initWorker()
 
-    worker?.postMessage({
-      type: 'INIT',
-      payload: {
-        tree: children,
-        language: i18next.language,
-        sortMode: sortMode.value,
-      },
-    })
+    postWorkerInit(children)
   }
 
   const moveBookmark = async (
@@ -247,15 +329,9 @@ export const useBookmarkStore = defineStore('bookmark', () => {
       if (source.siblings !== targetSiblings) updateSiblingIndexes(targetSiblings)
 
       tree.value = nextTree
+      buildBookmarkNodeIndex(nextTree)
       filteredResult.value = nextTree
-      worker?.postMessage({
-        type: 'INIT',
-        payload: {
-          tree: nextTree,
-          language: i18next.language,
-          sortMode: sortMode.value,
-        },
-      })
+      postWorkerInit(nextTree)
     } catch (error) {
       suppressedMoveReloadIds.delete(id)
       throw error
@@ -280,14 +356,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
   }
 
   const triggerFilter = () => {
-    worker?.postMessage({
-      type: 'FILTER',
-      payload: {
-        query: searchQuery.value,
-        sortMode: sortMode.value,
-        language: i18next.language,
-      },
-    })
+    postWorkerFilter()
   }
 
   const terminateWorker = () => {
@@ -297,46 +366,31 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     }
 
     // 移除书签事件监听
-    if (bookmarkListeners.created) {
-      try {
-        browser.bookmarks.onCreated.removeListener(bookmarkListeners.created)
-      } catch (error) {
-        console.warn('[bookmark] Failed to remove onCreated listener:', error)
-      }
-      delete bookmarkListeners.created
-    }
-    if (bookmarkListeners.removed) {
-      try {
-        browser.bookmarks.onRemoved.removeListener(bookmarkListeners.removed)
-      } catch (error) {
-        console.warn('[bookmark] Failed to remove onRemoved listener:', error)
-      }
-      delete bookmarkListeners.removed
-    }
-    if (bookmarkListeners.changed) {
-      try {
-        browser.bookmarks.onChanged.removeListener(bookmarkListeners.changed)
-      } catch (error) {
-        console.warn('[bookmark] Failed to remove onChanged listener:', error)
-      }
-      delete bookmarkListeners.changed
-    }
-    if (bookmarkListeners.moved) {
-      try {
-        browser.bookmarks.onMoved.removeListener(bookmarkListeners.moved)
-      } catch (error) {
-        console.warn('[bookmark] Failed to remove onMoved listener:', error)
-      }
-      delete bookmarkListeners.moved
-    }
-    if (bookmarkListeners.importEnded) {
-      try {
-        browser.bookmarks.onImportEnded.removeListener(bookmarkListeners.importEnded)
-      } catch (error) {
-        console.warn('[bookmark] Failed to remove onImportEnded listener:', error)
-      }
-      delete bookmarkListeners.importEnded
-    }
+    unsetBookmarkListener(
+      'created',
+      (listener) => browser.bookmarks.onCreated.removeListener(listener),
+      'onCreated',
+    )
+    unsetBookmarkListener(
+      'removed',
+      (listener) => browser.bookmarks.onRemoved.removeListener(listener),
+      'onRemoved',
+    )
+    unsetBookmarkListener(
+      'changed',
+      (listener) => browser.bookmarks.onChanged.removeListener(listener),
+      'onChanged',
+    )
+    unsetBookmarkListener(
+      'moved',
+      (listener) => browser.bookmarks.onMoved.removeListener(listener),
+      'onMoved',
+    )
+    unsetBookmarkListener(
+      'importEnded',
+      (listener) => browser.bookmarks.onImportEnded.removeListener(listener),
+      'onImportEnded',
+    )
 
     if (worker) {
       worker.onmessage = null
@@ -357,6 +411,9 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     initWorker,
     loadBookmarks,
     moveBookmark,
+    getBookmarkNode,
+    getBookmarkChildrenCount,
+    isBookmarkSelfOrDescendant,
     _setSortMode,
     setSortMode,
     updateFilteredResult,

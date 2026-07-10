@@ -214,6 +214,55 @@ const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
 const hasStringType = (value: unknown): value is { type: string } =>
   isObjectRecord(value) && typeof value.type === 'string'
 
+async function flushPendingMessages(): Promise<void> {
+  if (pending.legacyDetected) {
+    const delivered = await sendToNewtab({
+      type: 'SYNC_LEGACY_DETECTED',
+    } as SyncLegacyDetectedMessage)
+    if (delivered) {
+      pending.legacyDetected = false
+    }
+    return
+  }
+
+  if (pending.versionTooNew) {
+    const payload = pending.versionTooNew
+    const delivered = await sendToNewtab({
+      type: 'SYNC_VERSION_TOO_NEW',
+      ...payload,
+    } as SyncVersionTooNewMessage)
+    if (delivered) {
+      pending.versionTooNew = null
+    }
+    return
+  }
+
+  if (pending.applyData) {
+    const data = pending.applyData
+    const delivered = await sendToNewtab({
+      type: 'SYNC_APPLY_DATA',
+      data,
+    } as SyncApplyDataMessage)
+    if (delivered) {
+      pending.applyData = null
+      // 清除初始化有效负载：它现在已过期；newtab 将在应用云数据后重新报告。
+      state.latestLocalPayload = null
+    }
+    return
+  }
+
+  if (pending.conflict) {
+    const payload = pending.conflict
+    const delivered = await sendToNewtab({
+      type: 'SYNC_CONFLICT',
+      payload,
+    } as SyncConflictMessage)
+    if (delivered) {
+      pending.conflict = null
+    }
+  }
+}
+
 // ─── Background entry point ───────────────────────────────────────────────────
 
 export default defineBackground(() => {
@@ -261,43 +310,7 @@ export default defineBackground(() => {
 
       // 刷新在 newtab 准备好前排队的任何通知
       // 优先级：legacy > version-too-new > apply > conflict
-      if (pending.legacyDetected) {
-        const delivered = await sendToNewtab({
-          type: 'SYNC_LEGACY_DETECTED',
-        } as SyncLegacyDetectedMessage)
-        if (delivered) {
-          pending.legacyDetected = false
-        }
-      } else if (pending.versionTooNew) {
-        const payload = pending.versionTooNew
-        const delivered = await sendToNewtab({
-          type: 'SYNC_VERSION_TOO_NEW',
-          ...payload,
-        } as SyncVersionTooNewMessage)
-        if (delivered) {
-          pending.versionTooNew = null
-        }
-      } else if (pending.applyData) {
-        const data = pending.applyData
-        const delivered = await sendToNewtab({
-          type: 'SYNC_APPLY_DATA',
-          data,
-        } as SyncApplyDataMessage)
-        if (delivered) {
-          pending.applyData = null
-          // 清除初始化有效负载：它现在已过期；newtab 将在应用云数据后重新报告。
-          state.latestLocalPayload = null
-        }
-      } else if (pending.conflict) {
-        const payload = pending.conflict
-        const delivered = await sendToNewtab({
-          type: 'SYNC_CONFLICT',
-          payload,
-        } as SyncConflictMessage)
-        if (delivered) {
-          pending.conflict = null
-        }
-      }
+      await flushPendingMessages()
     } else if (message.type === 'SYNC_LOCAL_CHANGED' || message.type === 'SYNC_REQUEST') {
       if (!state.isInited) return
 
