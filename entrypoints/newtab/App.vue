@@ -53,22 +53,23 @@ const DockRef = ref<InstanceType<typeof Dock>>()
 const { t } = useTranslation()
 
 const {
-  SettingsPageRef, // 这些 Ref 看着是灰的但模板里有用
-  ChangelogRef,
-  FaqRef,
-  AboutRef,
-  SESwitcherRef,
-  BGSwticherRef,
-  BookmarkRef,
-  AddQuickLinkDialogRef,
-  settingsPageLoaded,
-  changelogLoaded,
-  faqLoaded,
-  aboutLoaded,
-  searchEnginesSwitcherLoaded,
-  backgroundSwitcherLoaded,
-  bookmarkLoaded,
-  addQuickLinkDialogLoaded,
+  settingsPageMounted,
+  settingsPageVisible,
+  changelogMounted,
+  changelogVisible,
+  faqMounted,
+  faqVisible,
+  aboutMounted,
+  aboutVisible,
+  searchEnginesSwitcherMounted,
+  searchEnginesSwitcherVisible,
+  backgroundSwitcherMounted,
+  backgroundSwitcherVisible,
+  bookmarkMounted,
+  bookmarkVisible,
+  addQuickLinkDialogMounted,
+  addQuickLinkDialogVisible,
+  quickLinkDialogRequest,
   permissionDialogLoaded,
   syncLegacyDialogLoaded,
   syncConflictDialogLoaded,
@@ -358,16 +359,23 @@ async function refreshQuickLinks() {
         v-if="([BgType.Bing, BgType.Online] as BgType[]).includes(settings.background.bgType)"
       ></download-bg-btn>
     </div>
-    <settings-page v-if="settingsPageLoaded" ref="SettingsPageRef" />
-    <changelog v-if="changelogLoaded" ref="ChangelogRef" />
-    <faq v-if="faqLoaded" ref="FaqRef" />
-    <about-comp v-if="aboutLoaded" ref="AboutRef" />
-    <search-engines-switcher v-if="searchEnginesSwitcherLoaded" ref="SESwitcherRef" />
-    <background-switcher v-if="backgroundSwitcherLoaded" ref="BGSwticherRef" />
-    <bookmark v-if="bookmarkLoaded" ref="BookmarkRef" />
+    <settings-page v-if="settingsPageMounted" v-model="settingsPageVisible" />
+    <changelog v-if="changelogMounted" v-model="changelogVisible" />
+    <faq v-if="faqMounted" v-model="faqVisible" />
+    <about-comp v-if="aboutMounted" v-model="aboutVisible" />
+    <search-engines-switcher
+      v-if="searchEnginesSwitcherMounted"
+      v-model="searchEnginesSwitcherVisible"
+    />
+    <background-switcher
+      v-if="backgroundSwitcherMounted"
+      v-model="backgroundSwitcherVisible"
+    />
+    <bookmark v-if="bookmarkMounted" v-model="bookmarkVisible" />
     <add-quick-link-dialog
-      v-if="addQuickLinkDialogLoaded"
-      ref="AddQuickLinkDialogRef"
+      v-if="addQuickLinkDialogMounted"
+      v-model="addQuickLinkDialogVisible"
+      :request="quickLinkDialogRequest"
       @saved="refreshQuickLinks"
     />
     <permission-dialog

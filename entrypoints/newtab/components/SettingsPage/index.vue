@@ -11,11 +11,9 @@ import KeyboardArrowLeftRound from '~icons/ic/round-keyboard-arrow-left'
 
 import { useSettingsStore } from '@/shared/settings'
 
-import { useDialog } from '@newtab/composables/useDialog'
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 
 import SettingsDetailView from './components/SettingsDetailView.vue'
-import SettingsDialog from './components/SettingsDialog.vue'
 import SettingsMenuView from './components/SettingsMenuView.vue'
 import { MENU_ITEMS, SettingsRoute, useSettingsRouter } from './composables/useSettingsRouter'
 
@@ -28,7 +26,7 @@ const { t: tElement } = useLocale()
 const router = useSettingsRouter()
 const settings = useSettingsStore()
 const { width: windowWidth } = useWindowSize({ type: 'visual' })
-const { opened, show, hide, toggle } = useDialog()
+const opened = defineModel<boolean>({ required: true })
 const { isComposing } = useImeAwareDialog()
 
 const isMobile = computed(() => windowWidth.value < MOBILE_BREAKPOINT)
@@ -56,18 +54,6 @@ async function handleClose() {
   await settings.save()
 }
 
-function customShow() {
-  resetRouter()
-  show()
-}
-
-function customToggle() {
-  if (!opened.value) {
-    resetRouter()
-  }
-  toggle()
-}
-
 const handleMenuSelect = (key: string) => router.push(key as SettingsRoute)
 
 const handleBack = () => {
@@ -88,22 +74,26 @@ watch(windowWidth, (newWidth, oldWidth) => {
   }
 })
 
-defineExpose({ show: customShow, hide, toggle: customToggle })
+watch(opened, (visible) => {
+  if (visible) resetRouter()
+})
 </script>
 
 <template>
-  <SettingsDialog
+  <el-dialog
     v-model="opened"
     :width="DESKTOP_DIALOG_WIDTH"
     class="settings__dialog settings-container--two-column"
     :class="[
       { 'is-mobile': isMobile },
+      { 'is-collapse': isCollapse },
       { 'is-mobile-main-menu': isMobile && router.isAtMenu.value },
     ]"
     draggable
     :show-close="false"
     :close-on-press-escape="!isComposing"
     header-class="settings-header noselect"
+    body-class="settings-dialog-body"
     @close="handleClose"
     @closed="resetRouter"
   >
@@ -138,14 +128,12 @@ defineExpose({ show: customShow, hide, toggle: customToggle })
       </div>
     </template>
 
-    <template #aside>
-      <settings-menu-view
-        v-if="!isMobile"
-        :is-collapse="isCollapse"
-        :active-key="router.currentRoute.value"
-        @select="handleMenuSelect"
-      />
-    </template>
+    <settings-menu-view
+      v-if="!isMobile"
+      :is-collapse="isCollapse"
+      :active-key="router.currentRoute.value"
+      @select="handleMenuSelect"
+    />
 
     <Transition v-if="isMobile" :name="slideTransitionName">
       <settings-menu-view
@@ -172,5 +160,5 @@ defineExpose({ show: customShow, hide, toggle: customToggle })
       :current-route="router.currentRoute.value"
       :title="currentPageTitle"
     />
-  </SettingsDialog>
+  </el-dialog>
 </template>

@@ -6,7 +6,6 @@ import CheckmarkCircle12Filled from '~icons/fluent/checkmark-circle-12-filled'
 import { useSettingsStore } from '@/shared/settings'
 
 import BaseDialog from '@newtab/components/BaseDialog.vue'
-import { useDialog } from '@newtab/composables/useDialog'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 import { useCustomEngineFavicon } from '@newtab/shared/customSearchEngine/useCustomEngineFavicon'
@@ -18,8 +17,7 @@ import CustomEngineItem from './components/CustomEngineItem.vue'
 
 const { t } = useTranslation()
 
-const { opened, show, hide, toggle } = useDialog()
-defineExpose({ show, hide, toggle })
+const opened = defineModel<boolean>({ required: true })
 
 const settings = useSettingsStore()
 const customSearchEngineStore = useCustomSearchEngineStore()

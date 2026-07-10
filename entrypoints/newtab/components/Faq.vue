@@ -5,10 +5,8 @@ import Github from '~icons/fa6-brands/github'
 import EmailRound from '~icons/ic/round-email'
 
 import BaseDialog from '@newtab/components/BaseDialog.vue'
-import { useDialog } from '@newtab/composables/useDialog'
 
-const { opened, show, hide, toggle } = useDialog()
-defineExpose({ show, hide, toggle })
+const opened = defineModel<boolean>({ required: true })
 
 const { t } = useTranslation('faq')
 

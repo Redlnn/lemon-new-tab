@@ -9,7 +9,6 @@ import { SortMode } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 
 import { useCompositionInput } from '@newtab/composables/useCompositionInput'
-import { useDialog } from '@newtab/composables/useDialog'
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import {
@@ -39,9 +38,8 @@ function snapshotActiveMap(map: Record<number, string[]>) {
   ) as Record<number, string[]>
 }
 
-const { opened, show, hide, toggle } = useDialog()
+const opened = defineModel<boolean>({ required: true })
 const { isComposing: isImeComposing } = useImeAwareDialog()
-defineExpose({ show, hide, toggle })
 
 const { t } = useTranslation()
 const settings = useSettingsStore()

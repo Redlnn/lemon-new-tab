@@ -1,4 +1,4 @@
-import { defineAsyncComponent, nextTick, ref, watch, type Ref } from 'vue'
+import { defineAsyncComponent, ref, shallowRef } from 'vue'
 
 import type { QuickLinkTarget } from '@/shared/quickLinks'
 
@@ -28,100 +28,75 @@ export const SyncConflictDialog = defineAsyncComponent(
   () => import('../components/SyncConflictDialog.vue'),
 )
 
-async function ensureLazyRef<T>(loaded: Ref<boolean>, targetRef: Ref<T | undefined>) {
-  if (targetRef.value) return targetRef.value
+function createLazyDialogState() {
+  const mounted = ref(false)
+  const visible = ref(false)
 
-  loaded.value = true
-  await nextTick()
-  if (targetRef.value) return targetRef.value
+  const show = () => {
+    mounted.value = true
+    visible.value = true
+  }
+  const toggle = () => {
+    mounted.value = true
+    visible.value = !visible.value
+  }
 
-  return await new Promise<T | undefined>((resolve) => {
-    const stop = watch(
-      targetRef,
-      (instance) => {
-        if (!instance) return
-        stop()
-        resolve(instance)
-      },
-      { flush: 'post' },
-    )
-
-    window.setTimeout(() => {
-      stop()
-      resolve(targetRef.value)
-    }, 3_000)
-  })
-}
-
-function createLazyComponentRef<T>() {
-  const componentRef = ref<T>()
-  const loaded = ref(false)
-  const getInstance = () => ensureLazyRef(loaded, componentRef)
-
-  return { componentRef, loaded, getInstance }
-}
-
-async function callLazy<T>(
-  lazy: ReturnType<typeof createLazyComponentRef<T>>,
-  call: (instance: T) => void,
-) {
-  const instance = await lazy.getInstance()
-  if (instance) call(instance)
+  return { mounted, visible, show, toggle }
 }
 
 export function useLazyAppComponents() {
-  const settingsPage = createLazyComponentRef<InstanceType<typeof SettingsPage>>()
-  const changelog = createLazyComponentRef<InstanceType<typeof Changelog>>()
-  const faq = createLazyComponentRef<InstanceType<typeof Faq>>()
-  const about = createLazyComponentRef<InstanceType<typeof AboutComp>>()
-  const searchEnginesSwitcher = createLazyComponentRef<InstanceType<typeof SearchEnginesSwitcher>>()
-  const backgroundSwitcher = createLazyComponentRef<InstanceType<typeof BackgroundSwitcher>>()
-  const bookmark = createLazyComponentRef<InstanceType<typeof Bookmark>>()
-  const addQuickLinkDialog = createLazyComponentRef<InstanceType<typeof AddQuickLinkDialog>>()
+  const settingsPage = createLazyDialogState()
+  const changelog = createLazyDialogState()
+  const faq = createLazyDialogState()
+  const about = createLazyDialogState()
+  const searchEnginesSwitcher = createLazyDialogState()
+  const backgroundSwitcher = createLazyDialogState()
+  const bookmark = createLazyDialogState()
+  const addQuickLinkDialog = createLazyDialogState()
+  const quickLinkDialogRequest = shallowRef<
+    { mode: 'add'; groupId?: string } | { mode: 'edit'; target: QuickLinkTarget } | null
+  >(null)
   const permissionDialogLoaded = ref(false)
   const syncLegacyDialogLoaded = ref(false)
   const syncConflictDialogLoaded = ref(false)
 
-  const toggleSettingsPage = () => callLazy(settingsPage, (instance) => instance.toggle())
-  const showChangelog = () => callLazy(changelog, (instance) => instance.show())
-  const showFaq = () => callLazy(faq, (instance) => instance.show())
-  const toggleAbout = () => callLazy(about, (instance) => instance.toggle())
-  const showSearchEnginesSwitcher = () =>
-    callLazy(searchEnginesSwitcher, (instance) => instance.show())
-  const showBackgroundSwitcher = () => callLazy(backgroundSwitcher, (instance) => instance.show())
-  const showBookmark = () => callLazy(bookmark, (instance) => instance.show())
-  const openAddQuickLinkDialog = (groupId?: string) =>
-    callLazy(addQuickLinkDialog, (instance) => instance.openAddDialog(groupId))
-  const openEditQuickLinkDialog = (target: QuickLinkTarget) =>
-    callLazy(addQuickLinkDialog, (instance) => instance.openEditDialog(target))
+  const openAddQuickLinkDialog = (groupId?: string) => {
+    quickLinkDialogRequest.value = { mode: 'add', ...(groupId ? { groupId } : {}) }
+    addQuickLinkDialog.show()
+  }
+  const openEditQuickLinkDialog = (target: QuickLinkTarget) => {
+    quickLinkDialogRequest.value = { mode: 'edit', target }
+    addQuickLinkDialog.show()
+  }
 
   return {
-    SettingsPageRef: settingsPage.componentRef,
-    ChangelogRef: changelog.componentRef,
-    FaqRef: faq.componentRef,
-    AboutRef: about.componentRef,
-    SESwitcherRef: searchEnginesSwitcher.componentRef,
-    BGSwticherRef: backgroundSwitcher.componentRef,
-    BookmarkRef: bookmark.componentRef,
-    AddQuickLinkDialogRef: addQuickLinkDialog.componentRef,
-    settingsPageLoaded: settingsPage.loaded,
-    changelogLoaded: changelog.loaded,
-    faqLoaded: faq.loaded,
-    aboutLoaded: about.loaded,
-    searchEnginesSwitcherLoaded: searchEnginesSwitcher.loaded,
-    backgroundSwitcherLoaded: backgroundSwitcher.loaded,
-    bookmarkLoaded: bookmark.loaded,
-    addQuickLinkDialogLoaded: addQuickLinkDialog.loaded,
+    settingsPageMounted: settingsPage.mounted,
+    settingsPageVisible: settingsPage.visible,
+    changelogMounted: changelog.mounted,
+    changelogVisible: changelog.visible,
+    faqMounted: faq.mounted,
+    faqVisible: faq.visible,
+    aboutMounted: about.mounted,
+    aboutVisible: about.visible,
+    searchEnginesSwitcherMounted: searchEnginesSwitcher.mounted,
+    searchEnginesSwitcherVisible: searchEnginesSwitcher.visible,
+    backgroundSwitcherMounted: backgroundSwitcher.mounted,
+    backgroundSwitcherVisible: backgroundSwitcher.visible,
+    bookmarkMounted: bookmark.mounted,
+    bookmarkVisible: bookmark.visible,
+    addQuickLinkDialogMounted: addQuickLinkDialog.mounted,
+    addQuickLinkDialogVisible: addQuickLinkDialog.visible,
+    quickLinkDialogRequest,
     permissionDialogLoaded,
     syncLegacyDialogLoaded,
     syncConflictDialogLoaded,
-    toggleSettingsPage,
-    showChangelog,
-    showFaq,
-    toggleAbout,
-    showSearchEnginesSwitcher,
-    showBackgroundSwitcher,
-    showBookmark,
+    toggleSettingsPage: settingsPage.toggle,
+    showChangelog: changelog.show,
+    showFaq: faq.show,
+    toggleAbout: about.toggle,
+    showSearchEnginesSwitcher: searchEnginesSwitcher.show,
+    showBackgroundSwitcher: backgroundSwitcher.show,
+    showBookmark: bookmark.show,
     openAddQuickLinkDialog,
     openEditQuickLinkDialog,
   }

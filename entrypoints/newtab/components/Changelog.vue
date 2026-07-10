@@ -8,13 +8,11 @@ import { isChinese } from '@/shared/i18n'
 import { useSettingsStore } from '@/shared/settings'
 
 import BaseDialog from '@newtab/components/BaseDialog.vue'
-import { useDialog } from '@newtab/composables/useDialog'
 
 const { t } = useTranslation()
 const settings = useSettingsStore()
 
-const { opened, show, hide, toggle } = useDialog()
-defineExpose({ show, hide, toggle })
+const opened = defineModel<boolean>({ required: true })
 
 const ChangelogZh = defineAsyncComponent(() => import('@/docs/CHANGELOG.md'))
 const ChangelogEn = defineAsyncComponent(() => import('@/docs/CHANGELOG_en.md'))

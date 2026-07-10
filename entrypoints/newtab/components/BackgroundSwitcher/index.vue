@@ -23,34 +23,42 @@ import { useSettingsStore } from '@/shared/settings'
 
 import Bing from '@newtab/assets/bing_gray.svg'
 import BaseDialog from '@newtab/components/BaseDialog.vue'
-import { useDialog } from '@newtab/composables/useDialog'
 import { bingWallpaperURLGetter, useWallpaperUrlStore } from '@newtab/shared/wallpaper'
 
 import useBackgroundSwitcher from './useBackgroundSwitcher'
 
 const { t } = useTranslation('settings')
 
-const { opened, show: openDialog, hide } = useDialog()
+const requestedVisible = defineModel<boolean>({ required: true })
+const opened = ref(false)
+let openRequestVersion = 0
 
-async function show() {
-  try {
+watch(
+  requestedVisible,
+  async (visible) => {
+    const requestVersion = ++openRequestVersion
+    if (!visible) {
+      opened.value = false
+      return
+    }
+
     // Bing 背景未启用时，Background 不会初始化缓存；弹窗需要在展示前自行恢复预览。
-    await bingWallpaperURLGetter.init()
-  } catch (error) {
-    console.error('[background-switcher] Failed to initialize Bing wallpaper preview:', error)
-  }
-  openDialog()
-}
+    try {
+      await bingWallpaperURLGetter.init()
+    } catch (error) {
+      console.error('[background-switcher] Failed to initialize Bing wallpaper preview:', error)
+    }
 
-async function toggle() {
-  if (opened.value) {
-    hide()
-    return
-  }
-  await show()
-}
+    if (requestVersion === openRequestVersion && requestedVisible.value) {
+      opened.value = true
+    }
+  },
+  { immediate: true },
+)
 
-defineExpose({ show, hide, toggle })
+watch(opened, (visible) => {
+  if (!visible && requestedVisible.value) requestedVisible.value = false
+})
 
 const settings = useSettingsStore()
 const wallpaperUrlStore = useWallpaperUrlStore()

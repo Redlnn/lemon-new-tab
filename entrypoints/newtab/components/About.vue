@@ -15,15 +15,13 @@ import { useSettingsStore } from '@/shared/settings'
 
 import BiliBili from '@newtab/assets/bili.svg?component'
 import BaseDialog from '@newtab/components/BaseDialog.vue'
-import { useDialog } from '@newtab/composables/useDialog'
 import { isProviderKey, yiyanProviders } from '@newtab/shared/yiyan'
 
 const { t } = useTranslation()
 
 const year = useDateFormat(useNow(), 'YYYY')
 
-const { opened, show, hide, toggle } = useDialog()
-defineExpose({ show, hide, toggle })
+const opened = defineModel<boolean>({ required: true })
 
 const settings = useSettingsStore()
 

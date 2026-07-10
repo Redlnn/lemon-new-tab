@@ -1,4 +1,5 @@
 .settings__dialog.el-dialog {
+  --settings-aside-track: 230px;
   --settings-dialog-background: var(--el-bg-color-page);
   --le-dialog-transparent-background: var(--le-bg-color-overlay-dialog-secondary);
   --settings-close-hover-background: var(--el-fill-color-blank);
@@ -12,7 +13,9 @@
   --settings-option-background: var(--el-bg-color-page);
   --settings-option-active-background: var(--el-color-primary-light-9);
 
-  display: flex;
+  display: grid;
+  grid-template-rows: 50px minmax(0, 1fr);
+  grid-template-columns: var(--settings-aside-track) minmax(0, 1fr);
   max-width: 93%;
   height: 500px;
   padding: 0;
@@ -21,11 +24,26 @@
   box-shadow: 0 0 15px 0 var(--le-bg-color-page-opacity-60);
   transition: background-color var(--el-transition-duration-fast) ease;
 
-  .el-dialog__body {
+  &.is-collapse {
+    --settings-aside-track: 94px;
+  }
+
+  &.is-mobile {
+    --settings-aside-track: 0px;
+
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .el-dialog__body.settings-dialog-body {
     position: relative;
-    display: flex;
-    flex: 1;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: 50px minmax(0, 1fr);
+    grid-template-columns: var(--settings-aside-track) minmax(0, 1fr);
+    grid-row: 1 / -1;
+    grid-column: 1 / -1;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
     transition: color var(--el-transition-duration-fast) ease;
   }
 }
@@ -170,14 +188,21 @@ html.colorful.dialog-transparent .settings__dialog {
   z-index: 1;
   display: flex;
   flex-shrink: 0;
+  grid-row: 1;
+  grid-column: 2;
   align-items: center;
   width: 100%;
   height: 50px;
   padding: 0 30px;
+  margin: 0;
   font-weight: bold;
   line-height: 50px;
   color: var(--el-text-color-primary);
   cursor: move;
+
+  .is-mobile & {
+    grid-column: 1;
+  }
 
   .base-dialog-close-btn {
     position: static;
@@ -355,7 +380,11 @@ html.colorful.dialog-transparent .settings__dialog {
 
 .settings-aside {
   flex-shrink: 0;
-  height: calc(100% - 20px);
+  grid-row: 1 / -1;
+  grid-column: 1;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
   padding: 10px;
   margin: 10px 0 10px 10px;
   background-color: var(--settings-aside-background);
@@ -366,8 +395,11 @@ html.colorful.dialog-transparent .settings__dialog {
     border-color var(--el-transition-duration-fast) ease;
 
   .is-mobile & {
+    grid-row: 2;
+    grid-column: 1;
     min-width: 100%;
-    height: calc(100% - 50px);
+    height: auto;
+    min-height: 0;
     padding: 0;
     margin: 0;
     background-color: initial !important;
@@ -466,9 +498,14 @@ html.colorful .settings__dialog {
 }
 
 .settings-main.el-main {
+  grid-row: 2;
+  grid-column: 2;
+  min-width: 0;
+  min-height: 0;
   padding: 0 20px 0 30px;
 
   .is-mobile & {
+    grid-column: 1;
     padding: 0 15px 0 25px;
   }
 

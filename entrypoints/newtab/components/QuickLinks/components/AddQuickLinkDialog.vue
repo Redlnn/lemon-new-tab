@@ -22,12 +22,20 @@ const { isComposing } = useImeAwareDialog()
 const quickLinksStore = useQuickLinksStore()
 const settings = useSettingsStore()
 const modelForm = ref<FormInstance>()
+const showDialog = defineModel<boolean>({ required: true })
+
+type QuickLinkDialogRequest =
+  | { mode: 'add'; groupId?: string }
+  | { mode: 'edit'; target: QuickLinkTarget }
+
+const props = defineProps<{
+  request: QuickLinkDialogRequest | null
+}>()
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const showDialog = ref(false)
 const editingTarget = ref<QuickLinkTarget | null>(null)
 const addingGroupId = ref<string | null>(null)
 const data: QuickLink = reactive({
@@ -51,15 +59,17 @@ function resetFields() {
   addingGroupId.value = null
 }
 
-function openAddDialog(groupId?: string) {
+function prepareAddDialog(groupId?: string) {
   resetFields()
   addingGroupId.value = groupId ?? null
-  showDialog.value = true
 }
 
-function openEditDialog(targetRef: QuickLinkTarget) {
+function prepareEditDialog(targetRef: QuickLinkTarget) {
   const target = quickLinksStore.getQuickLink(targetRef)
-  if (!target) return
+  if (!target) {
+    showDialog.value = false
+    return
+  }
   modelForm.value?.resetFields()
   editingTarget.value = targetRef
   Object.assign(data, {
@@ -67,8 +77,17 @@ function openEditDialog(targetRef: QuickLinkTarget) {
     title: target.title,
     favicon: target.favicon ?? '',
   })
-  showDialog.value = true
 }
+
+watch(
+  () => props.request,
+  (request) => {
+    if (!request) return
+    if (request.mode === 'add') prepareAddDialog(request.groupId)
+    else prepareEditDialog(request.target)
+  },
+  { immediate: true },
+)
 
 async function submit() {
   if (!isValidUrl(data.url)) {
@@ -121,7 +140,6 @@ async function cancel() {
   resetFields()
 }
 
-defineExpose({ openAddDialog, openEditDialog })
 </script>
 
 <template>
