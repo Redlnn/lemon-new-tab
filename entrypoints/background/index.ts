@@ -17,9 +17,9 @@ import type {
   SyncVersionTooNewMessage,
 } from '@/shared/sync/types'
 
-import { evaluateCloudChange } from './decisionMatrix'
+import { decideCloudChange } from './decisionMatrix'
 import { createQueueScheduler } from './queueScheduler'
-import type { BackgroundState, PendingMessages, QueueState } from './types'
+import type { BackgroundState, PendingMessages } from './types'
 
 // ─── Runtime state (reset on each SW restart) ────────────────────────────────
 
@@ -39,13 +39,6 @@ const pending: PendingMessages = {
   conflict: null,
   legacyDetected: false,
   versionTooNew: null,
-}
-
-const queueState: QueueState = {
-  isRunning: false,
-  lastSyncTime: 0,
-  localTimer: null,
-  localTimerExpiry: 0,
 }
 
 let startupTimer: ReturnType<typeof setTimeout> | null = null
@@ -154,14 +147,7 @@ const initPromise = (async () => {
 // ─── Decision matrix & queue ──────────────────────────────────────────────────
 
 async function processCloudChange(cloudRaw: unknown): Promise<void> {
-  const cloud = normalizeSyncEnvelope(cloudRaw)
-  const result = await evaluateCloudChange(
-    cloud ?? cloudRaw,
-    state,
-    pending,
-    sendToNewtab,
-    openStartupWriteGate,
-  )
+  const result = decideCloudChange(cloudRaw, state)
 
   if (result.action === 'extend-startup' && startupTimer !== null) {
     clearTimeout(startupTimer)
@@ -177,18 +163,65 @@ async function processCloudChange(cloudRaw: unknown): Promise<void> {
     return
   }
 
+  if (result.action === 'legacy-detected') {
+    const delivered = state.isInited
+      ? await sendToNewtab({ type: 'SYNC_LEGACY_DETECTED' } as SyncLegacyDetectedMessage)
+      : false
+    if (!delivered) pending.legacyDetected = true
+    return
+  }
+
+  if (result.action === 'own-write-confirmed') {
+    state.lastSelfWrittenVersion = -1
+    debugLog('own write confirmed', { version: result.version })
+    return
+  }
+
+  if (result.action === 'version-too-new') {
+    const delivered = state.isInited
+      ? await sendToNewtab({
+          type: 'SYNC_VERSION_TOO_NEW',
+          ...result.payload,
+        } as SyncVersionTooNewMessage)
+      : false
+    if (!delivered) pending.versionTooNew = result.payload
+    return
+  }
+
+  if (result.action === 'ignore') return
+
+  openStartupWriteGate()
+
   if (result.action === 'apply-cloud') {
-    if (!cloud) return
+    const delivered = state.isInited
+      ? await sendToNewtab({
+          type: 'SYNC_APPLY_DATA',
+          data: result.cloud,
+        } as SyncApplyDataMessage)
+      : false
+    if (!delivered) pending.applyData = result.cloud
+
     state.latestLocalPayload = null
     await updateLocalMeta({
-      localVersion: cloud.version,
-      lastSyncedAt: cloud.lastUpdate,
-      localModifiedAt: cloud.lastUpdate,
+      localVersion: result.cloud.version,
+      lastSyncedAt: result.cloud.lastUpdate,
+      localModifiedAt: result.cloud.lastUpdate,
     })
     return
   }
 
-  if (result.needsDelivery) {
+  if (result.action === 'conflict') {
+    const delivered = state.isInited
+      ? await sendToNewtab({
+          type: 'SYNC_CONFLICT',
+          payload: result.payload,
+        } as SyncConflictMessage)
+      : false
+    if (!delivered) pending.conflict = result.payload
+    return
+  }
+
+  if (result.action === 'push-stale-device' || result.action === 'push-local') {
     if (state.latestLocalPayload !== null) {
       state.pendingImmediatePush = true
       scheduler.scheduleLocalTick(0)
@@ -200,7 +233,6 @@ async function processCloudChange(cloudRaw: unknown): Promise<void> {
 
 const scheduler = createQueueScheduler(
   state,
-  queueState,
   writeToCloud,
   processCloudChange,
   syncDataStorage,
@@ -337,7 +369,7 @@ export default defineBackground(() => {
 
       if (!state.startupWriteReady) return
 
-      const elapsed = Date.now() - queueState.lastSyncTime
+      const elapsed = Date.now() - scheduler.getLastSyncTime()
       scheduler.scheduleLocalTick(elapsed >= 2000 ? 0 : 2000 - elapsed)
     } else if (message.type === 'SYNC_CONFLICT_RESOLVE') {
       if (!state.isInited) return
@@ -399,14 +431,8 @@ export default defineBackground(() => {
     const ALARM_NAME = 'sync-queue-tick'
     if (alarm.name !== ALARM_NAME) return
     debugLog('alarm tick')
-    if (!state.isInited || queueState.isRunning) return
-    queueState.isRunning = true
-    try {
-      await scheduler.processSyncQueue()
-    } finally {
-      queueState.isRunning = false
-      scheduler.schedulePostRunIfNeeded()
-    }
+    if (!state.isInited) return
+    await scheduler.run()
   })
 
   try {

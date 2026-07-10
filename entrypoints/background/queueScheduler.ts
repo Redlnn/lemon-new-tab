@@ -2,7 +2,7 @@
 import { normalizeSyncEnvelope } from '@/shared/sync/types'
 import type { SyncEnvelopeV2 } from '@/shared/sync/types'
 
-import type { BackgroundState, QueueState } from './types'
+import type { BackgroundState } from './types'
 
 const debugLog: (...args: unknown[]) => void = import.meta.env.DEV
   ? (...args) => console.log('[sync]', ...args)
@@ -12,12 +12,15 @@ const SYNC_INTERVAL = 2000
 
 export function createQueueScheduler(
   state: BackgroundState,
-  queueState: QueueState,
   writeToCloud: (payload: SyncEnvelopeV2) => Promise<void>,
   processCloudChange: (cloudRaw: unknown) => Promise<void>,
   syncDataStorage: { getValue: () => Promise<unknown> },
 ) {
   let rerunRequested = false
+  let isRunning = false
+  let lastSyncTime = 0
+  let localTimer: ReturnType<typeof setTimeout> | null = null
+  let localTimerExpiry = 0
 
   const schedulePostRunIfNeeded = () => {
     if (
@@ -33,33 +36,27 @@ export function createQueueScheduler(
     const now = Date.now()
     const desiredExpiry = now + delay
 
-    if (queueState.localTimer != null) {
-      const remaining = Math.max(queueState.localTimerExpiry - now, 0)
+    if (localTimer !== null) {
+      const remaining = Math.max(localTimerExpiry - now, 0)
       if (delay >= remaining) return
-      clearTimeout(queueState.localTimer)
-      queueState.localTimer = null
-      queueState.localTimerExpiry = 0
+      clearTimeout(localTimer)
+      localTimer = null
+      localTimerExpiry = 0
     }
 
-    queueState.localTimer = setTimeout(
+    localTimer = setTimeout(
       async () => {
-        queueState.localTimer = null
-        queueState.localTimerExpiry = 0
-        if (queueState.isRunning) {
+        localTimer = null
+        localTimerExpiry = 0
+        if (isRunning) {
           rerunRequested = true
           return
         }
-        queueState.isRunning = true
-        try {
-          await processSyncQueue()
-        } finally {
-          queueState.isRunning = false
-          schedulePostRunIfNeeded()
-        }
+        await run()
       },
       Math.max(0, delay),
     )
-    queueState.localTimerExpiry = desiredExpiry
+    localTimerExpiry = desiredExpiry
   }
 
   const processSyncQueue = async (): Promise<void> => {
@@ -70,14 +67,14 @@ export function createQueueScheduler(
 
     state.pendingImmediatePush = false
 
-    if (!isImmediate && Date.now() - queueState.lastSyncTime < SYNC_INTERVAL) {
-      scheduleLocalTick(SYNC_INTERVAL - (Date.now() - queueState.lastSyncTime))
+    if (!isImmediate && Date.now() - lastSyncTime < SYNC_INTERVAL) {
+      scheduleLocalTick(SYNC_INTERVAL - (Date.now() - lastSyncTime))
       return
     }
 
     const payload = state.latestLocalPayload
     state.latestLocalPayload = null
-    queueState.lastSyncTime = Date.now()
+    lastSyncTime = Date.now()
 
     // 读前写：如果云在等待期间更新，则中止推送
     const currentCloud = await syncDataStorage.getValue()
@@ -105,9 +102,20 @@ export function createQueueScheduler(
     await writeToCloud(payload)
   }
 
+  const run = async () => {
+    if (isRunning) return
+    isRunning = true
+    try {
+      await processSyncQueue()
+    } finally {
+      isRunning = false
+      schedulePostRunIfNeeded()
+    }
+  }
+
   return {
     scheduleLocalTick,
-    processSyncQueue,
-    schedulePostRunIfNeeded,
+    run,
+    getLastSyncTime: () => lastSyncTime,
   }
 }

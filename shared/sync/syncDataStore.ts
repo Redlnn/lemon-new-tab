@@ -1,4 +1,3 @@
-import { useDebounceFn } from '@vueuse/core'
 import { defineStore, MutationType } from 'pinia'
 import { toRaw } from 'vue'
 
@@ -9,21 +8,11 @@ import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 import { BgType } from '../enums'
 import { defaultQuickLinksData, useQuickLinksStore } from '../quickLinks'
 import type { QuickLinksData } from '../quickLinks/quickLinksStorage'
-import type {
-  CURRENT_CONFIG_SCHEMA,
-  SettingsSchemaV10,
-  SettingsSchemaV7,
-  SettingsSchemaV8,
-  SettingsSchemaV9,
-} from '../settings'
+import type { CURRENT_CONFIG_SCHEMA, MigratableSettings } from '../settings'
 import {
   CURRENT_CONFIG_VERSION,
   defaultSettings,
-  migrateFromVer10To11,
-  migrateFromVer7To8,
-  migrateFromVer8To9,
-  migrateFromVer9To10,
-  normalizeCurrentSettings,
+  migrateSettingsToCurrent,
   useSettingsStore,
 } from '../settings'
 
@@ -53,19 +42,6 @@ const hasStringType = (value: unknown): value is { type: string } =>
 
 const toError = (err: unknown): Error => (err instanceof Error ? err : new Error(String(err)))
 
-const debouncedSend = useDebounceFn(async (data: SyncEnvelopeV2) => {
-  try {
-    const localSettings = useSettingsStore()
-    if (!initialized || !localSettings.sync.enabled) {
-      return
-    }
-    const msg: SyncLocalChangedMessage = { type: 'SYNC_LOCAL_CHANGED', data }
-    await browser.runtime.sendMessage(msg)
-  } catch (err) {
-    console.error('Sync to cloud failed:', toError(err))
-  }
-}, 2000)
-
 // 静默同步标志
 // 防止初始化过程中触发 subChange
 // 防止 applyCloudData 期间触发 subChange
@@ -77,28 +53,10 @@ let cleanupFns: (() => void)[] = []
 let initPromise: Promise<void> | null = null
 let initGeneration = 0
 let lastSyncHash: string | null = null
+let scheduleDirtySync: ((timestamp?: number) => void) | null = null
 
 const emitSyncError = (err: unknown) => {
   emitSyncEvent('sync-error', toError(err))
-}
-
-type MigratableSettings =
-  | SettingsSchemaV7
-  | SettingsSchemaV8
-  | SettingsSchemaV9
-  | SettingsSchemaV10
-  | CURRENT_CONFIG_SCHEMA
-
-const migrations: Partial<
-  Record<
-    MigratableSettings['version'],
-    (s: MigratableSettings) => Promise<MigratableSettings> | MigratableSettings
-  >
-> = {
-  7: (s) => (s.version === 7 ? migrateFromVer7To8(s) : s),
-  8: (s) => (s.version === 8 ? migrateFromVer8To9(s) : s),
-  9: (s) => (s.version === 9 ? migrateFromVer9To10(s) : s),
-  10: (s) => (s.version === 10 ? migrateFromVer10To11(s) : s),
 }
 
 const BUILTIN_SEARCH_ENGINES = new Set(['google', 'baidu', 'bing', 'yandex', 'duckduckgo'])
@@ -228,37 +186,6 @@ export const useSyncDataStore = defineStore('sync', () => {
     localSettings.search.engine = defaultSettings.search.engine
   }
 
-  const migrateCloudSettings = async (settings: MigratableSettings) => {
-    let current = settings
-    let migrated = false
-
-    while (current.version < CURRENT_CONFIG_VERSION) {
-      const migrate = migrations[current.version]
-      if (!migrate) {
-        throw new Error(`Unsupported cloud config version: ${current.version}`)
-      }
-
-      const next = await migrate(current)
-      if (next.version <= current.version || next.version > CURRENT_CONFIG_VERSION) {
-        throw new Error(`Invalid migration result: ${current.version} -> ${next.version}`)
-      }
-
-      current = next
-      migrated = true
-    }
-
-    if (current.version !== CURRENT_CONFIG_VERSION) {
-      throw new Error(`Unexpected cloud config version after migration: ${current.version}`)
-    }
-
-    const normalized = normalizeCurrentSettings(current as CURRENT_CONFIG_SCHEMA)
-
-    return {
-      settings: normalized,
-      migrated,
-    }
-  }
-
   const buildPayload = (
     timestamp: number,
     meta: LocalSyncMeta,
@@ -328,7 +255,7 @@ export const useSyncDataStore = defineStore('sync', () => {
       }
 
       const localState = structuredClone(localSettings.getRawState())
-      const { settings: migratedSettings, migrated } = await migrateCloudSettings(
+      const { settings: migratedSettings, migrated } = await migrateSettingsToCurrent(
         cloudData.settings as MigratableSettings,
       )
       const mergedSettings = restoreDeviceLocalFields(migratedSettings, localState)
@@ -356,8 +283,7 @@ export const useSyncDataStore = defineStore('sync', () => {
 
       // If settings were migrated to a newer schema, push the migrated version back
       if (migrated) {
-        const meta = await localSyncMetaStorage.getValue()
-        debouncedSend(buildPayload(Date.now(), meta))
+        scheduleDirtySync?.(Date.now())
       }
     } catch (err) {
       emitSyncError(err)
@@ -444,26 +370,60 @@ export const useSyncDataStore = defineStore('sync', () => {
 
         await browser.runtime.sendMessage(syncInitedMessage)
 
-        // Cheap change-detection: only serialize sync-relevant data when checking for changes
         let prevSyncEnabled = localSettings.sync.enabled
         lastSyncHash = computeSyncHash(initSnapshot)
-        let latestLocalChangeRequest = 0
-        let localChangeQueue: Promise<void> = Promise.resolve()
+        let dirtyVersion = 0
+        let lastChangedAt = 0
+        let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
-        // 串行写入同步元数据，并且只允许最新变更进入防抖队列，避免旧快照覆盖新快照。
-        const scheduleLocalSnapshot = (timestamp: number, snapshot: SyncSnapshot) => {
-          const requestId = ++latestLocalChangeRequest
-          localChangeQueue = localChangeQueue
-            .then(async () => {
-              const meta = await setLocalSyncMeta({ localModifiedAt: timestamp })
-              if (generation !== initGeneration || requestId !== latestLocalChangeRequest) return
-              debouncedSend(buildPayload(timestamp, meta, snapshot))
-            })
-            .catch(emitSyncError)
-          return localChangeQueue
+        const flushLocalChanges = async () => {
+          debounceTimer = null
+          if (
+            generation !== initGeneration ||
+            !initialized ||
+            !localSettings.sync.enabled
+          ) {
+            return
+          }
+          if (isProcessing) {
+            debounceTimer = setTimeout(() => void flushLocalChanges(), 2000)
+            return
+          }
+
+          const versionAtStart = dirtyVersion
+          const timestamp = lastChangedAt
+          const snapshot = captureSyncSnapshot(
+            localSettings,
+            quickLinksStore,
+            customSearchEngineStore,
+          )
+          const syncHash = computeSyncHash(snapshot)
+          if (syncHash === lastSyncHash) return
+
+          try {
+            const meta = await setLocalSyncMeta({ localModifiedAt: timestamp })
+            if (generation !== initGeneration || !localSettings.sync.enabled) return
+            await sendLocalChanged(buildPayload(timestamp, meta, snapshot))
+            lastSyncHash = syncHash
+          } catch (err) {
+            emitSyncError(err)
+          } finally {
+            if (versionAtStart !== dirtyVersion) {
+              if (debounceTimer) clearTimeout(debounceTimer)
+              debounceTimer = setTimeout(() => void flushLocalChanges(), 2000)
+            }
+          }
         }
 
-        const subChange = async () => {
+        const markLocalDirty = (timestamp = Date.now()) => {
+          dirtyVersion += 1
+          lastChangedAt = timestamp
+          if (debounceTimer) clearTimeout(debounceTimer)
+          debounceTimer = setTimeout(() => void flushLocalChanges(), 2000)
+        }
+        scheduleDirtySync = markLocalDirty
+
+        const subChange = () => {
           const nowEnabled = localSettings.sync.enabled
 
           if (isProcessing) {
@@ -473,40 +433,25 @@ export const useSyncDataStore = defineStore('sync', () => {
 
           if (!nowEnabled) return
 
-          const syncSnapshot = captureSyncSnapshot(
-            localSettings,
-            quickLinksStore,
-            customSearchEngineStore,
-          )
-          const syncHash = computeSyncHash(syncSnapshot)
-
           if (!prevSyncEnabled && nowEnabled) {
             prevSyncEnabled = true
-            lastSyncHash = syncHash
-            const timestamp = Date.now()
-            await scheduleLocalSnapshot(timestamp, syncSnapshot)
+            markLocalDirty()
             return
           }
 
           prevSyncEnabled = nowEnabled
 
-          if (syncHash === lastSyncHash) {
-            return
-          }
-
-          lastSyncHash = syncHash
-          const timestamp = Date.now()
-          await scheduleLocalSnapshot(timestamp, syncSnapshot)
+          markLocalDirty()
         }
 
         const unsubSettings = localSettings.$subscribe(subChange)
 
-        const onStateMutation = async (mutation: { type: MutationType }) => {
+        const onStateMutation = (mutation: { type: MutationType }) => {
           if (mutation.type !== MutationType.direct) {
             // 防止刚开就认为数据过旧，只有 init 会整个替换 state
             return
           }
-          await subChange()
+          subChange()
         }
 
         const unsubQuickLink = quickLinksStore.$subscribe(onStateMutation)
@@ -517,6 +462,11 @@ export const useSyncDataStore = defineStore('sync', () => {
           unsubSettings,
           unsubQuickLink,
           unsubCustomSearchEngine,
+          () => {
+            if (debounceTimer) clearTimeout(debounceTimer)
+            debounceTimer = null
+            if (scheduleDirtySync === markLocalDirty) scheduleDirtySync = null
+          },
         ]
 
         if (generation !== initGeneration) {
