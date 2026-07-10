@@ -222,8 +222,7 @@ async function addToQuickLinks() {
     if (!groupId) return
     await quickLinksStore.addQuickLinkToGroup(groupId, quickLink)
   } else {
-    quickLinksStore.items.push(quickLink)
-    await quickLinksStore.save()
+    await quickLinksStore.addFlatQuickLink(quickLink)
   }
   ElMessage.success(t('bookmark.added'))
 }

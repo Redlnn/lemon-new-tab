@@ -103,8 +103,7 @@ async function submit() {
 
   if (isEditing.value && editingTarget.value !== null) {
     if (typeof editingTarget.value === 'number') {
-      quickLinksStore.items.splice(editingTarget.value, 1, quickLink)
-      await quickLinksStore.save()
+      await quickLinksStore.updateFlatQuickLink(editingTarget.value, quickLink)
     } else {
       await quickLinksStore.updateQuickLinkInGroup(
         editingTarget.value.groupId,
@@ -117,8 +116,7 @@ async function submit() {
   } else if (settings.quickLinks.grouping) {
     await quickLinksStore.addQuickLinkToGroup(DEFAULT_QUICK_LINK_GROUP_ID, quickLink)
   } else {
-    quickLinksStore.items.push(quickLink)
-    await quickLinksStore.save()
+    await quickLinksStore.addFlatQuickLink(quickLink)
   }
 
   showDialog.value = false

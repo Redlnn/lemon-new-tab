@@ -187,10 +187,7 @@ export const useSyncDataStore = defineStore('sync', () => {
     return {
       rawSettings,
       sanitizedSettings: sanitizeSettingsForCloud(rawSettings),
-      quickLinksData: {
-        items: structuredClone(toRaw(quickLinksStore.items)),
-        groups: structuredClone(toRaw(quickLinksStore.groups)),
-      },
+      quickLinksData: quickLinksStore.getSnapshot(),
       customSearchEngines: normalizeCustomSearchEngines({
         items: structuredClone(toRaw(customSearchEngineStore.items)),
       }),

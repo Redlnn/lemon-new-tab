@@ -55,7 +55,10 @@ function normalizeQuickLinkGroupName(name: string, fallback: string): string {
   return (trimmed || fallback).slice(0, MAX_QUICK_LINK_GROUP_NAME_LENGTH)
 }
 
-function flattenGroups(groups: QuickLinkGroup[], options?: { dedupe?: boolean }): QuickLink[] {
+export function flattenQuickLinkGroups(
+  groups: readonly QuickLinkGroup[],
+  options?: { dedupe?: boolean },
+): QuickLink[] {
   if (!options?.dedupe) {
     return groups.flatMap((group) => group.items)
   }
@@ -77,7 +80,11 @@ function hasQuickLinksData(data: QuickLinksData): boolean {
   return data.items.length > 0 || (data.groups?.length ?? 0) > 0
 }
 
-function moveArrayItem<T>(items: T[], fromIndex: number, toIndex: number): T[] | null {
+export function moveQuickLinkArrayItem<T>(
+  items: readonly T[],
+  fromIndex: number,
+  toIndex: number,
+): T[] | null {
   if (fromIndex === toIndex) return null
   const nextItems = items.slice()
   const [item] = nextItems.splice(fromIndex, 1)
@@ -87,14 +94,21 @@ function moveArrayItem<T>(items: T[], fromIndex: number, toIndex: number): T[] |
 }
 
 export const useQuickLinksStore = defineStore('quickLinks', () => {
-  const items = ref(structuredClone(defaultQuickLinksData.items))
-  const groups = ref<QuickLinkGroup[]>(structuredClone(defaultQuickLinksData.groups ?? []))
+  const settings = useSettingsStore()
+  const flatItems = ref(structuredClone(defaultQuickLinksData.items))
+  const groupState = ref<QuickLinkGroup[]>(structuredClone(defaultQuickLinksData.groups ?? []))
   const loaded = ref(false)
   let initTask: Promise<void> | null = null
+  const localSaveHashes: string[] = []
+
+  const items = computed<readonly QuickLink[]>(() =>
+    groupState.value.length > 0 ? flattenQuickLinkGroups(groupState.value) : flatItems.value,
+  )
+  const groups = computed<readonly QuickLinkGroup[]>(() => groupState.value)
 
   const getDefaultGroupName = () => i18next.t('newtab:quickLinks.groups.default')
 
-  const getGroup = (groupId: string) => groups.value.find((group) => group.id === groupId)
+  const getGroup = (groupId: string) => groupState.value.find((group) => group.id === groupId)
 
   const sanitizeGroups = (nextGroups?: QuickLinkGroup[]): QuickLinkGroup[] => {
     if (!nextGroups?.length) return []
@@ -119,15 +133,11 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     })
   }
 
-  const syncItemsFromGroups = (options?: { dedupe?: boolean }) => {
-    items.value = flattenGroups(groups.value, options)
-  }
-
   const ensureDefaultGroup = (): QuickLinkGroup => {
     let target = getGroup(DEFAULT_QUICK_LINK_GROUP_ID)
     if (!target) {
       target = { id: DEFAULT_QUICK_LINK_GROUP_ID, name: getDefaultGroupName(), items: [] }
-      groups.value.unshift(target)
+      groupState.value.unshift(target)
     }
     return target
   }
@@ -149,12 +159,12 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
 
   const findFlatQuickLinkIndexByUrl = (url: string) => {
     const normalizedUrl = normalizeUrlForDedup(url)
-    return items.value.findIndex((item) => normalizeUrlForDedup(item.url) === normalizedUrl)
+    return flatItems.value.findIndex((item) => normalizeUrlForDedup(item.url) === normalizedUrl)
   }
 
   const findGroupedQuickLinkByUrl = (url: string) => {
     const normalizedUrl = normalizeUrlForDedup(url)
-    for (const group of groups.value) {
+    for (const group of groupState.value) {
       const index = group.items.findIndex(
         (item) => normalizeUrlForDedup(item.url) === normalizedUrl,
       )
@@ -164,8 +174,32 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const applyItems = (nextItems: QuickLinksData['items'], nextGroups?: QuickLinkGroup[]) => {
-    items.value = nextItems
-    groups.value = sanitizeGroups(nextGroups)
+    const sanitizedGroups = sanitizeGroups(nextGroups)
+    if (sanitizedGroups.length > 0) {
+      groupState.value = sanitizedGroups
+      flatItems.value = []
+    } else {
+      flatItems.value = nextItems
+      groupState.value = []
+    }
+  }
+
+  const getSnapshot = (groupingEnabled = settings.quickLinks.grouping): QuickLinksData => {
+    if (groupingEnabled && groupState.value.length > 0) {
+      const snapshotGroups = structuredClone(toRaw(groupState.value))
+      return {
+        items: flattenQuickLinkGroups(snapshotGroups),
+        groups: snapshotGroups,
+      }
+    }
+    return { items: structuredClone(toRaw(flatItems.value)), groups: [] }
+  }
+
+  const persistSnapshot = async (snapshot: QuickLinksData) => {
+    const hash = JSON.stringify(snapshot)
+    localSaveHashes.push(hash)
+    if (localSaveHashes.length > 8) localSaveHashes.shift()
+    await quickLinksStorage.setValue(snapshot)
   }
 
   const init = async () => {
@@ -193,25 +227,31 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     loaded.value = true
   }
 
+  const stopStorageWatch = quickLinksStorage.watch((newValue) => {
+    if (!newValue) return
+    const hash = JSON.stringify(newValue)
+    const localSaveIndex = localSaveHashes.indexOf(hash)
+    if (localSaveIndex >= 0) {
+      localSaveHashes.splice(localSaveIndex, 1)
+      return
+    }
+    replace(newValue)
+  })
+  onScopeDispose(stopStorageWatch)
+
   const save = async (data?: QuickLinksData, options?: QuickLinksSaveOptions) => {
     if (!loaded.value && !data) {
       await init()
     }
-    const groupingEnabled = options?.groupingEnabled ?? useSettingsStore().quickLinks.grouping
+    const groupingEnabled = options?.groupingEnabled ?? settings.quickLinks.grouping
     if (data) {
       applyItems(data.items, groupingEnabled ? data.groups : [])
       loaded.value = true
-    } else {
-      if (groupingEnabled && groups.value.length > 0) {
-        syncItemsFromGroups()
-      } else if (!groupingEnabled && groups.value.length > 0) {
-        groups.value = []
-      }
+    } else if (!groupingEnabled && groupState.value.length > 0) {
+      flatItems.value = flattenQuickLinkGroups(groupState.value)
+      groupState.value = []
     }
-    await quickLinksStorage.setValue({
-      items: toRaw(items.value),
-      groups: toRaw(groups.value),
-    })
+    await persistSnapshot(getSnapshot(groupingEnabled))
   }
 
   const enableGroupingFromItems = async () => {
@@ -219,41 +259,38 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
       await init()
     }
     const defaultGroup = getGroup(DEFAULT_QUICK_LINK_GROUP_ID)
-    const hasGroupedItems = groups.value.some((group) => group.items.length > 0)
-    if (defaultGroup && (hasGroupedItems || items.value.length === 0)) {
+    const hasGroupedItems = groupState.value.some((group) => group.items.length > 0)
+    if (defaultGroup && (hasGroupedItems || flatItems.value.length === 0)) {
       return
     }
 
-    if (groups.value.length === 0) {
-      groups.value = [
+    if (groupState.value.length === 0) {
+      groupState.value = [
         {
           id: DEFAULT_QUICK_LINK_GROUP_ID,
           name: getDefaultGroupName(),
-          items: structuredClone(toRaw(items.value)),
+          items: structuredClone(toRaw(flatItems.value)),
         },
       ]
     } else if (defaultGroup) {
-      defaultGroup.items = structuredClone(toRaw(items.value))
+      defaultGroup.items = structuredClone(toRaw(flatItems.value))
     } else {
       const group = ensureDefaultGroup()
-      if (!hasGroupedItems) group.items = structuredClone(toRaw(items.value))
+      if (!hasGroupedItems) group.items = structuredClone(toRaw(flatItems.value))
     }
-    syncItemsFromGroups()
+    flatItems.value = []
     // 直接写入，避免设置开关尚未更新时 save() 将刚创建的分组清空。
-    await quickLinksStorage.setValue({
-      items: toRaw(items.value),
-      groups: toRaw(groups.value),
-    })
+    await persistSnapshot(getSnapshot(true))
   }
 
   const disableGroupingToItems = async () => {
     if (!loaded.value) {
       await init()
     }
-    if (groups.value.length === 0) return
+    if (groupState.value.length === 0) return
 
-    items.value = flattenGroups(groups.value, { dedupe: true })
-    groups.value = []
+    flatItems.value = flattenQuickLinkGroups(groupState.value, { dedupe: true })
+    groupState.value = []
     await save()
   }
 
@@ -262,11 +299,11 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
       id: crypto.randomUUID(),
       name: normalizeQuickLinkGroupName(
         name,
-        i18next.t('newtab:quickLinks.groups.untitled', { index: groups.value.length + 1 }),
+        i18next.t('newtab:quickLinks.groups.untitled', { index: groupState.value.length + 1 }),
       ),
       items: [],
     }
-    groups.value.push(group)
+    groupState.value.push(group)
     await save()
     return group
   }
@@ -283,9 +320,9 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
 
   const deleteGroup = async (groupId: string) => {
     if (groupId === DEFAULT_QUICK_LINK_GROUP_ID) return
-    const index = groups.value.findIndex((group) => group.id === groupId)
+    const index = groupState.value.findIndex((group) => group.id === groupId)
     if (index < 0) return
-    groups.value.splice(index, 1)
+    groupState.value.splice(index, 1)
     await save()
   }
 
@@ -298,6 +335,25 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     if (!group) return
     group.items.push(quickLink)
     await save(undefined, options)
+  }
+
+  const addFlatQuickLink = async (quickLink: QuickLink) => {
+    flatItems.value.push(quickLink)
+    await save(undefined, { groupingEnabled: false })
+  }
+
+  const updateFlatQuickLink = async (index: number, quickLink: QuickLink) => {
+    if (!flatItems.value[index]) return false
+    flatItems.value.splice(index, 1, quickLink)
+    await save(undefined, { groupingEnabled: false })
+    return true
+  }
+
+  const removeFlatQuickLink = async (index: number): Promise<QuickLink | null> => {
+    if (!flatItems.value[index]) return null
+    const [removed] = flatItems.value.splice(index, 1)
+    await save(undefined, { groupingEnabled: false })
+    return removed ?? null
   }
 
   const updateQuickLinkInGroup = async (groupId: string, index: number, quickLink: QuickLink) => {
@@ -339,7 +395,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     if (!fromGroup?.items[fromIndex] || !toGroup) return false
 
     if (fromGroup.id === toGroup.id) {
-      const nextItems = moveArrayItem(fromGroup.items, fromIndex, toIndex)
+      const nextItems = moveQuickLinkArrayItem(fromGroup.items, fromIndex, toIndex)
       if (!nextItems) return false
       fromGroup.items = nextItems
       await save()
@@ -354,25 +410,25 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const moveFlatQuickLink = async ({ fromIndex, toIndex }: MoveFlatQuickLinkOptions) => {
-    const nextItems = moveArrayItem(items.value, fromIndex, toIndex)
+    const nextItems = moveQuickLinkArrayItem(flatItems.value, fromIndex, toIndex)
     if (!nextItems) return false
-    items.value = nextItems
+    flatItems.value = nextItems
     await save()
     return true
   }
 
   const insertFlatQuickLink = async ({ quickLink, index }: InsertFlatQuickLinkOptions) => {
     const duplicateIndex = findFlatQuickLinkIndexByUrl(quickLink.url)
-    const insertIndex = Math.max(0, Math.min(index, items.value.length))
+    const insertIndex = Math.max(0, Math.min(index, flatItems.value.length))
 
     if (duplicateIndex >= 0) {
       const toIndex = duplicateIndex < insertIndex ? insertIndex - 1 : insertIndex
       return moveFlatQuickLink({ fromIndex: duplicateIndex, toIndex })
     }
 
-    const nextItems = items.value.slice()
+    const nextItems = flatItems.value.slice()
     nextItems.splice(insertIndex, 0, quickLink)
-    items.value = nextItems
+    flatItems.value = nextItems
     await save()
     return true
   }
@@ -407,7 +463,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const reorderGroups = async (visibleOrderedGroups: QuickLinkGroup[]) => {
-    const rawCurrentGroups = toRaw(groups.value).map((g) => toRaw(g))
+    const rawCurrentGroups = toRaw(groupState.value).map((g) => toRaw(g))
     const orderedIds = new Set(visibleOrderedGroups.map((g) => g.id))
     const currentVisibleIds = rawCurrentGroups.filter((g) => orderedIds.has(g.id)).map((g) => g.id)
     const nextVisibleIds = visibleOrderedGroups.map((g) => g.id)
@@ -429,14 +485,14 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     const hiddenOther = rawCurrentGroups.filter(
       (g) => !orderedIds.has(g.id) && g.id !== DEFAULT_QUICK_LINK_GROUP_ID,
     )
-    groups.value = [...(hiddenDefault ? [hiddenDefault] : []), ...nextGroups, ...hiddenOther]
+    groupState.value = [...(hiddenDefault ? [hiddenDefault] : []), ...nextGroups, ...hiddenOther]
     await save()
     return true
   }
 
   const getQuickLink = (target: QuickLinkTarget): QuickLink | undefined => {
     if (typeof target === 'number') {
-      return items.value[target]
+      return flatItems.value[target]
     }
     return getGroup(target.groupId)?.items[target.index]
   }
@@ -459,6 +515,9 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     deleteGroup,
     reorderGroups,
     addQuickLinkToGroup,
+    addFlatQuickLink,
+    updateFlatQuickLink,
+    removeFlatQuickLink,
     updateQuickLinkInGroup,
     removeQuickLinkFromGroup,
     moveQuickLinkToGroup,
@@ -467,5 +526,6 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     insertQuickLinkToGroup,
     insertFlatQuickLink,
     getQuickLink,
+    getSnapshot,
   }
 })

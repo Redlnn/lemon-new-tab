@@ -24,8 +24,7 @@ export async function removeQuickLink(
   const { url, title, favicon } = quickLink
 
   if (typeof target === 'number') {
-    store.items.splice(target, 1)
-    await store.save()
+    await store.removeFlatQuickLink(target)
   } else {
     await store.removeQuickLinkFromGroup(target.groupId, target.index)
   }
@@ -43,14 +42,16 @@ export async function removeQuickLink(
           style: { marginLeft: '20px', color: 'var(--el-color-primary)', cursor: 'pointer' },
           onClick: async () => {
             if (typeof target === 'number') {
-              store.items.splice(target, 0, { url, title, favicon })
-              await store.save()
+              await store.insertFlatQuickLink({
+                quickLink: { url, title, favicon },
+                index: target,
+              })
             } else {
-              const group = store.groups.find((item) => item.id === target.groupId)
-              if (group) {
-                group.items.splice(target.index, 0, { url, title, favicon })
-                await store.save()
-              }
+              await store.insertQuickLinkToGroup({
+                groupId: target.groupId,
+                quickLink: { url, title, favicon },
+                index: target.index,
+              })
             }
             await refresh()
           },
@@ -71,12 +72,7 @@ export async function pinQuickLink(
   if (useSettingsStore().quickLinks.grouping) {
     await store.addQuickLinkToGroup(DEFAULT_QUICK_LINK_GROUP_ID, { url, title, favicon })
   } else {
-    store.items.push({
-      url,
-      title,
-      favicon,
-    })
-    await store.save()
+    await store.addFlatQuickLink({ url, title, favicon })
   }
   await refresh()
 }

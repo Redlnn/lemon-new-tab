@@ -57,13 +57,11 @@ import {
   type QuickLinkDndData,
 } from './composables/useQuickLinkDnd'
 import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions'
-import { useQuickLinksData } from './composables/useQuickLinksData'
-import { useTopSitesMerge } from './composables/useTopSitesMerge'
+import { mergeTopSites } from './composables/useTopSitesMerge'
+import { getTopSites, rawTopSites } from './utils/topSites'
 const getOrCreateFaviconRef = createFaviconUrlResolver()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
-
-const { topSites, quickLinks, topSitesNeedsReload } = useQuickLinksData(refreshDebounced)
 
 const model = defineModel<boolean>({ required: true })
 
@@ -106,6 +104,15 @@ watch(
   { immediate: true },
 )
 const quickLinksStore = useQuickLinksStore()
+const quickLinks = computed(() => quickLinksStore.items.slice())
+const topSites = computed(() =>
+  settings.dock.launchpad.topSites
+    ? mergeTopSites(rawTopSites.value, {
+        quickLinks: settings.quickLinks.grouping ? [] : quickLinks.value,
+        noCap: true,
+      })
+    : [],
+)
 const legacyDndGroupId = FLAT_QUICK_LINK_DND_GROUP_ID
 const topSitesGroupId = TOP_SITES_DND_GROUP_ID
 const { isComposing: isImeComposing } = useImeAwareDialog()
@@ -203,18 +210,8 @@ async function refresh() {
   ) {
     await quickLinksStore.enableGroupingFromItems()
   }
-  quickLinks.value = quickLinksStore.items.slice()
-
-  // 合并最常访问
   if (settings.dock.launchpad.topSites) {
-    topSites.value = await useTopSitesMerge({
-      quickLinks: settings.quickLinks.grouping ? [] : quickLinks.value,
-      force: topSitesNeedsReload.value,
-      noCap: true, // 不截断，获取所有可用的 top sites
-    })
-    topSitesNeedsReload.value = false
-  } else {
-    topSites.value = []
+    await getTopSites()
   }
 }
 
@@ -303,7 +300,7 @@ watch(
   () => settings.dock.launchpad.topSites,
   (enabled) => {
     if (enabled) {
-      topSitesNeedsReload.value = true
+      void getTopSites(true)
     }
     refreshDebounced()
   },

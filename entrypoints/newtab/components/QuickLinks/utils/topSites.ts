@@ -8,13 +8,13 @@ import { fetchFaviconWithCache, warmFaviconCache } from '@/shared/media'
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
 const TOP_SITES_TTL = 30_000 // 30 秒
-let cachedTopSites: { value: TopSites.MostVisitedURL[]; ts: number } | null = null
+export const rawTopSites = shallowRef<TopSites.MostVisitedURL[]>([])
+let cacheTimestamp = 0
+let invalidationGeneration = 0
 let pendingTopSitesPromise: Promise<TopSites.MostVisitedURL[]> | null = null
 
-function shouldUseCache(force = false) {
-  if (force) return false
-  if (!cachedTopSites) return false
-  return Date.now() - cachedTopSites.ts <= TOP_SITES_TTL
+function hasFreshCache() {
+  return cacheTimestamp > 0 && Date.now() - cacheTimestamp <= TOP_SITES_TTL
 }
 
 async function cacheBrowserFavicons(sites: TopSites.MostVisitedURL[]): Promise<void> {
@@ -47,30 +47,41 @@ async function fetchTopSites(): Promise<TopSites.MostVisitedURL[]> {
 }
 
 async function getTopSites(force = false): Promise<TopSites.MostVisitedURL[]> {
-  if (shouldUseCache(force)) {
-    return cachedTopSites!.value
-  }
+  if (force) cacheTimestamp = 0
+  if (!force && hasFreshCache()) return rawTopSites.value
+  if (pendingTopSitesPromise) return pendingTopSitesPromise
 
-  if (pendingTopSitesPromise && !force) {
-    return pendingTopSitesPromise
-  }
+  const promise = (async () => {
+    while (true) {
+      const generationAtStart = invalidationGeneration
+      const value = await fetchTopSites()
+      if (generationAtStart !== invalidationGeneration) continue
 
-  pendingTopSitesPromise = fetchTopSites()
+      rawTopSites.value = value
+      cacheTimestamp = Date.now()
+      cacheBrowserFavicons(value).catch(() => {})
+      return value
+    }
+  })()
+  pendingTopSitesPromise = promise
 
   try {
-    const value = await pendingTopSitesPromise
-    cacheBrowserFavicons(value).catch(() => {})
-
-    cachedTopSites = { value, ts: Date.now() }
-    return value
+    return await promise
   } finally {
-    pendingTopSitesPromise = null
+    if (pendingTopSitesPromise === promise) pendingTopSitesPromise = null
   }
 }
 
 function invalidateTopSitesCache() {
-  cachedTopSites = null
+  invalidationGeneration += 1
+  cacheTimestamp = 0
+  rawTopSites.value = []
 }
+
+blockedTopSitesStorage.watch(() => {
+  invalidateTopSitesCache()
+  void getTopSites()
+})
 
 function showBlockedMessage(url: string, reloadFunc: () => Promise<void>) {
   ElMessage.success({

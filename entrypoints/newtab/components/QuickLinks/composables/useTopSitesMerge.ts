@@ -2,11 +2,10 @@ import type { TopSites } from 'webextension-polyfill'
 
 import { normalizeUrlForDedup } from '@/shared/url'
 
-interface TopSitesMergeOptions {
+export interface TopSitesMergeOptions {
   quickLinks: { url: string }[]
   columns?: number
   maxRows?: number
-  force?: boolean
   /** 不截断结果，返回所有去重后的 top sites */
   noCap?: boolean
 }
@@ -69,13 +68,4 @@ export function mergeTopSites(
   }
 
   return dedup.slice(0, remain)
-}
-
-export async function useTopSitesMerge(
-  options: TopSitesMergeOptions,
-): Promise<TopSites.MostVisitedURL[]> {
-  const { getTopSites } = await import('../utils/topSites')
-  // 如果 getTopSites() 返回 undefined，则默认空数组
-  const topSites = (await getTopSites(options.force)) ?? []
-  return mergeTopSites(topSites, options)
 }

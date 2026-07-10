@@ -217,7 +217,7 @@ async function openFilePicker() {
 async function exportBackup() {
   const backup: Backup = {
     settings: settings.$state,
-    quickLinks: quickLinks.$state,
+    quickLinks: quickLinks.getSnapshot(),
     customSearchEngines: customSearchEngineStore.$state,
   }
 

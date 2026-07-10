@@ -143,8 +143,7 @@ async function addCurrentPage() {
       groupingEnabled: true,
     })
   } else {
-    quickLinksStore.items.push(quickLink)
-    await quickLinksStore.save()
+    await quickLinksStore.addFlatQuickLink(quickLink)
   }
   isAdded.value = true
 }

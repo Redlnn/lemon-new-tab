@@ -24,9 +24,9 @@ import QuickLinkContextMenu from './components/QuickLinkContextMenu.vue'
 import QuickLinkGroupSelectDialog from './components/QuickLinkGroupSelectDialog.vue'
 import type { CtxQuickLinkItem } from './composables/useQuickLinkContextMenu'
 import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions'
-import { useQuickLinksData } from './composables/useQuickLinksData'
 import { useDockLayout } from './composables/useQuickLinksLayout'
-import { useTopSitesMerge } from './composables/useTopSitesMerge'
+import { mergeTopSites } from './composables/useTopSitesMerge'
+import { getTopSites, rawTopSites } from './utils/topSites'
 
 const Launchpad = defineAsyncComponent(() => import('./Launchpad.vue'))
 
@@ -65,8 +65,20 @@ const dockTooltipClass = computed(
 const { updateMaxCols, maxFitCols } = useDockLayout()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
-
-const { topSites, quickLinks, mounted, topSitesNeedsReload } = useQuickLinksData(refreshDebounced)
+const mounted = ref(false)
+const quickLinks = computed(() =>
+  settings.quickLinks.grouping
+    ? quickLinksStore.getDefaultGroupItems().slice()
+    : quickLinksStore.items.slice(),
+)
+const topSites = computed(() =>
+  settings.dock.topSites
+    ? mergeTopSites(rawTopSites.value, {
+        quickLinks: settings.quickLinks.grouping ? [] : quickLinks.value,
+        noCap: true,
+      })
+    : [],
+)
 
 async function refresh() {
   await quickLinksStore.init()
@@ -77,22 +89,8 @@ async function refresh() {
   ) {
     await quickLinksStore.enableGroupingFromItems()
   }
-  quickLinks.value = settings.quickLinks.grouping
-    ? quickLinksStore.getDefaultGroupItems().slice()
-    : quickLinksStore.items.slice()
-
-  // 合并最常访问
   if (settings.dock.topSites) {
-    topSites.value = await useTopSitesMerge({
-      quickLinks: settings.quickLinks.grouping ? [] : quickLinks.value,
-      columns: 1,
-      maxRows: 1,
-      force: topSitesNeedsReload.value,
-      noCap: true, // 不截断，获取所有可用的 top sites
-    })
-    topSitesNeedsReload.value = false
-  } else {
-    topSites.value = []
+    await getTopSites()
   }
 
   if (!mounted.value) {
@@ -125,7 +123,7 @@ watch(
   () => settings.dock.topSites,
   (enabled) => {
     if (enabled) {
-      topSitesNeedsReload.value = true
+      void getTopSites(true)
     }
     refreshDebounced()
   },

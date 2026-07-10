@@ -41,10 +41,15 @@ import QuickLinkSortableItem from './components/QuickLinkSortableItem.vue'
 import QuickLinksPaginationDots from './components/QuickLinksPaginationDots.vue'
 import {
   buildQuickLinkDisplayItems,
-  buildQuickLinkGroupItems,
   buildTopSiteDisplayItems,
-  withSortableIndexes,
 } from './composables/quickLinkDisplayItems'
+import {
+  buildQuickLinkPages,
+  buildQuickLinkScrollSections,
+  type QuickLinkPage,
+  type QuickLinkScrollSection as ScrollSection,
+  type QuickLinkViewItem as DisplayItem,
+} from './composables/quickLinksViewModel'
 import { useGroupNameRefs } from './composables/useGroupNameRefs'
 import {
   FLAT_QUICK_LINK_DND_GROUP_ID,
@@ -64,10 +69,10 @@ import {
   type QuickLinkDndData,
 } from './composables/useQuickLinkDnd'
 import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions'
-import { useQuickLinksData } from './composables/useQuickLinksData'
 import { solveGridColumnFirst, usePagedGridLayout } from './composables/useQuickLinksLayout'
 import { useQuickLinksPagination } from './composables/useQuickLinksPagination'
-import { useTopSitesMerge } from './composables/useTopSitesMerge'
+import { mergeTopSites } from './composables/useTopSitesMerge'
+import { getTopSites, rawTopSites } from './utils/topSites'
 const focusStore = useFocusState()
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
@@ -81,32 +86,16 @@ const props = defineProps<{
 }>()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
-
-const { topSites, quickLinks, mounted, topSitesNeedsReload } = useQuickLinksData(refreshDebounced)
-
-type DisplayItem = ReturnType<typeof buildQuickLinkDisplayItems>[number] & {
-  groupId?: string
-  sortableIndex?: number
-}
-
-type QuickLinkPage = {
-  key: string
-  groupId: string
-  pageInGroup: number
-  totalPagesInGroup: number
-  isTopSites: boolean
-  items: DisplayItem[]
-  sortableStoreIndexes: number[]
-}
-
-type ScrollSection = {
-  key: string
-  title?: string
-  groupId?: string
-  isTopSites: boolean
-  items: DisplayItem[]
-  sortableStoreIndexes: number[]
-}
+const mounted = ref(false)
+const quickLinks = computed(() => quickLinksStore.items.slice())
+const topSites = computed(() =>
+  settings.quickLinks.topSites
+    ? mergeTopSites(rawTopSites.value, {
+        quickLinks: settings.quickLinks.grouping ? [] : quickLinks.value,
+        noCap: true,
+      })
+    : [],
+)
 
 const topSitesGroupId = TOP_SITES_DND_GROUP_ID
 const legacyDndGroupId = FLAT_QUICK_LINK_DND_GROUP_ID
@@ -119,6 +108,9 @@ const userGroups = computed(() => {
 
 const legacyItems = computed(() => buildQuickLinkDisplayItems(quickLinks.value, topSites.value))
 const hasTopSitesItems = computed(() => settings.quickLinks.topSites && topSites.value.length > 0)
+const topSiteDisplayItems = computed(() =>
+  hasTopSitesItems.value ? buildTopSiteDisplayItems(topSites.value, topSitesGroupId) : [],
+)
 
 const visibleCategoryGroups = computed(() => userGroups.value)
 
@@ -127,100 +119,30 @@ const slotsPerPage = computed(() => maxFitCols.value * maxFitRows.value)
 const isDragging = ref(false)
 const dndRenderKey = ref(0)
 
-function splitIntoPages(
-  groupId: string,
-  items: DisplayItem[],
-  isTopSites: boolean,
-): QuickLinkPage[] {
-  const slots = Math.max(1, slotsPerPage.value)
-  const totalPagesInGroup = Math.max(1, Math.ceil((items.length + (isTopSites ? 0 : 1)) / slots))
-  return Array.from({ length: totalPagesInGroup }, (_, pageInGroup) => {
-    const isLastPage = pageInGroup === totalPagesInGroup - 1
-    const start = pageInGroup * slots
-    const maxItems = isLastPage && !isTopSites ? slots - 1 : slots
-    const pageItems = withSortableIndexes(items.slice(start, start + maxItems))
-    return {
-      key: `${groupId}-${pageInGroup}`,
-      groupId,
-      pageInGroup,
-      totalPagesInGroup,
-      isTopSites,
-      items: pageItems.items,
-      sortableStoreIndexes: pageItems.sortableStoreIndexes,
-    }
-  })
-}
-
 const pages = computed<QuickLinkPage[]>(() => {
-  if (!settings.quickLinks.grouping) {
-    return splitIntoPages(legacyDndGroupId, legacyItems.value, false)
-  }
-
-  const hasQuickLinkItems = userGroups.value.some((group) => group.items.length > 0)
-  if (!hasQuickLinkItems && !hasTopSitesItems.value) {
-    return splitIntoPages(DEFAULT_QUICK_LINK_GROUP_ID, [], false)
-  }
-
-  const result = visibleCategoryGroups.value.flatMap((group) =>
-    splitIntoPages(group.id, buildQuickLinkGroupItems(group), false),
-  )
-  if (hasTopSitesItems.value) {
-    result.push(
-      ...splitIntoPages(topSitesGroupId, buildTopSiteDisplayItems(topSites.value, topSitesGroupId), true),
-    )
-  }
-  return result.length > 0 ? result : splitIntoPages(DEFAULT_QUICK_LINK_GROUP_ID, [], false)
+  return buildQuickLinkPages({
+    grouping: settings.quickLinks.grouping,
+    groups: visibleCategoryGroups.value,
+    legacyItems: legacyItems.value,
+    topSiteItems: topSiteDisplayItems.value,
+    slotsPerPage: slotsPerPage.value,
+    defaultGroupId: DEFAULT_QUICK_LINK_GROUP_ID,
+    flatGroupId: legacyDndGroupId,
+    topSitesGroupId,
+  })
 })
 
 const scrollSections = computed<ScrollSection[]>(() => {
-  if (!settings.quickLinks.grouping) {
-    const legacySectionItems = withSortableIndexes(legacyItems.value)
-    return [
-      {
-        key: 'quick-links',
-        isTopSites: false,
-        items: legacySectionItems.items,
-        sortableStoreIndexes: legacySectionItems.sortableStoreIndexes,
-      },
-    ]
-  }
-
-  const sections: ScrollSection[] = visibleCategoryGroups.value.map((group) => {
-    const sectionItems = withSortableIndexes(buildQuickLinkGroupItems(group))
-    return {
-      key: group.id,
-      title: group.name,
-      groupId: group.id,
-      isTopSites: false,
-      items: sectionItems.items,
-      sortableStoreIndexes: sectionItems.sortableStoreIndexes,
-    }
+  return buildQuickLinkScrollSections({
+    grouping: settings.quickLinks.grouping,
+    groups: visibleCategoryGroups.value,
+    legacyItems: legacyItems.value,
+    topSiteItems: topSiteDisplayItems.value,
+    topSitesTitle: topSitesGroupName,
+    defaultGroupId: DEFAULT_QUICK_LINK_GROUP_ID,
+    defaultGroupName: quickLinksStore.groups[0]?.name,
+    topSitesGroupId,
   })
-
-  if (hasTopSitesItems.value) {
-    const topSiteItems = withSortableIndexes(buildTopSiteDisplayItems(topSites.value, topSitesGroupId))
-    sections.push({
-      key: topSitesGroupId,
-      title: topSitesGroupName,
-      groupId: topSitesGroupId,
-      isTopSites: true,
-      items: topSiteItems.items,
-      sortableStoreIndexes: topSiteItems.sortableStoreIndexes,
-    })
-  }
-
-  return sections.length > 0
-    ? sections
-    : [
-        {
-          key: DEFAULT_QUICK_LINK_GROUP_ID,
-          title: quickLinksStore.groups[0]?.name,
-          groupId: DEFAULT_QUICK_LINK_GROUP_ID,
-          isTopSites: false,
-          items: [],
-          sortableStoreIndexes: [],
-        },
-      ]
 })
 
 const pageLookup = computed(() => {
@@ -544,20 +466,8 @@ async function refresh() {
       await quickLinksStore.enableGroupingFromItems()
     }
 
-    quickLinks.value = quickLinksStore.items.slice()
-
-    // 合并最常访问
     if (settings.quickLinks.topSites) {
-      topSites.value = await useTopSitesMerge({
-        quickLinks: settings.quickLinks.grouping ? [] : quickLinks.value,
-        columns: displayColumns.value,
-        maxRows: displayRows.value,
-        force: topSitesNeedsReload.value,
-        noCap: true, // 不截断，获取所有可用的 top sites
-      })
-      topSitesNeedsReload.value = false
-    } else {
-      topSites.value = []
+      await getTopSites()
     }
 
     if (!mounted.value) {
@@ -901,7 +811,7 @@ watch(
   () => settings.quickLinks.topSites,
   (enabled) => {
     if (enabled) {
-      topSitesNeedsReload.value = true
+      void getTopSites(true)
     }
     refreshDebounced()
   },
