@@ -3,6 +3,8 @@ import { defineStore } from 'pinia'
 import i18next from 'i18next'
 
 import { useSettingsStore } from '@/shared/settings'
+
+import { flattenQuickLinkGroups, moveQuickLinkArrayItem } from './quickLinkAlgorithms'
 import { normalizeUrlForDedup } from '@/shared/url'
 
 import {
@@ -55,42 +57,8 @@ function normalizeQuickLinkGroupName(name: string, fallback: string): string {
   return (trimmed || fallback).slice(0, MAX_QUICK_LINK_GROUP_NAME_LENGTH)
 }
 
-export function flattenQuickLinkGroups(
-  groups: readonly QuickLinkGroup[],
-  options?: { dedupe?: boolean },
-): QuickLink[] {
-  if (!options?.dedupe) {
-    return groups.flatMap((group) => group.items)
-  }
-
-  const seen = new Set<string>()
-  const result: QuickLink[] = []
-  for (const group of groups) {
-    for (const item of group.items) {
-      const key = normalizeUrlForDedup(item.url)
-      if (seen.has(key)) continue
-      seen.add(key)
-      result.push(item)
-    }
-  }
-  return result
-}
-
 function hasQuickLinksData(data: QuickLinksData): boolean {
   return data.items.length > 0 || (data.groups?.length ?? 0) > 0
-}
-
-export function moveQuickLinkArrayItem<T>(
-  items: readonly T[],
-  fromIndex: number,
-  toIndex: number,
-): T[] | null {
-  if (fromIndex === toIndex) return null
-  const nextItems = items.slice()
-  const [item] = nextItems.splice(fromIndex, 1)
-  if (!item) return null
-  nextItems.splice(Math.max(0, Math.min(toIndex, nextItems.length)), 0, item)
-  return nextItems
 }
 
 export const useQuickLinksStore = defineStore('quickLinks', () => {

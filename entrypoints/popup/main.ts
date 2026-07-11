@@ -45,7 +45,7 @@ async function bootstrapPopup() {
   const canStartApp = await shouldStartApp()
   if (!canStartApp) return
 
-  const app = i18n(createApp(App))
+  const app = createApp(App)
   const pinia = createPinia()
 
   i18n(app)

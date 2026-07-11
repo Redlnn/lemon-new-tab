@@ -1,5 +1,5 @@
-import type { SettingsSchemaV7, SettingsSchemaV8 } from '..'
-import { defaultSettings } from '..'
+import { defaultSettings } from '../default'
+import type { SettingsSchemaV7, SettingsSchemaV8 } from '../types'
 
 import { toNewBgType } from './map'
 

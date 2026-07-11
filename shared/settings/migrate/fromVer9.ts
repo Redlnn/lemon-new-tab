@@ -1,5 +1,5 @@
-import type { SettingsSchemaV9, SettingsSchemaV10 } from '..'
-import { defaultSettings } from '..'
+import { defaultSettings } from '../default'
+import type { SettingsSchemaV9, SettingsSchemaV10 } from '../types'
 
 export function migrateFromVer9To10(old: SettingsSchemaV9): SettingsSchemaV10 {
   return {

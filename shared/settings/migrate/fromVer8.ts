@@ -1,6 +1,7 @@
 import { hex2rgba } from '@/shared/theme'
 
-import { defaultSettings, type SettingsSchemaV8, type SettingsSchemaV9 } from '..'
+import { defaultSettings } from '../default'
+import type { SettingsSchemaV8, SettingsSchemaV9 } from '../types'
 
 function clockSizeToNumber(size: 'small' | 'medium' | 'large'): number {
   switch (size) {

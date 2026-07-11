@@ -10,7 +10,7 @@ import {
   useDarkWallpaperStorge,
   useWallpaperStorge,
   wallpaperUrlCache,
-} from '.'
+} from './wallpaperStorge'
 
 export const useWallpaperUrlStore = defineStore('wallpaperUrl', () => {
   const settings = useSettingsStore()

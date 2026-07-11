@@ -5,9 +5,9 @@ import i18next from 'i18next'
 import enhancedFetch from '@/shared/network/fetch'
 import { useSettingsStore } from '@/shared/settings'
 
-import { useBingWallpaperStorge, useWallpaperUrlStore } from '.'
-
 import { bingInfoCache } from './bingInfoCache'
+import { useBingWallpaperStorge } from './wallpaperStorge'
+import { useWallpaperUrlStore } from './wallpaperUrlStore'
 
 interface BingWallpaperImage {
   startdate: number

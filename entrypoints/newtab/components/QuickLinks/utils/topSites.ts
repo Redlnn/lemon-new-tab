@@ -7,15 +7,10 @@ import { fetchFaviconWithCache, warmFaviconCache } from '@/shared/media'
 
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
+import { createSingleFlightCache } from './singleFlightCache'
+
 const TOP_SITES_TTL = 30_000 // 30 秒
 export const rawTopSites = shallowRef<TopSites.MostVisitedURL[]>([])
-let cacheTimestamp = 0
-let invalidationGeneration = 0
-let pendingTopSitesPromise: Promise<TopSites.MostVisitedURL[]> | null = null
-
-function hasFreshCache() {
-  return cacheTimestamp > 0 && Date.now() - cacheTimestamp <= TOP_SITES_TTL
-}
 
 async function cacheBrowserFavicons(sites: TopSites.MostVisitedURL[]): Promise<void> {
   // Firefox 可能会直接返回 favicon；预热缓存以便在列表旋转时仍能保留它们。
@@ -46,35 +41,19 @@ async function fetchTopSites(): Promise<TopSites.MostVisitedURL[]> {
   return topSites.filter((site) => !blockedTopStites.has(site.url))
 }
 
-async function getTopSites(force = false): Promise<TopSites.MostVisitedURL[]> {
-  if (force) cacheTimestamp = 0
-  if (!force && hasFreshCache()) return rawTopSites.value
-  if (pendingTopSitesPromise) return pendingTopSitesPromise
+const topSitesCache = createSingleFlightCache({
+  ttl: TOP_SITES_TTL,
+  fetchValue: fetchTopSites,
+  onValue: (value) => {
+    rawTopSites.value = value
+    cacheBrowserFavicons(value).catch(() => {})
+  },
+})
 
-  const promise = (async () => {
-    while (true) {
-      const generationAtStart = invalidationGeneration
-      const value = await fetchTopSites()
-      if (generationAtStart !== invalidationGeneration) continue
-
-      rawTopSites.value = value
-      cacheTimestamp = Date.now()
-      cacheBrowserFavicons(value).catch(() => {})
-      return value
-    }
-  })()
-  pendingTopSitesPromise = promise
-
-  try {
-    return await promise
-  } finally {
-    if (pendingTopSitesPromise === promise) pendingTopSitesPromise = null
-  }
-}
+const getTopSites = (force = false) => topSitesCache.load(force)
 
 function invalidateTopSitesCache() {
-  invalidationGeneration += 1
-  cacheTimestamp = 0
+  topSitesCache.invalidate()
   rawTopSites.value = []
 }
 

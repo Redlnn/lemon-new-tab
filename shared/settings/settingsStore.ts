@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia'
 
-import type { CURRENT_CONFIG_SCHEMA } from '../settings'
-import { defaultSettings } from '../settings'
-
+import type { CURRENT_CONFIG_SCHEMA } from './current'
+import { defaultSettings } from './default'
 import { normalizeCurrentSettings } from './normalize'
 import { settingsStorage } from './settingsStorage'
 

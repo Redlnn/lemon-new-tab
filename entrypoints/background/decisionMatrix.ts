@@ -1,4 +1,4 @@
-import { CURRENT_CONFIG_VERSION } from '@/shared/settings'
+import { CURRENT_CONFIG_VERSION } from '@/shared/settings/current'
 import { normalizeSyncEnvelope } from '@/shared/sync/types'
 import type { SyncConflictMessage, SyncEnvelopeV2 } from '@/shared/sync/types'
 

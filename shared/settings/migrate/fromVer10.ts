@@ -1,4 +1,5 @@
-import { defaultSettings, type SettingsSchemaV10, type SettingsSchemaV11 } from '..'
+import { defaultSettings } from '../default'
+import type { SettingsSchemaV10, SettingsSchemaV11 } from '../types'
 
 export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 {
   const { shortcut, perf, ...rest } = old
