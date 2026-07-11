@@ -5,6 +5,7 @@ export * from './verify'
 export {
   clearFaviconCache,
   fetchFaviconWithCache,
+  hydrateFaviconCache,
   setFaviconCacheEnabled,
   warmFaviconCache,
 } from './faviconFetch'

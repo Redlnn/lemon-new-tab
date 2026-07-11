@@ -223,9 +223,12 @@ const bgTypeProviders: Record<BgType, () => Promise<BackgroundSource>> = {
   },
   [BgType.Local]: async () => {
     const target = isDark.value && settings.background.localDark.id ? 'dark' : 'light'
-    const url = await wallpaperUrlStore.getUrl(target)
+    const targetUrl = target === 'dark' ? darkUrl : lightUrl
+    // Store watcher 已经解析出的 URL 必须直接复用；再次读取 Blob 会创建新的对象 URL，
+    // 反过来触发本组件 watcher 并形成无限加载循环。
+    if (!targetUrl.value) await wallpaperUrlStore.getUrl(target)
     return {
-      url: url.value,
+      url: targetUrl.value,
       sourceKey: getLocalMonetSourceKey(),
       ownedObjectUrl: false,
     }

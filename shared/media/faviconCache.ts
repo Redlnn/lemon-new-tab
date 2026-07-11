@@ -22,6 +22,17 @@ export async function getFaviconCacheEntry(origin: string) {
   }
 }
 
+/** 一次性读取全部持久化缓存，供新标签页挂载前预热 L1。 */
+export async function getAllFaviconCacheEntries(): Promise<
+  Array<readonly [string, import('@/shared/storage/idb').FaviconCacheEntry]>
+> {
+  try {
+    return await idbGetAllEntries('favicon')
+  } catch {
+    return []
+  }
+}
+
 /** 将缓存条目写入（或覆盖）指定 origin。`entry.fetchedAt` 应为 `Date.now()`。
  * 存储失败时会静默忽略错误。 */
 export async function setFaviconCacheEntry(

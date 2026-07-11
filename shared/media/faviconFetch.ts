@@ -4,12 +4,15 @@ import { browser } from '#imports'
 import {
   clearFaviconCacheEntries,
   FAVICON_CACHE_TTL,
+  getAllFaviconCacheEntries,
   getFaviconCacheEntry,
   pruneFaviconCacheEntries,
   setFaviconCacheEntries,
   setFaviconCacheEntry,
   type FaviconCacheEntry,
 } from './faviconCache'
+
+const isChromium = import.meta.env.CHROME || import.meta.env.EDGE || import.meta.env.OPERA
 
 // ---------------------------------------------------------------------------
 // 图标缓存总开关（由设置控制，默认关闭）
@@ -57,6 +60,23 @@ export function setFaviconCacheEnabled(enabled: boolean): void {
   cacheGeneration += 1
   cancelScheduledCleanup()
   if (enabled) void persistL1Cache(cacheGeneration)
+}
+
+/**
+ * 在 UI 挂载前将持久缓存一次性提升到 L1，避免每个图标分别等待 IndexedDB 后逐个出现。
+ * 读取期间若缓存开关或 generation 变化，则直接丢弃本次结果。
+ */
+export async function hydrateFaviconCache(enabled: boolean): Promise<void> {
+  setFaviconCacheEnabled(enabled)
+  if (!enabled) return
+
+  const generationAtStart = cacheGeneration
+  const entries = await getAllFaviconCacheEntries()
+  if (!_cacheEnabled || generationAtStart !== cacheGeneration) return
+
+  entries.sort((a, b) => a[1].fetchedAt - b[1].fetchedAt)
+  for (const [origin, entry] of entries) l1Set(origin, entry)
+  schedulePersistentCleanup(generationAtStart)
 }
 
 /** 清空 favicon 的内存缓存与持久化缓存。 */
@@ -315,6 +335,22 @@ function probeImageUrl(url: string): Promise<boolean> {
 // 获取策略
 // ---------------------------------------------------------------------------
 
+/** 使用 Chromium 内部 favicon API 快速读取浏览器已有图标。 */
+async function fetchViaChromeFaviconApi(pageUrl: string): Promise<string | null> {
+  try {
+    const apiUrl = new URL(chrome.runtime.getURL('/_favicon/'))
+    apiUrl.searchParams.set('pageUrl', pageUrl)
+    apiUrl.searchParams.set('size', '128')
+    const resp = await fetch(apiUrl.toString())
+    if (!resp.ok) return null
+    const blob = await resp.blob()
+    if (blob.size === 0) return null
+    return blobToDataURL(blob)
+  } catch {
+    return null
+  }
+}
+
 /** 策略 C：并行请求第三方 favicon 服务（favicon.so & favicon.im），取最快且有效的一个，返回 base64 */
 async function fetchViaThirdPartyServices(pageUrl: string): Promise<string | null> {
   try {
@@ -505,6 +541,11 @@ async function doFetch(pageUrl: string, origin: string): Promise<string | null> 
     const hasHostPerm = await browser.permissions
       .contains({ origins: ['*://*/*'] })
       .catch(() => false)
+
+    // 缓存关闭时优先复用浏览器已经拥有的图标，避免每次新标签页都访问外部服务。
+    if (!_cacheEnabled && isChromium) {
+      data = await fetchViaChromeFaviconApi(pageUrl)
+    }
 
     // 策略 A：读取页面声明的 icon 链接（需要主机权限）
     if (!data && hasHostPerm) {

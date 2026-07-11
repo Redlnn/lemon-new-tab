@@ -4,7 +4,7 @@ import { createPinia } from 'pinia'
 import { version } from '@/package.json'
 
 import { i18n } from '@/shared/i18n'
-import { setFaviconCacheEnabled } from '@/shared/media'
+import { hydrateFaviconCache, setFaviconCacheEnabled } from '@/shared/media'
 import { useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 import { applyStoredMonetColors, getMonetColors } from '@/shared/theme'
@@ -53,7 +53,8 @@ export const main = async () => {
   await useSettingsStore().init()
   const settings = useSettingsStore()
 
-  // 设置 favicon 缓存标志（移到 initCustomSearchEngine 之前，修复时序问题）
+  // UI 挂载前一次性恢复持久化图标，避免每个组件分别读取 IndexedDB 后逐个闪现。
+  await hydrateFaviconCache(settings.faviconCacheEnabled)
   watch(() => settings.faviconCacheEnabled, setFaviconCacheEnabled, { immediate: true })
 
   changeTheme(settings.theme.primaryColor)
