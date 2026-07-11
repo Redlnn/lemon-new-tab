@@ -23,14 +23,12 @@ import {
 // 大小阈值 (字节)，超过会提示。这里设置为 50MB
 const WARN_SIZE_BYTES = 50 * 1024 * 1024
 
-const settings = useSettingsStore()
-const wallpaperUrlStore = useWallpaperUrlStore()
-
-const isDark = useDark()
-
 let isShowingPermissionDialog = false
 
 function useBackgroundSwitcher() {
+  const settings = useSettingsStore()
+  const wallpaperUrlStore = useWallpaperUrlStore()
+  const isDark = useDark()
   const isDarkBg = ref(false)
 
   // 存储上传后的元信息
@@ -147,35 +145,25 @@ function useBackgroundSwitcher() {
     }
   }
 
-  const deleteLocalBg = async () => {
-    if (isDarkBg.value) {
-      const oldUrl = settings.background.localDark?.url
+  const deleteBackgroundVariant = async (variant: 'light' | 'dark') => {
+    const dark = variant === 'dark'
+    const oldUrl = dark ? settings.background.localDark.url : settings.background.local.url
+    if (dark) {
       settings.background.localDark = { id: '', url: '', mediaType: undefined }
       metaDark.value = null
-      await nextTick()
-      await promiseTimeout(200)
-      if (oldUrl) {
-        try {
-          URL.revokeObjectURL(oldUrl)
-        } catch {}
-      }
-      useDarkWallpaperStorge.clear()
-      await wallpaperUrlStore.clearUrl('dark')
     } else {
-      const oldUrl = settings.background.local?.url
       settings.background.local = { id: '', url: '', mediaType: undefined }
       metaLight.value = null
-      await nextTick()
-      await promiseTimeout(200)
-      if (oldUrl) {
-        try {
-          URL.revokeObjectURL(oldUrl)
-        } catch {}
-      }
-      useWallpaperStorge.clear()
-      await wallpaperUrlStore.clearUrl('light')
     }
+
+    await nextTick()
+    await promiseTimeout(200)
+    if (oldUrl) URL.revokeObjectURL(oldUrl)
+    await (dark ? useDarkWallpaperStorge : useWallpaperStorge).clear()
+    await wallpaperUrlStore.clearUrl(variant)
   }
+
+  const deleteLocalBg = () => deleteBackgroundVariant(isDarkBg.value ? 'dark' : 'light')
 
   // 在线壁纸相关
   const tempOnlineUrl = ref('') // 用于在线壁纸输入框的临时存储，避免频繁修改 settingsStore
@@ -302,55 +290,28 @@ function useBackgroundSwitcher() {
       { immediate: true },
     )
 
-    const tasks: Array<Promise<void>> = []
+    const loadMetadata = async (variant: 'light' | 'dark') => {
+      const dark = variant === 'dark'
+      const background = dark ? settings.background.localDark : settings.background.local
+      if (!background.id) return
 
-    if (settings.background.local?.id) {
-      tasks.push(
-        (async () => {
-          try {
-            await wallpaperUrlStore.getUrl('light')
-            const file = await useWallpaperStorge.getItem<Blob>(settings.background.local.id)
-            if (file) {
-              metaLight.value = { size: (file as File).size }
-              readMediaMeta(file as File, (m) => {
-                metaLight.value = { ...metaLight.value, ...m }
-              })
-              if (!settings.background.local.mediaType) {
-                settings.background.local.mediaType = file.type.startsWith('video/')
-                  ? 'video'
-                  : 'image'
-              }
-            }
-          } catch {}
-        })(),
-      )
+      try {
+        await wallpaperUrlStore.getUrl(variant)
+        const file = await (dark ? useDarkWallpaperStorge : useWallpaperStorge).getItem<Blob>(
+          background.id,
+        )
+        if (!file) return
+
+        const meta = dark ? metaDark : metaLight
+        meta.value = { size: file.size }
+        readMediaMeta(file as File, (mediaMeta) => {
+          meta.value = { ...meta.value, ...mediaMeta }
+        })
+        background.mediaType ??= file.type.startsWith('video/') ? 'video' : 'image'
+      } catch {}
     }
 
-    if (settings.background.localDark?.id) {
-      tasks.push(
-        (async () => {
-          try {
-            await wallpaperUrlStore.getUrl('dark')
-            const file = await useDarkWallpaperStorge.getItem<Blob>(
-              settings.background.localDark.id,
-            )
-            if (file) {
-              metaDark.value = { size: (file as File).size }
-              readMediaMeta(file as File, (m) => {
-                metaDark.value = { ...metaDark.value, ...m }
-              })
-              if (!settings.background.localDark.mediaType) {
-                settings.background.localDark.mediaType = file.type.startsWith('video/')
-                  ? 'video'
-                  : 'image'
-              }
-            }
-          } catch {}
-        })(),
-      )
-    }
-
-    await Promise.all(tasks)
+    await Promise.all([loadMetadata('light'), loadMetadata('dark')])
 
     if (settings.background.online.url) {
       tempOnlineUrl.value = settings.background.online.url

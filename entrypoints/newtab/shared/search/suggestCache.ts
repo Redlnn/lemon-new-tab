@@ -39,12 +39,6 @@ export class LRUCache {
     this.cache.clear()
   }
 
-  /**
-   * 获取缓存大小
-   */
-  size(): number {
-    return this.cache.size
-  }
 }
 
 // 创建全局搜索建议缓存实例

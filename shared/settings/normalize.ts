@@ -36,42 +36,9 @@ type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
   perf?: CURRENT_CONFIG_SCHEMA['perf']
 }
 
-function normalizeTransparency(value: unknown, fallback: number): number {
+function clampInteger(value: unknown, fallback: number, min: number, max: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
-  return Math.min(MAX_TRANSPARENCY, Math.max(MIN_TRANSPARENCY, Math.round(value)))
-}
-
-function normalizeBackdropBlur(value: unknown, fallback: number): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
-  return Math.min(MAX_BACKDROP_BLUR, Math.max(MIN_BACKDROP_BLUR, Math.round(value)))
-}
-
-function normalizeIconBorderRadius(value: unknown, fallback: number): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
-  return Math.min(MAX_ICON_BORDER_RADIUS, Math.max(MIN_ICON_BORDER_RADIUS, Math.round(value)))
-}
-
-function normalizeSearchBorderRadius(value: unknown, fallback: number): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
-  return Math.min(MAX_SEARCH_BORDER_RADIUS, Math.max(MIN_SEARCH_BORDER_RADIUS, Math.round(value)))
-}
-
-function normalizeYiyanBorderRadius(value: unknown, fallback: number): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
-  return Math.min(MAX_YIYAN_BORDER_RADIUS, Math.max(MIN_YIYAN_BORDER_RADIUS, Math.round(value)))
-}
-
-function normalizeActionBtnBorderRadius(value: unknown, fallback: number): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
-  return Math.min(
-    MAX_ACTION_BTN_BORDER_RADIUS,
-    Math.max(MIN_ACTION_BTN_BORDER_RADIUS, Math.round(value)),
-  )
-}
-
-function normalizeGlobalBorderRadius(value: unknown, fallback: number): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
-  return Math.min(MAX_GLOBAL_BORDER_RADIUS, Math.max(MIN_GLOBAL_BORDER_RADIUS, Math.round(value)))
+  return Math.min(max, Math.max(min, Math.round(value)))
 }
 
 function normalizePerfSurface<K extends PerfTransparencyKey>(
@@ -88,15 +55,19 @@ function normalizePerfSurface<K extends PerfTransparencyKey>(
     ...(typeof current === 'object' && current !== null ? current : {}),
   } as CURRENT_CONFIG_SCHEMA['perf'][K]
   // 单独规范化透明度，确保导入或同步过来的值始终落在合法范围内。
-  normalized.transparency = normalizeTransparency(
+  normalized.transparency = clampInteger(
     // 优先保留用户已有透明度设置。
     normalized.transparency,
     // 无效或缺失时回退到该性能分组的默认透明度。
     defaultSettings.perf[key].transparency,
+    MIN_TRANSPARENCY,
+    MAX_TRANSPARENCY,
   )
-  normalized.blurIntensity = normalizeBackdropBlur(
+  normalized.blurIntensity = clampInteger(
     normalized.blurIntensity,
     defaultSettings.perf[key].blurIntensity,
+    MIN_BACKDROP_BLUR,
+    MAX_BACKDROP_BLUR,
   )
   // 将补齐并规范化后的分组写回原设置对象，保持调用方拿到的是完整配置。
   perf[key] = normalized
@@ -118,33 +89,45 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
   normalized.layout ??= structuredClone(defaultSettings.layout)
   normalized.perf ??= structuredClone(defaultSettings.perf)
 
-  normalized.clock.style.transparency = normalizeTransparency(
+  normalized.clock.style.transparency = clampInteger(
     normalized.clock.style.transparency,
     defaultSettings.clock.style.transparency,
+    MIN_TRANSPARENCY,
+    MAX_TRANSPARENCY,
   )
-  normalized.search.borderRadius = normalizeSearchBorderRadius(
+  normalized.search.borderRadius = clampInteger(
     normalized.search.borderRadius,
     defaultSettings.search.borderRadius,
+    MIN_SEARCH_BORDER_RADIUS,
+    MAX_SEARCH_BORDER_RADIUS,
   )
 
   normalized.quickLinks.grouping ??= defaultSettings.quickLinks.grouping
   normalized.quickLinks.useScroll ??= defaultSettings.quickLinks.useScroll
   normalized.quickLinks.pagingLoop ??= defaultSettings.quickLinks.pagingLoop
-  normalized.quickLinks.iconBorderRadius = normalizeIconBorderRadius(
+  normalized.quickLinks.iconBorderRadius = clampInteger(
     normalized.quickLinks.iconBorderRadius,
     defaultSettings.quickLinks.iconBorderRadius,
+    MIN_ICON_BORDER_RADIUS,
+    MAX_ICON_BORDER_RADIUS,
   )
-  normalized.yiyan.borderRadius = normalizeYiyanBorderRadius(
+  normalized.yiyan.borderRadius = clampInteger(
     normalized.yiyan.borderRadius,
     defaultSettings.yiyan.borderRadius,
+    MIN_YIYAN_BORDER_RADIUS,
+    MAX_YIYAN_BORDER_RADIUS,
   )
-  normalized.layout.actionBtnBorderRadius = normalizeActionBtnBorderRadius(
+  normalized.layout.actionBtnBorderRadius = clampInteger(
     normalized.layout.actionBtnBorderRadius,
     defaultSettings.layout.actionBtnBorderRadius,
+    MIN_ACTION_BTN_BORDER_RADIUS,
+    MAX_ACTION_BTN_BORDER_RADIUS,
   )
-  normalized.layout.globalBorderRadius = normalizeGlobalBorderRadius(
+  normalized.layout.globalBorderRadius = clampInteger(
     normalized.layout.globalBorderRadius,
     defaultSettings.layout.globalBorderRadius,
+    MIN_GLOBAL_BORDER_RADIUS,
+    MAX_GLOBAL_BORDER_RADIUS,
   )
 
   normalizePerfSurface(normalized.perf, 'bookmark')

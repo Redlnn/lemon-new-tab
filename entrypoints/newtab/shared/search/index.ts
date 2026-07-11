@@ -9,7 +9,6 @@ import { baiduSuggestParser, bingSuggestParser, googleSuggestParser } from './su
 
 export * from './suggestCache'
 export * from './suggestParser'
-export * from './suggestRunner'
 
 export const searchEngines = {
   google: {

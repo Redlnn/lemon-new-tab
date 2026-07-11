@@ -7,6 +7,7 @@ interface fetchJsonpOptions {
   callbackName: string
   parser: (data: string) => string[]
   encoding?: string // 可选的编码参数
+  signal?: AbortSignal
 }
 
 /**
@@ -22,20 +23,16 @@ async function fetchJsonp(options: fetchJsonpOptions): Promise<string[]> {
   }
   fullUrl.searchParams.set(callbackParam, callbackName)
 
-  try {
-    const response = await enhancedFetch<string>(fullUrl.toString(), {
-      responseType: 'text',
-      responseEncoding: options.encoding,
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-    })
+  const response = await enhancedFetch<string>(fullUrl.toString(), {
+    responseType: 'text',
+    responseEncoding: options.encoding,
+    signal: options.signal,
+    headers: {
+      'Content-Type': 'text/plain',
+    },
+  })
 
-    return options.parser(response)
-  } catch (error) {
-    console.error('JSONP request failed:', error)
-    return [] // 返回空数组作为降级处理
-  }
+  return options.parser(response)
 }
 
 export default fetchJsonp

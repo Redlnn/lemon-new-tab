@@ -8,7 +8,7 @@ import { useSettingsStore } from '@/shared/settings'
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useSearchHistoryCache } from '@newtab/composables/useSearchHistoryCache'
-import { createSuggestRunner, searchSuggestAPIs, searchSuggestCache } from '@newtab/shared/search'
+import { searchSuggestAPIs, searchSuggestCache } from '@newtab/shared/search'
 
 import SuggestListItem from './SuggestListItem.vue'
 
@@ -28,6 +28,9 @@ const searchSuggestions = shallowRef<string[]>([])
 // 用于追踪当前展示的结果是否仍然有效，避免旧请求覆盖新结果
 const latestLiveQuery = ref('')
 let historyRequestVersion = 0
+let suggestionRequestVersion = 0
+let suggestionTimer: ReturnType<typeof setTimeout> | null = null
+let suggestionController: AbortController | null = null
 
 const props = defineProps<{
   searchText: string
@@ -92,10 +95,18 @@ function applyHistorySuggestions(list: readonly string[]) {
   }
 }
 
+function cancelSuggestionRequest() {
+  suggestionRequestVersion += 1
+  if (suggestionTimer) clearTimeout(suggestionTimer)
+  suggestionTimer = null
+  suggestionController?.abort()
+  suggestionController = null
+}
+
 function handleInput() {
   if (focusStore.isFocused && !props.searchText) {
     // 如果搜索词为空，则显示搜索历史
-    runner.cancel()
+    cancelSuggestionRequest()
     latestLiveQuery.value = ''
     clearSearchSuggestions()
     showSearchHistories()
@@ -128,30 +139,43 @@ async function showSearchHistories() {
   }
 }
 
-// 统一“请求 + 取消 + 防抖 + 重试”（重试统一在运行器层）
-const runner = createSuggestRunner({ debounceMs: 300, maxRetries: 2, retryDelay: 100 })
-runner.onResult(({ text, list }) => {
-  if (!isLiveSuggestionResult(text)) return
+type SuggestParser = (text: string, signal?: AbortSignal) => Promise<string[]>
 
-  searchSuggestions.value = list
-  // 缓存搜索建议结果
-  if (list.length > 0) {
-    searchSuggestCache.set(text, list)
+async function fetchSuggestions(
+  text: string,
+  parser: SuggestParser,
+  version: number,
+  signal: AbortSignal,
+) {
+  try {
+    let list: string[] = []
+    for (let attempt = 0; attempt <= 2; attempt += 1) {
+      try {
+        list = await parser(text, signal)
+        break
+      } catch (error) {
+        if (signal.aborted || version !== suggestionRequestVersion) return
+        if (attempt === 2) throw error
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+    }
+
+    if (version !== suggestionRequestVersion || !isLiveSuggestionResult(text)) return
+    searchSuggestions.value = list
+    if (list.length > 0) searchSuggestCache.set(text, list)
+  } catch (error) {
+    if (signal.aborted || version !== suggestionRequestVersion) return
+    console.error('Failed to fetch search suggestions:', error)
+    if (isLiveSuggestionResult(text)) searchSuggestions.value = []
   }
-})
-runner.onError((err, text) => {
-  if (!isLiveSuggestionResult(text)) return
-
-  console.error('Failed to fetch search suggestions:', err)
-  searchSuggestions.value = []
-})
+}
 
 function showSuggestionsDebounced() {
   historyRequestVersion += 1
+  cancelSuggestionRequest()
   latestLiveQuery.value = props.searchText
   // 至少2个字符才触发搜索建议
   if (props.searchText.length < 2) {
-    runner.cancel()
     return
   }
 
@@ -165,13 +189,22 @@ function showSuggestionsDebounced() {
   const api = searchSuggestAPIs[settings.search.suggestionAPI]
   if (!api) {
     console.error('Selected search suggestion API not found')
+    searchSuggestions.value = []
     return
   }
-  runner.run(latestLiveQuery.value, api.parser)
+
+  const text = latestLiveQuery.value
+  const version = ++suggestionRequestVersion
+  const controller = new AbortController()
+  suggestionController = controller
+  suggestionTimer = setTimeout(() => {
+    suggestionTimer = null
+    void fetchSuggestions(text, api.parser, version, controller.signal)
+  }, 300)
 }
 
 onUnmounted(() => {
-  runner.cancel()
+  cancelSuggestionRequest()
 })
 
 function clearActiveSuggest() {
@@ -194,7 +227,7 @@ function hideSearchHistories() {
 }
 
 function clearSearchSuggestions() {
-  runner.cancel()
+  cancelSuggestionRequest()
   latestLiveQuery.value = ''
   hideSearchHistories()
   currentActiveSuggest.value = null

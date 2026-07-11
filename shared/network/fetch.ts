@@ -25,21 +25,29 @@ export async function enhancedFetch<T = unknown>(
   options: FetchOptions = {},
 ): Promise<T> {
   const { timeout = 2000, responseType = 'json', responseEncoding, ...fetchOptions } = options
+  const { signal: callerSignal, ...requestOptions } = fetchOptions
 
   // 添加默认 headers
-  const headers = new Headers(fetchOptions.headers)
+  const headers = new Headers(requestOptions.headers)
   // 仅当存在 body 或非 GET 请求时设置默认 Content-Type
-  const method = (fetchOptions.method || 'GET').toUpperCase()
-  if ((!headers.has('Content-Type') && fetchOptions.body) || method !== 'GET') {
+  const method = (requestOptions.method || 'GET').toUpperCase()
+  if ((!headers.has('Content-Type') && requestOptions.body) || method !== 'GET') {
     headers.set('Content-Type', headers.get('Content-Type') || 'application/json')
   }
 
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeout)
+  let timedOut = false
+  const abortFromCaller = () => controller.abort(callerSignal?.reason)
+  if (callerSignal?.aborted) abortFromCaller()
+  else callerSignal?.addEventListener('abort', abortFromCaller, { once: true })
+  const timeoutId = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, timeout)
 
   try {
     const response = await fetch(url, {
-      ...fetchOptions,
+      ...requestOptions,
       headers,
       signal: controller.signal,
     })
@@ -84,6 +92,7 @@ export async function enhancedFetch<T = unknown>(
     }
 
     if (error instanceof Error && error.name === 'AbortError') {
+      if (!timedOut) throw error
       const wrappedError = new EnhancedFetchError(
         `Fetch timed out after ${timeout}ms: ${url}`,
         'timeout',
@@ -108,6 +117,7 @@ export async function enhancedFetch<T = unknown>(
     throw wrappedError
   } finally {
     clearTimeout(timeoutId)
+    callerSignal?.removeEventListener('abort', abortFromCaller)
   }
 }
 

@@ -21,19 +21,14 @@ interface BingSuggest {
   }
 }
 
-async function bingSuggestParser(text: string): Promise<string[]> {
-  try {
-    const url = `https://api.bing.com/qsonhs.aspx?q=${encodeURIComponent(text)}`
-    const resp: BingSuggest = await enhancedFetch(url)
+async function bingSuggestParser(text: string, signal?: AbortSignal): Promise<string[]> {
+  const url = `https://api.bing.com/qsonhs.aspx?q=${encodeURIComponent(text)}`
+  const resp: BingSuggest = await enhancedFetch(url, { signal })
 
-    if (resp.AS.FullResults <= 0) {
-      return []
-    }
-    return resp.AS.Results[0].Suggests.map((s) => s.Txt)
-  } catch (error) {
-    console.error('Bing suggestion error:', error)
+  if (resp.AS.FullResults <= 0) {
     return []
   }
+  return resp.AS.Results[0].Suggests.map((s) => s.Txt)
 }
 
 function baiduJsonpParser(text: string): string[] {
@@ -44,27 +39,23 @@ function baiduJsonpParser(text: string): string[] {
   throw new Error(`Invalid Baidu suggestion response: ${text}`)
 }
 
-async function baiduSuggestParser(text: string): Promise<string[]> {
-  try {
-    const url = `https://suggestion.baidu.com/su?wd=${encodeURIComponent(text)}&cb=window.baidu.sug`
-    const suggestions = await fetchJsonp({
-      url,
-      params: {},
-      callbackParam: 'cb',
-      callbackName: 'window.baidu.sug',
-      parser: baiduJsonpParser,
-      encoding: 'gbk', // 百度搜索建议 API 使用 GBK 编码
-    })
+async function baiduSuggestParser(text: string, signal?: AbortSignal): Promise<string[]> {
+  const url = `https://suggestion.baidu.com/su?wd=${encodeURIComponent(text)}&cb=window.baidu.sug`
+  const suggestions = await fetchJsonp({
+    url,
+    params: {},
+    callbackParam: 'cb',
+    callbackName: 'window.baidu.sug',
+    parser: baiduJsonpParser,
+    encoding: 'gbk', // 百度搜索建议 API 使用 GBK 编码
+    signal,
+  })
 
-    if (suggestions[0] === text) {
-      return suggestions.slice(1)
-    }
-
-    return suggestions
-  } catch (error) {
-    console.error('Baidu suggestion error:', error)
-    return []
+  if (suggestions[0] === text) {
+    return suggestions.slice(1)
   }
+
+  return suggestions
 }
 
 interface GoogleSuggest {
@@ -85,15 +76,10 @@ interface GoogleSuggest {
   }
 }
 
-async function googleSuggestParser(text: string): Promise<string[]> {
-  try {
-    const url = `https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(text)}`
-    const resp: GoogleSuggest = await enhancedFetch(url)
-    return resp[1]
-  } catch (error) {
-    console.error('Google suggestion error:', error)
-    return []
-  }
+async function googleSuggestParser(text: string, signal?: AbortSignal): Promise<string[]> {
+  const url = `https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(text)}`
+  const resp: GoogleSuggest = await enhancedFetch(url, { signal })
+  return resp[1]
 }
 
 export { baiduSuggestParser, bingSuggestParser, googleSuggestParser }
