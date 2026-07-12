@@ -76,7 +76,7 @@ watch(windowWidth, (newWidth, oldWidth) => {
 
 watch(opened, (visible) => {
   if (visible) resetRouter()
-})
+}, { immediate: true })
 </script>
 
 <template>
@@ -128,37 +128,39 @@ watch(opened, (visible) => {
       </div>
     </template>
 
-    <settings-menu-view
-      v-if="!isMobile"
-      :is-collapse="isCollapse"
-      :active-key="router.currentRoute.value"
-      @select="handleMenuSelect"
-    />
-
-    <Transition v-if="isMobile" :name="slideTransitionName">
+    <div class="settings-layout">
       <settings-menu-view
-        v-if="router.isAtMenu.value"
-        key="menu"
-        is-mobile
+        v-if="!isMobile"
+        :is-collapse="isCollapse"
         :active-key="router.currentRoute.value"
         @select="handleMenuSelect"
       />
+
+      <Transition v-if="isMobile" :name="slideTransitionName">
+        <settings-menu-view
+          v-if="router.isAtMenu.value"
+          key="menu"
+          is-mobile
+          :active-key="router.currentRoute.value"
+          @select="handleMenuSelect"
+        />
+        <settings-detail-view
+          v-else
+          key="detail"
+          ref="detailViewRef"
+          is-mobile
+          disable-transition
+          :current-route="router.currentRoute.value"
+          :title="currentPageTitle"
+        />
+      </Transition>
+
       <settings-detail-view
         v-else
-        key="detail"
         ref="detailViewRef"
-        is-mobile
-        disable-transition
         :current-route="router.currentRoute.value"
         :title="currentPageTitle"
       />
-    </Transition>
-
-    <settings-detail-view
-      v-else
-      ref="detailViewRef"
-      :current-route="router.currentRoute.value"
-      :title="currentPageTitle"
-    />
+    </div>
   </el-dialog>
 </template>
