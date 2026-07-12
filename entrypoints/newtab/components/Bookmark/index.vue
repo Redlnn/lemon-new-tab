@@ -65,7 +65,8 @@ const drawerWidth = ref(400)
 const editDialogRef = ref<InstanceType<typeof BookmarkEditDialog>>()
 const groupSelectDialogRef = ref<InstanceType<typeof QuickLinkGroupSelectDialog>>()
 const dndRenderKey = ref(0)
-const preserveActiveMapOnNextEmptyPath = ref(false)
+// 本地拖拽会异步刷新 worker 结果；等刷新结果抵达后再恢复，避免被默认展开路径覆盖。
+const activeMapSnapshotForNextRefresh = ref<Record<number, string[]> | null>(null)
 
 provide(
   OPEN_BOOKMARK_EDIT_DIALOG,
@@ -164,11 +165,14 @@ const topModel = computed({
 watch(
   () => store.firstMatchPath,
   (path) => {
+    const activeMapSnapshot = activeMapSnapshotForNextRefresh.value
+    if (activeMapSnapshot) {
+      activeMap.value = activeMapSnapshot
+      activeMapSnapshotForNextRefresh.value = null
+      return
+    }
+
     if (searchQuery.value.trim() === '' && path.length === 0) {
-      if (preserveActiveMapOnNextEmptyPath.value) {
-        preserveActiveMapOnNextEmptyPath.value = false
-        return
-      }
       activeMap.value = {}
       return
     }
@@ -226,14 +230,13 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
   if (fromParentId === nextParentId && fromIndex === nextIndex) return
   if (source.isFolder && store.isBookmarkSelfOrDescendant(source.id, nextParentId)) return
 
+  const expandedSnapshot = snapshotActiveMap(activeMap.value)
   try {
-    const expandedSnapshot = snapshotActiveMap(activeMap.value)
-    preserveActiveMapOnNextEmptyPath.value = true
+    activeMapSnapshotForNextRefresh.value = expandedSnapshot
     await store.moveBookmark(source.id, {
       parentId: nextParentId,
       index: nextIndex,
     })
-    activeMap.value = expandedSnapshot
     dndRenderKey.value++
   } catch (error) {
     console.error(t('bookmark.moveError'), error)
@@ -241,10 +244,8 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
       title: t('bookmark.moveError'),
       message: (error as Error).message || 'Unknown error.',
     })
-    const expandedSnapshot = snapshotActiveMap(activeMap.value)
-    preserveActiveMapOnNextEmptyPath.value = true
+    activeMapSnapshotForNextRefresh.value = expandedSnapshot
     await store.loadBookmarks()
-    activeMap.value = expandedSnapshot
     dndRenderKey.value++
   }
 }

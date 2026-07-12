@@ -335,8 +335,6 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     } catch (error) {
       suppressedMoveReloadIds.delete(id)
       throw error
-    } finally {
-      globalThis.setTimeout(() => suppressedMoveReloadIds.delete(id), 1000)
     }
   }
 
