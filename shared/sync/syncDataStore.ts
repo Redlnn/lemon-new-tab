@@ -378,11 +378,7 @@ export const useSyncDataStore = defineStore('sync', () => {
 
         const flushLocalChanges = async () => {
           debounceTimer = null
-          if (
-            generation !== initGeneration ||
-            !initialized ||
-            !localSettings.sync.enabled
-          ) {
+          if (generation !== initGeneration || !initialized || !localSettings.sync.enabled) {
             return
           }
           if (isProcessing) {

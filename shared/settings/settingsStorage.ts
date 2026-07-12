@@ -11,9 +11,7 @@ import type {
 } from './types'
 
 // 合并重复的迁移逻辑，通过辅助函数创建迁移函数
-function createMigration<From, To>(
-  fromVersion: number,
-) {
+function createMigration<From, To>(fromVersion: number) {
   return async (settings: From & { version: number }): Promise<To> => {
     if (settings.version > fromVersion) {
       return settings as unknown as To

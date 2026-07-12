@@ -78,12 +78,7 @@ export function buildQuickLinkPages(options: {
   }
 
   const result = options.groups.flatMap((group) =>
-    splitQuickLinkPages(
-      group.id,
-      buildQuickLinkGroupItems(group),
-      false,
-      options.slotsPerPage,
-    ),
+    splitQuickLinkPages(group.id, buildQuickLinkGroupItems(group), false, options.slotsPerPage),
   )
   if (options.topSiteItems.length > 0) {
     result.push(

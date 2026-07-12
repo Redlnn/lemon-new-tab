@@ -159,17 +159,15 @@ async function clearWallpaperData() {
 }
 
 function clearExtensionData() {
-  runLoadingAndReload(
-    t('other.purge.confirm.data.purging'),
-    () =>
-      Promise.all([
-        localStorage.clear(),
-        sessionStorage.clear(),
-        idbDropDatabase(),
-        storage.clear('local'),
-        storage.clear('session'),
-        storage.clear('sync'),
-      ]),
+  runLoadingAndReload(t('other.purge.confirm.data.purging'), () =>
+    Promise.all([
+      localStorage.clear(),
+      sessionStorage.clear(),
+      idbDropDatabase(),
+      storage.clear('local'),
+      storage.clear('session'),
+      storage.clear('sync'),
+    ]),
   )
 }
 

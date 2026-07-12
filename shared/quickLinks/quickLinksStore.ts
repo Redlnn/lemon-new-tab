@@ -3,10 +3,9 @@ import { defineStore } from 'pinia'
 import i18next from 'i18next'
 
 import { useSettingsStore } from '@/shared/settings'
-
-import { flattenQuickLinkGroups, moveQuickLinkArrayItem } from './quickLinkAlgorithms'
 import { normalizeUrlForDedup } from '@/shared/url'
 
+import { flattenQuickLinkGroups, moveQuickLinkArrayItem } from './quickLinkAlgorithms'
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   MAX_QUICK_LINK_GROUP_NAME_LENGTH,
@@ -111,9 +110,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const getGroupForInsert = (groupId: string): QuickLinkGroup | undefined => {
-    return groupId === DEFAULT_QUICK_LINK_GROUP_ID
-      ? ensureDefaultGroup()
-      : getGroup(groupId)
+    return groupId === DEFAULT_QUICK_LINK_GROUP_ID ? ensureDefaultGroup() : getGroup(groupId)
   }
 
   const getDefaultGroupItems = () => getGroup(DEFAULT_QUICK_LINK_GROUP_ID)?.items ?? []

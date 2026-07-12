@@ -297,9 +297,15 @@ export function useThemeWatcher() {
   )
 
   const transparencyWatchers = [
-    { source: () => getEnabledTransparency(settings.perf.bookmark), apply: applyBookmarkTransparency },
+    {
+      source: () => getEnabledTransparency(settings.perf.bookmark),
+      apply: applyBookmarkTransparency,
+    },
     { source: () => getEnabledTransparency(settings.perf.dialog), apply: applyDialogTransparency },
-    { source: () => getEnabledTransparency(settings.perf.searchBar), apply: applySearchTransparency },
+    {
+      source: () => getEnabledTransparency(settings.perf.searchBar),
+      apply: applySearchTransparency,
+    },
     {
       source: () => getEnabledTransparency(settings.perf.quickLinks),
       apply: applyQuickLinksTransparency,
@@ -312,9 +318,15 @@ export function useThemeWatcher() {
   ]
 
   const backdropBlurWatchers = [
-    { source: () => getEnabledBackdropBlur(settings.perf.bookmark), apply: applyBookmarkBackdropBlur },
+    {
+      source: () => getEnabledBackdropBlur(settings.perf.bookmark),
+      apply: applyBookmarkBackdropBlur,
+    },
     { source: () => getEnabledBackdropBlur(settings.perf.dialog), apply: applyDialogBackdropBlur },
-    { source: () => getEnabledBackdropBlur(settings.perf.searchBar), apply: applySearchBackdropBlur },
+    {
+      source: () => getEnabledBackdropBlur(settings.perf.searchBar),
+      apply: applySearchBackdropBlur,
+    },
     {
       source: () => getEnabledBackdropBlur(settings.perf.quickLinks),
       apply: applyQuickLinksBackdropBlur,

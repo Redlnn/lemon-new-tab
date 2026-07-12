@@ -39,7 +39,10 @@ import QuickLinkDropTarget from './components/QuickLinkDropTarget.vue'
 import QuickLinkGroupName from './components/QuickLinkGroupName.vue'
 import QuickLinkGroupSelectDialog from './components/QuickLinkGroupSelectDialog.vue'
 import QuickLinkSortableItem from './components/QuickLinkSortableItem.vue'
-import { buildQuickLinkDisplayItems, buildTopSiteDisplayItems } from './composables/quickLinkDisplayItems'
+import {
+  buildQuickLinkDisplayItems,
+  buildTopSiteDisplayItems,
+} from './composables/quickLinkDisplayItems'
 import { useGroupNameRefs } from './composables/useGroupNameRefs'
 import {
   FLAT_QUICK_LINK_DND_GROUP_ID,

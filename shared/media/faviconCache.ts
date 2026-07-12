@@ -61,7 +61,8 @@ export function selectFaviconEntriesToDelete(
   entries: ReadonlyArray<readonly [string, import('@/shared/storage/idb').FaviconCacheEntry]>,
   now = Date.now(),
 ): string[] {
-  const freshEntries: Array<readonly [string, import('@/shared/storage/idb').FaviconCacheEntry]> = []
+  const freshEntries: Array<readonly [string, import('@/shared/storage/idb').FaviconCacheEntry]> =
+    []
   const keysToDelete: string[] = []
 
   for (const entry of entries) {

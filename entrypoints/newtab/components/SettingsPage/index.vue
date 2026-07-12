@@ -74,9 +74,13 @@ watch(windowWidth, (newWidth, oldWidth) => {
   }
 })
 
-watch(opened, (visible) => {
-  if (visible) resetRouter()
-}, { immediate: true })
+watch(
+  opened,
+  (visible) => {
+    if (visible) resetRouter()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

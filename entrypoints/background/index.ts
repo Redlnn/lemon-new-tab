@@ -231,12 +231,7 @@ async function processCloudChange(cloudRaw: unknown): Promise<void> {
   }
 }
 
-const scheduler = createQueueScheduler(
-  state,
-  writeToCloud,
-  processCloudChange,
-  syncDataStorage,
-)
+const scheduler = createQueueScheduler(state, writeToCloud, processCloudChange, syncDataStorage)
 
 // ─── Message helpers ──────────────────────────────────────────────────────────
 

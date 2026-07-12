@@ -367,10 +367,7 @@ async function refreshQuickLinks() {
       v-if="searchEnginesSwitcherMounted"
       v-model="searchEnginesSwitcherVisible"
     />
-    <background-switcher
-      v-if="backgroundSwitcherMounted"
-      v-model="backgroundSwitcherVisible"
-    />
+    <background-switcher v-if="backgroundSwitcherMounted" v-model="backgroundSwitcherVisible" />
     <bookmark v-if="bookmarkMounted" v-model="bookmarkVisible" />
     <add-quick-link-dialog
       v-if="addQuickLinkDialogMounted"

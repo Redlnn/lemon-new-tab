@@ -416,10 +416,7 @@ async function updateBackgroundURL(type: BgType): Promise<void> {
   shortenBgFadeDuration()
 }
 
-const {
-  invalidate: invalidateMonet,
-  onImageLoaded: onImgLoaded,
-} = useBackgroundMonet({
+const { invalidate: invalidateMonet, onImageLoaded: onImgLoaded } = useBackgroundMonet({
   backgroundUrl: bgURL,
   image: imageRef,
   isVideo: isVideoWallpaper,
@@ -488,7 +485,6 @@ onUnmounted(() => {
   onlineFetchController?.abort()
   onlineFetchController = null
 })
-
 </script>
 
 <template>

@@ -38,7 +38,6 @@ export class LRUCache {
   clear(): void {
     this.cache.clear()
   }
-
 }
 
 // 创建全局搜索建议缓存实例

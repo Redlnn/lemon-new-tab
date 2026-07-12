@@ -251,14 +251,20 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     }
 
     // 添加书签变更监听，变更时重新加载书签并刷新 worker 缓存
-    setBookmarkListener('created', () => reloadBookmarks('onCreated'), (listener) =>
-      browser.bookmarks.onCreated.addListener(listener),
+    setBookmarkListener(
+      'created',
+      () => reloadBookmarks('onCreated'),
+      (listener) => browser.bookmarks.onCreated.addListener(listener),
     )
-    setBookmarkListener('removed', () => reloadBookmarks('onRemoved'), (listener) =>
-      browser.bookmarks.onRemoved.addListener(listener),
+    setBookmarkListener(
+      'removed',
+      () => reloadBookmarks('onRemoved'),
+      (listener) => browser.bookmarks.onRemoved.addListener(listener),
     )
-    setBookmarkListener('changed', () => reloadBookmarks('onChanged'), (listener) =>
-      browser.bookmarks.onChanged.addListener(listener),
+    setBookmarkListener(
+      'changed',
+      () => reloadBookmarks('onChanged'),
+      (listener) => browser.bookmarks.onChanged.addListener(listener),
     )
     setBookmarkListener(
       'moved',
