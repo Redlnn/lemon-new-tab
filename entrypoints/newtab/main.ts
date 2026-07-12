@@ -53,8 +53,7 @@ export const main = async () => {
   await useSettingsStore().init()
   const settings = useSettingsStore()
 
-  // 缓存预热不阻塞应用外壳；含动态图标的区域由 faviconCacheReady 统一放行，
-  // 因而缓存图标仍会整批出现，不会逐个闪现。
+  // 缓存预热不阻塞应用外壳；图标消费者会复用同一个预热任务。
   void hydrateFaviconCache(settings.faviconCacheEnabled)
   watch(() => settings.faviconCacheEnabled, setFaviconCacheEnabled, { immediate: true })
 

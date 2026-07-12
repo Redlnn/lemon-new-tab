@@ -1,6 +1,5 @@
 // shared/media/faviconFetch.ts
 import { browser } from '#imports'
-import { ref } from 'vue'
 
 import {
   clearFaviconCacheEntries,
@@ -23,24 +22,6 @@ let cacheGeneration = 0
 let cleanupTimer: ReturnType<typeof setTimeout> | null = null
 let l2MutationQueue = Promise.resolve()
 let faviconHydrationTask: Promise<unknown> | null = null
-let startupFaviconRequestCount = 0
-let faviconRevealVersion = 0
-
-/** 持久化缓存完成整批预热后再挂载含动态图标的首屏区域。 */
-export const faviconCacheReady = ref(true)
-
-function scheduleFaviconReveal(): void {
-  const version = ++faviconRevealVersion
-  queueMicrotask(() => {
-    if (
-      version === faviconRevealVersion &&
-      !faviconHydrationTask &&
-      startupFaviconRequestCount === 0
-    ) {
-      faviconCacheReady.value = true
-    }
-  })
-}
 
 function queueL2Mutation(task: () => Promise<void>): Promise<void> {
   const next = l2MutationQueue.then(task, task)
@@ -88,7 +69,6 @@ export function setFaviconCacheEnabled(enabled: boolean): void {
  */
 export async function hydrateFaviconCache(enabled: boolean): Promise<void> {
   setFaviconCacheEnabled(enabled)
-  faviconCacheReady.value = !enabled
   if (!enabled) return
 
   const generationAtStart = cacheGeneration
@@ -103,7 +83,6 @@ export async function hydrateFaviconCache(enabled: boolean): Promise<void> {
     schedulePersistentCleanup(generationAtStart)
   } finally {
     if (faviconHydrationTask === entriesTask) faviconHydrationTask = null
-    scheduleFaviconReveal()
   }
 }
 
@@ -526,41 +505,31 @@ async function probeViaImageElement(pageUrl: string): Promise<string | null> {
  * 若完全不可用则返回 null（调用方应展示兜底图标）。
  */
 export async function fetchFaviconWithCache(pageUrl: string): Promise<string | null> {
-  const belongsToStartupBatch = !faviconCacheReady.value
-  if (belongsToStartupBatch) startupFaviconRequestCount += 1
+  // 启动预热期间的所有消费者共用同一个批量读取，避免退化为逐条 IndexedDB 查询。
+  if (faviconHydrationTask) await faviconHydrationTask
 
-  try {
-    // 启动预热期间的所有消费者共用同一个批量读取，避免退化为逐条 IndexedDB 查询。
-    if (faviconHydrationTask) await faviconHydrationTask
+  const origin = toOrigin(pageUrl)
+  if (!origin) return null
 
-    const origin = toOrigin(pageUrl)
-    if (!origin) return null
+  const l1 = l1Get(origin)
+  if (l1) {
+    if (isFreshFaviconEntry(l1)) return l1.data
+    refreshInBackground(pageUrl, origin)
+    return l1.data
+  }
 
-    const l1 = l1Get(origin)
-    if (l1) {
-      if (isFreshFaviconEntry(l1)) return l1.data
+  if (_cacheEnabled) {
+    const generationAtRead = cacheGeneration
+    const l2 = await getFaviconCacheEntry(origin)
+    if (_cacheEnabled && generationAtRead === cacheGeneration && l2) {
+      l1Set(origin, l2)
+      if (isFreshFaviconEntry(l2)) return l2.data
       refreshInBackground(pageUrl, origin)
-      return l1.data
-    }
-
-    if (_cacheEnabled) {
-      const generationAtRead = cacheGeneration
-      const l2 = await getFaviconCacheEntry(origin)
-      if (_cacheEnabled && generationAtRead === cacheGeneration && l2) {
-        l1Set(origin, l2)
-        if (isFreshFaviconEntry(l2)) return l2.data
-        refreshInBackground(pageUrl, origin)
-        return l2.data
-      }
-    }
-
-    return await doFetch(pageUrl, origin)
-  } finally {
-    if (belongsToStartupBatch) {
-      startupFaviconRequestCount = Math.max(0, startupFaviconRequestCount - 1)
-      scheduleFaviconReveal()
+      return l2.data
     }
   }
+
+  return await doFetch(pageUrl, origin)
 }
 
 /** 后台异步刷新（不等待结果） */
@@ -579,14 +548,16 @@ async function doFetch(pageUrl: string, origin: string): Promise<string | null> 
   const promise = (async (): Promise<string | null> => {
     let data: string | null = null
     let type: 'base64' | 'url' = 'base64'
-    const hasHostPerm = await browser.permissions
-      .contains({ origins: ['*://*/*'] })
-      .catch(() => false)
 
     // 缓存关闭时优先复用浏览器已经拥有的图标，避免每次新标签页都访问外部服务。
     if (!_cacheEnabled && isChromium) {
       data = await fetchViaChromeFaviconApi(pageUrl)
     }
+
+    // Chromium 内部接口失败或其他浏览器才需要检查泛域名权限。
+    const hasHostPerm = data
+      ? false
+      : await browser.permissions.contains({ origins: ['*://*/*'] }).catch(() => false)
 
     // 策略 A：读取页面声明的 icon 链接（需要主机权限）
     if (!data && hasHostPerm) {

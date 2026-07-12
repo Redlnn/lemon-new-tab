@@ -4,7 +4,6 @@ import { unref, watch } from 'vue'
 export * from './verify'
 export {
   clearFaviconCache,
-  faviconCacheReady,
   fetchFaviconWithCache,
   hydrateFaviconCache,
   setFaviconCacheEnabled,
@@ -29,7 +28,10 @@ export function getFaviconURL(url: string | Ref<string | null>): Ref<string> {
 
     fetchFaviconWithCache(u)
       .then((data) => {
-        if (currentSeq === seq && data) iconUrl.value = data
+        if (!data) return
+        requestAnimationFrame(() => {
+          if (currentSeq === seq) iconUrl.value = data
+        })
       })
       .catch(() => {})
   }

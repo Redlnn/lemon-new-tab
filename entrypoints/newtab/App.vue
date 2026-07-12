@@ -5,7 +5,6 @@ import { shallowRef, type StyleValue } from 'vue'
 import { useTranslation } from 'i18next-vue'
 
 import { BgType } from '@/shared/enums'
-import { faviconCacheReady } from '@/shared/media'
 import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import { addSyncEventCallback } from '@/shared/sync/syncEvents'
 import type { SyncEventPayloadMap } from '@/shared/sync/types'
@@ -320,10 +319,9 @@ async function refreshQuickLinks() {
       @contextmenu.prevent="openBookmarkSidebar"
     >
       <clock v-if="settings.clock.enabled" @contextmenu.stop />
-      <search-box v-if="settings.search.enabled" v-show="faviconCacheReady" @contextmenu.stop />
+      <search-box v-if="settings.search.enabled" @contextmenu.stop />
       <quick-links
         v-if="settings.quickLinks.enabled"
-        v-show="faviconCacheReady"
         ref="QuickLinksRef"
         :on-open-add-dialog="openAddQuickLinkDialog"
         :on-open-edit-dialog="openEditQuickLinkDialog"
@@ -332,7 +330,6 @@ async function refreshQuickLinks() {
       <yi-yan v-if="settings.yiyan.enabled" @contextmenu.stop />
       <dock
         v-if="settings.dock.enabled"
-        v-show="faviconCacheReady"
         ref="DockRef"
         :on-open-add-dialog="openAddQuickLinkDialog"
         :on-open-edit-dialog="openEditQuickLinkDialog"

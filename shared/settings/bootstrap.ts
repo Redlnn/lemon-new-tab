@@ -3,28 +3,29 @@ import { browser } from '#imports'
 import { handleInvaildSettings } from './handleInvaild'
 
 export async function shouldStartApp(): Promise<boolean> {
-  const wxtSettingsVer: { $settings: number | null } = await browser.storage.local.get({
+  const storedSettings: {
+    $settings: number | null
+    settings: { version: string | number | null; [key: string]: unknown }
+  } = await browser.storage.local.get({
     $settings: null,
+    settings: { version: null },
   })
-  if (wxtSettingsVer.$settings && wxtSettingsVer.$settings <= 6) {
+
+  if (storedSettings.$settings && storedSettings.$settings <= 6) {
     await handleInvaildSettings()
     return false
   }
 
-  const localSettings: {
-    settings: { version: string | number | null; [key: string]: unknown }
-  } = await browser.storage.local.get({ settings: { version: null } })
-
-  if (localSettings.settings.version) {
+  if (storedSettings.settings.version) {
     let isInvaildSettings: boolean = false
 
-    if (typeof localSettings.settings.version === 'string') {
+    if (typeof storedSettings.settings.version === 'string') {
       // 远古配置文件
       isInvaildSettings = true
-    } else if (localSettings.settings.version <= 6) {
+    } else if (storedSettings.settings.version <= 6) {
       isInvaildSettings = true
     }
-    if (!('pluginVersion' in localSettings.settings)) {
+    if (!('pluginVersion' in storedSettings.settings)) {
       // 早期版本没有 pluginVersion 字段，说明配置文件非常古老，直接清除重置
       isInvaildSettings = true
     }

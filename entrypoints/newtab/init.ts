@@ -22,14 +22,13 @@ function renderStartupError(error: unknown) {
 }
 
 async function bootstrapNewtab() {
-  await initI18n()
-  const canStartApp = await shouldStartApp()
+  const [, canStartApp] = await Promise.all([initI18n(), shouldStartApp()])
   if (!canStartApp) {
     return
   }
 
-  await initDayjs()
-  const { main } = await import('./main')
+  const mainModuleTask = import('./main')
+  const [, { main }] = await Promise.all([initDayjs(), mainModuleTask])
   await main()
 }
 
