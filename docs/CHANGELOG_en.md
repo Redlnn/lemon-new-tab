@@ -6,19 +6,17 @@
 
 ### New Features✨
 
-- Added separate corner-radius controls for the search box, Quick Links icons, quote widget, and action buttons.
+- Added separate corner-radius controls for the search box, Quick Links icons, quote widget, action buttons, and other shared components.
 
 ### Improvements⚡️
 
 - Improved loading and interactions across the new tab page, Quick Links, search suggestions, and settings dialog for smoother startup and use.
 - Improved cross-device sync scheduling to reduce the risk of older data overwriting newer settings.
+- Refactored the settings window to reduce implementation complexity and improve performance and maintainability.
 
 ### Bug Fixes🐛
 
 - Fixed misaligned color pickers in some dialogs.
-- Fixed local wallpapers repeatedly loading or leaving the switching animation in an incorrect state.
-- Fixed cached site icons sometimes appearing one by one during startup.
-- Fixed settings dialog layout issues at different window sizes.
 - Fixed expanded bookmark folders sometimes collapsing after drag-and-drop sorting.
 
 ## 3.4.0 (Jul 04, 2026)
