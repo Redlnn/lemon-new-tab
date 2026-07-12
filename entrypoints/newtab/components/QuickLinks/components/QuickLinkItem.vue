@@ -37,6 +37,7 @@ function openFocusedLink(event: KeyboardEvent) {
     class="quick-links__item noselect"
     :class="[{ pined: pined }]"
     :aria-label="title"
+    :title="title"
     @keydown.enter.prevent="openFocusedLink"
     @keydown.space.prevent="openFocusedLink"
   >
