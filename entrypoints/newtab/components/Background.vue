@@ -42,6 +42,9 @@ if (settings.background.fastAnimation) {
 
 const wallpaperUrlStore = useWallpaperUrlStore()
 const { lightUrl, darkUrl, bingUrl } = storeToRefs(wallpaperUrlStore)
+const activeLocalUrl = computed(() =>
+  isDark.value && settings.background.localDark.id ? darkUrl.value : lightUrl.value,
+)
 const isSwitching = ref(true)
 
 const imageRef = useTemplateRef('imageRef')
@@ -382,7 +385,11 @@ async function updateBackgroundURL(type: BgType): Promise<void> {
   activeMonetSourceKey.value = source.sourceKey
 
   // 只在URL真正变化时才执行切换动画
-  if (source.url === bgURL.value) return
+  if (source.url === bgURL.value) {
+    // 新请求可能在旧请求的切换动画期间切回当前壁纸；此时要主动结束旧切换状态。
+    isSwitching.value = false
+    return
+  }
 
   isSwitching.value = true
 
@@ -427,7 +434,7 @@ watch(
   },
 )
 
-watch([lightUrl, darkUrl, isDark], () => {
+watch(activeLocalUrl, () => {
   if (settings.background.bgType === BgType.Local) void updateBackgroundURL(BgType.Local)
 })
 

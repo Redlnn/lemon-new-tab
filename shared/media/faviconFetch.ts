@@ -1,5 +1,6 @@
 // shared/media/faviconFetch.ts
 import { browser } from '#imports'
+import { ref } from 'vue'
 
 import {
   clearFaviconCacheEntries,
@@ -21,6 +22,25 @@ let _cacheEnabled = false
 let cacheGeneration = 0
 let cleanupTimer: ReturnType<typeof setTimeout> | null = null
 let l2MutationQueue = Promise.resolve()
+let faviconHydrationTask: Promise<unknown> | null = null
+let startupFaviconRequestCount = 0
+let faviconRevealVersion = 0
+
+/** 持久化缓存完成整批预热后再挂载含动态图标的首屏区域。 */
+export const faviconCacheReady = ref(true)
+
+function scheduleFaviconReveal(): void {
+  const version = ++faviconRevealVersion
+  queueMicrotask(() => {
+    if (
+      version === faviconRevealVersion &&
+      !faviconHydrationTask &&
+      startupFaviconRequestCount === 0
+    ) {
+      faviconCacheReady.value = true
+    }
+  })
+}
 
 function queueL2Mutation(task: () => Promise<void>): Promise<void> {
   const next = l2MutationQueue.then(task, task)
@@ -68,15 +88,23 @@ export function setFaviconCacheEnabled(enabled: boolean): void {
  */
 export async function hydrateFaviconCache(enabled: boolean): Promise<void> {
   setFaviconCacheEnabled(enabled)
+  faviconCacheReady.value = !enabled
   if (!enabled) return
 
   const generationAtStart = cacheGeneration
-  const entries = await getAllFaviconCacheEntries()
-  if (!_cacheEnabled || generationAtStart !== cacheGeneration) return
+  const entriesTask = getAllFaviconCacheEntries()
+  faviconHydrationTask = entriesTask
+  try {
+    const entries = await entriesTask
+    if (!_cacheEnabled || generationAtStart !== cacheGeneration) return
 
-  entries.sort((a, b) => a[1].fetchedAt - b[1].fetchedAt)
-  for (const [origin, entry] of entries) l1Set(origin, entry)
-  schedulePersistentCleanup(generationAtStart)
+    entries.sort((a, b) => a[1].fetchedAt - b[1].fetchedAt)
+    for (const [origin, entry] of entries) l1Set(origin, entry)
+    schedulePersistentCleanup(generationAtStart)
+  } finally {
+    if (faviconHydrationTask === entriesTask) faviconHydrationTask = null
+    scheduleFaviconReveal()
+  }
 }
 
 /** 清空 favicon 的内存缓存与持久化缓存。 */
@@ -498,28 +526,41 @@ async function probeViaImageElement(pageUrl: string): Promise<string | null> {
  * 若完全不可用则返回 null（调用方应展示兜底图标）。
  */
 export async function fetchFaviconWithCache(pageUrl: string): Promise<string | null> {
-  const origin = toOrigin(pageUrl)
-  if (!origin) return null
+  const belongsToStartupBatch = !faviconCacheReady.value
+  if (belongsToStartupBatch) startupFaviconRequestCount += 1
 
-  const l1 = l1Get(origin)
-  if (l1) {
-    if (isFreshFaviconEntry(l1)) return l1.data
-    refreshInBackground(pageUrl, origin)
-    return l1.data
-  }
+  try {
+    // 启动预热期间的所有消费者共用同一个批量读取，避免退化为逐条 IndexedDB 查询。
+    if (faviconHydrationTask) await faviconHydrationTask
 
-  if (_cacheEnabled) {
-    const generationAtRead = cacheGeneration
-    const l2 = await getFaviconCacheEntry(origin)
-    if (_cacheEnabled && generationAtRead === cacheGeneration && l2) {
-      l1Set(origin, l2)
-      if (isFreshFaviconEntry(l2)) return l2.data
+    const origin = toOrigin(pageUrl)
+    if (!origin) return null
+
+    const l1 = l1Get(origin)
+    if (l1) {
+      if (isFreshFaviconEntry(l1)) return l1.data
       refreshInBackground(pageUrl, origin)
-      return l2.data
+      return l1.data
+    }
+
+    if (_cacheEnabled) {
+      const generationAtRead = cacheGeneration
+      const l2 = await getFaviconCacheEntry(origin)
+      if (_cacheEnabled && generationAtRead === cacheGeneration && l2) {
+        l1Set(origin, l2)
+        if (isFreshFaviconEntry(l2)) return l2.data
+        refreshInBackground(pageUrl, origin)
+        return l2.data
+      }
+    }
+
+    return await doFetch(pageUrl, origin)
+  } finally {
+    if (belongsToStartupBatch) {
+      startupFaviconRequestCount = Math.max(0, startupFaviconRequestCount - 1)
+      scheduleFaviconReveal()
     }
   }
-
-  return doFetch(pageUrl, origin)
 }
 
 /** 后台异步刷新（不等待结果） */

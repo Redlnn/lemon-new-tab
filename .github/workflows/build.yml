@@ -29,6 +29,7 @@ jobs:
       - name: Install and Build
         run: |
           pnpm install
+          pnpm type-check
           pnpm zip
           pnpm zip -b edge
           pnpm zip -b firefox

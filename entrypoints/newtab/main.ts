@@ -53,8 +53,9 @@ export const main = async () => {
   await useSettingsStore().init()
   const settings = useSettingsStore()
 
-  // UI 挂载前一次性恢复持久化图标，避免每个组件分别读取 IndexedDB 后逐个闪现。
-  await hydrateFaviconCache(settings.faviconCacheEnabled)
+  // 缓存预热不阻塞应用外壳；含动态图标的区域由 faviconCacheReady 统一放行，
+  // 因而缓存图标仍会整批出现，不会逐个闪现。
+  void hydrateFaviconCache(settings.faviconCacheEnabled)
   watch(() => settings.faviconCacheEnabled, setFaviconCacheEnabled, { immediate: true })
 
   changeTheme(settings.theme.primaryColor)

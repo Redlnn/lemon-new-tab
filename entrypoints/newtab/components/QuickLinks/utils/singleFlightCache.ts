@@ -1,7 +1,7 @@
 export function createSingleFlightCache<T>(options: {
   ttl: number
   fetchValue: () => Promise<T>
-  onValue: (value: T) => void
+  onValue: (value: T) => unknown
   now?: () => number
 }) {
   const now = options.now ?? Date.now
@@ -23,9 +23,11 @@ export function createSingleFlightCache<T>(options: {
         const value = await options.fetchValue()
         if (generationAtStart !== invalidationGeneration) continue
 
+        await options.onValue(value)
+        if (generationAtStart !== invalidationGeneration) continue
+
         cachedValue = value
         cacheTimestamp = now()
-        options.onValue(value)
         return value
       }
     })()

@@ -886,7 +886,7 @@ defineExpose({ refresh })
 <template>
   <section
     class="quick-links"
-    :aria-label="t('quickLinks.title')"
+    :aria-label="t('settings:quickLinks.title')"
     :class="{
       'quick-links--scroll': settings.quickLinks.useScroll,
       'quick-links--dragging': isDragging,
@@ -952,6 +952,7 @@ defineExpose({ refresh })
                     isPinned: item.isPinned,
                     origin: getItemDndOrigin(item),
                   }"
+                  :title="item.title"
                   @touch-menu="handleQuickLinkTouchMenu"
                 >
                   <quick-link-item

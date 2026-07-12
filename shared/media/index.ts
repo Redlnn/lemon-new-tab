@@ -4,6 +4,7 @@ import { unref, watch } from 'vue'
 export * from './verify'
 export {
   clearFaviconCache,
+  faviconCacheReady,
   fetchFaviconWithCache,
   hydrateFaviconCache,
   setFaviconCacheEnabled,

@@ -23,6 +23,11 @@ export const useWallpaperUrlStore = defineStore('wallpaperUrl', () => {
     dark: 0,
     bing: 0,
   } satisfies Record<'light' | 'dark' | 'bing', number>
+  const resolvedBackgroundId = {
+    light: '',
+    dark: '',
+    bing: '',
+  } satisfies Record<'light' | 'dark' | 'bing', string>
 
   const getTargetRef = (type: 'light' | 'dark' | 'bing') => {
     if (type === 'light') return lightUrl
@@ -30,19 +35,24 @@ export const useWallpaperUrlStore = defineStore('wallpaperUrl', () => {
     return bingUrl
   }
 
-  const updateRef = (type: 'light' | 'dark' | 'bing', url: string) => {
+  const currentBackgroundId = (type: 'light' | 'dark' | 'bing') => {
+    if (type === 'light') return settings.background.local.id
+    if (type === 'dark') return settings.background.localDark.id
+    return settings.background.bing.id
+  }
+
+  const updateRef = (
+    type: 'light' | 'dark' | 'bing',
+    url: string,
+    backgroundId = currentBackgroundId(type),
+  ) => {
     const targetRef = getTargetRef(type)
     const oldUrl = targetRef.value
     if (oldUrl.startsWith('blob:') && oldUrl !== url) {
       URL.revokeObjectURL(oldUrl)
     }
     targetRef.value = url
-  }
-
-  const currentBackgroundId = (type: 'light' | 'dark' | 'bing') => {
-    if (type === 'light') return settings.background.local.id
-    if (type === 'dark') return settings.background.localDark.id
-    return settings.background.bing.id
+    resolvedBackgroundId[type] = url ? backgroundId : ''
   }
 
   const getUrl = async (type: 'light' | 'dark' | 'bing'): Promise<Ref<string>> => {
@@ -56,12 +66,23 @@ export const useWallpaperUrlStore = defineStore('wallpaperUrl', () => {
     const isLatest = () =>
       requestVersion[type] === version && currentBackgroundId(type) === expectedBackgroundId
 
+    // 弹窗预览与背景组件共享同一个 Store；同一壁纸已经解析时直接复用对象 URL，
+    // 避免重复读取 Blob、撤销旧 URL 并触发背景组件重新切换。
+    if (
+      expectedBackgroundId &&
+      resolvedBackgroundId[type] === expectedBackgroundId &&
+      targetRef.value
+    ) {
+      return targetRef
+    }
+
     if (!background.id) {
       if (type === 'dark') {
+        if (isLatest()) updateRef(type, '', expectedBackgroundId)
         return getUrl('light')
       }
       if (isLatest()) {
-        updateRef(type, '')
+        updateRef(type, '', expectedBackgroundId)
       }
       return targetRef
     }
@@ -80,7 +101,7 @@ export const useWallpaperUrlStore = defineStore('wallpaperUrl', () => {
           const res = await fetch(cachedUrl)
           if (res.ok) {
             if (isLatest()) {
-              updateRef(type, cachedUrl)
+              updateRef(type, cachedUrl, expectedBackgroundId)
             }
             return targetRef
           }
@@ -118,12 +139,12 @@ export const useWallpaperUrlStore = defineStore('wallpaperUrl', () => {
       }
 
       // Blob URL 特定于上下文；不要将其存储在会话缓存中。
-      updateRef(type, url)
+      updateRef(type, url, expectedBackgroundId)
       return targetRef
     }
 
     if (isLatest()) {
-      updateRef(type, '')
+      updateRef(type, '', expectedBackgroundId)
     }
     return targetRef
   }
