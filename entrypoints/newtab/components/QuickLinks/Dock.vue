@@ -18,7 +18,7 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
-import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
+import { isTouchEvent } from '@newtab/shared/touch'
 
 import QuickLinkContextMenu from './components/QuickLinkContextMenu.vue'
 import QuickLinkGroupSelectDialog from './components/QuickLinkGroupSelectDialog.vue'
@@ -321,7 +321,7 @@ function onItemLongPress(
   isPinned: boolean,
   originalIndex: number,
 ): void {
-  if (isHasTouchDevice && isTouchEvent(event)) {
+  if (isTouchEvent(event)) {
     openDockItemMenu(event, item, isPinned, originalIndex)
   }
 }

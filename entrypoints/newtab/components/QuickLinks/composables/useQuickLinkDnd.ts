@@ -95,8 +95,8 @@ class QuickLinkLongPressActivationConstraint {
       this.touchDragReady = !this.options.touchMenu
       this.moved = false
       this.activated = false
-      this.timer = setTimeout(() => this.activateOrOpenMenu(), QUICK_LINK_DND_ACTIVATION_DELAY)
       if (this.options.touchMenu) {
+        this.timer = setTimeout(() => this.activateOrOpenMenu(), QUICK_LINK_DND_ACTIVATION_DELAY)
         this.stationaryTimer = setTimeout(() => {
           this.touchDragReady = true
           this.stationaryTimer = undefined

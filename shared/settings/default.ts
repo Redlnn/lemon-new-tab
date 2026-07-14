@@ -1,4 +1,5 @@
 import { BgType, ClockWeight, DrawerDirection, SortMode } from '@/shared/enums'
+import { BUILT_IN_SEARCH_ENGINE_KEYS } from '@/shared/searchEngines'
 
 import { type CURRENT_CONFIG_SCHEMA, CURRENT_CONFIG_VERSION } from './current'
 
@@ -51,6 +52,8 @@ export const defaultSettings = {
 
     suggestionAPI: 'bing',
     engine: 'bing',
+    builtInEngineOrder: [...BUILT_IN_SEARCH_ENGINE_KEYS],
+    hiddenBuiltInEngines: [],
 
     openInNewTab: false,
     recordHistory: true,

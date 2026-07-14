@@ -2,17 +2,30 @@
 import { useTranslation } from 'i18next-vue'
 import BubbleChartRound from '~icons/ic/round-bubble-chart'
 import CloudOffRound from '~icons/ic/round-cloud-off'
+import RestoreRound from '~icons/ic/round-restore'
 
 import { useSettingsStore } from '@/shared/settings'
 
 import { OPEN_SEARCH_ENGINE_PREFERENCE } from '@newtab/shared/keys'
-import { searchSuggestAPIs } from '@newtab/shared/search'
+import { BUILT_IN_SEARCH_ENGINE_KEYS, searchSuggestAPIs } from '@newtab/shared/search'
 
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
 
 const openSearchEnginePreference = inject(OPEN_SEARCH_ENGINE_PREFERENCE)
+const canRestoreBuiltInEngines = computed(
+  () =>
+    settings.search.hiddenBuiltInEngines.length > 0 ||
+    BUILT_IN_SEARCH_ENGINE_KEYS.some(
+      (key, index) => settings.search.builtInEngineOrder[index] !== key,
+    ),
+)
+
+function restoreBuiltInSearchEngines() {
+  settings.search.builtInEngineOrder = [...BUILT_IN_SEARCH_ENGINE_KEYS]
+  settings.search.hiddenBuiltInEngines = []
+}
 </script>
 
 <template>
@@ -120,6 +133,26 @@ const openSearchEnginePreference = inject(OPEN_SEARCH_ENGINE_PREFERENCE)
           :placeholder="t('newtab:search.placeholder')"
           style="width: 240px"
         />
+      </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('search.restoreHiddenEngines') }}</div>
+        <el-popconfirm
+          width="220"
+          :confirm-button-text="t('newtab:common.confirm')"
+          :cancel-button-text="t('newtab:common.no')"
+          :icon="RestoreRound"
+          icon-color="#626AEF"
+          :title="t('search.restoreHiddenEnginesTitle')"
+          @confirm="restoreBuiltInSearchEngines"
+        >
+          <template #reference>
+            <el-button
+              :disabled="!canRestoreBuiltInEngines"
+              :icon="RestoreRound"
+              circle
+            />
+          </template>
+        </el-popconfirm>
       </div>
     </template>
   </div>

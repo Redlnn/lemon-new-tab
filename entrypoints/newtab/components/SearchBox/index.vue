@@ -19,7 +19,11 @@ import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useSearchHistoryCache } from '@newtab/composables/useSearchHistoryCache'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
-import { getSearchEngineUrl, searchEngines } from '@newtab/shared/search'
+import {
+  getAvailableSearchEngineIds,
+  getSearchEngineUrl,
+  searchEngines,
+} from '@newtab/shared/search'
 
 import SearchEngineMenu from './components/SearchEngineMenu.vue'
 import SearchSuggestionArea from './components/SearchSuggestionArea.vue'
@@ -167,13 +171,12 @@ function handleDown() {
 }
 
 function handleTabNavigation(direction: 1 | -1) {
-  // Tab 键在所有搜索引擎（内置+自定义）之间切换
   const currentKey = settings.search.engine
-
-  // 构建完整的搜索引擎列表：内置引擎 + 自定义引擎
-  const builtInKeys = Object.keys(searchEngines)
-  const customKeys = customSearchEngineStore.items.map((e) => e.id)
-  const allEngineKeys = [...builtInKeys, ...customKeys]
+  const allEngineKeys = getAvailableSearchEngineIds(
+    settings.search.builtInEngineOrder,
+    settings.search.hiddenBuiltInEngines,
+    customSearchEngineStore.items.map((engine) => engine.id),
+  )
 
   if (allEngineKeys.length === 0) {
     return

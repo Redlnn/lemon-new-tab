@@ -294,6 +294,8 @@
     "launchAnim": "啟動時搜尋框展開動畫",
     "placeholder": "搜尋框占位文字",
     "recordSearchHistory": "記錄搜尋歷史",
+    "restoreHiddenEngines": "還原已隱藏的內建搜尋引擎",
+    "restoreHiddenEnginesTitle": "確定還原所有內建搜尋引擎及其預設順序嗎？",
     "searchSuggestionProvider": "搜尋建議 API",
     "shadow": "顯示搜尋框陰影",
     "tip": "想要打開新分頁就讓搜尋框取得焦點？請查看頁面右下角按鈕菜單的「幫助和反饋」",

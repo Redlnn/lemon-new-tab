@@ -1,19 +1,27 @@
 <script setup lang="ts">
+import { DragDropProvider, type DragEndEvent } from '@dnd-kit/vue'
 import { useTranslation } from 'i18next-vue'
 import Plus from '~icons/fa6-solid/plus'
-import CheckmarkCircle12Filled from '~icons/fluent/checkmark-circle-12-filled'
 
-import { useSettingsStore } from '@/shared/settings'
+import { defaultSettings, useSettingsStore } from '@/shared/settings'
+import type { BuiltInSearchEngineKey } from '@/shared/searchEngines'
 
 import BaseDialog from '@newtab/components/BaseDialog.vue'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 import { useCustomEngineFavicon } from '@newtab/shared/customSearchEngine/useCustomEngineFavicon'
-import { CUSTOM_ENGINE_OPENED_MENU_CLOSE_FN } from '@newtab/shared/keys'
-import { searchEngines } from '@newtab/shared/search'
+import { SEARCH_ENGINE_OPENED_MENU_CLOSE_FN } from '@newtab/shared/keys'
+import {
+  getAvailableSearchEngineIds,
+  getVisibleBuiltInSearchEngineKeys,
+  isBuiltInSearchEngineKey,
+  normalizeBuiltInSearchEngineOrder,
+  searchEngines,
+} from '@newtab/shared/search'
 
 import AddCustomSearchEngine from './components/AddCustomSearchEngine.vue'
-import CustomEngineItem from './components/CustomEngineItem.vue'
+import SearchEngineItem from './components/SearchEngineItem.vue'
+import { quickLinkDndSensors } from '../QuickLinks/composables/useQuickLinkDnd'
 
 const { t } = useTranslation()
 
@@ -28,9 +36,22 @@ const perf = usePerfClasses(() => ({
   transparency: settings.perf.dialog.transparency,
   blur: settings.perf.dialog.blur,
 }))
-const customEnginePopperClass = perf('se-switcher-item__menu-popper')
+const enginePopperClass = perf('se-switcher-item__menu-popper')
 
 const addCustomSearchEngineRef = ref<InstanceType<typeof AddCustomSearchEngine>>()
+const visibleBuiltInEngines = computed(() =>
+  getVisibleBuiltInSearchEngineKeys(
+    settings.search.builtInEngineOrder,
+    settings.search.hiddenBuiltInEngines,
+  ),
+)
+const availableEngineIds = computed(() =>
+  getAvailableSearchEngineIds(
+    settings.search.builtInEngineOrder,
+    settings.search.hiddenBuiltInEngines,
+    customSearchEngineStore.items.map((engine) => engine.id),
+  ),
+)
 
 function selectCustomEngine(engineId: string) {
   settings.search.engine = engineId
@@ -46,7 +67,7 @@ async function deleteCustomEngine(index: number) {
 
   try {
     await ElMessageBox.confirm(
-      t('customSearchEngine.deleteConfirm', { title: engine.name }),
+      t('customSearchEngine.deleteConfirm', { name: engine.name }),
       t('common.warning'),
       {
         confirmButtonText: t('common.confirm'),
@@ -55,25 +76,95 @@ async function deleteCustomEngine(index: number) {
       },
     )
 
-    // 如果删除的是当前选中的引擎，切换到 Bing
-    if (settings.search.engine === engine.id) {
-      settings.search.engine = 'bing'
-    }
-
+    const currentIndex = availableEngineIds.value.indexOf(engine.id)
     customSearchEngineStore.items.splice(index, 1)
     await customSearchEngineStore.save()
+
+    if (settings.search.engine !== engine.id) return
+    const available = availableEngineIds.value
+    if (available.length > 0) {
+      settings.search.engine = available[Math.max(currentIndex, 0) % available.length]!
+      return
+    }
+
+    settings.search.hiddenBuiltInEngines = settings.search.hiddenBuiltInEngines.filter(
+      (key) => key !== defaultSettings.search.engine,
+    )
+    settings.search.engine = defaultSettings.search.engine
   } catch {
     // 用户取消删除
   }
 }
 
 const openedMenuCloseFn = ref<(() => void) | null>(null)
-provide(CUSTOM_ENGINE_OPENED_MENU_CLOSE_FN, openedMenuCloseFn)
+provide(SEARCH_ENGINE_OPENED_MENU_CLOSE_FN, openedMenuCloseFn)
 
-function handleScroll() {
-  if (openedMenuCloseFn.value) {
-    openedMenuCloseFn.value()
+function closeOpenedMenu() {
+  openedMenuCloseFn.value?.()
+  openedMenuCloseFn.value = null
+}
+
+function hideBuiltInEngine(key: string) {
+  if (!isBuiltInSearchEngineKey(key)) return
+  const currentIndex = availableEngineIds.value.indexOf(key)
+  if (currentIndex < 0 || availableEngineIds.value.length <= 1) return
+
+  settings.search.hiddenBuiltInEngines = [...settings.search.hiddenBuiltInEngines, key]
+  if (settings.search.engine !== key) return
+
+  const available = availableEngineIds.value
+  settings.search.engine = available[currentIndex % available.length]!
+}
+
+function moveItem<T>(items: T[], from: number, to: number) {
+  if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return false
+  const [item] = items.splice(from, 1)
+  items.splice(to, 0, item!)
+  return true
+}
+
+type SearchEngineDndData = {
+  kind: 'search-engine'
+  id: string
+  index: number
+  group: 'built-in' | 'custom'
+}
+
+function getDndData(source: unknown): SearchEngineDndData | null {
+  const data = (source as { data?: unknown } | null)?.data
+  if (!data || typeof data !== 'object' || (data as { kind?: unknown }).kind !== 'search-engine') {
+    return null
   }
+  return data as SearchEngineDndData
+}
+
+async function handleDragEnd(event: DragEndEvent) {
+  closeOpenedMenu()
+  if (event.canceled) return
+
+  const source = event.operation.source as {
+    data?: unknown
+    initialIndex?: unknown
+    index?: unknown
+  } | null
+  const data = getDndData(source)
+  const from = typeof source?.initialIndex === 'number' ? source.initialIndex : data?.index
+  const to = typeof source?.index === 'number' ? source.index : from
+  if (!data || from === undefined || to === undefined || from === to) return
+
+  if (data.group === 'custom') {
+    if (moveItem(customSearchEngineStore.items, from, to)) {
+      await customSearchEngineStore.save()
+    }
+    return
+  }
+
+  const targetKey = visibleBuiltInEngines.value[to]
+  const order = normalizeBuiltInSearchEngineOrder(settings.search.builtInEngineOrder)
+  if (!targetKey || !moveItem(order, order.indexOf(data.id as BuiltInSearchEngineKey), order.indexOf(targetKey))) {
+    return
+  }
+  settings.search.builtInEngineOrder = order
 }
 </script>
 
@@ -82,65 +173,52 @@ function handleScroll() {
     v-model="opened"
     :title="t('menu.searchEnginePreference')"
     container-class="se-switcher__dialog"
-    @scroll="handleScroll"
+    @scroll="closeOpenedMenu"
   >
     <div style="width: 100%; margin-top: 20px; overflow: hidden">
-      <!-- 内置搜索引擎 -->
-      <el-row :gutter="10" class="se-switcher-container noselect">
-        <el-col
-          v-for="key in Object.keys(searchEngines) as (keyof typeof searchEngines)[]"
-          :key="key"
-          :span="12"
-        >
-          <div
-            role="button"
-            tabindex="0"
-            class="se-switcher-item"
-            :aria-label="t(searchEngines[key].nameKey)"
-            :aria-pressed="settings.search.engine === key"
-            :class="{ 'is-active': settings.search.engine === key }"
-            @click="settings.search.engine = key"
-            @keydown.enter="settings.search.engine = key"
-            @keydown.space.prevent="settings.search.engine = key"
-          >
-            <el-icon size="16" class="se-switcher-item__icon">
-              <component :is="searchEngines[key].icon" />
-            </el-icon>
-            <div class="se-switcher-item__content">
-              <div class="se-switcher-item__label">
-                {{ t(searchEngines[key].nameKey) }}
-              </div>
-              <el-text truncated class="se-switcher-item__url">
-                {{ searchEngines[key].url }}
-              </el-text>
-            </div>
-            <el-icon size="16" class="se-switcher-item__checked">
-              <CheckmarkCircle12Filled />
-            </el-icon>
-          </div>
-        </el-col>
-      </el-row>
+      <DragDropProvider
+        :sensors="quickLinkDndSensors"
+        @dragStart="closeOpenedMenu"
+        @dragEnd="handleDragEnd"
+      >
+        <!-- 内置搜索引擎 -->
+        <div class="se-switcher-container noselect">
+          <SearchEngineItem
+            v-for="(key, index) in visibleBuiltInEngines"
+            :id="key"
+            :key="key"
+            :index="index"
+            group="built-in"
+            :name="t(searchEngines[key].nameKey)"
+            :url="searchEngines[key].url"
+            :icon="searchEngines[key].icon"
+            :is-active="settings.search.engine === key"
+            :can-hide="availableEngineIds.length > 1"
+            :popper-class="enginePopperClass"
+            @select="settings.search.engine = $event"
+            @hide="hideBuiltInEngine"
+          />
+        </div>
 
-      <div class="se-switcher-divider noselect">
-        {{ t('customSearchEngine.title') }}
-      </div>
-      <el-row :gutter="10" class="se-switcher-container noselect">
-        <el-col
-          v-for="(engine, index) in customSearchEngineStore.items"
-          :key="engine.id"
-          :span="12"
-        >
-          <CustomEngineItem
-            :engine="engine"
+        <div class="se-switcher-divider noselect">
+          {{ t('customSearchEngine.title') }}
+        </div>
+        <div class="se-switcher-container noselect">
+          <SearchEngineItem
+            v-for="(engine, index) in customSearchEngineStore.items"
+            :id="engine.id"
+            :key="engine.id"
+            :index="index"
+            group="custom"
+            :name="engine.name"
+            :url="engine.url"
             :is-active="settings.search.engine === engine.id"
             :icon-url="getCustomEngineFavicon(engine)"
-            :popper-class="customEnginePopperClass"
+            :popper-class="enginePopperClass"
             @select="selectCustomEngine"
             @edit="() => editCustomEngine(index)"
             @delete="() => deleteCustomEngine(index)"
           />
-        </el-col>
-        <el-col :span="12">
           <div
             role="button"
             tabindex="0"
@@ -159,8 +237,8 @@ function handleScroll() {
               </div>
             </div>
           </div>
-        </el-col>
-      </el-row>
+        </div>
+      </DragDropProvider>
     </div>
   </base-dialog>
 
@@ -216,8 +294,10 @@ html.colorful .se-switcher__dialog {
   }
 }
 
-.se-switcher-container .el-col:not(:last-child) {
-  margin-bottom: 10px;
+.se-switcher-container {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .se-switcher-item {
@@ -225,6 +305,7 @@ html.colorful .se-switcher__dialog {
   align-items: center;
   height: 65px;
   padding: 16px 18px;
+  touch-action: manipulation;
   cursor: pointer;
   background-color: var(--se-item-background);
   border-radius: var(--le-radius-surface, 15px);

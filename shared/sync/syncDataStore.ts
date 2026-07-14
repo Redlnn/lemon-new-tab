@@ -7,6 +7,7 @@ import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 
 import { BgType } from '../enums'
 import { defaultQuickLinksData, useQuickLinksStore } from '../quickLinks'
+import { ensureSearchEngineAvailable } from '../searchEngines'
 import type { QuickLinksData } from '../quickLinks/quickLinksStorage'
 import type { CURRENT_CONFIG_SCHEMA, MigratableSettings } from '../settings'
 import {
@@ -58,8 +59,6 @@ let scheduleDirtySync: ((timestamp?: number) => void) | null = null
 const emitSyncError = (err: unknown) => {
   emitSyncEvent('sync-error', toError(err))
 }
-
-const BUILTIN_SEARCH_ENGINES = new Set(['google', 'baidu', 'bing', 'yandex', 'duckduckgo'])
 
 type SyncSnapshot = {
   rawSettings: CURRENT_CONFIG_SCHEMA
@@ -176,16 +175,6 @@ export const useSyncDataStore = defineStore('sync', () => {
     return merged
   }
 
-  const ensureSearchEngineAvailable = (
-    localSettings: ReturnType<typeof useSettingsStore>,
-    customSearchEngines: SyncedCustomSearchEngineStorage,
-  ) => {
-    const { engine } = localSettings.search
-    if (BUILTIN_SEARCH_ENGINES.has(engine)) return
-    if (customSearchEngines.items.some((item) => item.id === engine)) return
-    localSettings.search.engine = defaultSettings.search.engine
-  }
-
   const buildPayload = (
     timestamp: number,
     meta: LocalSyncMeta,
@@ -268,7 +257,10 @@ export const useSyncDataStore = defineStore('sync', () => {
         cloudData.customSearchEngines,
       )
       await customSearchEngineStore.save(normalizedCustomSearchEngines)
-      ensureSearchEngineAvailable(localSettings, normalizedCustomSearchEngines)
+      ensureSearchEngineAvailable(
+        localSettings.search,
+        normalizedCustomSearchEngines.items.map((item) => item.id),
+      )
       lastSyncHash = computeSyncHash(
         captureSyncSnapshot(localSettings, quickLinksStore, customSearchEngineStore),
       )

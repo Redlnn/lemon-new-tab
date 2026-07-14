@@ -89,7 +89,7 @@
       "nameRequiredError": "名稱不能為空~",
       "urlHelp": "URL 必須包含 %s 作為搜尋關鍵字佔位符"
     },
-    "deleteConfirm": "確定要刪除搜尋引擎「{{namee}}」嗎？",
+    "deleteConfirm": "確定要刪除搜尋引擎「{{name}}」嗎？",
     "edit": "編輯自訂搜尋引擎",
     "title": "自訂搜尋引擎",
     "fetchingFavicon": "正在後台獲取圖示..."
@@ -128,6 +128,9 @@
     }
   },
   "search": {
+    "enginePreference": {
+      "hide": "隱藏"
+    },
     "engineMenu": {
       "current": "當前",
       "tipPrefix": "Tip：按下",

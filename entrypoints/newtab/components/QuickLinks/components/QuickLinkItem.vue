@@ -6,7 +6,7 @@ import Pin12Regular from '~icons/fluent/pin-12-regular'
 
 import { getFaviconURL } from '@/shared/media'
 
-import { isHasTouchDevice, isTouchEvent } from '@newtab/shared/touch'
+import { isTouchEvent } from '@newtab/shared/touch'
 import { isValidUrl } from '@newtab/shared/utils'
 
 import type { QuickLinkItemPresentation } from './quickLinkItemPresentation'
@@ -95,7 +95,7 @@ function openFocusedLink(event: KeyboardEvent) {
       @contextmenu.stop.prevent="onContextMenu"
       @trigger="
         (e: PointerEvent) => {
-          if (isHasTouchDevice && isTouchEvent(e)) onContextMenu?.(e)
+          if (isTouchEvent(e)) onContextMenu?.(e)
         }
       "
     >

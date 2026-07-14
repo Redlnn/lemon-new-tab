@@ -50,7 +50,9 @@ const { isDragging, isDropTarget } = useSortable({
 
 function handleTouchContextMenu(event: Event) {
   const nativeEvent = (event as CustomEvent<{ event?: PointerEvent }>).detail?.event
-  if (nativeEvent) emit('touchMenu', nativeEvent, props.data)
+  if (!nativeEvent) return
+  suppressClickUntil = Date.now() + QUICK_LINK_DND_CLICK_SUPPRESS_DURATION
+  emit('touchMenu', nativeEvent, props.data)
 }
 
 watch(isDragging, (dragging, wasDragging) => {

@@ -1,5 +1,11 @@
 import type { CURRENT_CONFIG_SCHEMA } from './current'
 import { defaultSettings } from './default'
+
+import {
+  type BuiltInSearchEngineKey,
+  isBuiltInSearchEngineKey,
+  normalizeBuiltInSearchEngineOrder,
+} from '@/shared/searchEngines'
 import type { BingWallpaperResolution } from './types'
 
 const MIN_TRANSPARENCY = 0
@@ -24,6 +30,8 @@ type PerfTransparencyKey =
   | 'yiyan'
   | 'actionBtns'
 
+type SearchSettings = CURRENT_CONFIG_SCHEMA['search']
+
 type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
   background?: CURRENT_CONFIG_SCHEMA['background'] & {
     bing?: Omit<
@@ -39,7 +47,10 @@ type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
       transparency?: number
     }
   }
-  search?: CURRENT_CONFIG_SCHEMA['search']
+  search?: SearchSettings & {
+    builtInEngineOrder?: SearchSettings['builtInEngineOrder']
+    hiddenBuiltInEngines?: SearchSettings['hiddenBuiltInEngines']
+  }
   quickLinks?: CURRENT_CONFIG_SCHEMA['quickLinks']
   yiyan?: CURRENT_CONFIG_SCHEMA['yiyan']
   layout?: CURRENT_CONFIG_SCHEMA['layout']
@@ -49,6 +60,13 @@ type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
 function clampInteger(value: unknown, fallback: number, min: number, max: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
   return Math.min(max, Math.max(min, Math.round(value)))
+}
+
+function normalizeBuiltInEngineKeys(value: unknown, appendMissing: boolean) {
+  const keys: BuiltInSearchEngineKey[] = Array.isArray(value)
+    ? value.filter(isBuiltInSearchEngineKey)
+    : []
+  return appendMissing ? normalizeBuiltInSearchEngineOrder(keys) : [...new Set(keys)]
 }
 
 function isBingWallpaperResolution(value: unknown): value is BingWallpaperResolution {
@@ -126,6 +144,14 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
     defaultSettings.search.borderRadius,
     MIN_SEARCH_BORDER_RADIUS,
     MAX_SEARCH_BORDER_RADIUS,
+  )
+  normalized.search.builtInEngineOrder = normalizeBuiltInEngineKeys(
+    normalized.search.builtInEngineOrder,
+    true,
+  )
+  normalized.search.hiddenBuiltInEngines = normalizeBuiltInEngineKeys(
+    normalized.search.hiddenBuiltInEngines,
+    false,
   )
 
   normalized.quickLinks.grouping ??= defaultSettings.quickLinks.grouping

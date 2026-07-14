@@ -1,5 +1,7 @@
 import type { SettingsSchemaV10 } from './v10'
 
+import type { BuiltInSearchEngineKey } from '@/shared/searchEngines'
+
 export type BingWallpaperResolution = '1080p' | 'uhd'
 
 type WithTransparency<T> = T & {
@@ -26,6 +28,8 @@ export interface SettingsSchemaV11 extends Omit<
 
   search: SettingsSchemaV10['search'] & {
     borderRadius: number
+    builtInEngineOrder: BuiltInSearchEngineKey[]
+    hiddenBuiltInEngines: BuiltInSearchEngineKey[]
   }
 
   quickLinks: SettingsSchemaV10['shortcut'] & {

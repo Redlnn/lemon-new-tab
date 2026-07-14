@@ -11,7 +11,7 @@ import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 import { useCustomEngineFavicon } from '@newtab/shared/customSearchEngine/useCustomEngineFavicon'
-import { searchEngines } from '@newtab/shared/search'
+import { getVisibleBuiltInSearchEngineKeys, searchEngines } from '@newtab/shared/search'
 
 const { t } = useTranslation()
 
@@ -24,6 +24,12 @@ const settings = useSettingsStore()
 const customSearchEngineStore = useCustomSearchEngineStore()
 const searchEngineMenu = ref<TooltipInstance>()
 const { getCustomEngineFavicon } = useCustomEngineFavicon()
+const visibleBuiltInKeys = computed(() =>
+  getVisibleBuiltInSearchEngineKeys(
+    settings.search.builtInEngineOrder,
+    settings.search.hiddenBuiltInEngines,
+  ),
+)
 
 const isBuiltInEngine = computed(() => {
   return settings.search.engine in searchEngines
@@ -94,7 +100,7 @@ defineExpose({ hide, showEngineToast })
       <template #content>
         <!-- 内置搜索引擎 -->
         <div
-          v-for="key in Object.keys(searchEngines) as (keyof typeof searchEngines)[]"
+          v-for="key in visibleBuiltInKeys"
           :key="key"
           class="search-engine-menu-item"
           :class="{
@@ -118,7 +124,7 @@ defineExpose({ hide, showEngineToast })
 
         <!-- 自定义搜索引擎 -->
         <template v-if="customSearchEngineStore.items.length > 0">
-          <el-divider />
+          <el-divider v-if="visibleBuiltInKeys.length > 0" />
           <div
             v-for="engine in customSearchEngineStore.items"
             :key="engine.id"

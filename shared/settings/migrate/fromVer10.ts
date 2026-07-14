@@ -25,6 +25,8 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
     search: {
       ...rest.search,
       borderRadius: defaultSettings.search.borderRadius,
+      builtInEngineOrder: structuredClone(defaultSettings.search.builtInEngineOrder),
+      hiddenBuiltInEngines: structuredClone(defaultSettings.search.hiddenBuiltInEngines),
     },
     quickLinks: {
       ...shortcut,

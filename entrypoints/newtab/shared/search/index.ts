@@ -5,10 +5,13 @@ import Google from '@newtab/assets/google.svg?skipsvgo'
 import Yandex from '@newtab/assets/yandex.svg?skipsvgo'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 
+import type { BuiltInSearchEngineKey } from '@/shared/searchEngines'
+
 import { baiduSuggestParser, bingSuggestParser, googleSuggestParser } from './suggestParser'
 
 export * from './suggestCache'
 export * from './suggestParser'
+export * from '@/shared/searchEngines'
 
 export const searchEngines = {
   google: {
@@ -36,7 +39,7 @@ export const searchEngines = {
     url: 'https://duckduckgo.com/?q=%s',
     icon: DuckDuckGo,
   },
-} as const
+} as const satisfies Record<BuiltInSearchEngineKey, unknown>
 
 export const searchSuggestAPIs = {
   google: { nameKey: 'newtab:search.engines.google', parser: googleSuggestParser },

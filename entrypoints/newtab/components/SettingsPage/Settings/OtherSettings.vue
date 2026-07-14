@@ -13,6 +13,7 @@ import { storage } from '#imports'
 import { downloadJSON } from '@/shared/download'
 import { clearFaviconCache } from '@/shared/media'
 import { type QuickLinksData, useQuickLinksStore } from '@/shared/quickLinks'
+import { ensureSearchEngineAvailable } from '@/shared/searchEngines'
 import {
   type CURRENT_CONFIG_SCHEMA,
   defaultSettings,
@@ -275,6 +276,11 @@ function handleFileChange(event: Event) {
     if (data.customSearchEngines) {
       await customSearchEngineStore.save(data.customSearchEngines)
     }
+
+    ensureSearchEngineAvailable(
+      settings.search,
+      customSearchEngineStore.items.map((engine) => engine.id),
+    )
 
     if (!originalSyncState && nextSyncEnabled) {
       await syncStore.init()

@@ -128,6 +128,9 @@
     }
   },
   "search": {
+    "enginePreference": {
+      "hide": "隐藏"
+    },
     "engineMenu": {
       "current": "当前",
       "tipPrefix": "Tip：按下",

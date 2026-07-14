@@ -45,7 +45,7 @@ export const QUICK_LINK_OPENED_MENU_CLOSE_FN: InjectionKey<Ref<(() => void) | nu
   'quickLinkOpenedMenuCloseFn',
 )
 
-// 关闭已打开的自定义搜索引擎菜单的函数
-export const CUSTOM_ENGINE_OPENED_MENU_CLOSE_FN: InjectionKey<Ref<(() => void) | null>> = Symbol(
-  'customEngineOpenedMenuCloseFn',
+// 关闭已打开的搜索引擎菜单的函数
+export const SEARCH_ENGINE_OPENED_MENU_CLOSE_FN: InjectionKey<Ref<(() => void) | null>> = Symbol(
+  'searchEngineOpenedMenuCloseFn',
 )
