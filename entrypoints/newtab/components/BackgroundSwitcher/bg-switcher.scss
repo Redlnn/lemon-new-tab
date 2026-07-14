@@ -28,6 +28,49 @@ html.colorful .bg-switcher__dialog {
   margin-top: 40px;
   margin-bottom: 10px;
   font-weight: bold;
+
+  &--today {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+}
+
+.bg-switcher-resolution {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  font-size: var(--el-font-size-small);
+  font-weight: normal;
+  color: var(--el-text-color-secondary);
+
+  * {
+    flex-shrink: 0;
+  }
+
+  &__select {
+    flex: 0 1 100px;
+    width: 100px;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (width <= 300px) {
+  .bg-switcher-title--today {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .bg-switcher-resolution {
+    justify-content: space-between;
+    width: 100%;
+  }
 }
 
 .bg-switcher-bing {

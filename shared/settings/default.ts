@@ -95,6 +95,8 @@ export const defaultSettings = {
       id: '',
       url: '',
       updateDate: '',
+      resolution: '1080p',
+      cachedResolution: null,
     },
     online: {
       url: '',

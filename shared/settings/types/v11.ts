@@ -1,5 +1,7 @@
 import type { SettingsSchemaV10 } from './v10'
 
+export type BingWallpaperResolution = '1080p' | 'uhd'
+
 type WithTransparency<T> = T & {
   transparency: number
   blurIntensity: number
@@ -7,8 +9,15 @@ type WithTransparency<T> = T & {
 
 export interface SettingsSchemaV11 extends Omit<
   SettingsSchemaV10,
-  'version' | 'shortcut' | 'clock' | 'search' | 'yiyan' | 'layout' | 'perf'
+  'version' | 'shortcut' | 'clock' | 'search' | 'yiyan' | 'layout' | 'perf' | 'background'
 > {
+  background: Omit<SettingsSchemaV10['background'], 'bing'> & {
+    bing: SettingsSchemaV10['background']['bing'] & {
+      resolution: BingWallpaperResolution
+      cachedResolution: BingWallpaperResolution | null
+    }
+  }
+
   clock: SettingsSchemaV10['clock'] & {
     style: SettingsSchemaV10['clock']['style'] & {
       transparency: number

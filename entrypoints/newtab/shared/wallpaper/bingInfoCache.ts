@@ -1,6 +1,7 @@
 import { storage } from '#imports'
 
 export interface BingWallpaperInfo {
+  wallpaperId: string
   url: string
   copyright: string
   copyrightlink: string
@@ -9,6 +10,7 @@ export interface BingWallpaperInfo {
 }
 
 const defaultInfo: BingWallpaperInfo = {
+  wallpaperId: '',
   url: '',
   copyright: '',
   copyrightlink: '',

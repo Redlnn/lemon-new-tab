@@ -61,6 +61,7 @@
       }
     },
     "preferenceTitle": "壁纸偏好",
+    "resolution": "清晰度",
     "sunMoonSaying": "太阳出来我晒太阳，月亮出来我晒月亮",
     "tip": "深色模式背景没有选择的话会继续使用浅色模式的图片/视频噢",
     "title": "背景",
@@ -75,6 +76,7 @@
     },
     "vignette": "暗角效果",
     "warning": {
+      "bingResolutionCacheFailed": "未能缓存所选清晰度，继续使用现有缓存，稍后会重试。",
       "cacheDisabled": "由于未授予「访问所有网站」权限，无法安全缓存在线壁纸，故已将「在线壁纸缓存」关闭。",
       "fileIsNotImage": "所选文件不是图片！",
       "monetColorDisabled": "莫奈取色已关闭",

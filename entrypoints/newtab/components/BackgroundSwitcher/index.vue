@@ -19,7 +19,7 @@ import HideImageTwotone from '~icons/ic/twotone-hide-image'
 import LightModeTwotone from '~icons/ic/twotone-light-mode'
 
 import { BgType } from '@/shared/enums'
-import { useSettingsStore } from '@/shared/settings'
+import { type BingWallpaperResolution, useSettingsStore } from '@/shared/settings'
 
 import Bing from '@newtab/assets/bing_gray.svg'
 import BaseDialog from '@newtab/components/BaseDialog.vue'
@@ -110,6 +110,29 @@ const isShowDeleteIcon = computed(() =>
 )
 const bingWallpaperSrc = bingWallpaperURLGetter.getBgUrl()
 const bingWallpaperInfo = bingWallpaperURLGetter.getInfo()
+const isBingResolutionLoading = ref(false)
+const bingResolutionOptions: ReadonlyArray<{
+  label: string
+  value: BingWallpaperResolution
+}> = [
+  { label: '1080P', value: '1080p' },
+  { label: '4K (UHD)', value: 'uhd' },
+]
+
+async function handleBingResolutionChange(resolution: BingWallpaperResolution) {
+  if (isBingResolutionLoading.value || resolution === settings.background.bing.resolution) return
+
+  isBingResolutionLoading.value = true
+  try {
+    const cached = await bingWallpaperURLGetter.setResolution(resolution)
+    if (!cached) ElMessage.warning(t('background.warning.bingResolutionCacheFailed'))
+  } catch (error) {
+    console.error('[background-switcher] Failed to change Bing wallpaper resolution:', error)
+    ElMessage.warning(t('background.warning.bingResolutionCacheFailed'))
+  } finally {
+    isBingResolutionLoading.value = false
+  }
+}
 
 function switchToBing() {
   bingWallpaperURLGetter.refresh(true)
@@ -129,7 +152,28 @@ function beforeLocalBgSwitch() {
     container-class="bg-switcher__dialog"
   >
     <!-- Bing 每日壁纸 -->
-    <div class="bg-switcher-title" style="margin-top: 20px">{{ t('background.today') }}</div>
+    <div class="bg-switcher-title bg-switcher-title--today">
+      <span>{{ t('background.today') }}</span>
+      <div class="bg-switcher-resolution">
+        <span>{{ t('background.resolution') }}</span>
+        <el-select
+          class="bg-switcher-resolution__select"
+          :model-value="settings.background.bing.resolution"
+          :aria-label="t('background.resolution')"
+          :disabled="isBingResolutionLoading"
+          :loading="isBingResolutionLoading"
+          size="small"
+          @change="handleBingResolutionChange"
+        >
+          <el-option
+            v-for="option in bingResolutionOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
+      </div>
+    </div>
     <div class="bg-switcher-container">
       <div class="bg-switcher-preview" style="cursor: pointer" @click="switchToBing">
         <el-image :src="bingWallpaperSrc">

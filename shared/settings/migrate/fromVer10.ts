@@ -7,6 +7,14 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
 
   return {
     ...rest,
+    background: {
+      ...rest.background,
+      bing: {
+        ...rest.background.bing,
+        resolution: defaultSettings.background.bing.resolution,
+        cachedResolution: rest.background.bing.id ? '1080p' : null,
+      },
+    },
     clock: {
       ...rest.clock,
       style: {

@@ -61,6 +61,7 @@
       }
     },
     "preferenceTitle": "Wallpaper preferences",
+    "resolution": "Resolution",
     "sunMoonSaying": "When the sun’s out, bathe in sunlight. But when the moon’s out, bathe in moonlight!",
     "tip": "If no background is set for dark mode, the light mode background or video will be used.",
     "title": "Background",
@@ -75,6 +76,7 @@
     },
     "vignette": "Enable vignetting",
     "warning": {
+      "bingResolutionCacheFailed": "Couldn’t cache the selected resolution. The existing cache will remain in use, and the download will be retried later.",
       "cacheDisabled": "Online wallpaper caching has been disabled because the “Access all websites” permission was not granted.",
       "fileIsNotImage": "The selected file is not an image!",
       "monetColorDisabled": "Monet color extraction disabled",

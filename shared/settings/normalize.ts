@@ -1,5 +1,6 @@
 import type { CURRENT_CONFIG_SCHEMA } from './current'
 import { defaultSettings } from './default'
+import type { BingWallpaperResolution } from './types'
 
 const MIN_TRANSPARENCY = 0
 const MAX_TRANSPARENCY = 95
@@ -24,6 +25,15 @@ type PerfTransparencyKey =
   | 'actionBtns'
 
 type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
+  background?: CURRENT_CONFIG_SCHEMA['background'] & {
+    bing?: Omit<
+      CURRENT_CONFIG_SCHEMA['background']['bing'],
+      'resolution' | 'cachedResolution'
+    > & {
+      resolution?: unknown
+      cachedResolution?: unknown
+    }
+  }
   clock?: CURRENT_CONFIG_SCHEMA['clock'] & {
     style?: CURRENT_CONFIG_SCHEMA['clock']['style'] & {
       transparency?: number
@@ -39,6 +49,10 @@ type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
 function clampInteger(value: unknown, fallback: number, min: number, max: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
   return Math.min(max, Math.max(min, Math.round(value)))
+}
+
+function isBingWallpaperResolution(value: unknown): value is BingWallpaperResolution {
+  return value === '1080p' || value === 'uhd'
 }
 
 function normalizePerfSurface<K extends PerfTransparencyKey>(
@@ -81,6 +95,8 @@ function normalizePerfSurface<K extends PerfTransparencyKey>(
  */
 export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRENT_CONFIG_SCHEMA {
   const normalized = settings as MutableCurrentSettings
+  normalized.background ??= structuredClone(defaultSettings.background)
+  normalized.background.bing ??= structuredClone(defaultSettings.background.bing)
   normalized.clock ??= structuredClone(defaultSettings.clock)
   normalized.clock.style ??= structuredClone(defaultSettings.clock.style)
   normalized.search ??= structuredClone(defaultSettings.search)
@@ -88,6 +104,16 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
   normalized.yiyan ??= structuredClone(defaultSettings.yiyan)
   normalized.layout ??= structuredClone(defaultSettings.layout)
   normalized.perf ??= structuredClone(defaultSettings.perf)
+
+  const bing = normalized.background.bing
+  if (!isBingWallpaperResolution(bing.resolution)) {
+    bing.resolution = defaultSettings.background.bing.resolution
+  }
+  if (!bing.id) {
+    bing.cachedResolution = null
+  } else if (!isBingWallpaperResolution(bing.cachedResolution)) {
+    bing.cachedResolution = '1080p'
+  }
 
   normalized.clock.style.transparency = clampInteger(
     normalized.clock.style.transparency,
