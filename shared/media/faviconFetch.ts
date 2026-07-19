@@ -178,7 +178,8 @@ function blobToDataURL(blob: Blob): Promise<string> {
 /** 从任意 URL 字符串中提取规范化的 origin（例如 https://example.com）。若解析失败则返回 null。 */
 function toOrigin(url: string): string | null {
   try {
-    return new URL(url).origin
+    const { origin } = new URL(url)
+    return origin === 'null' ? null : origin
   } catch {
     return null
   }
