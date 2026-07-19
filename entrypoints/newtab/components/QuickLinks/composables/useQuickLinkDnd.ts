@@ -161,13 +161,15 @@ class QuickLinkLongPressActivationConstraint {
 
     if (this.options.touchMenu && !this.moved) {
       this.activated = true
-      event.target?.dispatchEvent(
+      const { target } = event
+      const initialEvent = this.initialEvent ?? event
+      this.controllerRef?.abort(event)
+      target?.dispatchEvent(
         new CustomEvent(QUICK_LINK_TOUCH_CONTEXT_MENU_EVENT, {
           bubbles: true,
-          detail: { event: this.initialEvent ?? event },
+          detail: { event: initialEvent },
         }),
       )
-      this.controllerRef?.abort(event)
       return
     }
 
