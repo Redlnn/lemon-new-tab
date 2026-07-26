@@ -60,6 +60,23 @@ function hasQuickLinksData(data: QuickLinksData): boolean {
   return data.items.length > 0 || (data.groups?.length ?? 0) > 0
 }
 
+function toStorageQuickLink(item: QuickLink): QuickLink {
+  const quickLink: QuickLink = {
+    url: item.url,
+    title: item.title,
+  }
+  if (item.favicon !== undefined) quickLink.favicon = item.favicon
+  return quickLink
+}
+
+function toStorageQuickLinkGroup(group: QuickLinkGroup): QuickLinkGroup {
+  return {
+    id: group.id,
+    name: group.name,
+    items: group.items.map(toStorageQuickLink),
+  }
+}
+
 export const useQuickLinksStore = defineStore('quickLinks', () => {
   const settings = useSettingsStore()
   const flatItems = ref(structuredClone(defaultQuickLinksData.items))
@@ -151,13 +168,13 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
 
   const getSnapshot = (groupingEnabled = settings.quickLinks.grouping): QuickLinksData => {
     if (groupingEnabled && groupState.value.length > 0) {
-      const snapshotGroups = structuredClone(toRaw(groupState.value))
+      const snapshotGroups = groupState.value.map(toStorageQuickLinkGroup)
       return {
         items: flattenQuickLinkGroups(snapshotGroups),
         groups: snapshotGroups,
       }
     }
-    return { items: structuredClone(toRaw(flatItems.value)), groups: [] }
+    return { items: flatItems.value.map(toStorageQuickLink), groups: [] }
   }
 
   const persistSnapshot = async (snapshot: QuickLinksData) => {
