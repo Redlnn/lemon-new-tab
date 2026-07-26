@@ -394,6 +394,7 @@ defineExpose({ refresh })
       pointerEvents: isHideDock === '0' ? 'none' : 'auto',
       '--item-size': settings.dock.iconSize + 'px',
       '--item-ratio': settings.dock.iconRatio * 100 + '%',
+      '--dock-icon-inset': (settings.dock.iconSize * (1 - settings.dock.iconRatio)) / 2 + 'px',
       '--gap-size': settings.dock.gap + 'px',
     }"
     @pointerenter="onPointerEnter"
@@ -542,6 +543,9 @@ defineExpose({ refresh })
 .dock {
   --dock-background: var(--el-bg-color-overlay);
   --dock-item-background: var(--el-color-primary-light-9);
+  --dock-padding: 5px;
+  --dock-item-radius: max(0px, calc(var(--le-radius-surface) - var(--dock-padding)));
+  --dock-icon-radius: max(0px, calc(var(--dock-item-radius) - var(--dock-icon-inset)));
 
   position: fixed;
   bottom: 20px;
@@ -550,8 +554,8 @@ defineExpose({ refresh })
   display: flex;
   align-items: flex-end;
   max-width: 93%;
-  height: calc(var(--item-size) + 10px);
-  padding: 5px;
+  height: calc(var(--item-size) + var(--dock-padding) * 2);
+  padding: var(--dock-padding);
   background-color: var(--dock-background);
   border-radius: var(--le-radius-surface, 15px);
   box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
@@ -595,7 +599,7 @@ html.colorful .dock:not(.dock--opacity) {
   overflow: hidden;
   cursor: pointer;
   background-color: var(--dock-item-background);
-  border-radius: calc(var(--scale, 1) * var(--item-size) * 0.25);
+  border-radius: calc(var(--scale, 1) * var(--dock-item-radius));
   transition:
     width var(--td, 0s),
     height var(--td, 0s),
@@ -607,7 +611,7 @@ html.colorful .dock:not(.dock--opacity) {
     width: var(--item-ratio);
     height: var(--item-ratio);
     object-fit: cover;
-    border-radius: calc(var(--scale, 1) * var(--item-size) * 0.15);
+    border-radius: calc(var(--scale, 1) * var(--dock-icon-radius));
     transition: border-radius var(--td, 0s);
   }
 
