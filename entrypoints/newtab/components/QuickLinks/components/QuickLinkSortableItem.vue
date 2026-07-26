@@ -80,6 +80,7 @@ function handleClickCapture(event: MouseEvent) {
       'quick-link-dnd-sortable--drop-target': isDropTarget,
     }"
     @click.capture="handleClickCapture"
+    @dragstart.prevent
     @[QUICK_LINK_TOUCH_CONTEXT_MENU_EVENT].stop="handleTouchContextMenu"
   >
     <slot :is-dragging="isDragging" :is-drop-target="isDropTarget" />

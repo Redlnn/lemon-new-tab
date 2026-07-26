@@ -401,6 +401,7 @@ defineExpose({ refresh })
     @mousemove="onMouseMove"
     @mouseleave="onMouseLeave"
     @contextmenu.stop.prevent
+    @dragstart.prevent
   >
     <!-- 启动台固定入口 -->
     <template v-if="settings.dock.launchpad.enabled">
@@ -444,6 +445,7 @@ defineExpose({ refresh })
       >
         <a
           class="dock-item"
+          draggable="false"
           :href="item.url"
           :ref="setScalableRef"
           :aria-label="item.title"
@@ -480,6 +482,7 @@ defineExpose({ refresh })
         <OnLongPress
           as="a"
           class="dock-item"
+          draggable="false"
           :href="item.url"
           :ref="setScalableRef"
           :aria-label="item.title"

@@ -40,10 +40,12 @@ function openFocusedLink(event: KeyboardEvent) {
     :title="title"
     @keydown.enter.prevent="openFocusedLink"
     @keydown.space.prevent="openFocusedLink"
+    @dragstart.prevent
   >
     <a
       v-if="pined"
       class="quick-links__item-link"
+      draggable="false"
       tabindex="-1"
       :href="safeUrl"
       :target="presentation.linkTarget"
@@ -87,6 +89,7 @@ function openFocusedLink(event: KeyboardEvent) {
       v-else
       as="a"
       class="quick-links__item-link"
+      draggable="false"
       tabindex="-1"
       :href="safeUrl"
       :target="presentation.linkTarget"

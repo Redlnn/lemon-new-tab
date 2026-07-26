@@ -326,6 +326,7 @@ function collapseOther(_e: Event | undefined, all: boolean = false) {
     style="display: grid"
     @click.capture="handleClickCapture"
     @contextmenu.stop.prevent="handleContextmenu"
+    @dragstart.prevent
   >
     <el-collapse-item
       v-if="node.children"
@@ -366,6 +367,7 @@ function collapseOther(_e: Event | undefined, all: boolean = false) {
       ref="itemRef"
       class="bookmark-link-item"
       :class="{ 'is-no-drag': isDragDisabled }"
+      draggable="false"
       :href="node.url"
     >
       <img :src="faviconRef" alt="" />
