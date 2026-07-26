@@ -769,6 +769,7 @@ onBeforeUnmount(() => {
                       >
                         <a
                           class="launchpad-item launchpad-item--pined"
+                          :title="item.title"
                           :href="item.url"
                           :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
                           :rel="
@@ -842,6 +843,7 @@ onBeforeUnmount(() => {
                       >
                         <a
                           class="launchpad-item"
+                          :title="item.title"
                           :href="item.url"
                           :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
                           :rel="
@@ -912,6 +914,7 @@ onBeforeUnmount(() => {
                     >
                       <a
                         class="launchpad-item launchpad-item--pined"
+                        :title="item.title"
                         :href="item.url"
                         :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
                         :rel="settings.quickLinks.openInNewTab ? 'noopener noreferrer' : undefined"
@@ -956,6 +959,7 @@ onBeforeUnmount(() => {
                     >
                       <a
                         class="launchpad-item"
+                        :title="item.title"
                         :href="item.url"
                         :target="settings.quickLinks.openInNewTab ? '_blank' : '_self'"
                         :rel="settings.quickLinks.openInNewTab ? 'noopener noreferrer' : undefined"
@@ -987,6 +991,7 @@ onBeforeUnmount(() => {
                     role="button"
                     tabindex="0"
                     class="launchpad-item"
+                    :title="t('dock.launchpad.add')"
                     :aria-label="t('quickLinks.addLink')"
                     @click="props.onOpenAddDialog?.()"
                     @keydown.enter.prevent="props.onOpenAddDialog?.()"
