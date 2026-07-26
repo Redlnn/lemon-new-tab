@@ -74,7 +74,7 @@ const quickLinks = computed(() =>
 const topSites = computed(() =>
   settings.dock.topSites
     ? mergeTopSites(rawTopSites.value, {
-        quickLinks: settings.quickLinks.grouping ? [] : quickLinks.value,
+        quickLinks: quickLinks.value,
         noCap: true,
       })
     : [],
