@@ -7,8 +7,8 @@ import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 
 import { BgType } from '../enums'
 import { defaultQuickLinksData, useQuickLinksStore } from '../quickLinks'
-import { ensureSearchEngineAvailable } from '../searchEngines'
 import type { QuickLinksData } from '../quickLinks/quickLinksStorage'
+import { ensureSearchEngineAvailable } from '../searchEngines'
 import type { CURRENT_CONFIG_SCHEMA, MigratableSettings } from '../settings'
 import {
   CURRENT_CONFIG_VERSION,
@@ -244,7 +244,7 @@ export const useSyncDataStore = defineStore('sync', () => {
       }
 
       const localState = structuredClone(localSettings.getRawState())
-      const { settings: migratedSettings, migrated } = await migrateSettingsToCurrent(
+      const { settings: migratedSettings, migrated } = migrateSettingsToCurrent(
         cloudData.settings as MigratableSettings,
       )
       const mergedSettings = restoreDeviceLocalFields(migratedSettings, localState)

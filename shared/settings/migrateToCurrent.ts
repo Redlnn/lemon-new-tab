@@ -20,12 +20,10 @@ export type MigratableSettings =
   | SettingsSchemaV10
   | CURRENT_CONFIG_SCHEMA
 
-export async function migrateSettingsOneVersion(
-  settings: MigratableSettings,
-): Promise<MigratableSettings> {
+export function migrateSettingsOneVersion(settings: MigratableSettings): MigratableSettings {
   switch (settings.version) {
     case 7:
-      return await migrateFromVer7To8(settings)
+      return migrateFromVer7To8(settings)
     case 8:
       return migrateFromVer8To9(settings)
     case 9:
@@ -37,16 +35,16 @@ export async function migrateSettingsOneVersion(
   }
 }
 
-export async function migrateSettingsToCurrent(settings: MigratableSettings): Promise<{
+export function migrateSettingsToCurrent(settings: MigratableSettings): {
   settings: CURRENT_CONFIG_SCHEMA
   migrated: boolean
-}> {
+} {
   let current = settings
   let migrated = false
 
   while (current.version < CURRENT_CONFIG_VERSION) {
     const previousVersion = current.version
-    current = await migrateSettingsOneVersion(current)
+    current = migrateSettingsOneVersion(current)
     if (current.version <= previousVersion || current.version > CURRENT_CONFIG_VERSION) {
       throw new Error(`Invalid migration result: ${previousVersion} -> ${current.version}`)
     }
