@@ -3,8 +3,8 @@ import { DragDropProvider, type DragEndEvent } from '@dnd-kit/vue'
 import { useTranslation } from 'i18next-vue'
 import Plus from '~icons/fa6-solid/plus'
 
-import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import type { BuiltInSearchEngineKey } from '@/shared/searchEngines'
+import { defaultSettings, useSettingsStore } from '@/shared/settings'
 
 import BaseDialog from '@newtab/components/BaseDialog.vue'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
@@ -19,9 +19,10 @@ import {
   searchEngines,
 } from '@newtab/shared/search'
 
+import { quickLinkDndSensors } from '../QuickLinks/composables/useQuickLinkDnd'
+
 import AddCustomSearchEngine from './components/AddCustomSearchEngine.vue'
 import SearchEngineItem from './components/SearchEngineItem.vue'
-import { quickLinkDndSensors } from '../QuickLinks/composables/useQuickLinkDnd'
 
 const { t } = useTranslation()
 
@@ -161,7 +162,10 @@ async function handleDragEnd(event: DragEndEvent) {
 
   const targetKey = visibleBuiltInEngines.value[to]
   const order = normalizeBuiltInSearchEngineOrder(settings.search.builtInEngineOrder)
-  if (!targetKey || !moveItem(order, order.indexOf(data.id as BuiltInSearchEngineKey), order.indexOf(targetKey))) {
+  if (
+    !targetKey ||
+    !moveItem(order, order.indexOf(data.id as BuiltInSearchEngineKey), order.indexOf(targetKey))
+  ) {
     return
   }
   settings.search.builtInEngineOrder = order

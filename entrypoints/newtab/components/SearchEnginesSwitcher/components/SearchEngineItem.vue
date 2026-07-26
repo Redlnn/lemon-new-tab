@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import type { Component } from 'vue'
+
 import { useSortable } from '@dnd-kit/vue/sortable'
 import type { DropdownInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
-import type { Component } from 'vue'
 import CheckmarkCircle12Filled from '~icons/fluent/checkmark-circle-12-filled'
 import Delete16Regular from '~icons/fluent/delete-16-regular'
 import Edit16Regular from '~icons/fluent/edit-16-regular'

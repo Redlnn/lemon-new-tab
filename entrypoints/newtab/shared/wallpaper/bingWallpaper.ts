@@ -195,11 +195,7 @@ class BingWallpaperURLGetter {
     return null
   }
 
-  private async updateInfoCache(
-    image: BingWallpaperImage,
-    checkTime: number,
-    wallpaperId: string,
-  ) {
+  private async updateInfoCache(image: BingWallpaperImage, checkTime: number, wallpaperId: string) {
     try {
       await bingInfoCache.setValue({
         wallpaperId,
@@ -284,8 +280,7 @@ class BingWallpaperURLGetter {
   ) {
     const settings = useSettingsStore()
     const isLatest = () =>
-      this.refreshGeneration === generation &&
-      settings.background.bing.resolution === resolution
+      this.refreshGeneration === generation && settings.background.bing.resolution === resolution
 
     if (!isLatest()) return false
 
@@ -384,8 +379,7 @@ class BingWallpaperURLGetter {
     this.activeImageRequest?.abort()
     this.activeImageRequest = null
     const isLatest = () =>
-      this.refreshGeneration === generation &&
-      settings.background.bing.resolution === resolution
+      this.refreshGeneration === generation && settings.background.bing.resolution === resolution
     const checkTime = Date.now()
     let shouldNotify = false
 
@@ -407,11 +401,7 @@ class BingWallpaperURLGetter {
         image.fullstartdate === settings.background.bing.updateDate &&
         hasRequestedCache()
       ) {
-        const infoCached = await this.updateInfoCache(
-          image,
-          checkTime,
-          settings.background.bing.id,
-        )
+        const infoCached = await this.updateInfoCache(image, checkTime, settings.background.bing.id)
         if (!infoCached) await this.resetLastCheckTime(checkTime)
         return true
       }

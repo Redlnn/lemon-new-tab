@@ -146,11 +146,7 @@ function restoreBuiltInSearchEngines() {
           @confirm="restoreBuiltInSearchEngines"
         >
           <template #reference>
-            <el-button
-              :disabled="!canRestoreBuiltInEngines"
-              :icon="RestoreRound"
-              circle
-            />
+            <el-button :disabled="!canRestoreBuiltInEngines" :icon="RestoreRound" circle />
           </template>
         </el-popconfirm>
       </div>

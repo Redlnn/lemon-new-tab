@@ -18,13 +18,11 @@ export function normalizeBuiltInSearchEngineOrder(
   order: readonly string[],
 ): BuiltInSearchEngineKey[] {
   const seen = new Set<string>()
-  return [...order, ...BUILT_IN_SEARCH_ENGINE_KEYS].filter(
-    (key): key is BuiltInSearchEngineKey => {
-      if (!isBuiltInSearchEngineKey(key) || seen.has(key)) return false
-      seen.add(key)
-      return true
-    },
-  )
+  return [...order, ...BUILT_IN_SEARCH_ENGINE_KEYS].filter((key): key is BuiltInSearchEngineKey => {
+    if (!isBuiltInSearchEngineKey(key) || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 export function getVisibleBuiltInSearchEngineKeys(
