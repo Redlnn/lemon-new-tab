@@ -137,6 +137,18 @@ async function restoreDefaultTopSites() {
             :show-tooltip="false"
           />
         </div>
+        <div class="settings__item settings__item--vertical">
+          <div class="settings__label">{{ t('dock.borderRadius') }} (px)</div>
+          <el-slider
+            v-model="settings.dock.borderRadius"
+            :min="0"
+            :max="40"
+            :step="1"
+            show-input
+            :show-input-controls="false"
+            :show-tooltip="false"
+          />
+        </div>
       </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('quickLinks.restoreDefault') }}</div>

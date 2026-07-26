@@ -150,6 +150,7 @@
   },
   "dock": {
     "actionBtnNote": "开启 Dock 后，功能按钮只能放在顶部（可在「布局」中选择左/右）",
+    "borderRadius": "圆角",
     "launchpad": {
       "show": "在 Dock 中启用启动台",
       "title": "启动台"
@@ -168,6 +169,7 @@
       "topLeft": "左上",
       "topRight": "右上"
     },
+    "dockBorderRadius": "Dock 圆角",
     "globalBorderRadius": "其他组件圆角",
     "mainPosition": {
       "center": "居中",
@@ -178,6 +180,7 @@
       "pxValue": "距顶部距离（px）",
       "quickLinksScrollNote": "快速导航使用滚动时不能使用居中定位。"
     },
+    "quickLinksIconBorderRadius": "快速导航图标背景圆角",
     "title": "布局"
   },
   "other": {

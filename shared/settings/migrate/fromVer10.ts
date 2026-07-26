@@ -32,6 +32,10 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
       ...shortcut,
       iconBorderRadius: defaultSettings.quickLinks.iconBorderRadius,
     },
+    dock: {
+      ...rest.dock,
+      borderRadius: defaultSettings.dock.borderRadius,
+    },
     yiyan: {
       ...rest.yiyan,
       borderRadius: defaultSettings.yiyan.borderRadius,

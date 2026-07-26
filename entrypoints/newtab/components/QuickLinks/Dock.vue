@@ -395,6 +395,7 @@ defineExpose({ refresh })
       '--item-size': settings.dock.iconSize + 'px',
       '--item-ratio': settings.dock.iconRatio * 100 + '%',
       '--dock-icon-inset': (settings.dock.iconSize * (1 - settings.dock.iconRatio)) / 2 + 'px',
+      '--dock-radius': settings.dock.borderRadius + 'px',
       '--gap-size': settings.dock.gap + 'px',
     }"
     @pointerenter="onPointerEnter"
@@ -544,7 +545,7 @@ defineExpose({ refresh })
   --dock-background: var(--el-bg-color-overlay);
   --dock-item-background: var(--el-color-primary-light-9);
   --dock-padding: 5px;
-  --dock-item-radius: max(0px, calc(var(--le-radius-surface) - var(--dock-padding)));
+  --dock-item-radius: max(0px, calc(var(--dock-radius) - var(--dock-padding)));
   --dock-icon-radius: max(0px, calc(var(--dock-item-radius) - var(--dock-icon-inset)));
 
   position: fixed;
@@ -557,7 +558,7 @@ defineExpose({ refresh })
   height: calc(var(--item-size) + var(--dock-padding) * 2);
   padding: var(--dock-padding);
   background-color: var(--dock-background);
-  border-radius: var(--le-radius-surface, 15px);
+  border-radius: var(--dock-radius);
   box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
   transform: translateX(-50%);
   transition:

@@ -128,12 +128,24 @@ function selectActionBtn(pos: ActionBtnPosition) {
         :show-tooltip="false"
       />
     </div>
-    <div class="settings__item settings__item--vertical">
-      <div class="settings__label">{{ t('quickLinks.iconBorderRadius') }} (%)</div>
+    <div v-if="settings.quickLinks.enabled" class="settings__item settings__item--vertical">
+      <div class="settings__label">{{ t('layout.quickLinksIconBorderRadius') }} (%)</div>
       <el-slider
         v-model="settings.quickLinks.iconBorderRadius"
         :min="0"
         :max="50"
+        :step="1"
+        show-input
+        :show-input-controls="false"
+        :show-tooltip="false"
+      />
+    </div>
+    <div v-if="dockEnabled" class="settings__item settings__item--vertical">
+      <div class="settings__label">{{ t('layout.dockBorderRadius') }} (px)</div>
+      <el-slider
+        v-model="settings.dock.borderRadius"
+        :min="0"
+        :max="40"
         :step="1"
         show-input
         :show-input-controls="false"

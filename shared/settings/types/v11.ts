@@ -1,6 +1,6 @@
-import type { SettingsSchemaV10 } from './v10'
-
 import type { BuiltInSearchEngineKey } from '@/shared/searchEngines'
+
+import type { SettingsSchemaV10 } from './v10'
 
 export type BingWallpaperResolution = '1080p' | 'uhd'
 
@@ -11,7 +11,7 @@ type WithTransparency<T> = T & {
 
 export interface SettingsSchemaV11 extends Omit<
   SettingsSchemaV10,
-  'version' | 'shortcut' | 'clock' | 'search' | 'yiyan' | 'layout' | 'perf' | 'background'
+  'version' | 'shortcut' | 'clock' | 'search' | 'yiyan' | 'layout' | 'dock' | 'perf' | 'background'
 > {
   background: Omit<SettingsSchemaV10['background'], 'bing'> & {
     bing: SettingsSchemaV10['background']['bing'] & {
@@ -43,6 +43,10 @@ export interface SettingsSchemaV11 extends Omit<
   layout: SettingsSchemaV10['layout'] & {
     actionBtnBorderRadius: number
     globalBorderRadius: number
+  }
+
+  dock: SettingsSchemaV10['dock'] & {
+    borderRadius: number
   }
 
   perf: Omit<

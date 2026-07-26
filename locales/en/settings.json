@@ -150,6 +150,7 @@
   },
   "dock": {
     "actionBtnNote": "When Dock is enabled, the button bar can only be placed at the top (choose left/right in Layout settings)",
+    "borderRadius": "Radius",
     "launchpad": {
       "show": "Show Launchpad in Dock",
       "title": "Launchpad"
@@ -168,6 +169,7 @@
       "topLeft": "Top Left",
       "topRight": "Top Right"
     },
+    "dockBorderRadius": "Dock radius",
     "globalBorderRadius": "Other component radius",
     "mainPosition": {
       "center": "Center",
@@ -178,6 +180,7 @@
       "pxValue": "Distance from top (px)",
       "quickLinksScrollNote": "Center positioning is unavailable while Quick Links scrolling is enabled."
     },
+    "quickLinksIconBorderRadius": "Quick Links icon background radius",
     "title": "Layout"
   },
   "other": {

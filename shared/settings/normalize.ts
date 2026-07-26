@@ -1,11 +1,11 @@
-import type { CURRENT_CONFIG_SCHEMA } from './current'
-import { defaultSettings } from './default'
-
 import {
   type BuiltInSearchEngineKey,
   isBuiltInSearchEngineKey,
   normalizeBuiltInSearchEngineOrder,
 } from '@/shared/searchEngines'
+
+import type { CURRENT_CONFIG_SCHEMA } from './current'
+import { defaultSettings } from './default'
 import type { BingWallpaperResolution } from './types'
 
 const MIN_TRANSPARENCY = 0
@@ -22,6 +22,8 @@ const MIN_ACTION_BTN_BORDER_RADIUS = 0
 const MAX_ACTION_BTN_BORDER_RADIUS = 50
 const MIN_GLOBAL_BORDER_RADIUS = 0
 const MAX_GLOBAL_BORDER_RADIUS = 40
+const MIN_DOCK_BORDER_RADIUS = 0
+const MAX_DOCK_BORDER_RADIUS = 40
 type PerfTransparencyKey =
   | 'bookmark'
   | 'dialog'
@@ -34,10 +36,7 @@ type SearchSettings = CURRENT_CONFIG_SCHEMA['search']
 
 type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
   background?: CURRENT_CONFIG_SCHEMA['background'] & {
-    bing?: Omit<
-      CURRENT_CONFIG_SCHEMA['background']['bing'],
-      'resolution' | 'cachedResolution'
-    > & {
+    bing?: Omit<CURRENT_CONFIG_SCHEMA['background']['bing'], 'resolution' | 'cachedResolution'> & {
       resolution?: unknown
       cachedResolution?: unknown
     }
@@ -54,6 +53,7 @@ type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
   quickLinks?: CURRENT_CONFIG_SCHEMA['quickLinks']
   yiyan?: CURRENT_CONFIG_SCHEMA['yiyan']
   layout?: CURRENT_CONFIG_SCHEMA['layout']
+  dock?: CURRENT_CONFIG_SCHEMA['dock']
   perf?: CURRENT_CONFIG_SCHEMA['perf']
 }
 
@@ -121,9 +121,10 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
   normalized.quickLinks ??= structuredClone(defaultSettings.quickLinks)
   normalized.yiyan ??= structuredClone(defaultSettings.yiyan)
   normalized.layout ??= structuredClone(defaultSettings.layout)
+  normalized.dock ??= structuredClone(defaultSettings.dock)
   normalized.perf ??= structuredClone(defaultSettings.perf)
 
-  const bing = normalized.background.bing
+  const { bing } = normalized.background
   if (!isBingWallpaperResolution(bing.resolution)) {
     bing.resolution = defaultSettings.background.bing.resolution
   }
@@ -180,6 +181,12 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
     defaultSettings.layout.globalBorderRadius,
     MIN_GLOBAL_BORDER_RADIUS,
     MAX_GLOBAL_BORDER_RADIUS,
+  )
+  normalized.dock.borderRadius = clampInteger(
+    normalized.dock.borderRadius,
+    defaultSettings.dock.borderRadius,
+    MIN_DOCK_BORDER_RADIUS,
+    MAX_DOCK_BORDER_RADIUS,
   )
 
   normalizePerfSurface(normalized.perf, 'bookmark')

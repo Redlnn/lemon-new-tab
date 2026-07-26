@@ -164,6 +164,7 @@ export const defaultSettings = {
     gap: 5,
     iconSize: 40,
     iconRatio: 0.7,
+    borderRadius: 15,
 
     launchpad: {
       enabled: false,
