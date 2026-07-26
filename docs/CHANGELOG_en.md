@@ -7,17 +7,24 @@
 ### New Features✨
 
 - Added separate corner-radius controls for the search box, Quick Links icons, quote widget, action buttons, and other shared components.
+- Added an independent corner-radius control for the Dock.
+- **Wallpaper:** Bing Daily Wallpaper now supports 1080p and 4K (UHD) resolution selection.
+- **Search:** Added built-in search engine sorting and hiding
 
 ### Improvements⚡️
 
 - Improved loading and interactions across the new tab page, Quick Links, search suggestions, and settings dialog for smoother startup and use.
 - Improved cross-device sync scheduling to reduce the risk of older data overwriting newer settings.
-- Refactored the settings window to reduce implementation complexity and improve performance and maintainability.
 
 ### Bug Fixes🐛
 
 - Fixed misaligned color pickers in some dialogs.
 - Fixed expanded bookmark folders sometimes collapsing after drag-and-drop sorting.
+- Fixed wallpaper flickering when switching wallpapers.
+- Fixed Quick Links items not showing their full title on hover.
+- Fixed cases where new tabs could crash or freeze.
+- Fixed reordered Quick Links not being saved in Firefox.
+- Fixed duplicate entries between Quick Links and Top Sites in the Dock when grouping mode is enabled.
 
 ## 3.4.0 (Jul 04, 2026)
 
