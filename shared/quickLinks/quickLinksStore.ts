@@ -246,19 +246,21 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
       return
     }
 
+    const storageItems = flatItems.value.map(toStorageQuickLink)
+
     if (groupState.value.length === 0) {
       groupState.value = [
         {
           id: DEFAULT_QUICK_LINK_GROUP_ID,
           name: getDefaultGroupName(),
-          items: structuredClone(toRaw(flatItems.value)),
+          items: storageItems,
         },
       ]
     } else if (defaultGroup) {
-      defaultGroup.items = structuredClone(toRaw(flatItems.value))
+      defaultGroup.items = storageItems
     } else {
       const group = ensureDefaultGroup()
-      if (!hasGroupedItems) group.items = structuredClone(toRaw(flatItems.value))
+      if (!hasGroupedItems) group.items = storageItems
     }
     flatItems.value = []
     // 直接写入，避免设置开关尚未更新时 save() 将刚创建的分组清空。
