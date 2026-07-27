@@ -368,16 +368,15 @@ async function fetchViaThirdPartyServices(pageUrl: string): Promise<string | nul
     const endpoints = [`https://favicon.so/${hostname}`, `https://favicon.im/${hostname}`]
 
     // 为每个请求创建一个可中断的 controller，并配合定时器实现超时
-    const controllers = endpoints.map(() => new AbortController())
-    const timers: ReturnType<typeof setTimeout>[] = controllers.map((c) =>
+    const requests = endpoints.map((url) => ({ url, controller: new AbortController() }))
+    const timers: ReturnType<typeof setTimeout>[] = requests.map(({ controller }) =>
       // 5s 超时后中止对应请求
-      setTimeout(() => c.abort(), 5000),
+      setTimeout(() => controller.abort(), 5000),
     )
 
-    const attempts = endpoints.map((u, idx) =>
+    const attempts = requests.map(({ url, controller }) =>
       (async (): Promise<string> => {
-        const controller = controllers[idx]
-        const resp = await fetch(u, { signal: controller.signal })
+        const resp = await fetch(url, { signal: controller.signal })
         if (!resp.ok) throw new Error('bad status')
         const contentType = resp.headers.get('content-type') ?? ''
         if (contentType.startsWith('text/') || contentType.includes('html'))
@@ -395,9 +394,9 @@ async function fetchViaThirdPartyServices(pageUrl: string): Promise<string | nul
     try {
       const result = await Promise.any(attempts)
       // 成功后中断所有剩余请求
-      controllers.forEach((c) => {
+      requests.forEach(({ controller }) => {
         try {
-          c.abort()
+          controller.abort()
         } catch {}
       })
       return result

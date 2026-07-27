@@ -41,7 +41,7 @@ async function getFaviconFromTabDOM(tabId: number): Promise<string | null> {
           return null;
         })()`,
       })) as (string | null)[]
-      return results[0]
+      return results[0] ?? null
     }
     // Chrome/Edge MV3：使用 browser.scripting.executeScript
     const results = await browser.scripting.executeScript({

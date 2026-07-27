@@ -5,14 +5,21 @@ interface FetchOptions extends RequestInit {
 }
 
 class EnhancedFetchError extends Error {
+  readonly kind: 'timeout' | 'http' | 'network' | 'invalid-data'
+  readonly url: string
+  readonly status?: number
+
   constructor(
     message: string,
-    readonly kind: 'timeout' | 'http' | 'network' | 'invalid-data',
-    readonly url: string,
-    readonly status?: number,
+    kind: 'timeout' | 'http' | 'network' | 'invalid-data',
+    url: string,
+    status?: number,
     options?: ErrorOptions,
   ) {
     super(message, options)
+    this.kind = kind
+    this.url = url
+    this.status = status
     this.name = 'EnhancedFetchError'
   }
 }

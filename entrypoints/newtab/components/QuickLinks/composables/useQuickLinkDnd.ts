@@ -80,8 +80,11 @@ class QuickLinkLongPressActivationConstraint {
   private touchDragReady = false
   private moved = false
   private activated = false
+  private readonly options: { touchMenu: boolean }
 
-  constructor(private readonly options: { touchMenu: boolean }) {}
+  constructor(options: { touchMenu: boolean }) {
+    this.options = options
+  }
 
   set controller(controller: PointerActivationController) {
     this.controllerRef = controller

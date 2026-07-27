@@ -23,6 +23,7 @@ export function useYiYan() {
           .filter((l) => l.length > 0)
         if (lines.length === 0) return
         const line = lines[Math.floor(Math.random() * lines.length)]
+        if (line === undefined) return
         yiyan.value = line.replace(/\\n/g, '\n')
         yiyanOrigin.value = undefined
         return

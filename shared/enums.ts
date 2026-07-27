@@ -1,10 +1,11 @@
 /** @deprecated 使用 BgType 替代 */
-export enum OldBgType {
-  none, // 0
-  Local, // 1
-  Bing, // 2
-  Online, // 3
-}
+export type OldBgType = 0 | 1 | 2 | 3
+// export enum OldBgType {
+//   none, // 0
+//   Local, // 1
+//   Bing, // 2
+//   Online, // 3
+// }
 
 export const BgType = {
   None: 'none',
