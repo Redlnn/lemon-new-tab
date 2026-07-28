@@ -401,6 +401,11 @@
             background-position: center center;
             background-size: cover;
             border-radius: var(--le-radius-micro, 3px);
+            transition: opacity 0.1s ease;
+
+            &--pending {
+              opacity: 0;
+            }
 
             svg {
               width: calc(var(--icon_size) * var(--icon_ratio));

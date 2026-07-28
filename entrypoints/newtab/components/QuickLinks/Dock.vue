@@ -8,7 +8,6 @@ import { useTranslation } from 'i18next-vue'
 import Apps24Regular from '~icons/fluent/apps-24-regular'
 import AddRound from '~icons/ic/round-add'
 
-import { createFaviconUrlResolver } from '@/shared/media'
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   useQuickLinksStore,
@@ -20,6 +19,7 @@ import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { isTouchEvent } from '@newtab/shared/touch'
 
+import FaviconImage from './components/FaviconImage.vue'
 import QuickLinkContextMenu from './components/QuickLinkContextMenu.vue'
 import QuickLinkGroupSelectDialog from './components/QuickLinkGroupSelectDialog.vue'
 import type { CtxQuickLinkItem } from './composables/useQuickLinkContextMenu'
@@ -29,8 +29,6 @@ import { mergeTopSites } from './composables/useTopSitesMerge'
 import { rawTopSites } from './utils/topSites'
 
 const Launchpad = defineAsyncComponent(() => import('./Launchpad.vue'))
-
-const getOrCreateFaviconRef = createFaviconUrlResolver()
 
 const props = defineProps<{
   ready: boolean
@@ -80,7 +78,9 @@ const topSites = computed(() =>
     : [],
 )
 
-function refresh() {}
+async function refresh() {
+  await refreshDockScaleLayout()
+}
 
 // 根据屏幕宽度初始两个区块的可见项目
 const visibleQuickLinksData = computed(() => quickLinks.value.slice(0, maxFitCols.value))
@@ -436,7 +436,7 @@ defineExpose({ refresh })
           :rel="settings.dock.openInNewTab ? 'noopener noreferrer' : undefined"
           @contextmenu.stop.prevent="onItemContextmenu($event, item, true, idx)"
         >
-          <img :src="item.favicon || getOrCreateFaviconRef(item.url)" alt="" />
+          <favicon-image :url="item.url" :favicon="item.favicon" alt="" />
         </a>
       </el-tooltip>
       <div
@@ -474,7 +474,7 @@ defineExpose({ refresh })
           @contextmenu.stop.prevent="onItemContextmenu($event, item, false, j)"
           @trigger="onItemLongPress($event, item, false, j)"
         >
-          <img :src="item.favicon || getOrCreateFaviconRef(item.url)" alt="" />
+          <favicon-image :url="item.url" :favicon="item.favicon" alt="" />
         </OnLongPress>
       </el-tooltip>
       <div v-if="j !== visibleTopSites.length - 1" class="dock-gap" :ref="setScalableRef"></div>
@@ -594,7 +594,13 @@ html.colorful .dock:not(.dock--opacity) {
     height: var(--item-ratio);
     object-fit: cover;
     border-radius: calc(var(--scale, 1) * var(--dock-icon-radius));
-    transition: border-radius var(--td, 0s);
+    transition:
+      border-radius var(--td, 0s),
+      opacity 0.1s ease;
+
+    &.favicon-image--pending {
+      opacity: 0;
+    }
   }
 
   svg {

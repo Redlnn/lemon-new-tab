@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { OnLongPress } from '@vueuse/components'
-import { toRef } from 'vue'
 
 import Pin12Regular from '~icons/fluent/pin-12-regular'
 
-import { getFaviconURL } from '@/shared/media'
+import { getFaviconDisplay } from '@/shared/media'
 
 import { isTouchEvent } from '@newtab/shared/touch'
 import { isValidUrl } from '@newtab/shared/utils'
@@ -20,9 +19,10 @@ const props = defineProps<{
   onContextMenu?: (event: MouseEvent | PointerEvent) => void
 }>()
 
-// 使用 Ref 传递 url，让 getFaviconURL 内部监听变化
-const faviconRef = getFaviconURL(toRef(props, 'url'))
-const iconUrl = computed(() => props.favicon || faviconRef.value)
+// 用户保存的图标不参与解析，移除后才恢复对链接 favicon 的获取。
+const faviconDisplay = getFaviconDisplay(computed(() => (props.favicon ? null : props.url)))
+const iconUrl = computed(() => props.favicon || faviconDisplay.value.src)
+const iconPending = computed(() => !props.favicon && faviconDisplay.value.state === 'pending')
 const safeUrl = computed(() => (isValidUrl(props.url) ? props.url : '#'))
 
 function openFocusedLink(event: KeyboardEvent) {
@@ -69,8 +69,9 @@ function openFocusedLink(event: KeyboardEvent) {
         >
           <span
             class="span"
+            :class="{ 'span--pending': iconPending }"
             :style="{
-              backgroundImage: `url(${iconUrl})`,
+              backgroundImage: iconUrl ? `url(${iconUrl})` : undefined,
             }"
           ></span>
         </div>
@@ -118,8 +119,9 @@ function openFocusedLink(event: KeyboardEvent) {
         >
           <span
             class="span"
+            :class="{ 'span--pending': iconPending }"
             :style="{
-              backgroundImage: `url(${iconUrl})`,
+              backgroundImage: iconUrl ? `url(${iconUrl})` : undefined,
             }"
           ></span>
         </div>

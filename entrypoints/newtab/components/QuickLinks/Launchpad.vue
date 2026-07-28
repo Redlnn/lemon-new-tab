@@ -18,7 +18,6 @@ import AddRound from '~icons/ic/round-add'
 import DeleteRound from '~icons/ic/round-delete'
 import SettingsRound from '~icons/ic/round-settings'
 
-import { createFaviconUrlResolver } from '@/shared/media'
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   useQuickLinksStore,
@@ -33,6 +32,7 @@ import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import { usePerfClasses } from '@newtab/composables/usePerfClasses'
 import { OPEN_SETTINGS } from '@newtab/shared/keys'
 
+import FaviconImage from './components/FaviconImage.vue'
 import QuickLinkContextMenu from './components/QuickLinkContextMenu.vue'
 import QuickLinkDragOverlay from './components/QuickLinkDragOverlay.vue'
 import QuickLinkDropTarget from './components/QuickLinkDropTarget.vue'
@@ -62,7 +62,6 @@ import {
 import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions'
 import { mergeTopSites } from './composables/useTopSitesMerge'
 import { getTopSites, rawTopSites } from './utils/topSites'
-const getOrCreateFaviconRef = createFaviconUrlResolver()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
 
@@ -780,8 +779,9 @@ onBeforeUnmount(() => {
                           "
                         >
                           <div class="launchpad-item__icon">
-                            <img
-                              :src="item.favicon || getOrCreateFaviconRef(item.url)"
+                            <favicon-image
+                              :url="item.url"
+                              :favicon="item.favicon"
                               :alt="item.title"
                             />
                           </div>
@@ -852,8 +852,9 @@ onBeforeUnmount(() => {
                           @contextmenu.prevent="openCtxMenu($event, item)"
                         >
                           <div class="launchpad-item__icon">
-                            <img
-                              :src="item.favicon || getOrCreateFaviconRef(item.url)"
+                            <favicon-image
+                              :url="item.url"
+                              :favicon="item.favicon"
                               :alt="item.title"
                             />
                           </div>
@@ -921,8 +922,9 @@ onBeforeUnmount(() => {
                         @contextmenu.prevent="openCtxMenu($event, item)"
                       >
                         <div class="launchpad-item__icon">
-                          <img
-                            :src="item.favicon || getOrCreateFaviconRef(item.url)"
+                          <favicon-image
+                            :url="item.url"
+                            :favicon="item.favicon"
                             :alt="item.title"
                           />
                         </div>
@@ -966,8 +968,9 @@ onBeforeUnmount(() => {
                         @contextmenu.prevent="openCtxMenu($event, item)"
                       >
                         <div class="launchpad-item__icon">
-                          <img
-                            :src="item.favicon || getOrCreateFaviconRef(item.url)"
+                          <favicon-image
+                            :url="item.url"
+                            :favicon="item.favicon"
                             :alt="item.title"
                           />
                         </div>
@@ -1297,6 +1300,11 @@ onBeforeUnmount(() => {
       height: 75%;
       object-fit: contain;
       border-radius: var(--le-radius-inner, 10px);
+      transition: opacity 0.1s ease;
+
+      &.favicon-image--pending {
+        opacity: 0;
+      }
     }
 
     &--add {

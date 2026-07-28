@@ -1,7 +1,7 @@
 import { useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 
-import { getTopSites } from '../components/QuickLinks/utils/topSites'
+import { getTopSites } from '@newtab/components/QuickLinks/utils/topSites'
 
 export function useQuickLinksBootstrap() {
   const settings = useSettingsStore()
