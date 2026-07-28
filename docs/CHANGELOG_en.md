@@ -15,6 +15,7 @@
 
 - Improved loading and interactions across the new tab page, Quick Links, search suggestions, and settings dialog for smoother startup and use.
 - Improved cross-device sync scheduling to reduce the risk of older data overwriting newer settings.
+- Improved loading performance.
 
 ### Bug Fixes🐛
 
