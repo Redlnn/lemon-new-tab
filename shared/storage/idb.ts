@@ -166,6 +166,16 @@ export async function idbClear(storeName: StoreName): Promise<void> {
   await db.clear(storeName)
 }
 
+/** 清空所有已知 store 的数据，保留各页面正在使用的数据库连接。 */
+export async function idbClearAll(): Promise<void> {
+  const db = await getDB()
+  const transaction = db.transaction([...REQUIRED_STORES], 'readwrite')
+  for (const storeName of REQUIRED_STORES) {
+    transaction.objectStore(storeName).clear()
+  }
+  await transaction.done
+}
+
 /** 删除整个数据库（用于重置所有数据） */
 export async function idbDropDatabase(): Promise<void> {
   // 先关闭已有连接

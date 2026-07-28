@@ -1,26 +1,14 @@
-import { promiseTimeout } from '@vueuse/core'
-
 import { ElButton } from 'element-plus'
 import i18next from 'i18next'
 
-import { browser, storage } from '#imports'
-
-async function downloadBackup() {
-  const { downloadJSON } = await import('@/shared/download')
-
-  const settings = await browser.storage.local.get('settings')
-  const quickLinksData = await browser.storage.local.get(['quickLinks', 'bookmark'])
-  const customSearchEngine = await browser.storage.local.get('customSearchEngine')
-
-  downloadJSON(
-    { ...settings, ...quickLinksData, ...customSearchEngine },
-    `lemon-new-tab-backup-${new Date().toISOString()}.json`,
-  )
-}
+import {
+  clearLegacySettingsData,
+  downloadLegacySettingsBackup,
+  reloadNewtabTabs,
+} from './legacySettingsRecovery'
 
 export async function handleInvaildSettings(): Promise<boolean> {
   const { default: DownloadRound } = await import('~icons/ic/round-download')
-  const { idbDropDatabase } = await import('@/shared/storage/idb')
 
   await ElMessageBox.alert(
     () =>
@@ -32,7 +20,7 @@ export async function handleInvaildSettings(): Promise<boolean> {
           {
             type: 'primary',
             icon: DownloadRound,
-            onClick: downloadBackup,
+            onClick: downloadLegacySettingsBackup,
           },
           'Download',
         ),
@@ -56,13 +44,7 @@ export async function handleInvaildSettings(): Promise<boolean> {
   })
 
   try {
-    await Promise.all([
-      localStorage.clear(),
-      sessionStorage.clear(),
-      idbDropDatabase(),
-      storage.clear('local'),
-      storage.clear('session'),
-    ])
+    await clearLegacySettingsData()
   } catch (e) {
     loading.close()
     const error = e instanceof Error ? e : new Error(String(e))
@@ -76,7 +58,6 @@ export async function handleInvaildSettings(): Promise<boolean> {
     throw error
   }
   loading.close()
-  await promiseTimeout(1000)
-  queueMicrotask(() => location.reload())
+  await reloadNewtabTabs()
   return false
 }

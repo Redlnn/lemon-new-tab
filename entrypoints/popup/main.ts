@@ -1,10 +1,10 @@
 import './styles/index.scss'
 import { usePreferredDark } from '@vueuse/core'
 import { createPinia } from 'pinia'
-import { createApp } from 'vue'
+import { createVaporApp } from 'vue'
 
-import { i18n, initI18n } from '@/shared/i18n'
-import { shouldStartApp, useSettingsStore } from '@/shared/settings'
+import { initI18n } from '@/shared/i18n'
+import { isSettingsCompatible, useSettingsStore } from '@/shared/settings'
 import {
   applyStoredMonetColors,
   changeTheme,
@@ -42,14 +42,16 @@ function renderPopupStartupError(error: unknown) {
 }
 
 async function bootstrapPopup() {
-  const canStartApp = await shouldStartApp()
-  if (!canStartApp) return
-
-  const app = createApp(App)
+  const isCompatible = await isSettingsCompatible()
+  const app = createVaporApp(App, { hasInvalidSettings: !isCompatible })
   const pinia = createPinia()
 
-  i18n(app)
   app.use(pinia)
+
+  if (!isCompatible) {
+    app.mount('body')
+    return
+  }
 
   // 初始化设置
   await useSettingsStore().init()

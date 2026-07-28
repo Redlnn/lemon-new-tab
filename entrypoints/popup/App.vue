@@ -1,20 +1,28 @@
-<script setup lang="ts">
-import { useTranslation } from 'i18next-vue'
-import Add12Filled from '~icons/fluent/add-12-filled'
-import Pin12Regular from '~icons/fluent/pin-12-regular'
-import CheckRound from '~icons/ic/round-check'
-import CloseRound from '~icons/ic/round-close'
+<script setup lang="ts" vapor>
+import { promiseTimeout } from '@vueuse/core'
+
+import i18next from 'i18next'
 
 import { browser } from 'wxt/browser'
 
 import { fetchFaviconWithCache, warmFaviconCache } from '@/shared/media'
 import { DEFAULT_QUICK_LINK_GROUP_ID, useQuickLinksStore } from '@/shared/quickLinks'
 import { settingsStorage } from '@/shared/settings'
+import {
+  clearLegacySettingsData,
+  downloadLegacySettingsBackup,
+  reloadNewtabTabs,
+} from '@/shared/settings/legacySettingsRecovery'
 import { normalizeUrlForDedup } from '@/shared/url'
 
 import { isValidUrl } from '@newtab/shared/utils'
 
-const { t } = useTranslation('popup')
+const props = defineProps<{
+  hasInvalidSettings: boolean
+}>()
+
+const t = (key: string) => i18next.t(key)
+const legacyT = (key: string) => i18next.t(`newtab:bootstrap.invalidVer.${key}`)
 const quickLinksStore = useQuickLinksStore()
 
 const currentTab = shallowRef<{
@@ -28,6 +36,8 @@ const isLoading = ref(true)
 const isAdded = ref(false)
 const isAlreadyExists = ref(false)
 const groupingEnabled = ref(false)
+const isResetting = ref(false)
+const resetError = shallowRef<Error | null>(null)
 
 /** 从激活页的 DOM 中读取 favicon href（通过注入 content script）。 */
 async function getFaviconFromTabDOM(tabId: number): Promise<string | null> {
@@ -88,6 +98,8 @@ watchEffect(async () => {
 })
 
 onMounted(async () => {
+  if (props.hasInvalidSettings) return
+
   const [settings] = await Promise.all([settingsStorage.getValue(), quickLinksStore.init()])
   groupingEnabled.value = settings.quickLinks.grouping ?? false
 
@@ -114,6 +126,12 @@ onMounted(async () => {
     isLoading.value = false
   }
 })
+
+function useFallbackFavicon() {
+  if (currentTabFaviconRef.value !== '/favicon.png') {
+    currentTabFaviconRef.value = '/favicon.png'
+  }
+}
 
 async function addCurrentPage() {
   if (!currentTab.value) return
@@ -144,68 +162,157 @@ async function addCurrentPage() {
   }
   isAdded.value = true
 }
+
+async function resetLegacySettings() {
+  isResetting.value = true
+  resetError.value = null
+
+  try {
+    await clearLegacySettingsData()
+    await reloadNewtabTabs()
+    await promiseTimeout(500)
+    window.close()
+  } catch (error) {
+    isResetting.value = false
+    resetError.value = error instanceof Error ? error : new Error(String(error))
+    console.error('Failed to clear data:', resetError.value)
+  }
+}
 </script>
 
 <template>
-  <div class="popup">
-    <div class="popup__header">
-      <el-icon size="20" color="var(--el-color-primary)">
-        <pin12-regular />
-      </el-icon>
-      <span class="popup__title">{{ t('title') }}</span>
-    </div>
-    <template v-if="isLoading">
-      <div v-loading="true" class="popup__loading"></div>
-    </template>
-    <template v-else-if="currentTab">
-      <div v-if="isAdded" class="popup__success">
-        <el-icon size="48" color="var(--el-color-success)">
-          <check-round />
-        </el-icon>
-        <span>{{ t('addSuccess') }}</span>
+  <main class="popup">
+    <section v-if="props.hasInvalidSettings" class="popup__recovery" :aria-busy="isResetting">
+      <svg class="popup__recovery-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M0 0h24v24H0z" fill="none" />
+        <path
+          fill="currentColor"
+          fill-rule="evenodd"
+          d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12s4.477 10 10 10s10-4.477 10-10M12 7a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0V8a1 1 0 0 1 1-1m-1 9a1 1 0 0 1 1-1h.008a1 1 0 1 1 0 2H12a1 1 0 0 1-1-1"
+          clip-rule="evenodd"
+        />
+      </svg>
+      <h1 class="popup__recovery-title">{{ legacyT('title') }}</h1>
+      <p>{{ legacyT('msg') }}</p>
+      <p>{{ legacyT('bak') }}</p>
+      <div class="popup__recovery-actions">
+        <button type="button" class="popup__button" @click="downloadLegacySettingsBackup">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <path
+              fill="currentColor"
+              d="M11.625 15.513q-.175-.063-.325-.213l-3.6-3.6q-.3-.3-.288-.7t.288-.7q.3-.3.713-.312t.712.287L11 12.15V5q0-.425.288-.712T12 4t.713.288T13 5v7.15l1.875-1.875q.3-.3.713-.288t.712.313q.275.3.288.7t-.288.7l-3.6 3.6q-.15.15-.325.213t-.375.062t-.375-.062M6 20q-.825 0-1.412-.587T4 18v-2q0-.425.288-.712T5 15t.713.288T6 16v2h12v-2q0-.425.288-.712T19 15t.713.288T20 16v2q0 .825-.587 1.413T18 20z"
+            />
+          </svg>
+          Download
+        </button>
+        <button
+          type="button"
+          class="popup__button popup__button--primary"
+          :disabled="isResetting"
+          @click="resetLegacySettings"
+        >
+          <span
+            v-if="isResetting"
+            class="popup__spinner popup__spinner--small"
+            aria-hidden="true"
+          />
+          {{ legacyT('btn') }}
+        </button>
       </div>
-      <template v-else>
-        <div class="popup__content">
-          <div class="popup__site-info">
-            <el-image :src="currentTabFaviconRef" class="popup__favicon" fit="cover" />
-            <div class="popup__site-text">
-              <el-text class="popup__site-title" line-clamp="1">{{ currentTab.title }}</el-text>
-              <el-text class="popup__site-url" type="info" size="small" line-clamp="1">{{
-                currentTab.url
-              }}</el-text>
+      <div v-if="resetError" class="popup__recovery-error" role="alert">
+        <strong>{{ resetError.name }}</strong>
+        <span>{{ resetError.message }}</span>
+      </div>
+    </section>
+
+    <template v-else>
+      <div class="popup__header">
+        <!-- <pin12-regular /> -->
+        <svg class="popup__icon popup__icon--primary" aria-hidden="true" viewBox="0 0 12 12">
+          <path d="M0 0h12v12H0z" fill="none" />
+          <path
+            fill="currentColor"
+            d="M8.052 1.436a1.5 1.5 0 0 0-2.38.347L4.145 4.608l-2.33.928a.5.5 0 0 0-.169.818l1.647 1.647l-2.146 2.146l-.147.854l.854-.147L4 8.708l1.646 1.646a.5.5 0 0 0 .818-.168l.933-2.332l2.821-1.526a1.5 1.5 0 0 0 .347-2.38zm-1.5.822a.5.5 0 0 1 .793-.115l2.513 2.513a.5.5 0 0 1-.116.793L6.762 7.06a.5.5 0 0 0-.226.254L5.817 9.11L2.891 6.184l1.793-.715a.5.5 0 0 0 .254-.226z"
+          />
+        </svg>
+        <span class="popup__title">{{ t('title') }}</span>
+      </div>
+      <div v-if="isLoading" class="popup__loading" role="status">
+        <span class="popup__spinner" aria-hidden="true" />
+      </div>
+      <template v-else-if="currentTab">
+        <div v-if="isAdded" class="popup__success">
+          <!-- <check-round /> -->
+          <svg class="popup__icon popup__icon--success" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <path
+              fill="currentColor"
+              d="M9 16.17L5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41z"
+            />
+          </svg>
+          <span>{{ t('popup:addSuccess') }}</span>
+        </div>
+        <template v-else>
+          <div class="popup__content">
+            <div class="popup__site-info">
+              <img
+                :src="currentTabFaviconRef"
+                :alt="currentTab.title"
+                class="popup__favicon"
+                @error="useFallbackFavicon"
+              />
+              <div class="popup__site-text">
+                <span class="popup__site-title">{{ currentTab.title }}</span>
+                <span class="popup__site-url">{{ currentTab.url }}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="popup__footer">
-          <el-alert
-            v-if="isAlreadyExists"
-            type="warning"
-            :title="t('alreadyExists')"
-            :closable="false"
-            show-icon
-          />
-          <el-button
-            v-else
-            type="primary"
-            @click="addCurrentPage"
-            round
-            :disabled="isAlreadyExists"
-            :icon="Add12Filled"
-          >
-            {{ t('addToQuickLinks') }}
-          </el-button>
-        </div>
+          <div class="popup__footer">
+            <div v-if="isAlreadyExists" class="popup__alert" role="alert">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M0 0h24v24H0z" fill="none" />
+                <path
+                  fill="currentColor"
+                  fill-rule="evenodd"
+                  d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12s4.477 10 10 10s10-4.477 10-10M12 7a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0V8a1 1 0 0 1 1-1m-1 9a1 1 0 0 1 1-1h.008a1 1 0 1 1 0 2H12a1 1 0 0 1-1-1"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <span>{{ t('popup:alreadyExists') }}</span>
+            </div>
+            <button
+              v-else
+              type="button"
+              class="popup__button popup__button--primary"
+              @click="addCurrentPage"
+            >
+              <svg aria-hidden="true" viewBox="0 0 12 12">
+                <path d="M0 0h12v12H0z" fill="none" />
+                <path
+                  fill="currentColor"
+                  d="M6 1.75a.75.75 0 0 1 .75.75v2.75H9.5a.75.75 0 0 1 0 1.5H6.75V9.5a.75.75 0 0 1-1.5 0V6.75H2.5a.75.75 0 0 1 0-1.5h2.75V2.5A.75.75 0 0 1 6 1.75"
+                />
+              </svg>
+              {{ t('popup:addToQuickLinks') }}
+            </button>
+          </div>
+        </template>
       </template>
-    </template>
 
-    <div v-else class="popup__error">
-      <el-icon size="48" color="var(--el-color-danger)">
-        <close-round />
-      </el-icon>
-      <span>{{ t('cannotAdd') }}</span>
-    </div>
-  </div>
+      <div v-else class="popup__error">
+        <svg class="popup__icon popup__icon--danger" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M0 0h24v24H0z" fill="none" />
+          <path
+            fill="currentColor"
+            d="M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59L7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12L5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 1 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4"
+          />
+        </svg>
+        <span>{{ t('popup:cannotAdd') }}</span>
+      </div>
+    </template>
+  </main>
 </template>
 
 <style lang="scss" scoped>
@@ -213,6 +320,7 @@ async function addCurrentPage() {
   width: 360px;
   padding: 20px;
   margin: 20px;
+  color: var(--el-text-color-primary);
   background: var(--el-bg-color);
   border-radius: var(--el-border-radius-round);
   box-shadow: var(--el-box-shadow-light);
@@ -229,22 +337,64 @@ async function addCurrentPage() {
 .popup__title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
 }
 
-.popup__loading {
-  height: 104px;
+.popup__icon,
+.popup__button svg,
+.popup__alert svg {
+  display: block;
+  flex: none;
+  width: 1.5em;
+  height: 1.5em;
+}
+
+.popup__icon--primary {
+  color: var(--el-color-primary);
+}
+
+.popup__icon--success,
+.popup__icon--danger {
+  width: 48px;
+  height: 48px;
+}
+
+.popup__icon--success {
+  color: var(--el-color-success);
+}
+
+.popup__icon--danger {
+  color: var(--el-color-danger);
+}
+
+.popup__loading,
+.popup__success,
+.popup__error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 104px;
 }
 
 .popup__success,
 .popup__error {
-  display: flex;
   flex-direction: column;
   gap: 12px;
-  align-items: center;
-  justify-content: center;
-  min-height: 104px;
   color: var(--el-text-color-regular);
+}
+
+.popup__spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--el-color-primary-light-7);
+  border-top-color: var(--el-color-primary);
+  border-radius: 50%;
+  animation: popup-spin 0.8s linear infinite;
+}
+
+.popup__spinner--small {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
 }
 
 .popup__content {
@@ -263,41 +413,149 @@ async function addCurrentPage() {
 }
 
 .popup__favicon {
-  flex-shrink: 0;
+  flex: none;
   width: 26px;
   height: 26px;
+  object-fit: cover;
   border-radius: 6px;
-
-  &--placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--el-color-primary);
-    background: var(--el-color-primary-light-7);
-  }
 }
 
 .popup__site-text {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+}
 
-  .el-text {
-    align-self: auto;
-    word-break: break-all;
-  }
+.popup__site-title,
+.popup__site-url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-all;
+  white-space: nowrap;
 }
 
 .popup__site-title {
   font-weight: 500;
 }
 
+.popup__site-url {
+  font-size: var(--el-font-size-small);
+  color: var(--el-text-color-secondary);
+}
+
 .popup__footer {
   display: flex;
-  gap: 8px;
   justify-content: flex-end;
+}
+
+.popup__button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 8px 15px;
+  font: inherit;
+  line-height: 1;
+  color: var(--el-text-color-regular);
+  cursor: pointer;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--el-border-radius-round);
+  transition: 0.15s ease;
+
+  &:hover:not(:disabled) {
+    color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+    border-color: var(--el-color-primary-light-5);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary-light-5);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.popup__button--primary {
+  color: var(--el-color-white);
+  background: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+
+  &:hover:not(:disabled) {
+    color: var(--el-color-white);
+    background: var(--el-color-primary-light-3);
+    border-color: var(--el-color-primary-light-3);
+  }
+}
+
+.popup__alert {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: var(--el-font-size-small);
+  color: var(--el-color-warning-dark-2);
+  background: var(--el-color-warning-light-9);
+  border-radius: var(--el-border-radius-base);
+}
+
+.popup__alert svg {
+  color: var(--el-color-warning);
+}
+
+.popup__recovery {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  color: var(--el-text-color-regular);
+}
+
+.popup__recovery-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--el-color-warning);
+}
+
+.popup__recovery-title,
+.popup__recovery p {
+  margin: 0;
+}
+
+.popup__recovery-title {
+  font-size: 18px;
+  color: var(--el-text-color-primary);
+}
+
+.popup__recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.popup__recovery-error {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 10px;
+  color: var(--el-color-danger);
+  overflow-wrap: anywhere;
+  background: var(--el-color-danger-light-9);
+  border-radius: var(--el-border-radius-base);
+}
+
+@keyframes popup-spin {
+  to {
+    transform: rotate(1turn);
+  }
 }
 </style>

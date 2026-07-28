@@ -1,8 +1,6 @@
 import { browser } from '#imports'
 
-import { handleInvaildSettings } from './handleInvaild'
-
-export async function shouldStartApp(): Promise<boolean> {
+export async function isSettingsCompatible(): Promise<boolean> {
   const storedSettings: {
     $settings: number | null
     settings: { version: string | number | null; [key: string]: unknown }
@@ -12,7 +10,6 @@ export async function shouldStartApp(): Promise<boolean> {
   })
 
   if (storedSettings.$settings && storedSettings.$settings <= 6) {
-    await handleInvaildSettings()
     return false
   }
 
@@ -31,10 +28,17 @@ export async function shouldStartApp(): Promise<boolean> {
     }
 
     if (isInvaildSettings) {
-      await handleInvaildSettings()
       return false
     }
   }
 
   return true
+}
+
+export async function shouldStartApp(): Promise<boolean> {
+  if (await isSettingsCompatible()) return true
+
+  const { handleInvaildSettings } = await import('./handleInvaild')
+  await handleInvaildSettings()
+  return false
 }
