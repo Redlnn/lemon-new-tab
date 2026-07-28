@@ -72,7 +72,7 @@ import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions
 import { solveGridColumnFirst, usePagedGridLayout } from './composables/useQuickLinksLayout'
 import { useQuickLinksPagination } from './composables/useQuickLinksPagination'
 import { mergeTopSites } from './composables/useTopSitesMerge'
-import { getTopSites, rawTopSites } from './utils/topSites'
+import { rawTopSites } from './utils/topSites'
 const focusStore = useFocusState()
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
@@ -81,12 +81,12 @@ const { t } = useTranslation()
 const { height } = useWindowSize({ type: 'visual' })
 
 const props = defineProps<{
+  ready: boolean
   onOpenAddDialog?: (groupId?: string) => void
   onOpenEditDialog?: (target: QuickLinkTarget) => void
 }>()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
-const mounted = ref(false)
 const quickLinks = computed(() => quickLinksStore.items.slice())
 const topSites = computed(() =>
   settings.quickLinks.topSites
@@ -342,10 +342,6 @@ function selectGroup(groupId: string) {
   if (index >= 0) goToPage(index)
 }
 
-function hasDefaultGroup() {
-  return quickLinksStore.groups.some((group) => group.id === DEFAULT_QUICK_LINK_GROUP_ID)
-}
-
 async function createGroupInline() {
   const group = await quickLinksStore.createGroup('')
   await refreshDebounced()
@@ -433,7 +429,6 @@ const quickLinksContainerRef = useTemplateRef('quickLinksContainerRef')
 const prevPageContainerRef = useTemplateRef('prevPageContainerRef')
 const currentPageContainerRef = ref<HTMLElement | null>(null)
 const nextPageContainerRef = useTemplateRef('nextPageContainerRef')
-let refreshTask: Promise<void> | null = null
 
 function setCurrentPageContainerRef(el: unknown) {
   if (el instanceof HTMLElement) {
@@ -450,35 +445,11 @@ function setCurrentPageContainerRef(el: unknown) {
   }
 }
 
-async function refresh() {
-  if (refreshTask) return refreshTask
-
-  refreshTask = (async () => {
-    // 刷新时重置打开的菜单，防止布局或数据变化导致索引失效
-    if (openedMenuCloseFn.value) {
-      openedMenuCloseFn.value()
-      openedMenuCloseFn.value = null
-    }
-
-    await quickLinksStore.init()
-
-    if (settings.quickLinks.grouping && !hasDefaultGroup()) {
-      await quickLinksStore.enableGroupingFromItems()
-    }
-
-    if (settings.quickLinks.topSites) {
-      await getTopSites()
-    }
-
-    if (!mounted.value) {
-      mounted.value = true
-    }
-  })()
-
-  try {
-    await refreshTask
-  } finally {
-    refreshTask = null
+function refresh() {
+  // 刷新时重置打开的菜单，防止布局或数据变化导致索引失效
+  if (openedMenuCloseFn.value) {
+    openedMenuCloseFn.value()
+    openedMenuCloseFn.value = null
   }
 }
 
@@ -748,9 +719,9 @@ useEventListener(
 )
 
 // useResizeObserver 会在开始观察时立即触发一次，因此不需要额外的 onMounted 刷新调用
-useResizeObserver(document.documentElement, async () => {
+useResizeObserver(document.documentElement, () => {
   updateMaxCols()
-  await refreshDebounced()
+  refreshDebounced()
 })
 
 watch(
@@ -809,10 +780,7 @@ onBeforeUnmount(() => {
 
 watch(
   () => settings.quickLinks.topSites,
-  (enabled) => {
-    if (enabled) {
-      void getTopSites(true)
-    }
+  () => {
     refreshDebounced()
   },
 )
@@ -830,7 +798,7 @@ watch(
 )
 
 const isHideQuickLink = computed(() => {
-  if (!mounted.value) {
+  if (!props.ready) {
     return '0'
   }
 

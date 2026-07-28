@@ -45,6 +45,7 @@ import {
   useLazyAppComponents,
 } from './composables/useLazyAppComponents'
 import { usePermission } from './composables/usePermission'
+import { useQuickLinksBootstrap } from './composables/useQuickLinksBootstrap'
 import { useThemeWatcher } from './composables/useThemeWatcher'
 
 const BackgroundRef = ref<InstanceType<typeof Background>>()
@@ -88,6 +89,7 @@ const appRef = useTemplateRef('appRef')
 
 const elLocale = useElementLang()
 const settings = useSettingsStore()
+const { quickLinksReady } = useQuickLinksBootstrap()
 const legacyDialogVisible = ref(false)
 const conflictDialogVisible = ref(false)
 const conflictPayload = shallowRef<SyncEventPayloadMap['conflict'] | null>(null)
@@ -323,6 +325,7 @@ async function refreshQuickLinks() {
       <quick-links
         v-if="settings.quickLinks.enabled"
         ref="QuickLinksRef"
+        :ready="quickLinksReady"
         :on-open-add-dialog="openAddQuickLinkDialog"
         :on-open-edit-dialog="openEditQuickLinkDialog"
         @contextmenu.stop
@@ -331,6 +334,7 @@ async function refreshQuickLinks() {
       <dock
         v-if="settings.dock.enabled"
         ref="DockRef"
+        :ready="quickLinksReady"
         :on-open-add-dialog="openAddQuickLinkDialog"
         :on-open-edit-dialog="openEditQuickLinkDialog"
       />

@@ -5,7 +5,6 @@ import { version } from '@/package.json'
 
 import { i18n } from '@/shared/i18n'
 import { hydrateFaviconCache, setFaviconCacheEnabled } from '@/shared/media'
-import { useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 import { applyStoredMonetColors, getMonetColors } from '@/shared/theme'
 
@@ -73,11 +72,8 @@ export const main = async () => {
 
   setupAutoSaveSettings(settings)
 
-  // 数据 store 与首屏挂载并行，组件读取时会复用同一个初始化任务。
-  const dataStoresInit = Promise.all([
-    useCustomSearchEngineStore().init(),
-    useQuickLinksStore().init(),
-  ])
+  // 搜索引擎与首屏挂载并行；快捷链接由 App 在相关组件创建前统一初始化。
+  const dataStoresInit = useCustomSearchEngineStore().init()
 
   app.mount('body')
 

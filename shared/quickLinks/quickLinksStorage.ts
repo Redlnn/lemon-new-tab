@@ -28,10 +28,8 @@ export const quickLinksStorage = storage.defineItem<QuickLinksData>('local:quick
 })
 
 export async function getQuickLinksStorageValue(): Promise<QuickLinksData> {
-  const current = await quickLinksStorage.getValue()
-  if (current.items.length > 0 || (current.groups?.length ?? 0) > 0) {
-    return current
-  }
+  const current = await storage.getItem<QuickLinksData>(quickLinksStorage.key)
+  if (current !== null) return current
 
   const legacy = await browser.storage.local.get('bookmark')
   const legacyValue = legacy.bookmark
@@ -45,5 +43,7 @@ export async function getQuickLinksStorageValue(): Promise<QuickLinksData> {
     return migrated
   }
 
-  return current
+  const empty = structuredClone(defaultQuickLinksData)
+  await quickLinksStorage.setValue(empty)
+  return empty
 }

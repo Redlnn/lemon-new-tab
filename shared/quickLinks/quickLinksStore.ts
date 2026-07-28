@@ -77,6 +77,12 @@ function toStorageQuickLinkGroup(group: QuickLinkGroup): QuickLinkGroup {
   }
 }
 
+function isSameQuickLink(current: QuickLink, next: QuickLink): boolean {
+  return (
+    current.url === next.url && current.title === next.title && current.favicon === next.favicon
+  )
+}
+
 export const useQuickLinksStore = defineStore('quickLinks', () => {
   const settings = useSettingsStore()
   const flatItems = ref(structuredClone(defaultQuickLinksData.items))
@@ -295,10 +301,12 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   const renameGroup = async (groupId: string, name: string) => {
     const group = getGroup(groupId)
     if (!group) return
-    group.name = normalizeQuickLinkGroupName(
+    const nextName = normalizeQuickLinkGroupName(
       name,
       group.id === DEFAULT_QUICK_LINK_GROUP_ID ? getDefaultGroupName() : group.name,
     )
+    if (group.name === nextName) return
+    group.name = nextName
     await save()
   }
 
@@ -327,7 +335,8 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const updateFlatQuickLink = async (index: number, quickLink: QuickLink) => {
-    if (!flatItems.value[index]) return false
+    const current = flatItems.value[index]
+    if (!current || isSameQuickLink(current, quickLink)) return false
     flatItems.value.splice(index, 1, quickLink)
     await save(undefined, { groupingEnabled: false })
     return true
@@ -342,7 +351,8 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
 
   const updateQuickLinkInGroup = async (groupId: string, index: number, quickLink: QuickLink) => {
     const group = getGroup(groupId)
-    if (!group?.items[index]) return
+    const current = group?.items[index]
+    if (!current || isSameQuickLink(current, quickLink)) return
     group.items.splice(index, 1, quickLink)
     await save()
   }

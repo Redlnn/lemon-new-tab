@@ -26,13 +26,14 @@ import type { CtxQuickLinkItem } from './composables/useQuickLinkContextMenu'
 import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions'
 import { useDockLayout } from './composables/useQuickLinksLayout'
 import { mergeTopSites } from './composables/useTopSitesMerge'
-import { getTopSites, rawTopSites } from './utils/topSites'
+import { rawTopSites } from './utils/topSites'
 
 const Launchpad = defineAsyncComponent(() => import('./Launchpad.vue'))
 
 const getOrCreateFaviconRef = createFaviconUrlResolver()
 
 const props = defineProps<{
+  ready: boolean
   onOpenAddDialog?: (groupId?: string) => void
   onOpenEditDialog?: (target: QuickLinkTarget) => void
 }>()
@@ -65,7 +66,6 @@ const dockTooltipClass = computed(
 const { updateMaxCols, maxFitCols } = useDockLayout()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
-const mounted = ref(false)
 const quickLinks = computed(() =>
   settings.quickLinks.grouping
     ? quickLinksStore.getDefaultGroupItems().slice()
@@ -80,23 +80,7 @@ const topSites = computed(() =>
     : [],
 )
 
-async function refresh() {
-  await quickLinksStore.init()
-
-  if (
-    settings.quickLinks.grouping &&
-    !quickLinksStore.groups.some((group) => group.id === DEFAULT_QUICK_LINK_GROUP_ID)
-  ) {
-    await quickLinksStore.enableGroupingFromItems()
-  }
-  if (settings.dock.topSites) {
-    await getTopSites()
-  }
-
-  if (!mounted.value) {
-    mounted.value = true
-  }
-}
+function refresh() {}
 
 // 根据屏幕宽度初始两个区块的可见项目
 const visibleQuickLinksData = computed(() => quickLinks.value.slice(0, maxFitCols.value))
@@ -106,9 +90,9 @@ const visibleTopSites = computed(() =>
 
 // 屏幕尺寸变化时更新最大列数
 // useResizeObserver 会在开始观察时立即触发一次，因此不需要额外的 onMounted 刷新调用
-useResizeObserver(document.documentElement, async () => {
+useResizeObserver(document.documentElement, () => {
   updateMaxCols()
-  await refreshDebounced()
+  refreshDebounced()
 })
 
 watch(
@@ -121,16 +105,13 @@ watch(
 
 watch(
   () => settings.dock.topSites,
-  (enabled) => {
-    if (enabled) {
-      void getTopSites(true)
-    }
+  () => {
     refreshDebounced()
   },
 )
 
 const isHideDock = computed(() => {
-  if (!mounted.value) return '0'
+  if (!props.ready) return '0'
   if (!focusStore.isFocused) return '1'
   return settings.dock.showOnSearchFocus ? '1' : '0'
 })

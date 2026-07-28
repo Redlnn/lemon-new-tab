@@ -44,9 +44,11 @@ async function fetchTopSites(): Promise<TopSites.MostVisitedURL[]> {
 const topSitesCache = createSingleFlightCache({
   ttl: TOP_SITES_TTL,
   fetchValue: fetchTopSites,
-  onValue: async (value) => {
-    await cacheBrowserFavicons(value)
+  onValue: (value) => {
     rawTopSites.value = value
+    void cacheBrowserFavicons(value).catch((error) => {
+      console.warn('[top-sites] Failed to warm favicons:', error)
+    })
   },
 })
 
