@@ -562,7 +562,7 @@ defineExpose({ refresh })
   box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
   transform: translateX(-50%);
   transition:
-    opacity var(--el-transition-duration-fast) ease,
+    opacity 0.1s ease,
     bottom var(--el-transition-duration-fast) ease,
     background-color var(--el-transition-duration-fast) ease;
 
