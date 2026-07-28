@@ -1,14 +1,14 @@
 allowBuilds:
   esbuild: true
 
+minimumReleaseAgeExclude:
+  - wxt@0.21.2
+
 overrides:
   glob: '^13.0.6' # 统一版本
   markdown-it: 'npm:markdown-exit@latest' # 替换为高性能实现
   markdown-exit: 'latest' # 替换为高性能实现
-  uuid: '^14.0.1' # 修复 CVE-2026-41907，统一版本
   sass: 'npm:sass-embedded@^1.100.0' # 替换为高性能实现
-  vite: '^8.1.5' # 统一版本
-  'web-ext-run>tmp': '^0.2.7' # 修复 CVE-2026-44705
   # -----
   # 以下是为了修复 CVE-2026-44705
   'config-chain>ini': '^7.0.0'
@@ -16,11 +16,9 @@ overrides:
   'global-prefix>ini': '^7.0.0'
   'package-json>registry-url': '^7.2.0' # 删除了 rc 依赖，rc 依赖旧版本 ini
   # -----
-  'web-ext-run>fx-runner': '^1.5.0' # web-ext-run 的依赖，修复 CVE-2026-9277
-  'fx-runner>shell-quote': '^1.10.0' # 修复 CVE-2026-13311
-  'gray-matter>js-yaml': '^3.14.2' # 修复 CVE-2025-64718
+  'gray-matter>js-yaml': '^3.15.0' # 修复 CVE-2025-64718
   'firefox-profile>adm-zip': '^0.6.0' # 修复 CVE-2026-39244
-  esbuild: '^0.28.1'
+  'web-ext>addons-linter': '-' # 用不到 web-ext 的格式化功能
   'vue': 'rc'
   '@vue/compiler-core': 'rc'
   '@vue/compiler-dom': 'rc'
