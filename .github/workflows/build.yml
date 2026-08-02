@@ -11,17 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [24]
+        node-version: [26]
     steps:
       - uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11
+          cache: true
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
@@ -29,6 +30,7 @@ jobs:
       - name: Install and Build
         run: |
           pnpm install
+          pnpm wxt build
           pnpm type-check
           pnpm zip
           pnpm zip -b edge
