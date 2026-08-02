@@ -12,6 +12,7 @@ import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 import { useCustomEngineFavicon } from '@newtab/shared/customSearchEngine/useCustomEngineFavicon'
 import { getVisibleBuiltInSearchEngineKeys, searchEngines } from '@newtab/shared/search'
+import { OPEN_SEARCH_ENGINE_PREFERENCE } from '@newtab/shared/keys'
 
 const { t } = useTranslation()
 
@@ -23,6 +24,7 @@ const focusStore = useFocusState()
 const settings = useSettingsStore()
 const customSearchEngineStore = useCustomSearchEngineStore()
 const searchEngineMenu = ref<TooltipInstance>()
+const openSearchEnginePreference = inject(OPEN_SEARCH_ENGINE_PREFERENCE)
 const { getCustomEngineFavicon } = useCustomEngineFavicon()
 const visibleBuiltInKeys = computed(() =>
   getVisibleBuiltInSearchEngineKeys(
@@ -45,6 +47,11 @@ const currentCustomEngine = computed(() => {
 
 function hide() {
   searchEngineMenu.value?.hide()
+}
+
+function openPreference() {
+  hide()
+  openSearchEnginePreference?.()
 }
 
 let stop: () => void
@@ -151,7 +158,16 @@ defineExpose({ hide, showEngineToast })
             </div>
           </div>
         </template>
-        <div class="search-engine-menu__tip">
+        <div
+          role="button"
+          tabindex="0"
+          class="search-engine-menu__tip"
+          :aria-label="t('menu.searchEnginePreference')"
+          @click.stop="openPreference"
+          @contextmenu.prevent.stop="openPreference"
+          @keydown.enter.prevent="openPreference"
+          @keydown.space.prevent="openPreference"
+        >
           <span>{{ t('search.engineMenu.tipPrefix') }}</span>
           <kbd class="search-engine-menu__kbd">Tab</kbd>
           <span>{{ t('search.engineMenu.tipSuffix') }}</span>
@@ -247,7 +263,14 @@ defineExpose({ hide, showEngineToast })
     margin-top: 5px;
     font-size: 11px;
     color: var(--el-text-color-secondary);
+    cursor: pointer;
     transition: color var(--el-transition-duration-fast) ease;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--el-color-primary);
+      outline: none;
+    }
 
     .search-engine-menu__kbd {
       padding: 2px 4px;
