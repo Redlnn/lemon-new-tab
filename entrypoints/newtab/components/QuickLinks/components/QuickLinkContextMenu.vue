@@ -165,7 +165,9 @@ defineExpose({ open, close })
         </template>
         <template v-else>
           <el-dropdown-item :icon="Pin12Regular" divided @click="ctxPin">
-            <span>{{ t('quickLinks.pin') }}</span>
+            <span>
+              {{ settings.quickLinks.grouping ? t('bookmark.addToQuickLinks') : t('quickLinks.pin') }}
+            </span>
           </el-dropdown-item>
           <el-dropdown-item :icon="BlockRound" @click="ctxBlockSite">
             <span>{{ t('quickLinks.hide') }}</span>
