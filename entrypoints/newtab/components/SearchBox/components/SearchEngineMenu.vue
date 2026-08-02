@@ -11,8 +11,8 @@ import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 import { useCustomEngineFavicon } from '@newtab/shared/customSearchEngine/useCustomEngineFavicon'
-import { getVisibleBuiltInSearchEngineKeys, searchEngines } from '@newtab/shared/search'
 import { OPEN_SEARCH_ENGINE_PREFERENCE } from '@newtab/shared/keys'
+import { getVisibleBuiltInSearchEngineKeys, searchEngines } from '@newtab/shared/search'
 
 const { t } = useTranslation()
 

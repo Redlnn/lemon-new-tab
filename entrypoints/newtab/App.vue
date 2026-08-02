@@ -327,7 +327,7 @@ function toggleMinimalMode() {
     :message="{
       placement: settings.dock.enabled ? 'top' : 'bottom',
     }"
-    >
+  >
     <main
       :style="[mainStyle, idleMainStyle]"
       class="app"
