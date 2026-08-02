@@ -5,12 +5,14 @@ import { shallowRef, type StyleValue } from 'vue'
 import { useTranslation } from 'i18next-vue'
 
 import { BgType } from '@/shared/enums'
+import { DEFAULT_QUICK_LINK_GROUP_ID } from '@/shared/quickLinks'
 import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import { addSyncEventCallback } from '@/shared/sync/syncEvents'
 import type { SyncEventPayloadMap } from '@/shared/sync/types'
 
 import {
   FOCUS_STATE,
+  GET_ACTIVE_QUICK_LINK_GROUP_ID,
   OPEN_BACKGROUND_PREFERENCE,
   OPEN_SEARCH_ENGINE_PREFERENCE,
   OPEN_SETTINGS,
@@ -180,6 +182,10 @@ provide(FOCUS_STATE, createFocusState())
 provide(OPEN_SETTINGS, toggleSettingsPage)
 provide(OPEN_SEARCH_ENGINE_PREFERENCE, showSearchEnginesSwitcher)
 provide(OPEN_BACKGROUND_PREFERENCE, showBackgroundSwitcher)
+provide(
+  GET_ACTIVE_QUICK_LINK_GROUP_ID,
+  () => QuickLinksRef.value?.getActiveGroupId() ?? DEFAULT_QUICK_LINK_GROUP_ID,
+)
 
 // 应用级通知（欢迎、缓存提示、版本更新、同步错误）
 useAppNotifications(showChangelog)

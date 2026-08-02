@@ -31,6 +31,11 @@ export const OPEN_QUICK_LINK_GROUP_SELECT_DIALOG: InjectionKey<
   (options?: { title?: string; currentGroupId?: string }) => Promise<string | null>
 > = Symbol('openQuickLinkGroupSelectDialog')
 
+// 获取当前快速导航分组，用于书签添加时预选目标分组
+export const GET_ACTIVE_QUICK_LINK_GROUP_ID: InjectionKey<() => string> = Symbol(
+  'getActiveQuickLinkGroupId',
+)
+
 // 书签激活状态映射：depth -> 激活节点 id 列表
 export const BOOKMARK_ACTIVE_MAP: InjectionKey<Ref<Record<number, string[]>>> =
   Symbol('bookmarkActiveMap')

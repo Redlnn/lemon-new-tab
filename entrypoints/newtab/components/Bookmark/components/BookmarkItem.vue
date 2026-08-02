@@ -22,6 +22,7 @@ import { useQuickLinksStore } from '@/shared/quickLinks'
 import {
   BOOKMARK_ACTIVE_MAP,
   BOOKMARK_OPENED_MENU_CLOSE_FN,
+  GET_ACTIVE_QUICK_LINK_GROUP_ID,
   OPEN_BOOKMARK_EDIT_DIALOG,
   OPEN_QUICK_LINK_GROUP_SELECT_DIALOG,
 } from '@newtab/shared/keys'
@@ -38,6 +39,7 @@ import {
 
 const openBookmarkEditDialog = inject(OPEN_BOOKMARK_EDIT_DIALOG)
 const openQuickLinkGroupSelectDialog = inject(OPEN_QUICK_LINK_GROUP_SELECT_DIALOG)
+const getActiveQuickLinkGroupId = inject(GET_ACTIVE_QUICK_LINK_GROUP_ID)
 
 const { t } = useTranslation()
 const quickLinksStore = useQuickLinksStore()
@@ -218,6 +220,7 @@ async function addToQuickLinks() {
   if (quickLinksGrouping.value) {
     const groupId = await openQuickLinkGroupSelectDialog?.({
       title: t('quickLinks.groups.selectPinTarget'),
+      currentGroupId: getActiveQuickLinkGroupId?.(),
     })
     if (!groupId) return
     await quickLinksStore.addQuickLinkToGroup(groupId, quickLink)

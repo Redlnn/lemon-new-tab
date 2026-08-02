@@ -848,7 +848,15 @@ const categoryPerf = usePerfClasses(() => ({
 
 const categoryClass = categoryPerf('quick-links__category')
 
-defineExpose({ refresh })
+function getActiveGroupId() {
+  const page = currentPageData.value
+  if (settings.quickLinks.useScroll || !page || page.isTopSites) {
+    return DEFAULT_QUICK_LINK_GROUP_ID
+  }
+  return page.groupId ?? DEFAULT_QUICK_LINK_GROUP_ID
+}
+
+defineExpose({ refresh, getActiveGroupId })
 </script>
 
 <template>
