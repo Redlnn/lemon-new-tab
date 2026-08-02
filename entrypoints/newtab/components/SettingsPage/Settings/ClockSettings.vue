@@ -106,6 +106,16 @@ function formatTransparency(value: number) {
           show-input
         />
       </div>
+      <div class="settings__item settings__item--vertical">
+        <div class="settings__label">{{ t('clock.dateSize') }}</div>
+        <el-slider
+          v-model="settings.clock.dateSize"
+          :min="10"
+          :max="50"
+          :show-tooltip="false"
+          show-input
+        />
+      </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('clock.weight.title') }}</div>
         <el-select

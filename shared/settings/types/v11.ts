@@ -11,16 +11,31 @@ type WithTransparency<T> = T & {
 
 export interface SettingsSchemaV11 extends Omit<
   SettingsSchemaV10,
-  'version' | 'shortcut' | 'clock' | 'search' | 'yiyan' | 'layout' | 'dock' | 'perf' | 'background'
+  | 'version'
+  | 'shortcut'
+  | 'theme'
+  | 'clock'
+  | 'search'
+  | 'yiyan'
+  | 'layout'
+  | 'dock'
+  | 'perf'
+  | 'background'
 > {
   background: Omit<SettingsSchemaV10['background'], 'bing'> & {
+    showDownloadBtn: boolean
     bing: SettingsSchemaV10['background']['bing'] & {
       resolution: BingWallpaperResolution
       cachedResolution: BingWallpaperResolution | null
     }
   }
 
+  theme: SettingsSchemaV10['theme'] & {
+    keepClockVisibleOnIdle: boolean
+  }
+
   clock: SettingsSchemaV10['clock'] & {
+    dateSize: number
     style: SettingsSchemaV10['clock']['style'] & {
       transparency: number
     }
@@ -43,6 +58,7 @@ export interface SettingsSchemaV11 extends Omit<
   layout: SettingsSchemaV10['layout'] & {
     actionBtnBorderRadius: number
     globalBorderRadius: number
+    minimalModeOnDoubleClick: boolean
   }
 
   dock: SettingsSchemaV10['dock'] & {

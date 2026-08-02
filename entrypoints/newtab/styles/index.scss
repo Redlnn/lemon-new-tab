@@ -99,6 +99,20 @@ html.dialog-acrylic .el-message-box {
     overflow: hidden auto;
     overscroll-behavior-y: contain;
   }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    transition: opacity var(--el-transition-duration) ease-in-out;
+  }
+
+  &--minimal &__content {
+    pointer-events: none;
+    opacity: 0;
+  }
 }
 
 html.launchpad-no-blur {

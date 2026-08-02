@@ -91,7 +91,9 @@
 
   &__date {
     margin-bottom: 5px;
-    transition: font-weight var(--el-transition-duration) ease;
+    transition:
+      font-size var(--el-transition-duration) cubic-bezier(0.5, 0, 0.5, 1.8),
+      font-weight var(--el-transition-duration) ease;
   }
 
   &--shadow {

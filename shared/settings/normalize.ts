@@ -10,6 +10,8 @@ import type { BingWallpaperResolution } from './types'
 
 const MIN_TRANSPARENCY = 0
 const MAX_TRANSPARENCY = 95
+const MIN_CLOCK_DATE_SIZE = 10
+const MAX_CLOCK_DATE_SIZE = 50
 const MIN_BACKDROP_BLUR = 0
 const MAX_BACKDROP_BLUR = 40
 const MIN_ICON_BORDER_RADIUS = 0
@@ -35,13 +37,18 @@ type PerfTransparencyKey =
 type SearchSettings = CURRENT_CONFIG_SCHEMA['search']
 
 type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
+  theme?: Omit<CURRENT_CONFIG_SCHEMA['theme'], 'keepClockVisibleOnIdle'> & {
+    keepClockVisibleOnIdle?: unknown
+  }
   background?: CURRENT_CONFIG_SCHEMA['background'] & {
+    showDownloadBtn?: unknown
     bing?: Omit<CURRENT_CONFIG_SCHEMA['background']['bing'], 'resolution' | 'cachedResolution'> & {
       resolution?: unknown
       cachedResolution?: unknown
     }
   }
-  clock?: CURRENT_CONFIG_SCHEMA['clock'] & {
+  clock?: Omit<CURRENT_CONFIG_SCHEMA['clock'], 'dateSize'> & {
+    dateSize?: unknown
     style?: CURRENT_CONFIG_SCHEMA['clock']['style'] & {
       transparency?: number
     }
@@ -52,7 +59,9 @@ type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
   }
   quickLinks?: CURRENT_CONFIG_SCHEMA['quickLinks']
   yiyan?: CURRENT_CONFIG_SCHEMA['yiyan']
-  layout?: CURRENT_CONFIG_SCHEMA['layout']
+  layout?: Omit<CURRENT_CONFIG_SCHEMA['layout'], 'minimalModeOnDoubleClick'> & {
+    minimalModeOnDoubleClick?: unknown
+  }
   dock?: CURRENT_CONFIG_SCHEMA['dock']
   perf?: CURRENT_CONFIG_SCHEMA['perf']
 }
@@ -60,6 +69,10 @@ type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
 function clampInteger(value: unknown, fallback: number, min: number, max: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
   return Math.min(max, Math.max(min, Math.round(value)))
+}
+
+function normalizeBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback
 }
 
 function normalizeBuiltInEngineKeys(value: unknown, appendMissing: boolean) {
@@ -113,6 +126,7 @@ function normalizePerfSurface<K extends PerfTransparencyKey>(
  */
 export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRENT_CONFIG_SCHEMA {
   const normalized = settings as MutableCurrentSettings
+  normalized.theme ??= structuredClone(defaultSettings.theme)
   normalized.background ??= structuredClone(defaultSettings.background)
   normalized.background.bing ??= structuredClone(defaultSettings.background.bing)
   normalized.clock ??= structuredClone(defaultSettings.clock)
@@ -123,6 +137,19 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
   normalized.layout ??= structuredClone(defaultSettings.layout)
   normalized.dock ??= structuredClone(defaultSettings.dock)
   normalized.perf ??= structuredClone(defaultSettings.perf)
+
+  normalized.theme.keepClockVisibleOnIdle = normalizeBoolean(
+    normalized.theme.keepClockVisibleOnIdle,
+    defaultSettings.theme.keepClockVisibleOnIdle,
+  )
+  normalized.background.showDownloadBtn = normalizeBoolean(
+    normalized.background.showDownloadBtn,
+    defaultSettings.background.showDownloadBtn,
+  )
+  normalized.layout.minimalModeOnDoubleClick = normalizeBoolean(
+    normalized.layout.minimalModeOnDoubleClick,
+    defaultSettings.layout.minimalModeOnDoubleClick,
+  )
 
   const { bing } = normalized.background
   if (!isBingWallpaperResolution(bing.resolution)) {
@@ -139,6 +166,12 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
     defaultSettings.clock.style.transparency,
     MIN_TRANSPARENCY,
     MAX_TRANSPARENCY,
+  )
+  normalized.clock.dateSize = clampInteger(
+    normalized.clock.dateSize,
+    defaultSettings.clock.dateSize,
+    MIN_CLOCK_DATE_SIZE,
+    MAX_CLOCK_DATE_SIZE,
   )
   normalized.search.borderRadius = clampInteger(
     normalized.search.borderRadius,

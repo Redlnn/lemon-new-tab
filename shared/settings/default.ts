@@ -9,6 +9,7 @@ export const defaultSettings = {
     colorfulMode: false,
     monetColor: false,
     idleHide: false,
+    keepClockVisibleOnIdle: false,
   },
 
   clock: {
@@ -28,6 +29,7 @@ export const defaultSettings = {
     showSeconds: false,
 
     size: 50,
+    dateSize: 14,
     weight: {
       time: ClockWeight.Black,
       date: ClockWeight.Medium,
@@ -69,6 +71,7 @@ export const defaultSettings = {
   },
   background: {
     bgType: BgType.Bing,
+    showDownloadBtn: true,
 
     vignette: false,
     parallax: false,
@@ -249,6 +252,7 @@ export const defaultSettings = {
     actionBtnPosition: 'bottom-right',
     actionBtnBorderRadius: 50,
     globalBorderRadius: 20,
+    minimalModeOnDoubleClick: false,
   },
 
   bookmark: {

@@ -88,8 +88,9 @@ const clockStyle = computed(() => {
     fontSize: settings.clock.size + 'px',
   }
 })
-const calcStyle = computed(() => {
+const dateStyle = computed(() => {
   return {
+    fontSize: settings.clock.dateSize + 'px',
     fontWeight: weightMap[settings.clock.weight.date],
   }
 })
@@ -156,7 +157,7 @@ const calcStyle = computed(() => {
         }}</span>
       </div>
     </div>
-    <div v-if="settings.clock.showDate" class="clock__date" :style="calcStyle">
+    <div v-if="settings.clock.showDate" class="clock__date" :style="dateStyle">
       <span>
         {{ formattedDate.date }}
         {{ formattedDate.weekday }}

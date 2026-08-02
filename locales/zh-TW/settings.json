@@ -40,6 +40,8 @@
     },
     "parallax": "壁紙視差效果",
     "pauseWhenBlur": "分頁失去焦點時暫停影片背景",
+    "showDownloadBtn": "顯示下載按鈕",
+    "showDownloadBtnNote": "僅在使用必應桌布或線上桌布時提供下載功能",
     "permission": {
       "allowAll": "允許所有網址",
       "allowCurrent": "僅允許這個API網址",
@@ -109,6 +111,7 @@
     "blink": "閃爍時間分隔符",
     "blinkingTip": "關閉可減輕持續性的 GPU 使用",
     "colorful": "多彩時鐘",
+    "dateSize": "日期大小",
     "hour12": "使用 12 小時制",
     "invertColor": {
       "dark": "【時鐘】深色模式下使用深色文字",
@@ -171,6 +174,7 @@
     },
     "dockBorderRadius": "Dock 圓角",
     "globalBorderRadius": "其他元件圓角",
+    "minimalModeOnDoubleClick": "雙擊空白背景切換極簡模式",
     "mainPosition": {
       "center": "居中",
       "dvh": "距頂部（%）",
@@ -333,6 +337,7 @@
       "label": "全域色彩"
     },
     "idleHide": "不活動時淡出頁面元素",
+    "keepClockVisibleOnIdle": "不活動時保持時鐘和日期可見",
     "mode": {
       "alwaysOff": "始終關閉",
       "alwaysOn": "始終開啟",

@@ -57,6 +57,13 @@ const beforeCacheChange = async () => {
       </el-button>
     </div>
     <div class="settings__item settings__item--horizontal">
+      <div class="settings__label">{{ t('background.showDownloadBtn') }}</div>
+      <el-switch v-model="settings.background.showDownloadBtn" />
+    </div>
+    <p class="settings__item--note">
+      {{ t('background.showDownloadBtnNote') }}
+    </p>
+    <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('background.pauseWhenBlur') }}</div>
       <el-switch v-model="settings.background.pauseOnBlur" />
     </div>

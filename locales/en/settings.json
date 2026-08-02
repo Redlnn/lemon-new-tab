@@ -40,6 +40,8 @@
     },
     "parallax": "Wallpaper parallax effect",
     "pauseWhenBlur": "Pause video background when the tab loses focus",
+    "showDownloadBtn": "Show download button",
+    "showDownloadBtnNote": "Available only for Bing and online wallpapers.",
     "permission": {
       "allowAll": "Allow all sites",
       "allowCurrent": "Only allow this API URL",
@@ -109,6 +111,7 @@
     "blink": "Blinking colon",
     "blinkingTip": "Turning this off can reduce sustained GPU usage.",
     "colorful": "Colorful clock numbers",
+    "dateSize": "Date size",
     "hour12": "12-hour clock",
     "invertColor": {
       "dark": "[Clock] Use dark text in dark mode",
@@ -171,6 +174,7 @@
     },
     "dockBorderRadius": "Dock radius",
     "globalBorderRadius": "Other component radius",
+    "minimalModeOnDoubleClick": "Double-click blank background to toggle minimal mode",
     "mainPosition": {
       "center": "Center",
       "dvh": "From top (%)",
@@ -333,6 +337,7 @@
       "label": "Global Color Mode"
     },
     "idleHide": "Fade out page elements when inactive",
+    "keepClockVisibleOnIdle": "Keep clock and date visible when inactive",
     "mode": {
       "alwaysOff": "Always Off",
       "alwaysOn": "Always On",

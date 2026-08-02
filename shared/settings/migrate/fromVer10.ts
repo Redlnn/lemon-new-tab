@@ -7,8 +7,13 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
 
   return {
     ...rest,
+    theme: {
+      ...rest.theme,
+      keepClockVisibleOnIdle: defaultSettings.theme.keepClockVisibleOnIdle,
+    },
     background: {
       ...rest.background,
+      showDownloadBtn: defaultSettings.background.showDownloadBtn,
       bing: {
         ...rest.background.bing,
         resolution: defaultSettings.background.bing.resolution,
@@ -17,6 +22,7 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
     },
     clock: {
       ...rest.clock,
+      dateSize: defaultSettings.clock.dateSize,
       style: {
         ...rest.clock.style,
         transparency: defaultSettings.clock.style.transparency,
@@ -44,6 +50,7 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
       ...rest.layout,
       actionBtnBorderRadius: defaultSettings.layout.actionBtnBorderRadius,
       globalBorderRadius: defaultSettings.layout.globalBorderRadius,
+      minimalModeOnDoubleClick: defaultSettings.layout.minimalModeOnDoubleClick,
     },
     perf: {
       ...restPerf,

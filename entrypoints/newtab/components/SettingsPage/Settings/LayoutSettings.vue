@@ -106,10 +106,22 @@ function selectActionBtn(pos: ActionBtnPosition) {
       {{ t('layout.actionBtn.dockNote') }}
     </p>
 
+    <div class="settings__item settings__item--horizontal">
+      <div class="settings__label">{{ t('layout.minimalModeOnDoubleClick') }}</div>
+      <el-switch v-model="settings.layout.minimalModeOnDoubleClick" />
+    </div>
+
     <!-- 不活动时淡出（UI 仅在此处，storage path 仍为 theme.idleHide） -->
     <div class="settings__item settings__item--horizontal">
       <div class="settings__label">{{ t('theme.idleHide') }}</div>
       <el-switch v-model="settings.theme.idleHide" :disabled="isOnlyTouchDevice" />
+    </div>
+    <div class="settings__item settings__item--horizontal">
+      <div class="settings__label">{{ t('theme.keepClockVisibleOnIdle') }}</div>
+      <el-switch
+        v-model="settings.theme.keepClockVisibleOnIdle"
+        :disabled="!settings.theme.idleHide || isOnlyTouchDevice"
+      />
     </div>
     <p v-if="isOnlyTouchDevice" class="settings__item--note">
       {{ t('common.touchDeviceDisabledNote') }}

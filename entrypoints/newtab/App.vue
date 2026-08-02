@@ -85,11 +85,10 @@ const {
   openEditQuickLinkDialog,
 } = useLazyAppComponents()
 
-const appRef = useTemplateRef('appRef')
-
 const elLocale = useElementLang()
 const settings = useSettingsStore()
 const { quickLinksReady } = useQuickLinksBootstrap()
+const minimalMode = ref(false)
 const legacyDialogVisible = ref(false)
 const conflictDialogVisible = ref(false)
 const conflictPayload = shallowRef<SyncEventPayloadMap['conflict'] | null>(null)
@@ -135,6 +134,16 @@ const { idle } = useIdle(5_000, {
 })
 
 const idleHideEnabled = computed(() => settings.theme.idleHide && !isOnlyTouchDevice.value)
+const idleActive = computed(() => idleHideEnabled.value && idle.value && !minimalMode.value)
+const keepClockVisibleOnIdle = computed(
+  () => idleActive.value && settings.theme.keepClockVisibleOnIdle,
+)
+const idleMainStyle = computed<StyleValue>(() =>
+  idleActive.value && !keepClockVisibleOnIdle.value ? { opacity: 0.2 } : undefined,
+)
+const contentStyle = computed<StyleValue>(() =>
+  keepClockVisibleOnIdle.value ? { opacity: 0.2 } : undefined,
+)
 
 watch(
   isOnlyTouchDevice,
@@ -146,17 +155,12 @@ watch(
   { immediate: true },
 )
 
-watch([idle, idleHideEnabled], ([v, enabled]) => {
-  if (!enabled) {
-    appRef.value?.style.removeProperty('opacity')
-    return
-  }
-  if (v) {
-    if (appRef.value) appRef.value.style.opacity = '0.2'
-  } else {
-    appRef.value?.style.removeProperty('opacity')
-  }
-})
+watch(
+  () => settings.layout.minimalModeOnDoubleClick,
+  (enabled) => {
+    if (!enabled) minimalMode.value = false
+  },
+)
 
 function openBookmarkSidebar() {
   if (settings.bookmark.rightClickToOpen) {
@@ -247,6 +251,7 @@ watch(
 
 const mainClass = computed(() => ({
   'app--quick-links-scroll': quickLinksScrollEnabled.value,
+  'app--minimal': minimalMode.value,
 }))
 
 const mainStyle = computed<StyleValue>(() => {
@@ -299,6 +304,11 @@ const handleDisableSyncConflict = async () => {
 async function refreshQuickLinks() {
   await Promise.all([QuickLinksRef.value?.refresh(), DockRef.value?.refresh()])
 }
+
+function toggleMinimalMode() {
+  if (!settings.layout.minimalModeOnDoubleClick) return
+  minimalMode.value = !minimalMode.value
+}
 </script>
 
 <template>
@@ -311,33 +321,40 @@ async function refreshQuickLinks() {
     :message="{
       placement: settings.dock.enabled ? 'top' : 'bottom',
     }"
-  >
+    >
     <main
-      :style="mainStyle"
+      :style="[mainStyle, idleMainStyle]"
       class="app"
       :class="mainClass"
-      ref="appRef"
       :aria-label="t('a11y.main')"
       @contextmenu.prevent="openBookmarkSidebar"
+      @dblclick.self="toggleMinimalMode"
     >
       <clock v-if="settings.clock.enabled" @contextmenu.stop />
-      <search-box v-if="settings.search.enabled" @contextmenu.stop />
-      <quick-links
-        v-if="settings.quickLinks.enabled"
-        ref="QuickLinksRef"
-        :ready="quickLinksReady"
-        :on-open-add-dialog="openAddQuickLinkDialog"
-        :on-open-edit-dialog="openEditQuickLinkDialog"
-        @contextmenu.stop
-      />
-      <yi-yan v-if="settings.yiyan.enabled" @contextmenu.stop />
-      <dock
-        v-if="settings.dock.enabled"
-        ref="DockRef"
-        :ready="quickLinksReady"
-        :on-open-add-dialog="openAddQuickLinkDialog"
-        :on-open-edit-dialog="openEditQuickLinkDialog"
-      />
+      <div
+        class="app__content"
+        :style="contentStyle"
+        :inert="minimalMode || undefined"
+        @dblclick.self="toggleMinimalMode"
+      >
+        <search-box v-if="settings.search.enabled" @contextmenu.stop />
+        <quick-links
+          v-if="settings.quickLinks.enabled"
+          ref="QuickLinksRef"
+          :ready="quickLinksReady"
+          :on-open-add-dialog="openAddQuickLinkDialog"
+          :on-open-edit-dialog="openEditQuickLinkDialog"
+          @contextmenu.stop
+        />
+        <yi-yan v-if="settings.yiyan.enabled" @contextmenu.stop />
+        <dock
+          v-if="settings.dock.enabled"
+          ref="DockRef"
+          :ready="quickLinksReady"
+          :on-open-add-dialog="openAddQuickLinkDialog"
+          :on-open-edit-dialog="openEditQuickLinkDialog"
+        />
+      </div>
     </main>
     <background ref="BackgroundRef" />
     <div
@@ -354,13 +371,22 @@ async function refreshQuickLinks() {
         @open-faq="showFaq"
         @open-background-switcher="showBackgroundSwitcher"
       />
-      <bookmark-btn v-if="settings.bookmark.showBtn" @open-bookmark-sidebar="showBookmark" />
+      <bookmark-btn
+        v-if="settings.bookmark.showBtn"
+        v-show="!minimalMode"
+        @open-bookmark-sidebar="showBookmark"
+      />
       <refresh-bg-btn
         v-if="settings.background.bgType === BgType.Online"
+        v-show="!minimalMode"
         @refresh-background="BackgroundRef?.refreshBackground"
       ></refresh-bg-btn>
       <download-bg-btn
-        v-if="([BgType.Bing, BgType.Online] as BgType[]).includes(settings.background.bgType)"
+        v-if="
+          settings.background.showDownloadBtn &&
+          ([BgType.Bing, BgType.Online] as BgType[]).includes(settings.background.bgType)
+        "
+        v-show="!minimalMode"
       ></download-bg-btn>
     </div>
     <settings-page v-if="settingsPageMounted" v-model="settingsPageVisible" />
