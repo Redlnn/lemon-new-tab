@@ -2,7 +2,7 @@
 
 > Translated by AI from Chinese.
 
-## Unreleased
+## 3.5.0 (Aug 01, 2026)
 
 ### New Features✨
 

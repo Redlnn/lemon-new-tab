@@ -1,9 +1,6 @@
 allowBuilds:
   esbuild: true
 
-minimumReleaseAgeExclude:
-  - wxt@0.21.2
-
 overrides:
   glob: '^13.0.6' # 统一版本
   markdown-it: 'npm:markdown-exit@latest' # 替换为高性能实现
@@ -16,7 +13,7 @@ overrides:
   'global-prefix>ini': '^7.0.0'
   'package-json>registry-url': '^7.2.0' # 删除了 rc 依赖，rc 依赖旧版本 ini
   # -----
-  'gray-matter>js-yaml': '^3.15.0' # 修复 CVE-2025-64718
+  'gray-matter>js-yaml': '^3.15.1' # 修复 CVE-2025-64718
   'firefox-profile>adm-zip': '^0.6.0' # 修复 CVE-2026-39244
   'web-ext>addons-linter': '-' # 用不到 web-ext 的格式化功能
   'fx-runner>shell-quote': '^1.10.0' # 修复 CVE-2026-13311
