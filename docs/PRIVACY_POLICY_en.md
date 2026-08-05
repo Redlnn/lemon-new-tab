@@ -4,7 +4,7 @@
 
 This Privacy Policy applies to the browser extension **Lemon New Tab** and its related public source code repository.
 
-This extension is designed to run in a **local-first** manner. Some online features are **enabled by default or available by default**, including search suggestions, Jinrishici content, and third-party favicon lookup. Other online features usually require your own action or configuration, such as online wallpapers, some third-party content sources, or browser account sync. Regardless of whether such features are enabled, the extension does not proactively send your data to the developer's own servers. Based on the current source code, the developer **does not operate a dedicated backend that collects extension users' personal data**.
+This extension is designed to run in a **local-first** manner. Some online features are **enabled by default or available by default**, including search suggestions and Jinrishici content. Other online features usually require your own action or configuration, such as online wallpapers, some third-party content sources, or browser account sync. Regardless of whether such features are enabled, the extension does not proactively send your data to the developer's own servers. Based on the current source code, the developer **does not operate a dedicated backend that collects extension users' personal data**.
 
 Contact email: <lemon@redlnn.top>
 
@@ -127,19 +127,7 @@ Risk notes:
 - those requests may expose your IP address, request time, and browser/device characteristics;
 - depending on region, Bing routing, edge nodes, redirect behavior, and processing location may differ and may involve processing inside or outside mainland China.
 
-### 6.5 Third-Party Favicon Services
-
-- Purpose: obtain site icons when the extension does not directly read them from the target website;
-- Endpoints used in the code: `https://favicon.so/` and `https://favicon.im/`
-- Default status: **enabled by default / available by default**;
-
-Risk notes:
-
-- the request includes the hostname of the website whose icon is being fetched;
-- the favicon provider may therefore learn which site icon was requested and may log your IP address, time, and target hostname;
-- server location, retention, and operational practices may change over time and are outside the developer's control.
-
-### 6.6 User-Configured Online Wallpaper / Media URLs
+### 6.5 User-Configured Online Wallpaper / Media URLs
 
 - Purpose: allow you to use any image, video, or API endpoint that you choose;
 - Risk note: once you configure an online resource URL, your browser sends requests directly to that site. The developer cannot review or control that site's privacy practices, security, legality, logging behavior, cross-border transfers, or downstream uses. Only use providers you trust.
@@ -164,7 +152,7 @@ Processing necessary for the extension's core local functionality, such as savin
 
 ### 8.2 Consent
 
-For online features that cause your browser to send requests to third parties, especially the **enabled-by-default or available-by-default** search suggestions, Jinrishici content, and third-party favicon lookup, the extension treats those requests as based on your **consent**. You may withdraw that consent by disabling the relevant feature, switching to a non-network alternative, blocking the relevant domains, clearing related cache, or uninstalling the extension.
+For online features that cause your browser to send requests to third parties, especially the **enabled-by-default or available-by-default** search suggestions and Jinrishici content, the extension treats those requests as based on your **consent**. You may withdraw that consent by disabling the relevant feature, switching to a non-network alternative, blocking the relevant domains, clearing related cache, or uninstalling the extension.
 
 Requests triggered by online wallpaper URLs, media URLs, third-party API endpoints, or other custom online resources that you configure are also treated as based on your consent.
 
@@ -193,7 +181,7 @@ If you enable browser sync, retention is determined by the browser vendor. The d
 
 ### 9.3 Third-party logs and caches
 
-For Jinrishici, Hitokoto, Bing, Google, Baidu, favicon services, and any custom online resources you use, retention periods for logs, caches, and access records are determined by those providers. The extension developer usually does not know the exact retention period and cannot delete those records on their behalf.
+For Jinrishici, Hitokoto, Bing, Google, Baidu, and any custom online resources you use, retention periods for logs, caches, and access records are determined by those providers. The extension developer usually does not know the exact retention period and cannot delete those records on their behalf.
 
 ## 10. Cookies and Similar Technologies
 
@@ -216,7 +204,6 @@ The following scenarios may therefore involve cross-border transfer risks:
 
 - using Google search suggestions;
 - using Bing global services or related CDNs / edge nodes;
-- using favicon services hosted outside your region;
 - using online wallpapers, media, or API endpoints hosted abroad;
 - using browser account sync infrastructure.
 

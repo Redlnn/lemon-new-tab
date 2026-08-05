@@ -291,27 +291,8 @@ async function tryFetchIconFromDiscoveredLinkTags(
   return null
 }
 
-/** 已知的无效 SVG 特征字符串（第三方 favicon 服务在找不到图标时返回的占位图）
- *  - favicon.so：代码图标（path 浮点坐标，误判风险极低）
- */
-const KNOWN_INVALID_SVG_SIGNATURES = ['M5.719 14.75'] as const
-
-/** 判断 SVG 文本是否是已知的无效占位 SVG */
-function isKnownInvalidSvg(text: string): boolean {
-  // favicon.so：使用路径特征字符串（浮点坐标极具唯一性，误判风险极低）
-  if (KNOWN_INVALID_SVG_SIGNATURES.some((sig) => text.includes(sig))) return true
-  // favicon.im：灰色圆形 + 斜体 "f" 占位图（不依赖属性顺序，分别检测）
-  if (
-    text.includes('cx="50" cy="50" r="40" fill="#808080"') &&
-    text.includes('font-style="italic"') &&
-    text.includes('>f<')
-  )
-    return true
-  return false
-}
-
 /** 使用 HTMLImageElement 试探给定 URL 是否可用（无需 CORS，基于加载结果判断）。 */
-function probeImageUrl(url: string): Promise<boolean> {
+function probeImageUrl(url: string, signal?: AbortSignal): Promise<boolean> {
   return new Promise((resolve) => {
     const img = new Image()
 
@@ -321,6 +302,7 @@ function probeImageUrl(url: string): Promise<boolean> {
       settled = true
 
       clearTimeout(timer)
+      signal?.removeEventListener('abort', onAbort)
       img.onload = null
       img.onerror = null
 
@@ -330,7 +312,11 @@ function probeImageUrl(url: string): Promise<boolean> {
       resolve(result)
     }
 
+    const onAbort = () => done(false)
     const timer = setTimeout(() => done(false), 5000)
+    if (signal?.aborted) return onAbort()
+
+    signal?.addEventListener('abort', onAbort, { once: true })
 
     img.onload = () => done(true)
     img.onerror = () => done(false)
@@ -359,66 +345,16 @@ async function fetchViaChromeFaviconApi(pageUrl: string): Promise<string | null>
   }
 }
 
-/** 策略 C：并行请求第三方 favicon 服务（favicon.so & favicon.im），取最快且有效的一个，返回 base64 */
-async function fetchViaThirdPartyServices(pageUrl: string): Promise<string | null> {
-  try {
-    const { hostname } = new URL(pageUrl)
-    if (!hostname) return null
-
-    const endpoints = [`https://favicon.so/${hostname}`, `https://favicon.im/${hostname}`]
-
-    // 为每个请求创建一个可中断的 controller，并配合定时器实现超时
-    const requests = endpoints.map((url) => ({ url, controller: new AbortController() }))
-    const timers: ReturnType<typeof setTimeout>[] = requests.map(({ controller }) =>
-      // 5s 超时后中止对应请求
-      setTimeout(() => controller.abort(), 5000),
-    )
-
-    const attempts = requests.map(({ url, controller }) =>
-      (async (): Promise<string> => {
-        const resp = await fetch(url, { signal: controller.signal })
-        if (!resp.ok) throw new Error('bad status')
-        const contentType = resp.headers.get('content-type') ?? ''
-        if (contentType.startsWith('text/') || contentType.includes('html'))
-          throw new Error('invalid content-type')
-        const blob = await resp.blob()
-        if (blob.size === 0) throw new Error('empty')
-        if (contentType.includes('svg') || blob.type.includes('svg')) {
-          const text = await blob.text()
-          if (isKnownInvalidSvg(text)) throw new Error('known invalid svg')
-        }
-        return await blobToDataURL(blob)
-      })(),
-    )
-
-    try {
-      const result = await Promise.any(attempts)
-      // 成功后中断所有剩余请求
-      requests.forEach(({ controller }) => {
-        try {
-          controller.abort()
-        } catch {}
-      })
-      return result
-    } catch {
-      // 所有请求都失败
-      return null
-    } finally {
-      timers.forEach(clearTimeout)
-    }
-  } catch {
-    return null
-  }
-}
-
 /** 策略 B：尝试常见的 favicon 路径并获取 base64。
  *  需要授予泛域名主机权限（允许访问任意域名）。 */
 async function fetchViaDirectUrls(pageUrl: string): Promise<string | null> {
   const { origin } = new URL(pageUrl)
+  const controllers = COMMON_FAVICON_PATHS.map(() => new AbortController())
+  const timers = controllers.map((controller) => setTimeout(() => controller.abort(), 5000))
   try {
     return await Promise.any(
-      COMMON_FAVICON_PATHS.map(async (path) => {
-        const resp = await fetch(origin + path, { signal: AbortSignal.timeout(5000) })
+      COMMON_FAVICON_PATHS.map(async (path, index) => {
+        const resp = await fetch(origin + path, { signal: controllers[index]!.signal })
         if (!resp.ok) throw new Error('not ok')
         const contentType = resp.headers.get('content-type') ?? ''
         if (contentType.startsWith('text/') || contentType.includes('html')) throw new Error('html')
@@ -429,6 +365,9 @@ async function fetchViaDirectUrls(pageUrl: string): Promise<string | null> {
     )
   } catch {
     return null
+  } finally {
+    timers.forEach(clearTimeout)
+    controllers.forEach((controller) => controller.abort())
   }
 }
 
@@ -477,19 +416,22 @@ async function fetchViaPageLinkIcon(pageUrl: string): Promise<string | null> {
   }
 }
 
-/** 策略 D：通过 Image 元素探测常见路径（无需 CORS，仅返回 URL）。 */
+/** 策略 C：通过 Image 元素探测常见路径（无需 CORS，仅返回 URL）。 */
 async function probeViaImageElement(pageUrl: string): Promise<string | null> {
   const { origin } = new URL(pageUrl)
+  const controllers = COMMON_FAVICON_PATHS.map(() => new AbortController())
   try {
     return await Promise.any(
-      COMMON_FAVICON_PATHS.map(async (path) => {
+      COMMON_FAVICON_PATHS.map(async (path, index) => {
         const url = origin + path
-        if (await probeImageUrl(url)) return url
+        if (await probeImageUrl(url, controllers[index]!.signal)) return url
         throw new Error('probe failed')
       }),
     )
   } catch {
     return null
+  } finally {
+    controllers.forEach((controller) => controller.abort())
   }
 }
 
@@ -549,7 +491,7 @@ async function doFetch(pageUrl: string, origin: string): Promise<string | null> 
     let data: string | null = null
     let type: 'base64' | 'url' = 'base64'
 
-    // 缓存关闭时优先复用浏览器已经拥有的图标，避免每次新标签页都访问外部服务。
+    // 缓存关闭时优先复用浏览器已经拥有的图标，避免每次新标签页都重新发起网络请求。
     if (!_cacheEnabled && isChromium) {
       data = await fetchViaChromeFaviconApi(pageUrl)
     }
@@ -569,12 +511,7 @@ async function doFetch(pageUrl: string, origin: string): Promise<string | null> 
       data = await fetchViaDirectUrls(pageUrl)
     }
 
-    // 策略 B：尝试第三方 favicon 服务（并行请求 favicon.so & favicon.im）
-    if (!data) {
-      data = await fetchViaThirdPartyServices(pageUrl)
-    }
-
-    // 策略 D：通过 Image 探测（无需 CORS，仅返回 URL）
+    // 策略 C：通过 Image 探测（无需 CORS，仅返回 URL）
     if (!data) {
       data = await probeViaImageElement(pageUrl)
       if (data) type = 'url'

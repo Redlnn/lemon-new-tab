@@ -37,8 +37,6 @@ const baseManifest = {
     'https://suggestqueries.google.com/', // Google 搜索建议
     'https://v2.jinrishici.com/', // 今日诗词 API
     'https://v1.hitokoto.cn/', // 一言 API
-    'https://favicon.so/', // Favicon 服务
-    'https://favicon.im/', // Favicon 服务
   ],
   content_security_policy: {
     extension_pages:
