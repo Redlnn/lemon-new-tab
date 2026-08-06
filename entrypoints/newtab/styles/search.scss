@@ -145,6 +145,10 @@
         width var(--el-transition-duration-fast) var(--cubic-bezier),
         color var(--el-transition-duration-fast) ease;
 
+      &--left-aligned:is(:focus, :not(:placeholder-shown)) {
+        text-align: left;
+      }
+
       &::placeholder {
         color: var(--search-form-placeholder-color);
         -webkit-user-select: none;

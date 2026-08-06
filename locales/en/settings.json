@@ -304,6 +304,7 @@
     "defaultSearchEngine": "Search engine",
     "expandWidth": "Expanded width",
     "launchAnim": "Search box expand animation on startup",
+    "leftAlignInput": "Left-align search input",
     "placeholder": "Search placeholder",
     "recordSearchHistory": "Record search history",
     "restoreHiddenEngines": "Restore hidden built-in search engines",

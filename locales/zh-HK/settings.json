@@ -304,6 +304,7 @@
     "defaultSearchEngine": "預設搜尋引擎",
     "expandWidth": "展開後寬度",
     "launchAnim": "啟動時搜索框展開動效",
+    "leftAlignInput": "搜尋框輸入內容靠左對齊",
     "placeholder": "搜尋框占位文字",
     "recordSearchHistory": "記錄搜尋歷史",
     "restoreHiddenEngines": "還原已隱藏的內置搜尋引擎",

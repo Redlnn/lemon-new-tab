@@ -304,6 +304,7 @@
     "defaultSearchEngine": "搜索引擎",
     "expandWidth": "展开后宽度",
     "launchAnim": "启动时搜索框展开动画",
+    "leftAlignInput": "搜索框输入内容左对齐",
     "placeholder": "搜索框占位文字",
     "recordSearchHistory": "记录搜索历史",
     "restoreHiddenEngines": "恢复已隐藏的内置搜索引擎",

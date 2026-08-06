@@ -119,6 +119,10 @@ function restoreBuiltInSearchEngines() {
         <div class="settings__label">{{ t('search.border') }}</div>
         <el-switch v-model="settings.search.style.border" />
       </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('search.leftAlignInput') }}</div>
+        <el-switch v-model="settings.search.leftAlignInput" />
+      </div>
       <div class="settings__item settings__item--vertical">
         <div class="settings__label">{{ t('search.borderRadius') }}</div>
         <el-slider

@@ -60,6 +60,7 @@ export const defaultSettings = {
 
     openInNewTab: false,
     recordHistory: true,
+    leftAlignInput: false,
 
     style: {
       shadow: true,

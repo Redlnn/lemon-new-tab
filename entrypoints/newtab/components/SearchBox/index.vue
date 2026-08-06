@@ -274,6 +274,7 @@ onMounted(() => {
         v-model="searchText"
         :placeholder="searchPlaceholder"
         class="search-box__input"
+        :class="{ 'search-box__input--left-aligned': settings.search.leftAlignInput }"
         role="combobox"
         :aria-label="t('a11y.searchInput')"
         :aria-controls="searchSuggestionListId"

@@ -183,6 +183,10 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
     normalized.search.suggestionsEnabled,
     defaultSettings.search.suggestionsEnabled,
   )
+  normalized.search.leftAlignInput = normalizeBoolean(
+    normalized.search.leftAlignInput,
+    defaultSettings.search.leftAlignInput,
+  )
   normalized.search.builtInEngineOrder = normalizeBuiltInEngineKeys(
     normalized.search.builtInEngineOrder,
     true,
