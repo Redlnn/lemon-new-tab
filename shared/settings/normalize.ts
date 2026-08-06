@@ -179,6 +179,10 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
     MIN_SEARCH_BORDER_RADIUS,
     MAX_SEARCH_BORDER_RADIUS,
   )
+  normalized.search.suggestionsEnabled = normalizeBoolean(
+    normalized.search.suggestionsEnabled,
+    defaultSettings.search.suggestionsEnabled,
+  )
   normalized.search.builtInEngineOrder = normalizeBuiltInEngineKeys(
     normalized.search.builtInEngineOrder,
     true,

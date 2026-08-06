@@ -52,6 +52,7 @@ export const defaultSettings = {
     expandAlways: false,
     showIconAlways: false,
 
+    suggestionsEnabled: true,
     suggestionAPI: 'bing',
     engine: 'bing',
     builtInEngineOrder: [...BUILT_IN_SEARCH_ENGINE_KEYS],

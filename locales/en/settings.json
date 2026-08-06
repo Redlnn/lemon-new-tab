@@ -309,6 +309,7 @@
     "restoreHiddenEngines": "Restore hidden built-in search engines",
     "restoreHiddenEnginesTitle": "Restore all built-in search engines and their default order?",
     "searchSuggestionProvider": "Search suggestion API",
+    "searchSuggestions": "Search suggestions",
     "shadow": "Show search box shadow",
     "tip": "Want to activate the search input when opening a new tab? Check the “Help and Feedback” in the button menu at the bottom right of the page.",
     "title": "Search"

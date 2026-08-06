@@ -309,6 +309,7 @@
     "restoreHiddenEngines": "恢复已隐藏的内置搜索引擎",
     "restoreHiddenEnginesTitle": "确定恢复所有内置搜索引擎及其默认顺序吗？",
     "searchSuggestionProvider": "搜索建议 API",
+    "searchSuggestions": "搜索建议",
     "shadow": "显示搜索框阴影",
     "tip": "想要打开新标签页就激活搜索输入？请查看页面右下角按钮菜单的「帮助和反馈」",
     "title": "搜索"

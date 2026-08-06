@@ -51,11 +51,20 @@ function restoreBuiltInSearchEngines() {
         </el-button>
       </div>
       <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('search.recordSearchHistory') }}</div>
+        <el-switch v-model="settings.search.recordHistory" />
+      </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('search.searchSuggestions') }}</div>
+        <el-switch v-model="settings.search.suggestionsEnabled" />
+      </div>
+      <div class="settings__item settings__item--horizontal">
         <div class="settings__label">
           {{ t('search.searchSuggestionProvider') }}
         </div>
         <el-select
           v-model="settings.search.suggestionAPI"
+          :disabled="!settings.search.suggestionsEnabled"
           style="width: 150px"
           fit-input-width
           :show-arrow="false"
@@ -121,10 +130,6 @@ function restoreBuiltInSearchEngines() {
           :show-input-controls="false"
           :show-tooltip="false"
         />
-      </div>
-      <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('search.recordSearchHistory') }}</div>
-        <el-switch v-model="settings.search.recordHistory" />
       </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('search.placeholder') }}</div>

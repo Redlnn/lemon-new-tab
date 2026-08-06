@@ -85,7 +85,12 @@ const activeOptionId = computed(() => {
 const isExpanded = computed(() => displayedSuggestions.value.length > 0)
 
 function isLiveSuggestionResult(text: string) {
-  return text === latestLiveQuery.value && text === props.searchText && !isShowSearchHistories.value
+  return (
+    settings.search.suggestionsEnabled &&
+    text === latestLiveQuery.value &&
+    text === props.searchText &&
+    !isShowSearchHistories.value
+  )
 }
 
 function applyHistorySuggestions(list: readonly string[]) {
@@ -172,8 +177,13 @@ async function fetchSuggestions(
 
 function showSuggestionsDebounced() {
   historyRequestVersion += 1
-  cancelSuggestionRequest()
   latestLiveQuery.value = props.searchText
+  if (!settings.search.suggestionsEnabled) {
+    searchSuggestions.value = []
+    clearActiveSuggest()
+    return
+  }
+  cancelSuggestionRequest()
   // 至少2个字符才触发搜索建议
   if (props.searchText.length < 2) {
     return

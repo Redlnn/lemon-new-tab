@@ -45,6 +45,7 @@ export interface SettingsSchemaV11 extends Omit<
     borderRadius: number
     builtInEngineOrder: BuiltInSearchEngineKey[]
     hiddenBuiltInEngines: BuiltInSearchEngineKey[]
+    suggestionsEnabled: boolean
   }
 
   quickLinks: SettingsSchemaV10['shortcut'] & {
