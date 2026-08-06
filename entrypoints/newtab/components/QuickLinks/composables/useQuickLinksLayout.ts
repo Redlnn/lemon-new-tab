@@ -85,7 +85,7 @@ export function useDockLayout() {
   }
 
   // 最大列数
-  const maxFitCols = ref(settings.dock.maxCount)
+  const maxFitCols = ref(computeFitColumns())
 
   const updateMaxCols = useDebounceFn(() => {
     maxFitCols.value = computeFitColumns()

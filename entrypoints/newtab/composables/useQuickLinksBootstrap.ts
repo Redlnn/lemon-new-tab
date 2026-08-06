@@ -13,9 +13,9 @@ export function useQuickLinksBootstrap() {
     (settings.quickLinks.enabled && settings.quickLinks.topSites) ||
     (settings.dock.enabled && settings.dock.topSites)
 
-  const loadTopSites = (force = false) => {
+  const loadTopSites = async (force = false) => {
     if (!shouldLoadTopSites()) return
-    void getTopSites(force).catch((error) => {
+    await getTopSites(force).catch((error) => {
       console.warn('[quick-links] Failed to load top sites:', error)
     })
   }
@@ -25,12 +25,14 @@ export function useQuickLinksBootstrap() {
     if (initTask) return await initTask
 
     initTask = (async () => {
+      // 与快捷链接存储并行读取，避免等待 Top Sites 增加初始化耗时。
+      const topSitesTask = loadTopSites()
       await quickLinksStore.init()
       if (settings.quickLinks.grouping) {
         await quickLinksStore.enableGroupingFromItems()
       }
+      await topSitesTask
       quickLinksReady.value = true
-      loadTopSites()
     })()
 
     try {
