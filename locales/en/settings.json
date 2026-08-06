@@ -216,6 +216,7 @@
       "btn": "Purge",
       "confirm": {
         "data": {
+          "includeSync": "Also clear cloud sync data",
           "message": "This operation will reset the extension settings, ignored most visited sites, pinned or favorited sites, selected background images or videos, etc.",
           "purging": "Clearing extension data..",
           "title": "Are you sure you want to purge all data of this extension?"
@@ -232,6 +233,10 @@
         }
       },
       "data": "Purge all data",
+      "failed": {
+        "refresh": "Refresh page",
+        "title": "Unable to clear data"
+      },
       "icon": "Purge favicon cache",
       "wallpaper": "Purge wallpaper cache"
     },

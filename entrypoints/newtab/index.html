@@ -35,7 +35,44 @@
         }
       }
     </style>
+    <style>
+      .startup-fallback {
+        box-sizing: border-box;
+        max-width: 720px;
+        padding: 16px;
+        margin: 24px auto;
+        font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: #c45656;
+        background: #fff5f5;
+        border: 1px solid #f56c6c;
+        border-radius: 8px;
+      }
+
+      .startup-fallback[hidden] {
+        display: none;
+      }
+
+      .startup-fallback pre {
+        margin: 0 0 16px;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+      }
+
+      .startup-fallback a {
+        display: inline-block;
+        padding: 8px 12px;
+        color: #fff;
+        text-decoration: none;
+        background: #409eff;
+        border-radius: 6px;
+      }
+    </style>
   </head>
-  <body></body>
+  <body>
+    <main id="startup-fallback" class="startup-fallback">
+      <pre>Lemon New Tab startup failed.</pre>
+      <a href="">Reload page</a>
+    </main>
+  </body>
   <script type="module" src="./init.ts"></script>
 </html>

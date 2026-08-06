@@ -1,4 +1,4 @@
-import { type DBSchema, deleteDB, openDB } from 'idb'
+import { type DBSchema, openDB } from 'idb'
 
 /** favicon 缓存条目（与 faviconCache.ts 保持一致） */
 export interface FaviconCacheEntry {
@@ -92,7 +92,7 @@ function getDB() {
   return dbPromise
 }
 
-type StoreName =
+export type StoreName =
   | 'favicon'
   | 'wallpaper'
   | 'wallpaperBing'
@@ -166,23 +166,18 @@ export async function idbClear(storeName: StoreName): Promise<void> {
   await db.clear(storeName)
 }
 
-/** 清空所有已知 store 的数据，保留各页面正在使用的数据库连接。 */
-export async function idbClearAll(): Promise<void> {
+/** 在一个事务中原子清空多个 store。 */
+export async function idbClearMany(storeNames: readonly StoreName[]): Promise<void> {
+  if (storeNames.length === 0) return
   const db = await getDB()
-  const transaction = db.transaction([...REQUIRED_STORES], 'readwrite')
-  for (const storeName of REQUIRED_STORES) {
+  const transaction = db.transaction([...storeNames], 'readwrite')
+  for (const storeName of storeNames) {
     transaction.objectStore(storeName).clear()
   }
   await transaction.done
 }
 
-/** 删除整个数据库（用于重置所有数据） */
-export async function idbDropDatabase(): Promise<void> {
-  // 先关闭已有连接
-  if (dbPromise) {
-    const db = await dbPromise
-    db.close()
-    dbPromise = null
-  }
-  await deleteDB(DB_NAME)
+/** 清空所有已知 store 的数据，保留各页面正在使用的数据库连接。 */
+export async function idbClearAll(): Promise<void> {
+  await idbClearMany(REQUIRED_STORES)
 }

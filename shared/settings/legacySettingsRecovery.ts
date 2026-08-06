@@ -1,5 +1,7 @@
 import { browser, storage } from '#imports'
 
+import type { SyncResetMessage } from '@/shared/sync/types'
+
 export async function downloadLegacySettingsBackup() {
   const { downloadJSON } = await import('@/shared/download')
 
@@ -13,26 +15,41 @@ export async function downloadLegacySettingsBackup() {
   )
 }
 
-export async function clearLegacySettingsData() {
+/** 清除扩展持久化数据；默认保留云同步数据，避免误删用户的云端配置。 */
+export async function clearExtensionData(
+  { includeSync = false }: { includeSync?: boolean } = {},
+) {
   const { idbClearAll } = await import('@/shared/storage/idb')
 
-  await Promise.all([
+  if (includeSync) {
+    await browser.runtime.sendMessage({ type: 'SYNC_RESET' } satisfies SyncResetMessage)
+  }
+
+  const tasks = [
     localStorage.clear(),
     sessionStorage.clear(),
     idbClearAll(),
     storage.clear('local'),
     storage.clear('session'),
-  ])
+  ]
+  if (includeSync) tasks.push(storage.clear('sync'))
+  await Promise.all(tasks)
 }
 
-export async function reloadNewtabTabs() {
-  const newtabUrl = browser.runtime.getURL('/newtab.html')
+const newtabUrls = new Set([
+  browser.runtime.getURL('/newtab.html'),
+  'chrome://newtab',
+  'chrome://newtab/',
+  'edge://newtab',
+  'edge://newtab/',
+])
+
+/** 重载所有已打开的新标签页；单个标签页失败不会阻断其他标签页。 */
+export async function reloadNewtabTabs(): Promise<boolean> {
   const tabs = await browser.tabs.query({})
-  await Promise.allSettled(
-    tabs.flatMap(({ id, url }) =>
-      id === undefined || (url !== newtabUrl && url !== 'chrome://newtab/')
-        ? []
-        : [browser.tabs.reload(id)],
-    ),
-  )
+  const targetIds = tabs.flatMap(({ id, url }) => (id !== undefined && url && newtabUrls.has(url) ? [id] : []))
+  const results = await Promise.allSettled(targetIds.map((id) => browser.tabs.reload(id)))
+  const failed = results.find((result) => result.status === 'rejected')
+  if (failed) throw failed.reason
+  return targetIds.length > 0
 }

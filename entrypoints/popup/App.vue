@@ -1,6 +1,4 @@
 <script setup lang="ts" vapor>
-import { promiseTimeout } from '@vueuse/core'
-
 import i18next from 'i18next'
 
 import { browser } from 'wxt/browser'
@@ -9,7 +7,7 @@ import { fetchFaviconWithCache, warmFaviconCache } from '@/shared/media'
 import { DEFAULT_QUICK_LINK_GROUP_ID, useQuickLinksStore } from '@/shared/quickLinks'
 import { settingsStorage } from '@/shared/settings'
 import {
-  clearLegacySettingsData,
+  clearExtensionData,
   downloadLegacySettingsBackup,
   reloadNewtabTabs,
 } from '@/shared/settings/legacySettingsRecovery'
@@ -38,6 +36,7 @@ const isAlreadyExists = ref(false)
 const groupingEnabled = ref(false)
 const isResetting = ref(false)
 const resetError = shallowRef<Error | null>(null)
+const includeSync = ref(false)
 
 /** 从激活页的 DOM 中读取 favicon href（通过注入 content script）。 */
 async function getFaviconFromTabDOM(tabId: number): Promise<string | null> {
@@ -168,9 +167,8 @@ async function resetLegacySettings() {
   resetError.value = null
 
   try {
-    await clearLegacySettingsData()
+    await clearExtensionData({ includeSync: includeSync.value })
     await reloadNewtabTabs()
-    await promiseTimeout(500)
     window.close()
   } catch (error) {
     isResetting.value = false
@@ -178,11 +176,31 @@ async function resetLegacySettings() {
     console.error('Failed to clear data:', resetError.value)
   }
 }
+
+function reloadPage() {
+  location.reload()
+}
 </script>
 
 <template>
   <main class="popup">
-    <section v-if="props.hasInvalidSettings" class="popup__recovery" :aria-busy="isResetting">
+    <section v-if="resetError" class="popup__recovery popup__recovery--error" role="alert">
+      <svg class="popup__recovery-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M0 0h24v24H0z" fill="none" />
+        <path
+          fill="currentColor"
+          fill-rule="evenodd"
+          d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20m0 5a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0V8a1 1 0 0 1 1-1m0 9a1.25 1.25 0 1 1 0 2.5a1.25 1.25 0 0 1 0-2.5"
+          clip-rule="evenodd"
+        />
+      </svg>
+      <h1 class="popup__recovery-title">{{ t('settings:other.purge.failed.title') }}</h1>
+      <p>{{ resetError.message }}</p>
+      <button type="button" class="popup__button popup__button--primary" @click="reloadPage">
+        {{ t('settings:other.purge.failed.refresh') }}
+      </button>
+    </section>
+    <section v-else-if="props.hasInvalidSettings" class="popup__recovery" :aria-busy="isResetting">
       <svg class="popup__recovery-icon" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M0 0h24v24H0z" fill="none" />
         <path
@@ -195,6 +213,10 @@ async function resetLegacySettings() {
       <h1 class="popup__recovery-title">{{ legacyT('title') }}</h1>
       <p>{{ legacyT('msg') }}</p>
       <p>{{ legacyT('bak') }}</p>
+      <label class="popup__recovery-sync">
+        <input v-model="includeSync" type="checkbox" :disabled="isResetting" />
+        {{ t('settings:other.purge.confirm.data.includeSync') }}
+      </label>
       <div class="popup__recovery-actions">
         <button type="button" class="popup__button" @click="downloadLegacySettingsBackup">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -219,10 +241,6 @@ async function resetLegacySettings() {
           />
           {{ legacyT('btn') }}
         </button>
-      </div>
-      <div v-if="resetError" class="popup__recovery-error" role="alert">
-        <strong>{{ resetError.name }}</strong>
-        <span>{{ resetError.message }}</span>
       </div>
     </section>
 
@@ -541,16 +559,16 @@ async function resetLegacySettings() {
   gap: 8px;
 }
 
-.popup__recovery-error {
+.popup__recovery-sync {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
-  padding: 10px;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: var(--el-font-size-small);
+}
+
+.popup__recovery--error {
+  min-height: 190px;
   color: var(--el-color-danger);
-  overflow-wrap: anywhere;
-  background: var(--el-color-danger-light-9);
-  border-radius: var(--el-border-radius-base);
 }
 
 @keyframes popup-spin {

@@ -305,7 +305,15 @@ export default defineBackground(() => {
 
     if (!hasStringType(message)) return
 
-    if (message.type === 'SYNC_INITED') {
+    if (message.type === 'SYNC_RESET') {
+      state.isInited = false
+      await scheduler.reset()
+      state.lastSelfWrittenVersion = -1
+      pending.applyData = null
+      pending.conflict = null
+      pending.legacyDetected = false
+      pending.versionTooNew = null
+    } else if (message.type === 'SYNC_INITED') {
       // 重新读取元数据：newtab 可能刚创建设备 ID
       const meta = await localSyncMetaStorage.getValue()
       state.deviceId = meta.deviceId

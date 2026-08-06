@@ -1,14 +1,15 @@
-import { ElButton } from 'element-plus'
+import { ElButton, ElCheckbox } from 'element-plus'
 import i18next from 'i18next'
 
 import {
-  clearLegacySettingsData,
+  clearExtensionData,
   downloadLegacySettingsBackup,
   reloadNewtabTabs,
 } from './legacySettingsRecovery'
 
 export async function handleInvaildSettings(): Promise<boolean> {
   const { default: DownloadRound } = await import('~icons/ic/round-download')
+  const includeSync = ref(false)
 
   await ElMessageBox.alert(
     () =>
@@ -24,6 +25,15 @@ export async function handleInvaildSettings(): Promise<boolean> {
           },
           'Download',
         ),
+        h(
+          ElCheckbox,
+          {
+            modelValue: includeSync.value,
+            'onUpdate:modelValue': (value) => (includeSync.value = value === true),
+            style: 'display: flex; margin-top: 12px',
+          },
+          () => i18next.t('settings:other.purge.confirm.data.includeSync'),
+        ),
       ]),
     i18next.t('bootstrap.invalidVer.title'),
     {
@@ -38,26 +48,31 @@ export async function handleInvaildSettings(): Promise<boolean> {
 
   const loading = ElLoading.service({
     lock: true,
-    text: i18next.t('settings:other.purge.confirm.wallpaper.purging'),
+    text: i18next.t('settings:other.purge.confirm.data.purging'),
     body: true,
     background: 'var(--el-overlay-color-light)',
   })
 
   try {
-    await clearLegacySettingsData()
+    await clearExtensionData({ includeSync: includeSync.value })
+    if (!(await reloadNewtabTabs())) location.reload()
   } catch (e) {
     loading.close()
     const error = e instanceof Error ? e : new Error(String(e))
     console.error('Failed to clear data:', error)
     await ElMessageBox.alert(
       h('div', null, [h('h5', null, error.name), h('p', null, error.message)]),
+      i18next.t('settings:other.purge.failed.title'),
       {
-        title: 'Failed to clear data',
+        confirmButtonText: i18next.t('settings:other.purge.failed.refresh'),
+        showClose: false,
+        closeOnClickModal: false,
+        closeOnPressEscape: false,
+        type: 'error',
       },
     )
-    throw error
+    location.reload()
+    return false
   }
-  loading.close()
-  await reloadNewtabTabs()
   return false
 }

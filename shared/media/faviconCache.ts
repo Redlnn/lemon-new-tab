@@ -85,11 +85,7 @@ export async function pruneFaviconCacheEntries(now = Date.now()): Promise<void> 
   }
 }
 
-/** 清空所有 favicon 持久化缓存。失败时会静默忽略错误。 */
+/** 清空所有 favicon 持久化缓存。用户主动清理时应将失败反馈给调用方。 */
 export async function clearFaviconCacheEntries(): Promise<void> {
-  try {
-    await idbClear('favicon')
-  } catch {
-    // 缓存清理失败时静默处理
-  }
+  await idbClear('favicon')
 }

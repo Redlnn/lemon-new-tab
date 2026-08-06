@@ -113,9 +113,6 @@ export const isSyncEnvelopeV2 = (value: unknown): value is SyncEnvelopeV2 =>
   hasValidBaseEnvelopeFields(value) &&
   isValidQuickLinksData(value.quickLinks)
 
-export const isSyncEnvelope = (value: unknown): value is SyncEnvelope =>
-  isSyncEnvelopeV1(value) || isSyncEnvelopeV2(value)
-
 export const normalizeSyncEnvelope = (value: unknown): SyncEnvelopeV2 | null => {
   if (isSyncEnvelopeV2(value)) return value
   if (!isSyncEnvelopeV1(value)) return null
@@ -170,6 +167,11 @@ export interface SyncClearLegacyMessage {
   type: 'SYNC_CLEAR_LEGACY'
 }
 
+/** 扩展页面 → 后台：清空云同步前停止待处理的同步写入。 */
+export interface SyncResetMessage {
+  type: 'SYNC_RESET'
+}
+
 /** bg → newtab: apply this cloud data to local state. */
 export interface SyncApplyDataMessage {
   type: 'SYNC_APPLY_DATA'
@@ -200,6 +202,7 @@ export type SyncMessage =
   | SyncRequestMessage
   | SyncConflictResolveMessage
   | SyncClearLegacyMessage
+  | SyncResetMessage
   | SyncApplyDataMessage
   | SyncConflictMessage
   | SyncLegacyDetectedMessage

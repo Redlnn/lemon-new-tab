@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { useTimeoutFn } from '@vueuse/core'
-
-import { ElLoading } from 'element-plus'
+import { ElCheckbox, ElLoading } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import DeleteForeverOutlined from '~icons/ic/outline-delete-forever'
 import CloudOffRound from '~icons/ic/round-cloud-off'
 import DownloadRound from '~icons/ic/round-download'
 import FileUploadRound from '~icons/ic/round-file-upload'
-
-import { storage } from '#imports'
 
 import { downloadJSON } from '@/shared/download'
 import { clearFaviconCache } from '@/shared/media'
@@ -20,7 +16,8 @@ import {
   normalizeCurrentSettings,
   useSettingsStore,
 } from '@/shared/settings'
-import { idbDropDatabase } from '@/shared/storage/idb'
+import { clearExtensionData, reloadNewtabTabs } from '@/shared/settings/legacySettingsRecovery'
+import { idbClearMany } from '@/shared/storage/idb'
 import { useSyncDataStore } from '@/shared/sync'
 
 import {
@@ -33,11 +30,7 @@ import {
   useCustomSearchEngineStore,
 } from '@newtab/shared/customSearchEngine'
 import {
-  clearAllOnlineWallpaperCache,
-  useBingWallpaperStorge,
-  useDarkWallpaperStorge,
-  useWallpaperStorge,
-  useWallpaperUrlStore,
+  wallpaperUrlCache,
 } from '@newtab/shared/wallpaper'
 
 const { t, i18next } = useTranslation('settings')
@@ -85,11 +78,33 @@ async function confirmAndRun(
 }
 
 async function confirmClearExtensionData() {
-  await confirmAndRun(
-    t('other.purge.confirm.data.message'),
-    t('other.purge.confirm.data.title'),
-    clearExtensionData,
-  )
+  const includeSync = ref(false)
+  try {
+    await ElMessageBox.confirm(
+      () =>
+        h('div', null, [
+          h('p', { style: 'margin: 0 0 12px' }, t('other.purge.confirm.data.message')),
+          h(
+            ElCheckbox,
+            {
+              modelValue: includeSync.value,
+              'onUpdate:modelValue': (value) => (includeSync.value = value === true),
+            },
+            () => t('other.purge.confirm.data.includeSync'),
+          ),
+        ]),
+      t('other.purge.confirm.data.title'),
+      {
+        confirmButtonText: t('newtab:common.confirm'),
+        cancelButtonText: t('newtab:common.no'),
+        type: 'warning',
+      },
+    )
+  } catch {
+    return
+  }
+
+  void clearExtensionDataAndReload(includeSync.value)
 }
 
 async function confirmClearWallpaperData() {
@@ -109,7 +124,7 @@ async function confirmClearIconCache() {
 }
 
 function showLoading(text: string) {
-  ElLoading.service({
+  return ElLoading.service({
     lock: true,
     text,
     body: true,
@@ -117,20 +132,35 @@ function showLoading(text: string) {
   })
 }
 
-function reloadSoon() {
-  useTimeoutFn(() => {
-    location.reload()
-  }, 1000)
+async function showClearFailure(error: unknown) {
+  const detail = error instanceof Error ? error.message : String(error)
+  await ElMessageBox.alert(
+    h('p', { style: 'margin: 0; overflow-wrap: anywhere' }, detail),
+    t('other.purge.failed.title'),
+    {
+      confirmButtonText: t('other.purge.failed.refresh'),
+      showClose: false,
+      closeOnClickModal: false,
+      closeOnPressEscape: false,
+      type: 'error',
+    },
+  )
+  location.reload()
 }
 
-function runLoadingAndReload(text: string, task: () => Promise<unknown>) {
-  showLoading(text)
-  task().catch(console.error).finally(reloadSoon)
+async function runClearAndReload(text: string, task: () => Promise<void>) {
+  const loading = showLoading(text)
+  try {
+    await task()
+    if (!(await reloadNewtabTabs())) location.reload()
+  } catch (error) {
+    loading.close()
+    console.error('Failed to clear data:', error)
+    await showClearFailure(error)
+  }
 }
 
 async function clearWallpaperData() {
-  const wallpaperUrlStore = useWallpaperUrlStore()
-
   const resetSettings = () => {
     settings.background.bgType = defaultSettings.background.bgType
     settings.background.local = { ...defaultSettings.background.local }
@@ -142,38 +172,23 @@ async function clearWallpaperData() {
     }
   }
 
-  showLoading(t('other.purge.confirm.wallpaper.purging'))
-
-  resetSettings()
-
-  Promise.all([
-    useWallpaperStorge.clear(),
-    useDarkWallpaperStorge.clear(),
-    useBingWallpaperStorge.clear(),
-    clearAllOnlineWallpaperCache(),
-    wallpaperUrlStore.clearUrl('light'),
-    wallpaperUrlStore.clearUrl('dark'),
-    wallpaperUrlStore.clearUrl('bing'),
-  ])
-    .catch(console.error)
-    .finally(reloadSoon)
+  await runClearAndReload(t('other.purge.confirm.wallpaper.purging'), async () => {
+    await idbClearMany(['wallpaper', 'wallpaperDark', 'wallpaperBing', 'onlineWallpaperCache'])
+    await wallpaperUrlCache.setValue({ light: '', dark: '', bing: '' })
+    resetSettings()
+    await settings.save()
+  })
 }
 
-function clearExtensionData() {
-  runLoadingAndReload(t('other.purge.confirm.data.purging'), () =>
-    Promise.all([
-      localStorage.clear(),
-      sessionStorage.clear(),
-      idbDropDatabase(),
-      storage.clear('local'),
-      storage.clear('session'),
-      storage.clear('sync'),
-    ]),
-  )
+async function clearExtensionDataAndReload(includeSync: boolean) {
+  await runClearAndReload(t('other.purge.confirm.data.purging'), async () => {
+    useSyncDataStore().deinit()
+    await clearExtensionData({ includeSync })
+  })
 }
 
-function clearIconCache() {
-  runLoadingAndReload(t('other.purge.confirm.icon.purging'), clearFaviconCache)
+async function clearIconCache() {
+  await runClearAndReload(t('other.purge.confirm.icon.purging'), clearFaviconCache)
 }
 
 function sendSyncMessage() {

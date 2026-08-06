@@ -1,36 +1,6 @@
-import './styles/index.scss'
-import { usePreferredDark } from '@vueuse/core'
-import { createPinia } from 'pinia'
-import { createVaporApp } from 'vue'
-
-import { initI18n } from '@/shared/i18n'
-import { isSettingsCompatible, useSettingsStore } from '@/shared/settings'
-import {
-  applyStoredMonetColors,
-  changeTheme,
-  getMonetColors,
-  toggleDocumentClass,
-} from '@/shared/theme'
-
-import App from './App.vue'
-
-const preferredDark = usePreferredDark()
-watch(
-  preferredDark,
-  () => {
-    if (preferredDark.value) {
-      document.documentElement.classList.add('dark')
-      document.documentElement.classList.remove('light')
-    } else {
-      document.documentElement.classList.add('light')
-      document.documentElement.classList.remove('dark')
-    }
-  },
-  { immediate: true },
-)
-
 function renderPopupStartupError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
+  document.getElementById('app')?.replaceChildren()
   const fallbackMain = document.getElementById('fallback')
   if (fallbackMain) {
     fallbackMain.classList.remove('hidden')
@@ -41,43 +11,10 @@ function renderPopupStartupError(error: unknown) {
   }
 }
 
-async function bootstrapPopup() {
-  const isCompatible = await isSettingsCompatible()
-  const app = createVaporApp(App, { hasInvalidSettings: !isCompatible })
-  const pinia = createPinia()
-
-  app.use(pinia)
-
-  if (!isCompatible) {
-    app.mount('body')
-    return
-  }
-
-  // 初始化设置
-  await useSettingsStore().init()
-  const settings = useSettingsStore()
-
-  // 应用主题色
-  changeTheme(settings.theme.primaryColor)
-
-  // 应用 colorful 模式
-  toggleDocumentClass('colorful', settings.theme.colorfulMode)
-
-  // 应用莫奈模式
-  if (settings.theme.monetColor) {
-    const monetColors = await getMonetColors()
-    if (monetColors) {
-      applyStoredMonetColors(monetColors)
-      toggleDocumentClass('monet', true)
-    }
-  }
-
-  app.mount('body')
-}
-
 void (async () => {
+  document.getElementById('fallback')?.classList.add('hidden')
   try {
-    await initI18n()
+    const { bootstrapPopup } = await import('./bootstrap')
     await bootstrapPopup()
   } catch (error) {
     console.error('[popup] startup failed', error)

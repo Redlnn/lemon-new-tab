@@ -80,16 +80,28 @@
         border: 1px solid #2a3040;
         border-radius: 8px;
       }
+
+      .fallback-reload {
+        display: inline-flex;
+        padding: 8px 12px;
+        margin-top: 16px;
+        color: #fff;
+        text-decoration: none;
+        background: #409eff;
+        border-radius: 6px;
+      }
     </style>
   </head>
   <body>
-    <main id="fallback" class="fallback hidden">
+    <div id="app"></div>
+    <main id="fallback" class="fallback">
       <section class="fallback-content">
         <h1 class="fallback-title">Popup startup failed</h1>
         <p class="fallback-desc">
           The popup failed to initialize. Please reload the extension or reopen the popup.
         </p>
         <pre class="fallback-pre"></pre>
+        <a class="fallback-reload" href="">Reload page</a>
       </section>
     </main>
   </body>

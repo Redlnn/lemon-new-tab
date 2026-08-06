@@ -17,7 +17,7 @@ export function createQueueScheduler(
   syncDataStorage: { getValue: () => Promise<unknown> },
 ) {
   let rerunRequested = false
-  let isRunning = false
+  let runningTask: Promise<void> | null = null
   let lastSyncTime = 0
   let localTimer: ReturnType<typeof setTimeout> | null = null
   let localTimerExpiry = 0
@@ -48,7 +48,7 @@ export function createQueueScheduler(
       async () => {
         localTimer = null
         localTimerExpiry = 0
-        if (isRunning) {
+        if (runningTask) {
           rerunRequested = true
           return
         }
@@ -102,20 +102,29 @@ export function createQueueScheduler(
     await writeToCloud(payload)
   }
 
-  const run = async () => {
-    if (isRunning) return
-    isRunning = true
-    try {
-      await processSyncQueue()
-    } finally {
-      isRunning = false
+  const run = (): Promise<void> => {
+    if (runningTask) return runningTask
+    runningTask = processSyncQueue().finally(() => {
+      runningTask = null
       schedulePostRunIfNeeded()
-    }
+    })
+    return runningTask
+  }
+
+  const reset = async () => {
+    rerunRequested = false
+    if (localTimer) clearTimeout(localTimer)
+    localTimer = null
+    localTimerExpiry = 0
+    state.latestLocalPayload = null
+    state.pendingImmediatePush = false
+    await runningTask
   }
 
   return {
     scheduleLocalTick,
     run,
+    reset,
     getLastSyncTime: () => lastSyncTime,
   }
 }
