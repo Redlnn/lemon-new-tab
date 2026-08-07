@@ -1,5 +1,5 @@
 import type { QuickLinksData } from '@/shared/quickLinks/quickLinksStorage'
-import type { CURRENT_CONFIG_SCHEMA } from '@/shared/settings'
+import type { CURRENT_CONFIG_SCHEMA } from '@/shared/settings/current'
 
 export interface SyncedCustomSearchEngine {
   id: string
@@ -184,6 +184,11 @@ export interface SyncConflictMessage {
   payload: SyncEventPayloadMap['conflict']
 }
 
+/** bg → newtab: another extension page resolved the active conflict. */
+export interface SyncConflictResolvedMessage {
+  type: 'SYNC_CONFLICT_RESOLVED'
+}
+
 /** bg → newtab: cloud data is in a legacy format; user must reset. */
 export interface SyncLegacyDetectedMessage {
   type: 'SYNC_LEGACY_DETECTED'
@@ -205,10 +210,16 @@ export type SyncMessage =
   | SyncResetMessage
   | SyncApplyDataMessage
   | SyncConflictMessage
+  | SyncConflictResolvedMessage
   | SyncLegacyDetectedMessage
   | SyncVersionTooNewMessage
 
-export type SyncEventType = 'legacy-detected' | 'version-too-new' | 'conflict' | 'sync-error'
+export type SyncEventType =
+  | 'legacy-detected'
+  | 'version-too-new'
+  | 'conflict'
+  | 'conflict-resolved'
+  | 'sync-error'
 
 export type SyncEventPayloadMap = {
   'legacy-detected': undefined
@@ -217,5 +228,6 @@ export type SyncEventPayloadMap = {
     cloud: { lastUpdate: number; fromDeviceName: string; fromDeviceId: string }
     local: { localModifiedAt: number }
   }
+  'conflict-resolved': undefined
   'sync-error': Error
 }

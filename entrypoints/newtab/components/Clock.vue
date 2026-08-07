@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import '@newtab/styles/clock.scss'
-import { useIntervalFn, useNow, useTimeoutFn } from '@vueuse/core'
+import { useDocumentVisibility, useTimeoutFn } from '@vueuse/core'
 
 import dayjs from 'dayjs/esm'
 import { useTranslation } from 'i18next-vue'
@@ -35,16 +35,38 @@ function customMeridiem(hours: number) {
   return t('time.lateNight')
 }
 
-// 显示秒时使用较短间隔以保证秒数更新及时，否则使用 1000ms 节省资源
 const timeNow = ref(new Date())
-useIntervalFn(
-  () => {
+const documentVisibility = useDocumentVisibility()
+let clockTimer: ReturnType<typeof setTimeout> | undefined
+
+function scheduleClockTick() {
+  if (clockTimer) clearTimeout(clockTimer)
+  if (documentVisibility.value !== 'visible') return
+
+  const interval = settings.clock.showSeconds || settings.clock.newStyle ? 1000 : 60 * 1000
+  const delay = interval - (Date.now() % interval) + 10
+  clockTimer = setTimeout(() => {
     timeNow.value = new Date()
+    scheduleClockTick()
+  }, delay)
+}
+
+watch(
+  [
+    () => settings.clock.showSeconds,
+    () => settings.clock.newStyle,
+    documentVisibility,
+  ],
+  () => {
+    if (documentVisibility.value === 'visible') timeNow.value = new Date()
+    scheduleClockTick()
   },
-  () => (settings.clock.showSeconds ? 100 : 1000),
+  { immediate: true },
 )
 
-const dateNow = useNow({ interval: 60 * 1000 })
+onUnmounted(() => {
+  if (clockTimer) clearTimeout(clockTimer)
+})
 
 const formattedTime = computed(() => {
   void currentLang.value // 作为响应式依赖，确保语言切换时重新计算
@@ -58,9 +80,11 @@ const formattedTime = computed(() => {
   }
 })
 
+const currentMinute = computed(() => Math.floor(timeNow.value.getTime() / 60_000))
+
 const formattedDate = computed(() => {
   void currentLang.value // 作为响应式依赖，确保语言切换时重新计算
-  const now = dayjs(dateNow.value)
+  const now = dayjs(currentMinute.value * 60_000)
   return {
     meridiemZH: customMeridiem(now.hour()),
     weekday: now.format('dddd'),

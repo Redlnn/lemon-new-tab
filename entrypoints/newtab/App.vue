@@ -104,6 +104,9 @@ const stopSyncDialogEvents = addSyncEventCallback((type, payload) => {
     syncConflictDialogLoaded.value = true
     conflictPayload.value = payload as SyncEventPayloadMap['conflict']
     conflictDialogVisible.value = true
+  } else if (type === 'conflict-resolved') {
+    conflictDialogVisible.value = false
+    conflictPayload.value = null
   }
 })
 
@@ -111,10 +114,8 @@ onUnmounted(stopSyncDialogEvents)
 
 type SyncStoreActions = {
   clearLegacyAndReinitialize: () => Promise<void>
-  dismissLegacyDialog: () => void
-  useCloudConflictData: () => Promise<void>
-  useLocalConflictData: () => Promise<void>
-  disableSyncAndDismissConflict: () => void
+  resolveConflict: (choice: 'cloud' | 'local') => Promise<boolean>
+  disableSync: () => void
 }
 
 let syncStoreTask: Promise<SyncStoreActions> | null = null
@@ -283,26 +284,24 @@ const handleLegacyConfirm = async () => {
   await syncStore.clearLegacyAndReinitialize()
   legacyDialogVisible.value = false
 }
-const handleLegacyCancel = async () => {
-  const syncStore = await getSyncStore()
-  syncStore.dismissLegacyDialog()
+const handleLegacyCancel = () => {
   legacyDialogVisible.value = false
 }
 const handleUseCloudConflictData = async () => {
   const syncStore = await getSyncStore()
-  await syncStore.useCloudConflictData()
+  if (!(await syncStore.resolveConflict('cloud'))) return
   conflictDialogVisible.value = false
   conflictPayload.value = null
 }
 const handleUseLocalConflictData = async () => {
   const syncStore = await getSyncStore()
-  await syncStore.useLocalConflictData()
+  if (!(await syncStore.resolveConflict('local'))) return
   conflictDialogVisible.value = false
   conflictPayload.value = null
 }
 const handleDisableSyncConflict = async () => {
   const syncStore = await getSyncStore()
-  syncStore.disableSyncAndDismissConflict()
+  syncStore.disableSync()
   conflictDialogVisible.value = false
   conflictPayload.value = null
 }

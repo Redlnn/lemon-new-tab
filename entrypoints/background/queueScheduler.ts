@@ -9,11 +9,12 @@ const debugLog: (...args: unknown[]) => void = import.meta.env.DEV
   : () => {}
 
 const SYNC_INTERVAL = 2000
+const MAX_RETRY_DELAY = 60_000
 
 export function createQueueScheduler(
   state: BackgroundState,
   writeToCloud: (payload: SyncEnvelopeV2) => Promise<void>,
-  processCloudChange: (cloudRaw: unknown) => Promise<void>,
+  processCloudChange: (cloudRaw: unknown, payload: SyncEnvelopeV2) => Promise<boolean>,
   syncDataStorage: { getValue: () => Promise<unknown> },
 ) {
   let rerunRequested = false
@@ -21,18 +22,27 @@ export function createQueueScheduler(
   let lastSyncTime = 0
   let localTimer: ReturnType<typeof setTimeout> | null = null
   let localTimerExpiry = 0
+  let retryDelay = 0
+  let retryPayload: SyncEnvelopeV2 | null = null
+  let blockedPayload: SyncEnvelopeV2 | null = null
 
   const schedulePostRunIfNeeded = () => {
+    if (state.latestLocalPayload === null || state.latestLocalPayload === blockedPayload) {
+      rerunRequested = false
+      return
+    }
     if (
       rerunRequested ||
-      (state.latestLocalPayload !== null && (state.pendingImmediatePush || state.startupWriteReady))
+      state.pendingImmediatePush ||
+      state.startupWriteReady
     ) {
       rerunRequested = false
-      scheduleLocalTick(0)
+      scheduleLocalTick(state.latestLocalPayload === retryPayload ? retryDelay : 0)
     }
   }
 
   const scheduleLocalTick = (delay = SYNC_INTERVAL) => {
+    blockedPayload = null
     const now = Date.now()
     const desiredExpiry = now + delay
 
@@ -73,36 +83,61 @@ export function createQueueScheduler(
     }
 
     const payload = state.latestLocalPayload
-    state.latestLocalPayload = null
-    lastSyncTime = Date.now()
-
-    // 读前写：如果云在等待期间更新，则中止推送
-    const currentCloud = await syncDataStorage.getValue()
-    const normalizedCloud = normalizeSyncEnvelope(currentCloud)
-    if (!normalizedCloud) {
-      debugLog('读前写：非 v2 云数据存在，跳过推送直到解决')
-      return
-    }
-    if (normalizedCloud.version > state.localVersion) {
-      debugLog('读前写：云比较新，应用而不是推送')
-      await processCloudChange(normalizedCloud)
-      return
+    const clearPayload = () => {
+      if (state.latestLocalPayload === payload) {
+        state.latestLocalPayload = null
+      }
     }
 
-    // 空操作保护：如果云已反映了我们最新的本地状态，则跳过推送
-    if (
-      normalizedCloud.version === state.localVersion &&
-      normalizedCloud.fromDeviceId === state.deviceId &&
-      payload.lastUpdate <= normalizedCloud.lastUpdate
-    ) {
-      debugLog('读前写：最后一次推送后无本地变化，跳过')
-      return
-    }
+    try {
+      // 读前写：如果云在等待期间更新，则中止推送
+      const currentCloud = await syncDataStorage.getValue()
+      const normalizedCloud = normalizeSyncEnvelope(currentCloud)
+      if (!normalizedCloud) {
+        debugLog('读前写：非 v2 云数据存在，等待云变化或重新初始化')
+        blockedPayload = payload
+        retryDelay = 0
+        retryPayload = null
+        return
+      }
+      if (normalizedCloud.version > state.localVersion) {
+        debugLog('读前写：云比较新，应用而不是推送')
+        if (!(await processCloudChange(normalizedCloud, payload))) {
+          blockedPayload = payload
+          retryDelay = 0
+          retryPayload = null
+          return
+        }
+        clearPayload()
+      } else if (
+        normalizedCloud.version === state.localVersion &&
+        normalizedCloud.fromDeviceId === state.deviceId &&
+        payload.lastUpdate <= normalizedCloud.lastUpdate
+      ) {
+        // 空操作保护：如果云已反映了我们最新的本地状态，则跳过推送
+        debugLog('读前写：最后一次推送后无本地变化，跳过')
+        clearPayload()
+      } else {
+        await writeToCloud(payload)
+        clearPayload()
+      }
 
-    await writeToCloud(payload)
+      retryDelay = 0
+      retryPayload = null
+      blockedPayload = null
+      lastSyncTime = Date.now()
+    } catch (error) {
+      blockedPayload = null
+      retryDelay = Math.min(retryDelay ? retryDelay * 2 : SYNC_INTERVAL, MAX_RETRY_DELAY)
+      retryPayload = payload
+      console.warn(`[sync] Sync failed; retrying in ${retryDelay}ms`, error)
+    }
   }
 
   const run = (): Promise<void> => {
+    if (state.latestLocalPayload !== null && state.latestLocalPayload === blockedPayload) {
+      return Promise.resolve()
+    }
     if (runningTask) return runningTask
     runningTask = processSyncQueue().finally(() => {
       runningTask = null
@@ -116,9 +151,15 @@ export function createQueueScheduler(
     if (localTimer) clearTimeout(localTimer)
     localTimer = null
     localTimerExpiry = 0
+    retryDelay = 0
+    retryPayload = null
+    blockedPayload = null
     state.latestLocalPayload = null
     state.pendingImmediatePush = false
     await runningTask
+    retryDelay = 0
+    retryPayload = null
+    blockedPayload = null
   }
 
   return {

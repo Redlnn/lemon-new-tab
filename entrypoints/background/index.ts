@@ -8,6 +8,7 @@ import { defaultSyncedCustomSearchEngines, normalizeSyncEnvelope } from '@/share
 import type {
   SyncApplyDataMessage,
   SyncConflictMessage,
+  SyncConflictResolvedMessage,
   SyncConflictResolveMessage,
   SyncEnvelopeV2,
   SyncInitedMessage,
@@ -58,17 +59,17 @@ async function updateLocalMeta(
   if (patch.localModifiedAt !== undefined) state.localModifiedAt = patch.localModifiedAt
 }
 
+function clearLatestPayload(payload: SyncEnvelopeV2 | null) {
+  if (payload !== null && state.latestLocalPayload === payload) {
+    state.latestLocalPayload = null
+  }
+}
+
 // ─── Message delivery ─────────────────────────────────────────────────────────
 
 async function sendToNewtab(message: SyncMessage): Promise<boolean> {
   try {
-    const [tab] = await browser.tabs.query({ active: true, status: 'complete' })
-    if (tab?.id) {
-      await browser.tabs.sendMessage(tab.id, message)
-      return true
-    }
-    debugLog('sendToNewtab: no active complete tab')
-    return false
+    return (await browser.runtime.sendMessage(message)) === true
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     if (
@@ -146,7 +147,36 @@ const initPromise = (async () => {
 
 // ─── Decision matrix & queue ──────────────────────────────────────────────────
 
-async function processCloudChange(cloudRaw: unknown): Promise<void> {
+async function applyCloudDataToNewtab(cloud: SyncEnvelopeV2): Promise<boolean> {
+  const hasNewerPendingCloud = () => {
+    const queued = pending.applyData
+    return (
+      queued !== null &&
+      (queued.version > cloud.version ||
+        (queued.version === cloud.version && queued.lastUpdate > cloud.lastUpdate))
+    )
+  }
+  const delivered = state.isInited
+    ? await sendToNewtab({ type: 'SYNC_APPLY_DATA', data: cloud } as SyncApplyDataMessage)
+    : false
+  if (!delivered) {
+    if (!hasNewerPendingCloud()) pending.applyData = cloud
+    return false
+  }
+
+  await updateLocalMeta({
+    localVersion: cloud.version,
+    lastSyncedAt: cloud.lastUpdate,
+    localModifiedAt: cloud.lastUpdate,
+  })
+  if (!hasNewerPendingCloud()) pending.applyData = null
+  return true
+}
+
+async function processCloudChange(
+  cloudRaw: unknown,
+  payload: SyncEnvelopeV2 | null,
+): Promise<boolean> {
   const result = decideCloudChange(cloudRaw, state)
 
   if (result.action === 'extend-startup' && startupTimer !== null) {
@@ -160,21 +190,25 @@ async function processCloudChange(cloudRaw: unknown): Promise<void> {
       }
     }, 30_000)
     debugLog('cloud is empty, extending startup window to 30s')
-    return
+    return false
   }
 
   if (result.action === 'legacy-detected') {
     const delivered = state.isInited
       ? await sendToNewtab({ type: 'SYNC_LEGACY_DETECTED' } as SyncLegacyDetectedMessage)
       : false
-    if (!delivered) pending.legacyDetected = true
-    return
+    pending.legacyDetected = !delivered
+    return false
   }
 
   if (result.action === 'own-write-confirmed') {
     state.lastSelfWrittenVersion = -1
+    const cloud = normalizeSyncEnvelope(cloudRaw)
+    if (cloud) {
+      await updateLocalMeta({ localVersion: cloud.version, lastSyncedAt: cloud.lastUpdate })
+    }
     debugLog('own write confirmed', { version: result.version })
-    return
+    return cloud !== null && payload !== null && payload.lastUpdate <= cloud.lastUpdate
   }
 
   if (result.action === 'version-too-new') {
@@ -184,30 +218,18 @@ async function processCloudChange(cloudRaw: unknown): Promise<void> {
           ...result.payload,
         } as SyncVersionTooNewMessage)
       : false
-    if (!delivered) pending.versionTooNew = result.payload
-    return
+    if (pending.versionTooNew === null || pending.versionTooNew.cloud <= result.payload.cloud) {
+      pending.versionTooNew = delivered ? null : result.payload
+    }
+    return false
   }
 
-  if (result.action === 'ignore') return
+  if (result.action === 'ignore') return false
 
   openStartupWriteGate()
 
   if (result.action === 'apply-cloud') {
-    const delivered = state.isInited
-      ? await sendToNewtab({
-          type: 'SYNC_APPLY_DATA',
-          data: result.cloud,
-        } as SyncApplyDataMessage)
-      : false
-    if (!delivered) pending.applyData = result.cloud
-
-    state.latestLocalPayload = null
-    await updateLocalMeta({
-      localVersion: result.cloud.version,
-      lastSyncedAt: result.cloud.lastUpdate,
-      localModifiedAt: result.cloud.lastUpdate,
-    })
-    return
+    return applyCloudDataToNewtab(result.cloud)
   }
 
   if (result.action === 'conflict') {
@@ -217,8 +239,13 @@ async function processCloudChange(cloudRaw: unknown): Promise<void> {
           payload: result.payload,
         } as SyncConflictMessage)
       : false
-    if (!delivered) pending.conflict = result.payload
-    return
+    if (
+      pending.conflict === null ||
+      pending.conflict.cloud.lastUpdate <= result.payload.cloud.lastUpdate
+    ) {
+      pending.conflict = delivered ? null : result.payload
+    }
+    return false
   }
 
   if (result.action === 'push-stale-device' || result.action === 'push-local') {
@@ -229,9 +256,15 @@ async function processCloudChange(cloudRaw: unknown): Promise<void> {
       state.pendingImmediatePush = true
     }
   }
+  return false
 }
 
 const scheduler = createQueueScheduler(state, writeToCloud, processCloudChange, syncDataStorage)
+
+async function processCloudChangeAndClear(cloudRaw: unknown): Promise<void> {
+  const payload = state.latestLocalPayload
+  if (await processCloudChange(cloudRaw, payload)) clearLatestPayload(payload)
+}
 
 // ─── Message helpers ──────────────────────────────────────────────────────────
 
@@ -266,15 +299,8 @@ async function flushPendingMessages(): Promise<void> {
 
   if (pending.applyData) {
     const data = pending.applyData
-    const delivered = await sendToNewtab({
-      type: 'SYNC_APPLY_DATA',
-      data,
-    } as SyncApplyDataMessage)
-    if (delivered) {
-      pending.applyData = null
-      // 清除初始化有效负载：它现在已过期；newtab 将在应用云数据后重新报告。
-      state.latestLocalPayload = null
-    }
+    const payload = state.latestLocalPayload
+    if (await applyCloudDataToNewtab(data)) clearLatestPayload(payload)
     return
   }
 
@@ -297,7 +323,7 @@ export default defineBackground(() => {
   syncDataStorage.watch(async () => {
     await initPromise
     const cloudRaw = await syncDataStorage.getValue()
-    await processCloudChange(cloudRaw)
+    await processCloudChangeAndClear(cloudRaw)
   })
 
   browser.runtime.onMessage.addListener(async (message) => {
@@ -335,6 +361,10 @@ export default defineBackground(() => {
           state.latestLocalPayload = incoming
         }
       }
+      // 先刷新云通知，避免初始化快照与待应用的云数据并发处理。
+      // 优先级：legacy > version-too-new > apply > conflict
+      await flushPendingMessages()
+
       // 如果门打开（或立即推送已排队），现在开始处理
       if (
         state.latestLocalPayload !== null &&
@@ -343,9 +373,6 @@ export default defineBackground(() => {
         scheduler.scheduleLocalTick(0)
       }
 
-      // 刷新在 newtab 准备好前排队的任何通知
-      // 优先级：legacy > version-too-new > apply > conflict
-      await flushPendingMessages()
     } else if (message.type === 'SYNC_LOCAL_CHANGED' || message.type === 'SYNC_REQUEST') {
       if (!state.isInited) return
 
@@ -377,33 +404,39 @@ export default defineBackground(() => {
     } else if (message.type === 'SYNC_CONFLICT_RESOLVE') {
       if (!state.isInited) return
       const resolveMsg = message as SyncConflictResolveMessage
+      const payload = state.latestLocalPayload
 
       if (resolveMsg.choice === 'cloud') {
         const cloudRaw = await syncDataStorage.getValue()
         const cloud = normalizeSyncEnvelope(cloudRaw)
-        if (cloud) {
-          await sendToNewtab({ type: 'SYNC_APPLY_DATA', data: cloud } as SyncApplyDataMessage)
-        }
-      } else if (resolveMsg.choice === 'local' && state.latestLocalPayload !== null) {
+        if (!cloud || !(await applyCloudDataToNewtab(cloud))) return false
+        clearLatestPayload(payload)
+        return true
+      } else if (resolveMsg.choice === 'local' && payload !== null) {
         // 在写入前重新读取云：用户决策时可能有其他设备推送过数据
         const currentCloud = await syncDataStorage.getValue()
         const normalizedCloud = normalizeSyncEnvelope(currentCloud)
         if (normalizedCloud && normalizedCloud.version > state.localVersion) {
           // 冲突对话期间云变新了；应用它并让用户再次决定
           debugLog('conflict resolve(local): cloud moved ahead, re-evaluating')
-          await processCloudChange(normalizedCloud)
+          if (!(await processCloudChange(normalizedCloud, payload))) return false
+          clearLatestPayload(payload)
+          return true
         } else {
-          await writeToCloud(state.latestLocalPayload)
-          state.latestLocalPayload = null
+          await writeToCloud(payload)
+          clearLatestPayload(payload)
+          await sendToNewtab({ type: 'SYNC_CONFLICT_RESOLVED' } as SyncConflictResolvedMessage)
+          return true
         }
       }
+      return true
     } else if (message.type === 'SYNC_CLEAR_LEGACY') {
       // 重新读取云：可能其他设备已将数据迁移到 v2
       const currentCloud = await syncDataStorage.getValue()
       const normalizedCloud = normalizeSyncEnvelope(currentCloud)
       if (normalizedCloud) {
         debugLog('SYNC_CLEAR_LEGACY: cloud is already v2, processing normally')
-        await processCloudChange(normalizedCloud)
+        await processCloudChangeAndClear(normalizedCloud)
         return
       }
 

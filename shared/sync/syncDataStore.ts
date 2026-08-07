@@ -6,7 +6,7 @@ import { browser } from 'wxt/browser'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 
 import { BgType } from '../enums'
-import { defaultQuickLinksData, useQuickLinksStore } from '../quickLinks'
+import { useQuickLinksStore } from '../quickLinks'
 import type { QuickLinksData } from '../quickLinks/quickLinksStorage'
 import { ensureSearchEngineAvailable } from '../searchEngines'
 import type { CURRENT_CONFIG_SCHEMA, MigratableSettings } from '../settings'
@@ -28,7 +28,6 @@ import type {
   SyncConflictMessage,
   SyncConflictResolveMessage,
   SyncEnvelopeV2,
-  SyncEventPayloadMap,
   SyncInitedMessage,
   SyncLocalChangedMessage,
   SyncVersionTooNewMessage,
@@ -81,14 +80,6 @@ const normalizeCustomSearchEngines = (
 }
 
 export const useSyncDataStore = defineStore('sync', () => {
-  const settings = ref<CURRENT_CONFIG_SCHEMA>(structuredClone(defaultSettings))
-  const quickLinks = ref<QuickLinksData>(structuredClone(defaultQuickLinksData))
-  const lastUpdate = ref(0)
-
-  const legacyDialogVisible = ref(false)
-  const conflictDialogVisible = ref(false)
-  const conflictPayload = ref<SyncEventPayloadMap['conflict'] | null>(null)
-
   const ensureDeviceMeta = async (): Promise<LocalSyncMeta> => {
     const current = await localSyncMetaStorage.getValue()
     const next: LocalSyncMeta = {
@@ -204,32 +195,32 @@ export const useSyncDataStore = defineStore('sync', () => {
     await browser.runtime.sendMessage(msg)
   }
 
-  const resolveConflict = async (choice: SyncConflictResolveMessage['choice']) => {
-    conflictDialogVisible.value = false
-    conflictPayload.value = null
+  const resolveConflict = async (
+    choice: SyncConflictResolveMessage['choice'],
+  ): Promise<boolean> => {
     try {
       const msg: SyncConflictResolveMessage = { type: 'SYNC_CONFLICT_RESOLVE', choice }
-      await browser.runtime.sendMessage(msg)
+      return (await browser.runtime.sendMessage(msg)) === true
     } catch (err) {
       emitSyncError(err)
+      return false
     }
   }
 
   const handleLegacyDetected = () => {
     const localSettings = useSettingsStore()
     localSettings.sync.enabled = false
-    legacyDialogVisible.value = true
     emitSyncEvent('legacy-detected', undefined)
   }
 
-  const applyCloudData = async (cloudInput: unknown) => {
+  const applyCloudData = async (cloudInput: unknown): Promise<boolean> => {
     isProcessing = true
     try {
       const localSettings = useSettingsStore()
       const cloudData = normalizeSyncEnvelope(cloudInput)
       if (!cloudData) {
         handleLegacyDetected()
-        return
+        return false
       }
       const quickLinksStore = useQuickLinksStore()
       const customSearchEngineStore = useCustomSearchEngineStore()
@@ -240,7 +231,7 @@ export const useSyncDataStore = defineStore('sync', () => {
           cloud: cloudData.configVersion,
           local: CURRENT_CONFIG_VERSION,
         })
-        return
+        return false
       }
 
       const localState = structuredClone(localSettings.getRawState())
@@ -271,14 +262,15 @@ export const useSyncDataStore = defineStore('sync', () => {
         localModifiedAt: cloudData.lastUpdate,
         localVersion: cloudVersion,
       })
-      lastUpdate.value = cloudData.lastUpdate
-
       // If settings were migrated to a newer schema, push the migrated version back
       if (migrated) {
         scheduleDirtySync?.(Date.now())
       }
+      emitSyncEvent('conflict-resolved', undefined)
+      return true
     } catch (err) {
       emitSyncError(err)
+      return false
     } finally {
       isProcessing = false
     }
@@ -304,23 +296,20 @@ export const useSyncDataStore = defineStore('sync', () => {
       const customSearchEngineStore = useCustomSearchEngineStore()
       isProcessing = true
       // Handle messages from background; hoisted so the catch block can remove it on error.
-      let handleBackgroundMessage: ((message: unknown) => Promise<void>) | undefined
+      let handleBackgroundMessage:
+        | ((message: unknown) => Promise<boolean | undefined>)
+        | undefined
 
       try {
         await Promise.all([quickLinksStore.init(), customSearchEngineStore.init()])
 
         const meta = await ensureDeviceMeta()
 
-        // Initialise sync store refs from *local* state — never from the browser's potentially
-        // stale cloud cache. applyCloudData() will update these once background decides to apply.
         const initSnapshot = captureSyncSnapshot(
           localSettings,
           quickLinksStore,
           customSearchEngineStore,
         )
-        settings.value = structuredClone(initSnapshot.rawSettings)
-        quickLinks.value = initSnapshot.quickLinksData
-        lastUpdate.value = meta.lastSyncedAt
 
         // Send SYNC_INITED with the current local snapshot so background can run
         // processSyncQueue immediately (covers SW-restart + watch()-missed-update cases).
@@ -332,18 +321,22 @@ export const useSyncDataStore = defineStore('sync', () => {
 
           if (message.type === 'SYNC_APPLY_DATA' && 'data' in message) {
             const { data } = message as SyncApplyDataMessage
-            await applyCloudData(data)
+            return applyCloudData(data)
           } else if (message.type === 'SYNC_CONFLICT' && 'payload' in message) {
             const { payload } = message as SyncConflictMessage
-            conflictPayload.value = payload
-            conflictDialogVisible.value = true
             emitSyncEvent('conflict', payload)
+            return true
+          } else if (message.type === 'SYNC_CONFLICT_RESOLVED') {
+            emitSyncEvent('conflict-resolved', undefined)
+            return true
           } else if (message.type === 'SYNC_LEGACY_DETECTED') {
             handleLegacyDetected()
+            return true
           } else if (message.type === 'SYNC_VERSION_TOO_NEW') {
             const msg = message as SyncVersionTooNewMessage
             localSettings.sync.enabled = false
             emitSyncEvent('version-too-new', { cloud: msg.cloud, local: msg.local })
+            return true
           }
         }
 
@@ -489,23 +482,7 @@ export const useSyncDataStore = defineStore('sync', () => {
     initGeneration += 1
     cleanupFns.forEach((fn) => fn())
     cleanupFns = []
-    conflictDialogVisible.value = false
-    conflictPayload.value = null
-    legacyDialogVisible.value = false
     initialized = false
-  }
-
-  const syncToCloud = async () => {
-    try {
-      const localSettings = useSettingsStore()
-      if (!localSettings.sync.enabled) return
-      const timestamp = Date.now()
-      const meta = await setLocalSyncMeta({ localModifiedAt: timestamp })
-      const payload = buildPayload(timestamp, meta)
-      await sendLocalChanged(payload)
-    } catch (err) {
-      emitSyncError(err)
-    }
   }
 
   const clearLegacyAndReinitialize = async () => {
@@ -513,7 +490,6 @@ export const useSyncDataStore = defineStore('sync', () => {
     isProcessing = true
     try {
       localSettings.sync.enabled = true
-      legacyDialogVisible.value = false
       // Tell background to clear the legacy envelope and reset its version state
       const clearMsg: SyncClearLegacyMessage = { type: 'SYNC_CLEAR_LEGACY' }
       await browser.runtime.sendMessage(clearMsg)
@@ -530,40 +506,16 @@ export const useSyncDataStore = defineStore('sync', () => {
     }
   }
 
-  const dismissLegacyDialog = () => {
-    legacyDialogVisible.value = false
-  }
-
-  const useCloudConflictData = async () => {
-    await resolveConflict('cloud')
-  }
-
-  const useLocalConflictData = async () => {
-    await resolveConflict('local')
-  }
-
-  const disableSyncAndDismissConflict = () => {
+  const disableSync = () => {
     const localSettings = useSettingsStore()
     localSettings.sync.enabled = false
-    conflictDialogVisible.value = false
-    conflictPayload.value = null
   }
 
   return {
-    settings,
-    quickLinks,
-    lastUpdate,
-    legacyDialogVisible,
-    conflictDialogVisible,
-    conflictPayload,
     init,
     deinit,
-    syncToCloud,
-    applyCloudData,
     clearLegacyAndReinitialize,
-    dismissLegacyDialog,
-    useCloudConflictData,
-    useLocalConflictData,
-    disableSyncAndDismissConflict,
+    resolveConflict,
+    disableSync,
   }
 })

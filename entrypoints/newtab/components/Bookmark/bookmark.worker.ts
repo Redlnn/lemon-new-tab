@@ -308,7 +308,7 @@ function filter(query: string, mode: SortMode) {
 
   // 5) 更新缓存（用于前缀查询加速）以及首个匹配路径
   lastQuery = q
-  lastResultIds = Array.from(keepIds)
+  lastResultIds = Array.from(matchedIds)
 
   return {
     filteredResult: result,
