@@ -30,6 +30,7 @@ jobs:
       - name: Install and Build
         run: |
           pnpm install
+          pnpm lint:check
           pnpm wxt build
           pnpm type-check
           pnpm zip

@@ -47,6 +47,7 @@ import { useGroupNameRefs } from './composables/useGroupNameRefs'
 import {
   FLAT_QUICK_LINK_DND_GROUP_ID,
   TOP_SITES_DND_GROUP_ID,
+  createDelayedTargetSwitch,
   getDndData,
   getPointerClientPoint,
   getSortableMoveState,
@@ -57,6 +58,7 @@ import {
   quickLinkDndId,
   resolveQuickLinkMoveTarget,
   resolveStoreIndexFromSortableIndex,
+  toQuickLinkDisplayItem,
   type QuickLinkDndData,
 } from './composables/useQuickLinkDnd'
 import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions'
@@ -415,27 +417,9 @@ const { pinToGroup, moveToGroup, renameGroup, confirmDeleteGroup } = useQuickLin
 })
 
 const activeDndData = shallowRef<QuickLinkDndData | null>(null)
-let pageSwitchTimer: ReturnType<typeof setTimeout> | undefined
-let pageSwitchTarget: number | null = null
+const pageSwitch = createDelayedTargetSwitch()
 
-function clearPageSwitchTimer() {
-  if (pageSwitchTimer) {
-    clearTimeout(pageSwitchTimer)
-    pageSwitchTimer = undefined
-  }
-  pageSwitchTarget = null
-}
-
-function buildDisplayItemFromDndData(data: Extract<QuickLinkDndData, { kind: 'quick-link' }>) {
-  return {
-    url: data.url,
-    title: data.title,
-    favicon: data.favicon,
-    isPinned: data.origin === 'pinned',
-    originalIndex: data.storeIndex,
-    groupId: settings.quickLinks.grouping && data.origin === 'pinned' ? data.groupId : undefined,
-  }
-}
+const clearPageSwitchTimer = pageSwitch.clear
 
 function scheduleLaunchpadPageSwitch(point: { x: number; y: number } | null) {
   if (!point || settings.quickLinks.grouping || isSearching.value || pageCount.value <= 1) {
@@ -461,15 +445,10 @@ function scheduleLaunchpadPageSwitch(point: { x: number; y: number } | null) {
     clearPageSwitchTimer()
     return
   }
-  if (pageSwitchTarget === target) return
-
-  clearPageSwitchTimer()
-  pageSwitchTarget = target
-  pageSwitchTimer = setTimeout(() => {
+  pageSwitch.schedule(target, () => {
     if (target! > page.value) nextPage()
     else prevPage()
-    clearPageSwitchTimer()
-  }, 500)
+  })
 }
 
 function autoScrollGroupedLaunchpad(point: { x: number; y: number } | null) {
@@ -591,7 +570,7 @@ async function handleLaunchpadDragEnd(event: DragEndEvent) {
 
 function handleLaunchpadTouchMenu(event: PointerEvent, data: QuickLinkDndData) {
   if (data.kind !== 'quick-link') return
-  openCtxMenu(event, buildDisplayItemFromDndData(data))
+  openCtxMenu(event, toQuickLinkDisplayItem(data, settings.quickLinks.grouping))
 }
 
 onBeforeUnmount(() => {

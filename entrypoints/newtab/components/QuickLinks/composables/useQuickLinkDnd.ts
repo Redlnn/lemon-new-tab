@@ -2,6 +2,8 @@ import { KeyboardSensor, PointerSensor } from '@dnd-kit/vue'
 
 import type { QuickLink, useQuickLinksStore } from '@/shared/quickLinks'
 
+import type { QuickLinkDisplayItem } from './quickLinkDisplayItems'
+
 export const QUICK_LINK_GROUP_DND_TYPE = 'quick-link-group'
 export const QUICK_LINK_GROUPS_DND_ID = 'quick-link-groups'
 export const TOP_SITES_DND_GROUP_ID = '__top-sites__'
@@ -329,6 +331,45 @@ export function getQuickLinkFromDndData(
     title: source.title,
     favicon: source.favicon,
   }
+}
+
+export function toQuickLinkDisplayItem(
+  source: Extract<QuickLinkDndData, { kind: 'quick-link' }>,
+  grouping: boolean,
+): QuickLinkDisplayItem {
+  return {
+    ...getQuickLinkFromDndData(source),
+    isPinned: source.origin === 'pinned',
+    originalIndex: source.storeIndex,
+    groupId: grouping && source.origin === 'pinned' ? source.groupId : undefined,
+  }
+}
+
+export function createDelayedTargetSwitch(delay = 500) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let target: number | null = null
+
+  const clear = () => {
+    if (timer) {
+      clearTimeout(timer)
+      timer = undefined
+    }
+    target = null
+  }
+
+  const schedule = (nextTarget: number, callback: () => void) => {
+    if (target === nextTarget) return
+
+    clear()
+    target = nextTarget
+    timer = setTimeout(() => {
+      timer = undefined
+      target = null
+      callback()
+    }, delay)
+  }
+
+  return { clear, schedule }
 }
 
 export async function persistQuickLinkDndMove(options: {

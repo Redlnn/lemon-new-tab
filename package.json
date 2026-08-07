@@ -18,7 +18,11 @@
     "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
     "lint:eslint": "eslint . --fix",
     "lint:style": "stylelint **/*.{css,scss,sass,less,vue,html} --fix --ignore-path .gitignore",
-    "lint": "run-s lint:*",
+    "lint:check:oxlint": "oxlint . -D correctness --ignore-path .gitignore",
+    "lint:check:eslint": "eslint .",
+    "lint:check:style": "stylelint **/*.{css,scss,sass,less,vue,html} --ignore-path .gitignore",
+    "lint:check": "run-s lint:check:oxlint lint:check:eslint lint:check:style",
+    "lint": "run-s lint:oxlint lint:eslint lint:style",
     "format": "oxfmt ."
   },
   "dependencies": {

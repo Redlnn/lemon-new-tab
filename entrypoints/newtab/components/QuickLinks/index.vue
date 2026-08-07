@@ -55,6 +55,7 @@ import {
   FLAT_QUICK_LINK_DND_GROUP_ID,
   QUICK_LINK_GROUPS_DND_ID,
   QUICK_LINK_GROUP_DND_TYPE,
+  createDelayedTargetSwitch,
   TOP_SITES_DND_GROUP_ID,
   getDndData,
   getPointerClientPoint,
@@ -66,6 +67,7 @@ import {
   quickLinkDndSensors,
   resolveQuickLinkMoveTarget,
   resolveStoreIndexFromSortableIndex,
+  toQuickLinkDisplayItem,
   type QuickLinkDndData,
 } from './composables/useQuickLinkDnd'
 import { useQuickLinkGroupActions } from './composables/useQuickLinkGroupActions'
@@ -454,32 +456,14 @@ function refresh() {
 }
 
 const activeDndData = shallowRef<QuickLinkDndData | null>(null)
-let edgeSwitchTimer: ReturnType<typeof setTimeout> | undefined
-let edgeSwitchTarget: number | null = null
+const edgePageSwitch = createDelayedTargetSwitch()
 let edgeSwitchOccurred = false
 
-function clearEdgeSwitchTimer() {
-  if (edgeSwitchTimer) {
-    clearTimeout(edgeSwitchTimer)
-    edgeSwitchTimer = undefined
-  }
-  edgeSwitchTarget = null
-}
+const clearEdgeSwitchTimer = edgePageSwitch.clear
 
 function getItemGroupSize(groupId: string) {
   if (!settings.quickLinks.grouping) return quickLinksStore.items.length
   return quickLinksStore.getGroupItemCount(groupId)
-}
-
-function buildDisplayItemFromDndData(data: Extract<QuickLinkDndData, { kind: 'quick-link' }>) {
-  return {
-    url: data.url,
-    title: data.title,
-    favicon: data.favicon,
-    isPinned: data.origin === 'pinned',
-    originalIndex: data.storeIndex,
-    groupId: settings.quickLinks.grouping && data.origin === 'pinned' ? data.groupId : undefined,
-  }
 }
 
 async function moveCategoryGroup(fromIndex: number, toIndex: number) {
@@ -517,15 +501,10 @@ function scheduleEdgePageSwitch(point: { x: number; y: number } | null) {
     clearEdgeSwitchTimer()
     return
   }
-  if (edgeSwitchTarget === target) return
-
-  clearEdgeSwitchTimer()
-  edgeSwitchTarget = target
-  edgeSwitchTimer = setTimeout(() => {
+  edgePageSwitch.schedule(target, () => {
     goToPage(target)
     edgeSwitchOccurred = true
-    clearEdgeSwitchTimer()
-  }, 500)
+  })
 }
 
 function getQuickLinkMoveTarget(
@@ -681,7 +660,7 @@ async function handleQuickLinkDragEnd(event: DragEndEvent) {
 
 function handleQuickLinkTouchMenu(event: PointerEvent, data: QuickLinkDndData) {
   if (data.kind !== 'quick-link') return
-  openCtxMenu(event, buildDisplayItemFromDndData(data))
+  openCtxMenu(event, toQuickLinkDisplayItem(data, settings.quickLinks.grouping))
 }
 
 // 设置滑动手势支持（绑定到 slide-viewport，以便切换时能切换 overflow）
