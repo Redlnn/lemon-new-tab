@@ -273,25 +273,6 @@ async function copyToClipboard() {
     }
   }
 
-  &.yiyan--invert.yiyan--light {
-    color: var(--el-text-color-regular);
-
-    /* stylelint-disable-next-line no-descending-specificity */
-    &:hover,
-    &:focus-within {
-      color: var(--el-text-color-primary);
-    }
-  }
-
-  &.yiyan--invert.yiyan--night {
-    color: var(--yiyan-night-color);
-
-    &:hover,
-    &:focus-within {
-      color: var(--yiyan-night-hover-color);
-    }
-  }
-
   @media (width <= 600px) {
     width: 80%;
   }
@@ -301,11 +282,30 @@ async function copyToClipboard() {
   }
 }
 
+html:not(.dark) .yiyan.yiyan--invert.yiyan--light {
+  color: var(--el-text-color-regular);
+
+  /* stylelint-disable-next-line no-descending-specificity */
+  &:hover,
+  &:focus-within {
+    color: var(--el-text-color-primary);
+  }
+}
+
 html.dark .yiyan {
   --yiyan-color: var(--el-text-color-regular);
   --yiyan-hover-color: var(--el-text-color-primary);
   --yiyan-night-color: var(--el-fill-color-extra-light);
   --yiyan-night-hover-color: var(--el-fill-color);
+
+  &.yiyan--invert.yiyan--night {
+    color: var(--yiyan-night-color);
+
+    &:hover,
+    &:focus-within {
+      color: var(--yiyan-night-hover-color);
+    }
+  }
 }
 
 html.colorful .yiyan {

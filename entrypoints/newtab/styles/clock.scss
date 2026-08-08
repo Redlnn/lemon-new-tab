@@ -106,13 +106,10 @@
     }
   }
 
-  &--invert.clock--light {
-    color: var(--el-text-color-primary);
-  }
+}
 
-  &--invert.clock--night {
-    color: var(--clock-night-invert-color);
-  }
+html:not(.dark) .clock.clock--invert.clock--light {
+  color: var(--el-text-color-primary);
 }
 
 html.dark .clock {
@@ -125,6 +122,10 @@ html.dark .clock {
     0 1px 4px color-mix(in oklch, var(--el-color-black), transparent 50%),
     1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);
   --clock-night-invert-color: var(--el-fill-color-extra-light);
+
+  &.clock--invert.clock--night {
+    color: var(--clock-night-invert-color);
+  }
 }
 
 @media (width <= 600px) {
