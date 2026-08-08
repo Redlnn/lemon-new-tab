@@ -31,11 +31,7 @@ export function createQueueScheduler(
       rerunRequested = false
       return
     }
-    if (
-      rerunRequested ||
-      state.pendingImmediatePush ||
-      state.startupWriteReady
-    ) {
+    if (rerunRequested || state.pendingImmediatePush || state.startupWriteReady) {
       rerunRequested = false
       scheduleLocalTick(state.latestLocalPayload === retryPayload ? retryDelay : 0)
     }

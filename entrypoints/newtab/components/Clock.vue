@@ -52,11 +52,7 @@ function scheduleClockTick() {
 }
 
 watch(
-  [
-    () => settings.clock.showSeconds,
-    () => settings.clock.newStyle,
-    documentVisibility,
-  ],
+  [() => settings.clock.showSeconds, () => settings.clock.newStyle, documentVisibility],
   () => {
     if (documentVisibility.value === 'visible') timeNow.value = new Date()
     scheduleClockTick()

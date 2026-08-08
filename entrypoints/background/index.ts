@@ -372,7 +372,6 @@ export default defineBackground(() => {
       ) {
         scheduler.scheduleLocalTick(0)
       }
-
     } else if (message.type === 'SYNC_LOCAL_CHANGED' || message.type === 'SYNC_REQUEST') {
       if (!state.isInited) return
 

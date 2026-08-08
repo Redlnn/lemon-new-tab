@@ -296,9 +296,7 @@ export const useSyncDataStore = defineStore('sync', () => {
       const customSearchEngineStore = useCustomSearchEngineStore()
       isProcessing = true
       // Handle messages from background; hoisted so the catch block can remove it on error.
-      let handleBackgroundMessage:
-        | ((message: unknown) => Promise<boolean | undefined>)
-        | undefined
+      let handleBackgroundMessage: ((message: unknown) => Promise<boolean | undefined>) | undefined
 
       try {
         await Promise.all([quickLinksStore.init(), customSearchEngineStore.init()])

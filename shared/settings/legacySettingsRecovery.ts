@@ -16,9 +16,7 @@ export async function downloadLegacySettingsBackup() {
 }
 
 /** 清除扩展持久化数据；默认保留云同步数据，避免误删用户的云端配置。 */
-export async function clearExtensionData(
-  { includeSync = false }: { includeSync?: boolean } = {},
-) {
+export async function clearExtensionData({ includeSync = false }: { includeSync?: boolean } = {}) {
   const { idbClearAll } = await import('@/shared/storage/idb')
 
   if (includeSync) {
@@ -47,7 +45,9 @@ const newtabUrls = new Set([
 /** 重载所有已打开的新标签页；单个标签页失败不会阻断其他标签页。 */
 export async function reloadNewtabTabs(): Promise<boolean> {
   const tabs = await browser.tabs.query({})
-  const targetIds = tabs.flatMap(({ id, url }) => (id !== undefined && url && newtabUrls.has(url) ? [id] : []))
+  const targetIds = tabs.flatMap(({ id, url }) =>
+    id !== undefined && url && newtabUrls.has(url) ? [id] : [],
+  )
   const results = await Promise.allSettled(targetIds.map((id) => browser.tabs.reload(id)))
   const failed = results.find((result) => result.status === 'rejected')
   if (failed) throw failed.reason

@@ -2,7 +2,8 @@ function renderStartupError(error: unknown) {
   const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
   const fallback = document.getElementById('startup-fallback')
   const detail = fallback?.querySelector('pre')
-  if (detail) detail.textContent = `Lemon New Tab startup failed.\n${message}\nSee console for details.`
+  if (detail)
+    detail.textContent = `Lemon New Tab startup failed.\n${message}\nSee console for details.`
   fallback?.removeAttribute('hidden')
 }
 
