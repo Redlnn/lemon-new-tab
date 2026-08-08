@@ -193,7 +193,7 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
     <section class="perf-panel">
       <div class="perf-panel-header">
         <h3 class="perf-panel-title">{{ t('perf.effectsTitle') }}</h3>
-        <el-button @click="resetTransparencyAndBlur">
+        <el-button @click="resetTransparencyAndBlur" size="small">
           {{ t('perf.resetTransparencyAndBlur') }}
         </el-button>
       </div>
@@ -319,7 +319,7 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
 }
 
 .perf-panel {
-  padding: 18px 25px;
+  padding: 15px;
   background-color: var(--settings-items-background);
   border-radius: var(--le-radius-surface, 15px);
   transition: background-color var(--el-transition-duration-fast) ease;
@@ -354,7 +354,6 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
   gap: 12px;
   align-items: center;
   justify-content: space-between;
-  height: 32px;
   margin-bottom: 8px;
 
   .el-button {

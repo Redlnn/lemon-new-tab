@@ -144,7 +144,7 @@ function applyDialogTransparency(value: number) {
     { name: 'dialog-settings-items', childDefaultValue: 20 },
     { name: 'dialog-settings-option-background', childDefaultValue: 25 },
     { name: 'dialog-secondary', childDefaultValue: 20 },
-    { name: 'dialog-settings-group', childDefaultValue: 30 },
+    { name: 'dialog-settings-group', childDefaultValue: 50 },
     { name: 'dialog-menu', childDefaultValue: 30 },
     { name: 'dialog-settings-menu-hover', childDefaultValue: 45 },
     {

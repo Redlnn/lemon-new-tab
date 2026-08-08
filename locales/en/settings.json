@@ -39,9 +39,7 @@
       "d": "Please ensure the wallpaper API you are using allows cross-origin requests; otherwise, it will fail to load."
     },
     "parallax": "Wallpaper parallax effect",
-    "pauseWhenBlur": "Pause video background when the tab loses focus",
-    "showDownloadBtn": "Show download button",
-    "showDownloadBtnNote": "Available only for Bing and online wallpapers.",
+    "pauseWhenBlur": "Pause video background when loses focus",
     "permission": {
       "allowAll": "Allow all sites",
       "allowCurrent": "Only allow this API URL",
@@ -64,6 +62,8 @@
     },
     "preferenceTitle": "Wallpaper preferences",
     "resolution": "Resolution",
+    "showDownloadBtn": "Show download button",
+    "showDownloadBtnNote": "Available only for Bing and online wallpapers.",
     "sunMoonSaying": "When the sun’s out, bathe in sunlight. But when the moon’s out, bathe in moonlight!",
     "tip": "If no background is set for dark mode, the light mode background or video will be used.",
     "title": "Background",
@@ -94,10 +94,7 @@
     "youLikeFine": "If you like it, that’s fine~"
   },
   "bookmark": {
-    "defaultSort": {
-      "desc": "Takes effect after refreshing the page",
-      "title": "Default sorting"
-    },
+    "defaultSort": "Default sorting",
     "direction": {
       "ltr": "Left to right",
       "rtl": "Right to left",
@@ -114,8 +111,8 @@
     "dateSize": "Date size",
     "hour12": "12-hour clock",
     "invertColor": {
-      "dark": "[Clock] Use dark text in dark mode",
-      "light": "[Clock] Use dark text in light mode"
+      "dark": "Use dark text in dark mode",
+      "light": "Use dark text in light mode"
     },
     "meridiem": {
       "followSize": "Large AM/PM Label",
@@ -134,13 +131,13 @@
     "title": "Clock",
     "transparency": "Clock transparency",
     "weight": {
-      "black": "Heaviest (900)",
-      "bold": "Bold (600)",
+      "black": "Heaviest",
+      "bold": "Bold",
       "dateTitle": "Date weight",
-      "extraBold": "Very Bold (700)",
-      "heavy": "Extra Bold (800)",
-      "medium": "Slightly Bold (500)",
-      "normal": "Normal (400)",
+      "extraBold": "Very Bold",
+      "heavy": "Extra Bold",
+      "medium": "Slightly Bold",
+      "normal": "Normal",
       "title": "Clock weight"
     }
   },
@@ -149,6 +146,36 @@
     "hour": "Hour",
     "openInNewTab": "Open in New Tab",
     "openInNewWindow": "Open in New Window",
+    "sections": {
+      "animation": "Animations",
+      "appearance": "Appearance",
+      "behavior": "Interaction and behavior",
+      "danger": "Clear data",
+      "data": "Data and recovery",
+      "display": "Display and content",
+      "effects": "Transparency and blur",
+      "general": "General",
+      "layout": "Layout and spacing",
+      "position": "Page position",
+      "quickActions": "Quick controls",
+      "radius": "Corner radius",
+      "source": "Content source",
+      "summary": {
+        "animation": "Wallpaper and interface motion",
+        "appearance": "Color, shadow, and sizing",
+        "behavior": "Interactions and opening behavior",
+        "danger": "Irreversible actions—use with care",
+        "data": "Sync, backups, and caches",
+        "display": "Visible content and presentation",
+        "effects": "Control transparency and blur by component",
+        "general": "Frequently used options",
+        "layout": "Sizing, counts, and spacing",
+        "position": "Main content and action buttons",
+        "quickActions": "Enable or disable effects in bulk",
+        "radius": "Adjust component corners in one place",
+        "source": "Providers and custom content"
+      }
+    },
     "touchDeviceDisabledNote": "This option is disabled on touch-only devices."
   },
   "dock": {
@@ -164,17 +191,16 @@
   },
   "layout": {
     "actionBtn": {
+      "borderRadius": "Action button radius",
       "bottomLeft": "Bottom Left",
       "bottomRight": "Bottom Right",
       "dockNote": "Dock is on — button bar is fixed to the top",
       "label": "Button bar position",
-      "borderRadius": "Action button radius",
       "topLeft": "Top Left",
       "topRight": "Top Right"
     },
     "dockBorderRadius": "Dock radius",
     "globalBorderRadius": "Other component radius",
-    "minimalModeOnDoubleClick": "Double-click blank background to toggle minimal mode",
     "mainPosition": {
       "center": "Center",
       "dvh": "From top (%)",
@@ -184,6 +210,7 @@
       "pxValue": "Distance from top (px)",
       "quickLinksScrollNote": "Center positioning is unavailable while Quick Links scrolling is enabled."
     },
+    "minimalModeOnDoubleClick": "Double-click blank background to toggle minimal mode",
     "quickLinksIconBorderRadius": "Quick Links icon background radius",
     "title": "Layout"
   },
@@ -251,6 +278,7 @@
     },
     "bgSwitchAnim": "Wallpaper switch animation",
     "bgSwitchAnimTip": "When disabled, there will be no fade-in/fade-out animation when switching wallpapers, which can slightly improve switching speed. Wallpaper animation on startup will also be disabled",
+    "blurIntensity": "Background blur",
     "bookmark": {
       "blur": "Bookmarks sidebar blur",
       "transparent": "Bookmarks sidebar transparency"
@@ -264,19 +292,21 @@
     "dock": {
       "scale": "Dock icon scale animation"
     },
+    "effectsTitle": "Effect Settings",
     "focus": {
       "blur": "Blur background on search focus",
       "scale": "Scale background on search focus"
     },
+    "quickLinks": {
+      "blur": "Quick Links, Dock, and Launchpad blur",
+      "transparent": "Quick Links and Dock transparency"
+    },
+    "resetTransparencyAndBlur": "Reset transparency and blur",
     "searchBar": {
       "blur": "Search bar blur",
       "transparent": "Search bar transparency"
     },
-    "effectsTitle": "Effect Settings",
-    "resetTransparencyAndBlur": "Reset transparency and blur",
     "title": "Performance & Effects",
-    "blurIntensity": "Background blur",
-    "transparency": "Background transparency",
     "toggleAll": {
       "animation": "Animation",
       "blur": "Blur",
@@ -284,16 +314,47 @@
       "enable": "Enable All",
       "transparent": "Transparency"
     },
+    "transparency": "Background transparency",
     "wallpaper": "Wallpaper",
     "yiyan": {
       "blur": "Quote blur",
       "ripple": "Quote ripple animation",
       "transparent": "Quote transparency"
-    },
-    "quickLinks": {
-      "blur": "Quick Links, Dock, and Launchpad blur",
-      "transparent": "Quick Links and Dock transparency"
     }
+  },
+  "quickLinks": {
+    "border": "Show icon border",
+    "grouping": "Enable groups",
+    "groupingDisableConfirm": "Disabling groups will merge all Quick Links groups and remove duplicate URLs. Duplicate links in different groups cannot be preserved.",
+    "groupingTip": "Double-click a group name in Quick Links or Launchpad to rename it.",
+    "iconBorderRadius": "Icon background radius",
+    "iconCacheTip": "Consider enabling Settings → Other → Icon cache to attempt fetching higher-resolution icons.",
+    "iconRatio": "Icon ratio",
+    "iconSize": "Icon size",
+    "marginTop": "Area top margin",
+    "maxColumns": "Maximum columns",
+    "maxItemsTipForChrome": "Tip: You can only have up to 10 most visited links.",
+    "maxRows": "Maximum rows",
+    "paging": "Enable paging",
+    "pagingLoop": "Loop pages",
+    "pinnedIcon": "Show pinned icon",
+    "restoreDefault": "Recover hidden links",
+    "restoreDefaultTitle": "Are you sure you want to restore default Quick Links?",
+    "shadow": "Show icon shadow",
+    "showOnSearchFocus": "Show on search focus",
+    "showTitle": "Show link title",
+    "spacing": {
+      "iconTitleGap": "Icon–Title Spacing",
+      "itemGapX": "Horizontal link spacing",
+      "itemGapY": "Vertical link spacing"
+    },
+    "tip": "Drag the settings window to preview changes in the Quick Links area.",
+    "title": "Quick Links",
+    "titleExtraWidth": "Title expand width",
+    "titleWhiteInLight": "Use white text in light mode",
+    "topSites": "Show most visited",
+    "useScroll": "Use scrolling",
+    "useScrollTouchTip": "Recommended on mobile devices for a better browsing experience."
   },
   "search": {
     "alwaysExpandSearchBar": "Always expand search bar",
@@ -366,14 +427,14 @@
   "title": "Settings",
   "yiyan": {
     "alwaysShow": "Always show",
+    "borderRadius": "Quote background radius",
     "customLinesLabel": "Custom content",
     "customLinesNote": "Each line represents one quote. Use \"\\n\" within a line to indicate a line break.",
     "customLinesPlaceholder": "One quote per line; use \\n within a line for line breaks",
-    "borderRadius": "Quote background radius",
     "description": "Display a random Chinese quote below the search bar. Give it a try — you can always turn it off later!",
     "invertColor": {
-      "dark": "[Quote] Use dark text in dark mode",
-      "light": "[Quote] Use dark text in light mode"
+      "dark": "Use dark text in dark mode",
+      "light": "Use dark text in light mode"
     },
     "normalyShowTip": "When disabled, only show when the search box is focused.",
     "provider": "Provider",
@@ -391,39 +452,5 @@
     },
     "shadow": "Show text shadow",
     "title": "Quote"
-  },
-  "quickLinks": {
-    "border": "Show icon border",
-    "iconCacheTip": "Tip: Consider enabling Settings → Other → Icon cache to attempt fetching higher-resolution icons.",
-    "iconBorderRadius": "Icon background radius",
-    "iconRatio": "Icon ratio",
-    "iconSize": "Icon size",
-    "grouping": "Enable groups",
-    "groupingDisableConfirm": "Disabling groups will merge all Quick Links groups and remove duplicate URLs. Duplicate links in different groups cannot be preserved.",
-    "groupingTip": "Double-click a group name in Quick Links or Launchpad to rename it.",
-    "useScroll": "Use scrolling",
-    "useScrollTouchTip": "Recommended on mobile devices for a better browsing experience.",
-    "marginTop": "Area top margin",
-    "maxColumns": "Maximum columns",
-    "maxItemsTipForChrome": "Tip: You can only have up to 10 most visited links.",
-    "maxRows": "Maximum rows",
-    "paging": "Enable paging",
-    "pagingLoop": "Loop pages",
-    "pinnedIcon": "Show pinned icon",
-    "restoreDefault": "Recover hidden links",
-    "restoreDefaultTitle": "Are you sure you want to restore default Quick Links?",
-    "shadow": "Show icon shadow",
-    "showOnSearchFocus": "Show on search focus",
-    "showTitle": "Show link title",
-    "spacing": {
-      "iconTitleGap": "Icon–Title Spacing",
-      "itemGapX": "Horizontal link spacing",
-      "itemGapY": "Vertical link spacing"
-    },
-    "tip": "Tip: Drag the settings window to preview changes in the Quick Links area.",
-    "title": "Quick Links",
-    "titleExtraWidth": "Title expand width",
-    "titleWhiteInLight": "[Quick Links] Use white text in light mode",
-    "topSites": "Show most visited"
   }
 }

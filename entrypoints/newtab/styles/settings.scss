@@ -294,6 +294,194 @@ html.colorful.dialog-transparent .settings__dialog {
   .is-mobile & {
     margin-bottom: 25px;
   }
+
+  .el-alert__title {
+    line-height: initial;
+  }
+}
+
+.settings-page-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px 15px;
+}
+
+.settings-section,
+.settings-section-card {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  padding: 15px;
+  background-color: var(--settings-group-active-background);
+  border-radius: var(--le-radius-inner, 10px);
+  transition: background-color var(--el-transition-duration-fast) ease;
+}
+
+.settings-section--wide {
+  grid-column: 1 / -1;
+}
+
+.settings-section summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 24px;
+  color: var(--el-text-color-primary);
+  cursor: default;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &:focus-visible {
+    color: var(--el-color-primary);
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 2px;
+    border-radius: var(--le-radius-small, 6px);
+  }
+
+  > span {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    min-width: 0;
+  }
+
+  strong {
+    font-size: var(--el-font-size-small);
+  }
+
+  small {
+    display: none;
+    color: var(--el-text-color-secondary);
+  }
+
+  i {
+    display: none;
+    width: 9px;
+    height: 9px;
+    color: var(--el-text-color-secondary);
+    border-right: 2px solid currentcolor;
+    border-bottom: 2px solid currentcolor;
+    transform: rotate(45deg);
+    transition: transform var(--el-transition-duration-fast) ease;
+  }
+}
+
+.settings-section[open] summary i {
+  transform: translateY(3px) rotate(225deg);
+}
+
+.settings-section__content {
+  min-width: 0;
+  margin-top: 7px;
+
+  > .settings__item:first-child {
+    margin-top: 0;
+  }
+}
+
+.settings-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 22px;
+
+  > .settings__item {
+    margin-top: 0;
+  }
+
+  > .settings__item--horizontal {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 0 12px;
+    align-items: center;
+    min-width: 0;
+
+    > .settings__label {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    > :not(.settings__label, .settings__item-note) {
+      justify-self: end;
+      max-width: 100%;
+    }
+  }
+
+  > .settings__group,
+  > .settings-control-wide,
+  > .el-alert {
+    grid-column: 1 / -1;
+  }
+
+  .settings-control-field {
+    width: min(180px, 100%);
+  }
+}
+
+@media (width <= 720px) {
+  .settings-control-grid {
+    grid-template-columns: 1fr;
+
+    > .settings__group,
+    > .settings-control-wide {
+      grid-column: auto;
+    }
+  }
+}
+
+@media (width <= 599px) {
+  .settings__items-container.settings-page-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 0;
+    margin-bottom: 8px;
+    background-color: transparent;
+    border-radius: 0;
+  }
+
+  .settings-section {
+    grid-column: auto;
+    padding: 14px 16px;
+  }
+
+  .settings-section summary {
+    min-height: 44px;
+    cursor: pointer;
+
+    > span {
+      display: grid;
+      gap: 3px;
+    }
+
+    strong {
+      font-size: var(--el-font-size-base);
+    }
+
+    small,
+    i {
+      display: block;
+    }
+  }
+
+  .settings-section__content {
+    margin-top: 8px;
+  }
+
+  .settings-control-grid {
+    grid-template-columns: 1fr;
+
+    > .settings-control-stackable {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+
+      > :not(.settings__label, .settings__item-note) {
+        justify-self: start;
+      }
+    }
+  }
 }
 
 .settings__item {
@@ -309,6 +497,10 @@ html.colorful.dialog-transparent .settings__dialog {
     gap: 5px;
     align-items: center;
     justify-content: space-between;
+
+    &.settings__item--with-note {
+      flex-wrap: wrap;
+    }
 
     .el-button {
       font-size: var(--el-font-size-small);
@@ -331,20 +523,6 @@ html.colorful.dialog-transparent .settings__dialog {
     }
   }
 
-  &--note {
-    margin-top: 0;
-    font-size: var(--el-font-size-extra-small);
-    line-height: 1.5em;
-    color: var(--el-text-color-secondary);
-
-    svg {
-      width: 1.2em;
-      height: 1.2em;
-      vertical-align: middle;
-      opacity: 0.4;
-    }
-  }
-
   .button-group {
     display: flex;
     flex: 1;
@@ -357,6 +535,26 @@ html.colorful.dialog-transparent .settings__dialog {
     height: 35px;
     padding: 0 10px;
   }
+}
+
+.settings__item-note {
+  margin: 0;
+  font-size: var(--el-font-size-extra-small);
+  line-height: 1.5em;
+  color: var(--el-text-color-secondary);
+
+  svg {
+    width: 1.2em;
+    height: 1.2em;
+    vertical-align: middle;
+    opacity: 0.4;
+  }
+}
+
+.settings__item-note {
+  flex-basis: 100%;
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .settings__group {

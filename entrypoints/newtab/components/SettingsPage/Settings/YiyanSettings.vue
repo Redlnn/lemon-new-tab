@@ -6,6 +6,8 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { isProviderKey, yiyanProviders } from '@newtab/shared/yiyan'
 
+import SettingsSection from './SettingsSection.vue'
+
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
@@ -19,39 +21,43 @@ const currentProviderNote = computed(() => {
 </script>
 
 <template>
-  <div class="settings__items-container">
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('newtab:common.enable') }}</div>
-      <el-switch v-model="settings.yiyan.enabled" />
-    </div>
-    <p v-if="!isChinese" class="settings__item--note">
-      {{ t('yiyan.description') }}
-    </p>
-    <template v-if="settings.yiyan.enabled">
-      <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('yiyan.alwaysShow') }}</div>
-        <el-switch v-model="settings.yiyan.alwaysShow" />
+  <div class="settings__items-container settings-page-grid">
+    <SettingsSection
+      :title="t('common.sections.general')"
+      :summary="t('common.sections.summary.general')"
+      content-class="settings-control-grid"
+      mobile-open
+    >
+      <div class="settings__item settings__item--horizontal settings-control-wide">
+        <div class="settings__label">{{ t('newtab:common.enable') }}</div>
+        <el-switch v-model="settings.yiyan.enabled" />
       </div>
-      <p class="settings__item--note">
-        {{ t('yiyan.normalyShowTip') }}
-      </p>
-      <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('yiyan.shadow') }}</div>
-        <el-switch v-model="settings.yiyan.style.shadow" />
-      </div>
-      <div class="settings__item settings__item--vertical">
-        <div class="settings__label">{{ t('yiyan.borderRadius') }}</div>
-        <el-slider
-          v-model="settings.yiyan.borderRadius"
-          :min="0"
-          :max="40"
-          :step="1"
-          show-input
-          :show-input-controls="false"
-          :show-tooltip="false"
-        />
-      </div>
-      <div class="settings__item settings__item--horizontal">
+      <el-alert
+        v-if="!isChinese"
+        :title="t('yiyan.description')"
+        type="info"
+        show-icon
+        :closable="false"
+      />
+      <template v-if="settings.yiyan.enabled">
+        <div class="settings__item settings__item--horizontal settings__item--with-note">
+          <div class="settings__label">{{ t('yiyan.alwaysShow') }}</div>
+          <el-switch v-model="settings.yiyan.alwaysShow" />
+          <p class="settings__item-note">{{ t('yiyan.normalyShowTip') }}</p>
+        </div>
+        <div class="settings__item settings__item--horizontal">
+          <div class="settings__label">{{ t('yiyan.shadow') }}</div>
+          <el-switch v-model="settings.yiyan.style.shadow" />
+        </div>
+      </template>
+    </SettingsSection>
+
+    <SettingsSection
+      v-if="settings.yiyan.enabled"
+      :title="t('common.sections.source')"
+      :summary="t('common.sections.summary.source')"
+    >
+      <div class="settings__item settings__item--horizontal settings__item--with-note">
         <div class="settings__label">{{ t('yiyan.provider') }}</div>
         <el-select
           v-model="settings.yiyan.provider"
@@ -67,10 +73,10 @@ const currentProviderNote = computed(() => {
           />
           <el-option :label="t('yiyan.providers.custom.name')" value="custom" />
         </el-select>
+        <p v-if="currentProviderNote" class="settings__item-note">
+          {{ t(currentProviderNote) }}
+        </p>
       </div>
-      <p v-if="currentProviderNote" class="settings__item--note">
-        {{ t(currentProviderNote) }}
-      </p>
       <template v-if="settings.yiyan.provider === 'custom'">
         <div class="settings__item settings__item--vertical">
           <div class="settings__label">{{ t('yiyan.customLinesLabel') }}</div>
@@ -81,12 +87,10 @@ const currentProviderNote = computed(() => {
             :rows="6"
             :placeholder="t('yiyan.customLinesPlaceholder')"
           />
+          <p class="settings__item-note">{{ t('yiyan.customLinesNote') }}</p>
         </div>
-        <p class="settings__item--note">
-          {{ t('yiyan.customLinesNote') }}
-        </p>
       </template>
-    </template>
+    </SettingsSection>
   </div>
 </template>
 

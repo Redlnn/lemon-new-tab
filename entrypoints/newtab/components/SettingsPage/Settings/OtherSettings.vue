@@ -29,9 +29,9 @@ import {
   type CustomSearchEngineStorage,
   useCustomSearchEngineStore,
 } from '@newtab/shared/customSearchEngine'
-import {
-  wallpaperUrlCache,
-} from '@newtab/shared/wallpaper'
+import { wallpaperUrlCache } from '@newtab/shared/wallpaper'
+
+import SettingsSection from './SettingsSection.vue'
 
 const { t, i18next } = useTranslation('settings')
 
@@ -396,74 +396,101 @@ function changeLanguage(lang: string) {
 </script>
 
 <template>
-  <div class="settings__items-container">
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('other.sync') }}</div>
-      <el-switch v-model="settings.sync.enabled" @change="sendSyncMessage" />
-    </div>
-    <p class="settings__item--note">
-      {{ t('other.syncWarning') }}
-      <cloud-off-round />
-    </p>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('other.language') }}</div>
-      <el-select
-        v-model="currentLanguage"
-        style="width: 183px"
-        popper-class="settings-item-popper"
-        @change="changeLanguage"
-        :show-arrow="false"
-        fit-input-width
+  <div class="settings__items-container settings-page-grid">
+    <SettingsSection
+      :title="t('common.sections.general')"
+      :summary="t('common.sections.summary.general')"
+      content-class="settings-control-grid"
+      mobile-open
+    >
+      <div
+        class="settings__item settings__item--horizontal settings__item--with-note settings-control-wide"
       >
-        <el-option
-          v-for="item in supportedLanguages"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value"
+        <div class="settings__label">{{ t('other.sync') }}</div>
+        <el-switch v-model="settings.sync.enabled" @change="sendSyncMessage" />
+        <p class="settings__item-note">
+          {{ t('other.syncWarning') }}
+          <cloud-off-round />
+        </p>
+      </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('other.language') }}</div>
+        <el-select
+          v-model="currentLanguage"
+          style="width: 165px"
+          popper-class="settings-item-popper"
+          :show-arrow="false"
+          fit-input-width
+          @change="changeLanguage"
         >
-        </el-option>
-      </el-select>
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('other.importExport.backup') }}</div>
-      <span class="button-group">
-        <el-button type="primary" :icon="DownloadRound" @click="exportBackup">
-          {{ t('other.importExport.export') }}
+          <el-option
+            v-for="item in supportedLanguages"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('newtab:changelog.hideMajor') }}</div>
+        <el-switch v-model="settings.hideMajorChangelog" />
+      </div>
+    </SettingsSection>
+
+    <SettingsSection
+      :title="t('common.sections.data')"
+      :summary="t('common.sections.summary.data')"
+      content-class="settings-control-grid"
+    >
+      <div
+        class="settings__item settings__item--horizontal settings-control-wide settings-control-stackable"
+      >
+        <div class="settings__label">{{ t('other.importExport.backup') }}</div>
+        <span class="button-group">
+          <el-button type="primary" :icon="DownloadRound" @click="exportBackup">
+            {{ t('other.importExport.export') }}
+          </el-button>
+          <el-button :icon="FileUploadRound" @click="openFilePicker">
+            {{ t('other.importExport.import') }}
+          </el-button>
+        </span>
+      </div>
+      <div
+        class="settings__item settings__item--horizontal settings__item--with-note settings-control-wide"
+      >
+        <div class="settings__label">{{ t('other.faviconCache.label') }}</div>
+        <el-switch
+          v-model="settings.faviconCacheEnabled"
+          :before-change="beforeFaviconCacheChange"
+        />
+        <p class="settings__item-note">{{ t('other.faviconCache.description') }}</p>
+      </div>
+    </SettingsSection>
+
+    <SettingsSection
+      :title="t('common.sections.danger')"
+      :summary="t('common.sections.summary.danger')"
+      content-class="settings-control-grid"
+    >
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('other.purge.icon') }}</div>
+        <el-button type="danger" :icon="DeleteForeverOutlined" @click="confirmClearIconCache">
+          {{ t('other.purge.btn') }}
         </el-button>
-        <el-button :icon="FileUploadRound" @click="openFilePicker">
-          {{ t('other.importExport.import') }}
+      </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('other.purge.wallpaper') }}</div>
+        <el-button type="danger" :icon="DeleteForeverOutlined" @click="confirmClearWallpaperData">
+          {{ t('other.purge.btn') }}
         </el-button>
-      </span>
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('newtab:changelog.hideMajor') }}</div>
-      <el-switch v-model="settings.hideMajorChangelog" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('other.faviconCache.label') }}</div>
-      <el-switch v-model="settings.faviconCacheEnabled" :before-change="beforeFaviconCacheChange" />
-    </div>
-    <p class="settings__item--note">
-      {{ t('other.faviconCache.description') }}
-    </p>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('other.purge.icon') }}</div>
-      <el-button type="danger" :icon="DeleteForeverOutlined" @click="confirmClearIconCache">
-        {{ t('other.purge.btn') }}
-      </el-button>
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('other.purge.wallpaper') }}</div>
-      <el-button type="danger" :icon="DeleteForeverOutlined" @click="confirmClearWallpaperData">
-        {{ t('other.purge.btn') }}
-      </el-button>
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('other.purge.data') }}</div>
-      <el-button type="danger" :icon="DeleteForeverOutlined" @click="confirmClearExtensionData">
-        {{ t('other.purge.btn') }}
-      </el-button>
-    </div>
+      </div>
+      <div class="settings__item settings__item--horizontal settings-control-wide">
+        <div class="settings__label">{{ t('other.purge.data') }}</div>
+        <el-button type="danger" :icon="DeleteForeverOutlined" @click="confirmClearExtensionData">
+          {{ t('other.purge.btn') }}
+        </el-button>
+      </div>
+    </SettingsSection>
     <input
       ref="fileInput"
       type="file"

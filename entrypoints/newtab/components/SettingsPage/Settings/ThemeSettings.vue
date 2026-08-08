@@ -18,6 +18,8 @@ import {
 } from '@newtab/composables/usePermission'
 import { colorMode as mode, preferredDark } from '@newtab/shared/colorMode'
 
+import SettingsSection from './SettingsSection.vue'
+
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
@@ -140,133 +142,187 @@ const beforeMonetChange = async () => {
 
   return res
 }
+
+const tagType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'info'))
 </script>
 
 <template>
-  <div class="settings__items-container">
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">
-        {{ t('theme.mode.dark') }}
-        <cloud-off-round />
+  <div class="settings__items-container settings-page-grid">
+    <SettingsSection
+      :title="t('theme.mode.dark')"
+      :summary="t('common.sections.summary.display')"
+      mobile-open
+    >
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">
+          {{ t('theme.mode.dark') }}
+          <cloud-off-round />
+        </div>
       </div>
-    </div>
-    <div class="settings__item theme-mode-selector">
-      <button
-        type="button"
-        class="theme-mode-card"
-        :aria-pressed="currentMode === 'auto'"
-        :class="{ 'theme-mode-card--active': currentMode === 'auto' }"
-        @click="setColorMode('auto')"
-      >
-        <computer-round class="theme-mode-card__icon" />
-        <span>{{ t('theme.mode.system') }}</span>
-      </button>
-      <button
-        type="button"
-        class="theme-mode-card"
-        :aria-pressed="currentMode === 'dark'"
-        :class="{ 'theme-mode-card--active': currentMode === 'dark' }"
-        @click="setColorMode('dark')"
-      >
-        <dark-mode-round class="theme-mode-card__icon" />
-        <span>{{ t('theme.mode.alwaysOn') }}</span>
-      </button>
-      <button
-        type="button"
-        class="theme-mode-card"
-        :aria-pressed="currentMode === 'light'"
-        :class="{ 'theme-mode-card--active': currentMode === 'light' }"
-        @click="setColorMode('light')"
-      >
-        <light-mode-round class="theme-mode-card__icon" />
-        <span>{{ t('theme.mode.alwaysOff') }}</span>
-      </button>
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">
-        {{ t('theme.monet.label') }}
-        <cloud-off-round />
-      </div>
-      <el-switch
-        v-model="settings.theme.monetColor"
-        :disabled="settings.background.bgType === BgType.None"
-        :before-change="beforeMonetChange"
-      />
-    </div>
-    <p class="settings__item--note">{{ t('theme.monet.desc') }}</p>
-    <div class="settings__item settings__item--horizontal">
-      <div
-        class="settings__label"
-        :style="{ color: settings.theme.monetColor ? 'var(--el-text-color-disabled)' : undefined }"
-      >
-        {{ t('theme.primaryColor') }}
-      </div>
-      <div class="settings__theme">
-        <el-select
-          v-model="settings.theme.primaryColor"
-          style="width: 183px"
-          popper-class="settings-item-popper"
-          :show-arrow="false"
-          :disabled="settings.theme.monetColor"
+      <div class="settings__item theme-mode-selector">
+        <button
+          type="button"
+          class="theme-mode-card"
+          :aria-pressed="currentMode === 'auto'"
+          :class="{ 'theme-mode-card--active': currentMode === 'auto' }"
+          @click="setColorMode('auto')"
         >
-          <el-option-group
-            v-for="group in predefineColorsMap"
-            :key="group.label"
-            :label="group.label"
-          >
-            <el-option
-              v-for="item in group.options"
-              :key="item.value"
-              :label="t(item.labelKey)"
-              :value="item.value"
-            >
-              <div class="settings__theme-item">
-                <el-tag :color="item.value" style="margin-right: 8px" size="small" />
-                <span :style="{ color: item.value }">{{ t(item.labelKey) }}</span>
-              </div>
-            </el-option>
-          </el-option-group>
-        </el-select>
-        <el-color-picker
-          v-model="settings.theme.primaryColor"
-          :predefine="predefineColors"
-          :disabled="settings.theme.monetColor"
+          <computer-round class="theme-mode-card__icon" />
+          <span>{{ t('theme.mode.system') }}</span>
+        </button>
+        <button
+          type="button"
+          class="theme-mode-card"
+          :aria-pressed="currentMode === 'dark'"
+          :class="{ 'theme-mode-card--active': currentMode === 'dark' }"
+          @click="setColorMode('dark')"
+        >
+          <dark-mode-round class="theme-mode-card__icon" />
+          <span>{{ t('theme.mode.alwaysOn') }}</span>
+        </button>
+        <button
+          type="button"
+          class="theme-mode-card"
+          :aria-pressed="currentMode === 'light'"
+          :class="{ 'theme-mode-card--active': currentMode === 'light' }"
+          @click="setColorMode('light')"
+        >
+          <light-mode-round class="theme-mode-card__icon" />
+          <span>{{ t('theme.mode.alwaysOff') }}</span>
+        </button>
+      </div>
+    </SettingsSection>
+
+    <SettingsSection
+      :title="t('common.sections.appearance')"
+      :summary="t('common.sections.summary.appearance')"
+    >
+      <div class="settings__item settings__item--horizontal settings__item--with-note">
+        <div class="settings__label">
+          {{ t('theme.monet.label') }}
+          <cloud-off-round />
+        </div>
+        <el-switch
+          v-model="settings.theme.monetColor"
+          :disabled="settings.background.bgType === BgType.None"
+          :before-change="beforeMonetChange"
         />
+        <p class="settings__item-note">{{ t('theme.monet.desc') }}</p>
       </div>
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">
-        {{ t('theme.colorful.label') }}
+      <div class="settings__item settings__item--horizontal">
+        <div
+          class="settings__label"
+          :style="{
+            color: settings.theme.monetColor ? 'var(--el-text-color-disabled)' : undefined,
+          }"
+        >
+          {{ t('theme.primaryColor') }}
+        </div>
+        <div class="settings__theme">
+          <el-select
+            v-model="settings.theme.primaryColor"
+            style="width: 183px"
+            popper-class="settings-item-popper"
+            :show-arrow="false"
+            :disabled="settings.theme.monetColor"
+          >
+            <el-option-group
+              v-for="group in predefineColorsMap"
+              :key="group.label"
+              :label="group.label"
+            >
+              <el-option
+                v-for="item in group.options"
+                :key="item.value"
+                :label="t(item.labelKey)"
+                :value="item.value"
+              >
+                <div class="settings__theme-item">
+                  <el-tag :color="item.value" style="margin-right: 8px" size="small" />
+                  <span :style="{ color: item.value }">{{ t(item.labelKey) }}</span>
+                </div>
+              </el-option>
+            </el-option-group>
+          </el-select>
+          <el-color-picker
+            v-model="settings.theme.primaryColor"
+            :predefine="predefineColors"
+            :disabled="settings.theme.monetColor"
+          />
+        </div>
       </div>
-      <el-switch v-model="settings.theme.colorfulMode" />
-    </div>
-    <p class="settings__item--note">{{ t('theme.colorful.desc') }}</p>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('clock.colorful') }}</div>
-      <el-switch v-model="settings.clock.colorfulNum" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('clock.invertColor.light') }}</div>
-      <el-switch v-model="settings.clock.style.invertColor.light" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('clock.invertColor.dark') }}</div>
-      <el-switch v-model="settings.clock.style.invertColor.night" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">
-        {{ t('quickLinks.titleWhiteInLight') }}
+      <div class="settings__item settings__item--horizontal settings__item--with-note">
+        <div class="settings__label">{{ t('theme.colorful.label') }}</div>
+        <el-switch v-model="settings.theme.colorfulMode" />
+        <p class="settings__item-note">{{ t('theme.colorful.desc') }}</p>
       </div>
-      <el-switch v-model="settings.quickLinks.title.whiteInLightMode" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('yiyan.invertColor.light') }}</div>
-      <el-switch v-model="settings.yiyan.style.invertColor.light" />
-    </div>
-    <div class="settings__item settings__item--horizontal">
-      <div class="settings__label">{{ t('yiyan.invertColor.dark') }}</div>
-      <el-switch v-model="settings.yiyan.style.invertColor.night" />
-    </div>
+    </SettingsSection>
+
+    <SettingsSection
+      :title="t('common.sections.display')"
+      :summary="t('common.sections.summary.appearance')"
+      content-class="settings-control-grid"
+    >
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('clock.colorful') }}</div>
+        <el-switch v-model="settings.clock.colorfulNum" />
+      </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">
+          <span>
+            <el-tag :type="tagType" size="small">
+              {{ t('quickLinks.title') }}
+            </el-tag>
+            {{ t('quickLinks.titleWhiteInLight') }}
+          </span>
+        </div>
+        <el-switch v-model="settings.quickLinks.title.whiteInLightMode" />
+      </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">
+          <span>
+            <el-tag :type="tagType" size="small">
+              {{ t('clock.title') }}
+            </el-tag>
+            {{ t('clock.invertColor.light') }}
+          </span>
+        </div>
+        <el-switch v-model="settings.clock.style.invertColor.light" />
+      </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">
+          <span>
+            <el-tag :type="tagType" size="small">
+              {{ t('clock.title') }}
+            </el-tag>
+            {{ t('clock.invertColor.dark') }}
+          </span>
+        </div>
+        <el-switch v-model="settings.clock.style.invertColor.night" />
+      </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">
+          <span>
+            <el-tag :type="tagType" size="small">
+              {{ t('yiyan.title') }}
+            </el-tag>
+            {{ t('yiyan.invertColor.light') }}
+          </span>
+        </div>
+        <el-switch v-model="settings.yiyan.style.invertColor.light" />
+      </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">
+          <span>
+            <el-tag :type="tagType" size="small">
+              {{ t('yiyan.title') }}
+            </el-tag>
+            {{ t('yiyan.invertColor.dark') }}
+          </span>
+        </div>
+        <el-switch v-model="settings.yiyan.style.invertColor.night" />
+      </div>
+    </SettingsSection>
   </div>
 </template>
 

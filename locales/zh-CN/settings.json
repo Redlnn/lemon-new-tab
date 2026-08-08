@@ -39,9 +39,7 @@
       "d": "请确保你使用的壁纸 API 允许跨域请求，否则会加载失败"
     },
     "parallax": "壁纸视差效果",
-    "pauseWhenBlur": "标签页失去焦点时暂停视频背景",
-    "showDownloadBtn": "显示下载按钮",
-    "showDownloadBtnNote": "仅在使用必应壁纸或在线壁纸时提供下载功能",
+    "pauseWhenBlur": "失去焦点时暂停视频背景",
     "permission": {
       "allowAll": "允许所有网站",
       "allowCurrent": "仅允许该API网址",
@@ -64,6 +62,8 @@
     },
     "preferenceTitle": "壁纸偏好",
     "resolution": "清晰度",
+    "showDownloadBtn": "显示下载按钮",
+    "showDownloadBtnNote": "仅在使用必应壁纸或在线壁纸时提供下载功能",
     "sunMoonSaying": "太阳出来我晒太阳，月亮出来我晒月亮",
     "tip": "深色模式背景没有选择的话会继续使用浅色模式的图片/视频噢",
     "title": "背景",
@@ -94,10 +94,7 @@
     "youLikeFine": "你喜欢就好~"
   },
   "bookmark": {
-    "defaultSort": {
-      "desc": "刷新页面后生效",
-      "title": "默认排序方式"
-    },
+    "defaultSort": "默认排序方式",
     "direction": {
       "ltr": "从左到右",
       "rtl": "从右到左",
@@ -114,8 +111,8 @@
     "dateSize": "日期大小",
     "hour12": "使用 12 小时制",
     "invertColor": {
-      "dark": "【时钟】深色模式下使用深色文字",
-      "light": "【时钟】浅色模式下使用深色文字"
+      "dark": "深色模式下使用深色文字",
+      "light": "浅色模式下使用深色文字"
     },
     "meridiem": {
       "followSize": "「上午 / 下午」大字号",
@@ -134,13 +131,13 @@
     "title": "时钟",
     "transparency": "时钟透明度",
     "weight": {
-      "black": "最粗（900）",
-      "bold": "粗体（600）",
+      "black": "最粗",
+      "bold": "粗体",
       "dateTitle": "日期粗细",
-      "extraBold": "加粗（700）",
-      "heavy": "非常粗（800）",
-      "medium": "准粗（500）",
-      "normal": "标准（400）",
+      "extraBold": "加粗",
+      "heavy": "非常粗",
+      "medium": "准粗",
+      "normal": "标准",
       "title": "时钟粗细"
     }
   },
@@ -149,6 +146,36 @@
     "hour": "小时",
     "openInNewTab": "在新标签页中打开",
     "openInNewWindow": "在新窗口中打开",
+    "sections": {
+      "animation": "动画",
+      "appearance": "外观",
+      "behavior": "交互与行为",
+      "danger": "清理数据",
+      "data": "数据与恢复",
+      "display": "显示与内容",
+      "effects": "透明与模糊",
+      "general": "常规",
+      "layout": "布局与间距",
+      "position": "页面位置",
+      "quickActions": "快捷开关",
+      "radius": "圆角",
+      "source": "内容来源",
+      "summary": {
+        "animation": "壁纸与界面动效",
+        "appearance": "颜色、阴影与尺寸",
+        "behavior": "交互方式与打开行为",
+        "danger": "不可逆操作，请谨慎使用",
+        "data": "同步、备份与缓存",
+        "display": "可见内容与呈现方式",
+        "effects": "逐项控制透明度和模糊",
+        "general": "常用设置",
+        "layout": "尺寸、数量与间距",
+        "position": "主区域与功能按钮",
+        "quickActions": "批量开启或关闭效果",
+        "radius": "集中调整各组件圆角",
+        "source": "来源与自定义内容"
+      }
+    },
     "touchDeviceDisabledNote": "触控设备已禁用此项。"
   },
   "dock": {
@@ -164,17 +191,16 @@
   },
   "layout": {
     "actionBtn": {
+      "borderRadius": "操作按钮圆角",
       "bottomLeft": "左下",
       "bottomRight": "右下",
       "dockNote": "开启 Dock 后功能按钮只能放在顶部",
       "label": "功能按钮位置",
-      "borderRadius": "操作按钮圆角",
       "topLeft": "左上",
       "topRight": "右上"
     },
     "dockBorderRadius": "Dock 圆角",
     "globalBorderRadius": "其他组件圆角",
-    "minimalModeOnDoubleClick": "双击空白背景切换极简模式",
     "mainPosition": {
       "center": "居中",
       "dvh": "距顶部（%）",
@@ -184,6 +210,7 @@
       "pxValue": "距顶部距离（px）",
       "quickLinksScrollNote": "快速导航使用滚动时不能使用居中定位。"
     },
+    "minimalModeOnDoubleClick": "双击空白背景切换极简模式",
     "quickLinksIconBorderRadius": "快速导航图标背景圆角",
     "title": "布局"
   },
@@ -251,6 +278,7 @@
     },
     "bgSwitchAnim": "壁纸切换动画",
     "bgSwitchAnimTip": "关闭后切换壁纸时将不再有淡入淡出动画，能微弱提升切换速度。同时启动时的壁纸动画也会被禁用",
+    "blurIntensity": "背景模糊度",
     "bookmark": {
       "blur": "书签栏背景模糊",
       "transparent": "书签栏背景透明"
@@ -264,19 +292,21 @@
     "dock": {
       "scale": "Dock图标缩放动画"
     },
+    "effectsTitle": "效果设置",
     "focus": {
       "blur": "点击搜索框模糊背景",
       "scale": "点击搜索框缩放背景"
     },
+    "quickLinks": {
+      "blur": "快速导航、Dock 和启动台模糊",
+      "transparent": "快速导航和 Dock 透明"
+    },
+    "resetTransparencyAndBlur": "重置透明与模糊",
     "searchBar": {
       "blur": "搜索框模糊",
       "transparent": "搜索框透明"
     },
-    "effectsTitle": "效果设置",
-    "resetTransparencyAndBlur": "重置透明与模糊",
     "title": "性能与效果",
-    "blurIntensity": "背景模糊度",
-    "transparency": "背景透明度",
     "toggleAll": {
       "animation": "动画",
       "blur": "模糊效果",
@@ -284,16 +314,47 @@
       "enable": "一键启用所有",
       "transparent": "透明效果"
     },
+    "transparency": "背景透明度",
     "wallpaper": "壁纸",
     "yiyan": {
       "blur": "一言背景模糊",
       "ripple": "一言水波纹动画",
       "transparent": "一言背景透明"
-    },
-    "quickLinks": {
-      "blur": "快速导航、Dock 和启动台模糊",
-      "transparent": "快速导航和 Dock 透明"
     }
+  },
+  "quickLinks": {
+    "border": "显示图标边框",
+    "grouping": "启用分组",
+    "groupingDisableConfirm": "关闭分组会合并所有快速导航分组，并移除重复 URL。不同分组中的重复链接将无法保留。",
+    "groupingTip": "双击快速导航区或启动台中的分组名即可重命名。",
+    "iconBorderRadius": "图标背景圆角",
+    "iconCacheTip": "建议打开「设置-其他-图标缓存」以尝试获取更高清晰度的图标。",
+    "iconRatio": "图标填充比例",
+    "iconSize": "图标大小",
+    "marginTop": "区域上边距",
+    "maxColumns": "最大列数",
+    "maxItemsTipForChrome": "最常访问的上限只有 10 个噢~",
+    "maxRows": "最大行数",
+    "paging": "启用翻页",
+    "pagingLoop": "翻页循环",
+    "pinnedIcon": "显示置顶图标",
+    "restoreDefault": "恢复隐藏的链接",
+    "restoreDefaultTitle": "你确定要恢复默认快速导航吗？",
+    "shadow": "显示图标阴影",
+    "showOnSearchFocus": "搜索框聚焦时显示",
+    "showTitle": "显示标题",
+    "spacing": {
+      "iconTitleGap": "图标与标题间距",
+      "itemGapX": "链接左右间距",
+      "itemGapY": "链接上下间距"
+    },
+    "tip": "可以拖动设置窗口以观察快速导航区域变化。",
+    "title": "快速导航",
+    "titleExtraWidth": "标题扩展宽度",
+    "titleWhiteInLight": "浅色模式下使用白色文字",
+    "topSites": "展示最常访问",
+    "useScroll": "使用滚动",
+    "useScrollTouchTip": "建议移动端开启此开关以获得更好的浏览体验。"
   },
   "search": {
     "alwaysExpandSearchBar": "一直展开搜索框",
@@ -366,16 +427,16 @@
   "title": "设置",
   "yiyan": {
     "alwaysShow": "总是显示",
+    "borderRadius": "一言背景圆角",
     "customLinesLabel": "自定义内容",
     "customLinesNote": "每行为一条，行内使用「\\n」表示换行",
     "customLinesPlaceholder": "每行一条，行内使用 \\n 表示换行",
-    "borderRadius": "一言背景圆角",
     "description": "",
     "invertColor": {
-      "dark": "【一言】深色模式下使用深色文字",
-      "light": "【一言】浅色模式下使用深色文字"
+      "dark": "深色模式下使用深色文字",
+      "light": "浅色模式下使用深色文字"
     },
-    "normalyShowTip": "关闭时仅在搜索框聚焦时显示",
+    "normalyShowTip": "关闭后仅在搜索框聚焦时显示",
     "provider": "一言来源",
     "providers": {
       "custom": {
@@ -391,39 +452,5 @@
     },
     "shadow": "显示文字阴影",
     "title": "一言"
-  },
-  "quickLinks": {
-    "border": "显示图标边框",
-    "iconCacheTip": "Tip：建议打开「设置-其他-图标缓存」以尝试获取更高清晰度的图标。",
-    "iconBorderRadius": "图标背景圆角",
-    "iconRatio": "图标填充比例",
-    "iconSize": "图标大小",
-    "grouping": "启用分组",
-    "groupingDisableConfirm": "关闭分组会合并所有快速导航分组，并移除重复 URL。不同分组中的重复链接将无法保留。",
-    "groupingTip": "双击快速导航区或启动台中的分组名即可重命名。",
-    "useScroll": "使用滚动",
-    "useScrollTouchTip": "建议移动端开启此开关以获得更好的浏览体验。",
-    "marginTop": "区域上边距",
-    "maxColumns": "最大列数",
-    "maxItemsTipForChrome": "最常访问的上限只有 10 个噢~",
-    "maxRows": "最大行数",
-    "paging": "启用翻页",
-    "pagingLoop": "翻页循环",
-    "pinnedIcon": "显示置顶图标",
-    "restoreDefault": "恢复隐藏的链接",
-    "restoreDefaultTitle": "你确定要恢复默认快速导航吗？",
-    "shadow": "显示图标阴影",
-    "showOnSearchFocus": "搜索框聚焦时显示",
-    "showTitle": "显示标题",
-    "spacing": {
-      "iconTitleGap": "图标与标题间距",
-      "itemGapX": "链接左右间距",
-      "itemGapY": "链接上下间距"
-    },
-    "tip": "提示：可以拖动设置窗口以观察快速导航区域变化。",
-    "title": "快速导航",
-    "titleExtraWidth": "标题扩展宽度",
-    "titleWhiteInLight": "【快速导航】浅色模式下使用白色文字",
-    "topSites": "展示最常访问"
   }
 }
