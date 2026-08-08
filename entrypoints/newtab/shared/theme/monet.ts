@@ -1,6 +1,7 @@
 import { applyStoredMonetColors, saveMonetColors } from '@/shared/theme/monetStorage'
+import { createExtensionWorker } from '@/shared/worker'
 
-import MonetWorker from './monet.worker?worker'
+import monetWorkerUrl from './monet.worker?worker&url'
 
 let worker: Worker | null = null
 // 用于唯一标识每个 Worker 消息请求
@@ -15,7 +16,7 @@ const pendingRejects = new Map<number, (error: Error) => void>()
 
 function getWorker() {
   if (!worker) {
-    worker = new MonetWorker()
+    worker = createExtensionWorker(monetWorkerUrl)
     worker.onmessage = (e) => {
       const { id, cssLight, cssDark, error } = e.data
       if (error) {

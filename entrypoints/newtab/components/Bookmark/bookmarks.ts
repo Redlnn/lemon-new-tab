@@ -5,8 +5,9 @@ import i18next from 'i18next'
 import { browser, type Browser } from 'wxt/browser'
 
 import { SortMode } from '@/shared/enums'
+import { createExtensionWorker } from '@/shared/worker'
 
-import BookmarkWorker from './bookmark.worker?worker'
+import bookmarkWorkerUrl from './bookmark.worker?worker&url'
 
 let worker: Worker | null = null
 let languageChangedListener: ((lang: string) => void) | null = null
@@ -207,7 +208,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
 
   const initWorker = () => {
     if (worker) return
-    worker = new BookmarkWorker()
+    worker = createExtensionWorker(bookmarkWorkerUrl)
     if (!languageChangedListener) {
       languageChangedListener = (lang) => {
         worker?.postMessage({

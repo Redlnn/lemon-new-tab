@@ -7,6 +7,7 @@ import Icons from 'unplugin-icons/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import Markdown from 'unplugin-vue-markdown/vite'
+import { defaultAllowedOrigins } from 'vite'
 import i18nextLoader from 'vite-plugin-i18next-loader'
 import svgLoader from 'vite-svg-loader'
 import { defineConfig } from 'wxt'
@@ -40,12 +41,8 @@ const baseManifest = {
   ],
   content_security_policy: {
     extension_pages:
-      "script-src 'self'; object-src 'none'; img-src 'self' https: http: data: blob:",
+      "script-src 'self'; object-src 'none'; img-src 'self' https: http: data: blob:; worker-src 'self'",
   },
-}
-
-if (import.meta.env.DEV) {
-  baseManifest.host_permissions.push('http://localhost/')
 }
 
 const firefoxManifest = {
@@ -111,7 +108,25 @@ export default defineConfig({
       return chromeManifest
     }
   },
+  hooks: {
+    'build:publicAssets': (wxt, files) => {
+      if (wxt.config.command !== 'serve' || !wxt.server) return
+
+      const devOrigin = `${wxt.server.origin}/`
+      files.push({
+        relativeDest: 'dev-worker-bootstrap.js',
+        contents: `const workerUrl = new URL(import.meta.url).searchParams.get('url')
+if (!workerUrl?.startsWith(${JSON.stringify(devOrigin)})) throw new Error('Invalid dev worker URL')
+await import(workerUrl)`,
+      })
+    },
+  },
   vite: () => ({
+    server: {
+      cors: {
+        origin: [defaultAllowedOrigins, /^(?:chrome|moz)-extension:\/\//],
+      },
+    },
     plugins: [
       Vue({
         include: [/\.vue$/, /\.md$/],
