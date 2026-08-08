@@ -21,11 +21,8 @@ export const Bookmark = defineAsyncComponent(() => import('../components/Bookmar
 export const AddQuickLinkDialog = defineAsyncComponent(
   () => import('../components/QuickLinks/components/AddQuickLinkDialog.vue'),
 )
-export const SyncLegacyDialog = defineAsyncComponent(
-  () => import('../components/SyncLegacyDialog.vue'),
-)
-export const SyncConflictDialog = defineAsyncComponent(
-  () => import('../components/SyncConflictDialog.vue'),
+export const SyncRetirementDialog = defineAsyncComponent(
+  () => import('../components/SyncRetirementDialog.vue'),
 )
 
 function createLazyDialogState() {
@@ -57,8 +54,6 @@ export function useLazyAppComponents() {
     { mode: 'add'; groupId?: string } | { mode: 'edit'; target: QuickLinkTarget } | null
   >(null)
   const permissionDialogLoaded = ref(false)
-  const syncLegacyDialogLoaded = ref(false)
-  const syncConflictDialogLoaded = ref(false)
 
   const openAddQuickLinkDialog = (groupId?: string) => {
     quickLinkDialogRequest.value = { mode: 'add', ...(groupId ? { groupId } : {}) }
@@ -88,8 +83,6 @@ export function useLazyAppComponents() {
     addQuickLinkDialogVisible: addQuickLinkDialog.visible,
     quickLinkDialogRequest,
     permissionDialogLoaded,
-    syncLegacyDialogLoaded,
-    syncConflictDialogLoaded,
     toggleSettingsPage: settingsPage.toggle,
     showChangelog: changelog.show,
     showFaq: faq.show,

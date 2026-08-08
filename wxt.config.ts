@@ -47,7 +47,7 @@ const baseManifest = {
 
 const firefoxManifest = {
   ...baseManifest,
-  permissions: ['topSites', 'storage', 'alarms', 'bookmarks', 'activeTab', 'tabs'],
+  permissions: ['topSites', 'storage', 'bookmarks', 'activeTab', 'tabs'],
   optional_permissions: ['*://*/*'],
   chrome_settings_overrides: {
     homepage: 'newtab.html',
@@ -64,16 +64,7 @@ const firefoxManifest = {
 
 const chromeManifest = {
   ...baseManifest,
-  permissions: [
-    'topSites',
-    'storage',
-    'favicon',
-    'alarms',
-    'bookmarks',
-    'activeTab',
-    'tabs',
-    'scripting',
-  ],
+  permissions: ['topSites', 'storage', 'favicon', 'bookmarks', 'activeTab', 'tabs', 'scripting'],
   optional_host_permissions: ['*://*/*'],
 }
 

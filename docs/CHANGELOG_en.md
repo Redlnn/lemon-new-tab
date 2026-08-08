@@ -17,6 +17,7 @@
 
 ### Improvements⚡️
 
+- Removed experimental cloud sync because it could not reliably determine which data was newest. Local settings import/export remains available, together with a temporary cleanup path for old cloud data.
 - **Search:** Added a shortcut from the search-engine menu in the search box to Search Preferences.
 - **Quick Links:** In grouped mode, changed the Top Sites context-menu label from “Pin” to “Add to Quick Links”.
 - Removed third-party favicon services to reduce extra third-party requests.

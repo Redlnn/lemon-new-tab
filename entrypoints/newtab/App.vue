@@ -1,14 +1,12 @@
 <script lang="ts" setup>
 import { useIdle } from '@vueuse/core'
-import { shallowRef, type StyleValue } from 'vue'
+import { type StyleValue } from 'vue'
 
 import { useTranslation } from 'i18next-vue'
 
 import { BgType } from '@/shared/enums'
 import { DEFAULT_QUICK_LINK_GROUP_ID } from '@/shared/quickLinks'
 import { defaultSettings, useSettingsStore } from '@/shared/settings'
-import { addSyncEventCallback } from '@/shared/sync/syncEvents'
-import type { SyncEventPayloadMap } from '@/shared/sync/types'
 
 import {
   FOCUS_STATE,
@@ -42,12 +40,12 @@ import {
   PermissionDialog,
   SearchEnginesSwitcher,
   SettingsPage,
-  SyncConflictDialog,
-  SyncLegacyDialog,
+  SyncRetirementDialog,
   useLazyAppComponents,
 } from './composables/useLazyAppComponents'
 import { usePermission } from './composables/usePermission'
 import { useQuickLinksBootstrap } from './composables/useQuickLinksBootstrap'
+import { useRetiredCloudSync } from './composables/useRetiredCloudSync'
 import { useThemeWatcher } from './composables/useThemeWatcher'
 
 const BackgroundRef = ref<InstanceType<typeof Background>>()
@@ -74,8 +72,6 @@ const {
   addQuickLinkDialogVisible,
   quickLinkDialogRequest,
   permissionDialogLoaded,
-  syncLegacyDialogLoaded,
-  syncConflictDialogLoaded,
   toggleSettingsPage,
   showChangelog,
   showFaq,
@@ -91,42 +87,13 @@ const elLocale = useElementLang()
 const settings = useSettingsStore()
 const { quickLinksReady } = useQuickLinksBootstrap()
 const minimalMode = ref(false)
-const legacyDialogVisible = ref(false)
-const conflictDialogVisible = ref(false)
-const conflictPayload = shallowRef<SyncEventPayloadMap['conflict'] | null>(null)
-
-// 同步模块体积较大，首屏只订阅轻量事件；真正处理用户选择时再懒加载 store。
-const stopSyncDialogEvents = addSyncEventCallback((type, payload) => {
-  if (type === 'legacy-detected') {
-    syncLegacyDialogLoaded.value = true
-    legacyDialogVisible.value = true
-  } else if (type === 'conflict') {
-    syncConflictDialogLoaded.value = true
-    conflictPayload.value = payload as SyncEventPayloadMap['conflict']
-    conflictDialogVisible.value = true
-  } else if (type === 'conflict-resolved') {
-    conflictDialogVisible.value = false
-    conflictPayload.value = null
-  }
-})
-
-onUnmounted(stopSyncDialogEvents)
-
-type SyncStoreActions = {
-  clearLegacyAndReinitialize: () => Promise<void>
-  resolveConflict: (choice: 'cloud' | 'local') => Promise<boolean>
-  disableSync: () => void
-}
-
-let syncStoreTask: Promise<SyncStoreActions> | null = null
-
-// 多个按钮可能连续触发，复用同一个动态导入任务，避免重复拉取 sync chunk。
-async function getSyncStore() {
-  syncStoreTask ??= import('@/shared/sync').then(
-    ({ useSyncDataStore }) => useSyncDataStore() as SyncStoreActions,
-  )
-  return await syncStoreTask
-}
+const {
+  dialogLoaded: syncRetirementDialogLoaded,
+  dialogVisible: syncRetirementDialogVisible,
+  dialogAcknowledgementOnly: syncRetirementDialogAcknowledgementOnly,
+  downloadCloudData,
+  deleteCloudData,
+} = useRetiredCloudSync()
 
 // 主题/外观 watcher
 useThemeWatcher()
@@ -188,29 +155,13 @@ provide(
   () => QuickLinksRef.value?.getActiveGroupId() ?? DEFAULT_QUICK_LINK_GROUP_ID,
 )
 
-// 应用级通知（欢迎、缓存提示、版本更新、同步错误）
+// 应用级通知（欢迎、缓存提示、版本更新）
 useAppNotifications(showChangelog)
 
 watch(
   permissionDialogVisible,
   (visible) => {
     if (visible) permissionDialogLoaded.value = true
-  },
-  { immediate: true },
-)
-
-watch(
-  legacyDialogVisible,
-  (visible) => {
-    if (visible) syncLegacyDialogLoaded.value = true
-  },
-  { immediate: true },
-)
-
-watch(
-  conflictDialogVisible,
-  (visible) => {
-    if (visible) syncConflictDialogLoaded.value = true
   },
   { immediate: true },
 )
@@ -278,33 +229,6 @@ const mainStyle = computed<StyleValue>(() => {
   }
   return { paddingTop: `${pos.value}px` }
 })
-
-const handleLegacyConfirm = async () => {
-  const syncStore = await getSyncStore()
-  await syncStore.clearLegacyAndReinitialize()
-  legacyDialogVisible.value = false
-}
-const handleLegacyCancel = () => {
-  legacyDialogVisible.value = false
-}
-const handleUseCloudConflictData = async () => {
-  const syncStore = await getSyncStore()
-  if (!(await syncStore.resolveConflict('cloud'))) return
-  conflictDialogVisible.value = false
-  conflictPayload.value = null
-}
-const handleUseLocalConflictData = async () => {
-  const syncStore = await getSyncStore()
-  if (!(await syncStore.resolveConflict('local'))) return
-  conflictDialogVisible.value = false
-  conflictPayload.value = null
-}
-const handleDisableSyncConflict = async () => {
-  const syncStore = await getSyncStore()
-  syncStore.disableSync()
-  conflictDialogVisible.value = false
-  conflictPayload.value = null
-}
 
 async function refreshQuickLinks() {
   await Promise.all([QuickLinksRef.value?.refresh(), DockRef.value?.refresh()])
@@ -418,19 +342,12 @@ function toggleMinimalMode() {
       :context="currentContext"
       @result="onPermissionDialogResult"
     />
-    <sync-legacy-dialog
-      v-if="syncLegacyDialogLoaded"
-      v-model="legacyDialogVisible"
-      @confirm="handleLegacyConfirm"
-      @cancel="handleLegacyCancel"
-    />
-    <sync-conflict-dialog
-      v-if="syncConflictDialogLoaded"
-      v-model="conflictDialogVisible"
-      :conflict="conflictPayload"
-      @use-cloud="handleUseCloudConflictData"
-      @use-local="handleUseLocalConflictData"
-      @disable-sync="handleDisableSyncConflict"
+    <sync-retirement-dialog
+      v-if="syncRetirementDialogLoaded"
+      v-model="syncRetirementDialogVisible"
+      :acknowledgement-only="syncRetirementDialogAcknowledgementOnly"
+      @download="downloadCloudData"
+      @delete="deleteCloudData"
     />
   </el-config-provider>
 </template>

@@ -1,7 +1,5 @@
 import { browser, storage } from '#imports'
 
-import type { SyncResetMessage } from '@/shared/sync/types'
-
 export async function downloadLegacySettingsBackup() {
   const { downloadJSON } = await import('@/shared/download')
 
@@ -15,13 +13,9 @@ export async function downloadLegacySettingsBackup() {
   )
 }
 
-/** 清除扩展持久化数据；默认保留云同步数据，避免误删用户的云端配置。 */
+/** 清除扩展持久化数据；默认保留历史云端数据，避免用户未选择时一并删除。 */
 export async function clearExtensionData({ includeSync = false }: { includeSync?: boolean } = {}) {
   const { idbClearAll } = await import('@/shared/storage/idb')
-
-  if (includeSync) {
-    await browser.runtime.sendMessage({ type: 'SYNC_RESET' } satisfies SyncResetMessage)
-  }
 
   const tasks = [
     localStorage.clear(),

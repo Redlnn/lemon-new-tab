@@ -4,7 +4,7 @@
 
 This Privacy Policy applies to the browser extension **Lemon New Tab** and its related public source code repository.
 
-This extension is designed to run in a **local-first** manner. Some online features are **enabled by default or available by default**, including search suggestions and Jinrishici content. Other online features usually require your own action or configuration, such as online wallpapers, some third-party content sources, or browser account sync. Regardless of whether such features are enabled, the extension does not proactively send your data to the developer's own servers. Based on the current source code, the developer **does not operate a dedicated backend that collects extension users' personal data**.
+This extension is designed to run in a **local-first** manner. Some online features are **enabled by default or available by default**, including search suggestions and Jinrishici content. Other online features usually require your own action or configuration, such as online wallpapers or some third-party content sources. Regardless of whether such features are enabled, the extension does not proactively send your data to the developer's own servers. Based on the current source code, the developer **does not operate a dedicated backend that collects extension users' personal data**.
 
 Contact email: <lemon@redlnn.top>
 
@@ -14,14 +14,14 @@ The developer of this extension is the maintainer of this project repository. Fo
 
 For the design, provision, and operation of the extension features, the developer acts as a **data controller** or equivalent personal information handler to the extent the developer actually determines the purposes and means of processing under applicable law.
 
-Browser stores, browser sync infrastructure, third-party APIs, and any online resources you configure yourself may each act as **independent controllers/processors** for their own data practices. Those activities are not directly controlled by the extension developer.
+Browser stores, browser vendors retaining historical sync data, third-party APIs, and any online resources you configure yourself may each act as **independent controllers/processors** for their own data practices. Those activities are not directly controlled by the extension developer.
 
 ## 2. What This Policy Covers
 
 This Policy covers four categories of processing:
 
 1. **Local extension processing**: data stored in browser local storage, session storage, or IndexedDB.
-2. **Browser sync**: data handled by the browser vendor's sync infrastructure when you enable account-based sync.
+2. **Historical sync data retirement**: the current version may read, download, or clear data left in browser sync storage by older versions, but it no longer uploads or applies that data.
 3. **Third-party service requests**: requests sent directly from your browser to external services when you enable online features.
 4. **App store distribution**: data that browser stores may process for installation, updates, diagnostics, or analytics.
 
@@ -36,8 +36,8 @@ The extension store the following data locally on your device:
 - tab title, page URL, hostname, and favicon-related cache processed locally to display Quick Links, frequently visited sites, or related site cards;
 - search history, if that local feature is enabled;
 - local wallpapers, video wallpapers, cached Bing wallpapers, and related metadata;
-- sync metadata such as device name, device identifier, sync timestamps, and sync version numbers;
-- custom search engine lists, synced settings snapshots, and synced Quick Links data.
+- historical sync metadata such as device name, device identifier, sync timestamps, and sync version numbers;
+- custom search engine lists, settings snapshots, and Quick Links data left by older versions.
 
 This data is generally stored in your browser environment and is controlled by you or your browser. It is not automatically transmitted to the developer.
 
@@ -47,7 +47,7 @@ According to the extension manifest, the extension may access:
 
 - **bookmarks**: to display, search, or open your browser bookmarks;
 - **topSites / browsing activity related capabilities**: to show frequently visited sites;
-- **storage**: to save settings, cache, and sync state;
+- **storage**: to save settings and cache, and to temporarily detect, download, or clear sync data left by older versions;
 - **tabs / activeTab / scripting** (depending on browser): to interact with tabs, the new tab page, and related pages;
 - **optional host permissions**: when you enable features that need access to website resources, such as fetching favicons or loading online media from arbitrary sites.
 
@@ -63,7 +63,7 @@ Except as otherwise described in this Policy, the extension developer does **not
 - copies of page titles, page URLs, site hostnames, or favicon data from your tabs, except where your browser sends the relevant request directly to a third-party service;
 - your extension settings, Quick Links, wallpaper files, or search history.
 
-If you enable browser sync or third-party online features, relevant data may instead be received and processed by the **browser vendor or the third-party service provider**.
+If the browser vendor still retains sync data left by an older version, or if you enable third-party online features, relevant data may instead be received and processed by the **browser vendor or the third-party service provider**.
 
 ## 5. Data That Browser Stores or Browser Vendors May Collect
 
@@ -138,7 +138,7 @@ The extension, browser vendor, or third parties may process data for purposes su
 
 - providing new tab page functionality;
 - storing your local preferences and cache;
-- syncing settings across devices through your browser account;
+- detecting, downloading, or clearing browser sync data left by older versions;
 - providing search suggestions, wallpapers, poetry, quotes, and site icons;
 - maintaining service stability, rate limiting, abuse prevention, security, and troubleshooting.
 
@@ -175,9 +175,9 @@ Data stored locally by the extension is generally retained until one of the foll
 - you clear browser site data, extension storage, or local cache;
 - the browser removes it under its own storage or sync policies.
 
-### 9.2 Browser sync data
+### 9.2 Historical browser sync data
 
-If you enable browser sync, retention is determined by the browser vendor. The developer cannot independently set or remove the vendor's cloud copies. You can usually manage this through your browser account, sync settings, or sync data reset tools.
+The current version no longer provides browser account sync. Data left by older versions may still be retained under the browser vendor's sync policies. The extension temporarily provides detection, download, and cleanup controls, but cannot guarantee when deletion propagates across devices. You can also use your browser account or sync-data management controls.
 
 ### 9.3 Third-party logs and caches
 
@@ -205,7 +205,7 @@ The following scenarios may therefore involve cross-border transfer risks:
 - using Google search suggestions;
 - using Bing global services or related CDNs / edge nodes;
 - using online wallpapers, media, or API endpoints hosted abroad;
-- using browser account sync infrastructure.
+- browser vendors processing account sync data left by older versions.
 
 Different jurisdictions provide different levels of personal data protection. Transfer mechanisms that may be used by relevant providers can include, without limitation, Standard Contractual Clauses (SCCs), intra-group transfer rules, statutory certification or assessment mechanisms, data localization arrangements, regional traffic routing, or direct cross-border requests initiated on the basis of your consent. Because the developer does not control those third-party infrastructures, the developer cannot guarantee that any particular mechanism applies to every service or every region.
 
@@ -242,7 +242,7 @@ The developer will make reasonable efforts to respond within the period required
 For this extension specifically:
 
 - because the developer generally **does not hold a server-side copy of your extension content**, practical control over most data remains with you, your browser vendor, or the relevant third-party service;
-- you can exercise much of your control by uninstalling the extension, clearing browser extension storage, disabling online features, deleting local wallpapers and search history, or turning off browser sync;
+- you can exercise much of your control by uninstalling the extension, clearing browser extension storage, disabling online features, deleting local wallpapers and search history, or using the extension's historical cloud-data cleanup control;
 - if you have questions about matters within the developer's controllable scope, contact <lemon@redlnn.top>.
 
 ## 13. Children

@@ -165,7 +165,7 @@
         "appearance": "Color, shadow, and sizing",
         "behavior": "Interactions and opening behavior",
         "danger": "Irreversible actions—use with care",
-        "data": "Sync, backups, and caches",
+        "data": "Backups and caches",
         "display": "Visible content and presentation",
         "effects": "Control transparency and blur by component",
         "general": "Frequently used options",
@@ -267,8 +267,25 @@
       "icon": "Purge favicon cache",
       "wallpaper": "Purge wallpaper cache"
     },
-    "sync": "Cloud Sync (Experimental)",
-    "syncWarning": "Cloud Sync may overwrite local settings and cannot sync the following items: background images, most visited sites, dark mode state, etc. Items that do not support syncing will be marked with an indicator as shown on the right:",
+    "sync": "Cloud Sync (No Longer Supported)",
+    "syncRetirement": {
+      "acknowledge": "OK",
+      "clearFailedMessage": "The old cloud data could not be deleted right now. It will not be uploaded or applied, and you will be reminded again after a future restart.",
+      "clearFailedTitle": "Unable to delete cloud data",
+      "clearCloudData": "Clean up cloud data",
+      "clearSuccess": "The old cloud data has been cleared",
+      "downloadCloudData": "Download cloud data",
+      "downloadFailed": "Cloud data could not be read or downloaded. Please try again later.",
+      "downloadNote": "You can download the current cloud data, but this file cannot be imported back into the extension.",
+      "downloadStarted": "The cloud data file has started downloading",
+      "importIgnored": "The old cloud sync option in the backup was ignored. Cloud sync remains off.",
+      "message": "Cloud Sync could sometimes replace current settings with older data. To protect your data, this feature has been removed and turned off automatically. Settings on this device are not affected.",
+      "noCloudData": "No cloud data was found to download",
+      "residualMessage": "Old cloud data was found. You can delete it without affecting the current settings on this device.",
+      "residualTitle": "Old cloud data found",
+      "title": "Cloud Sync is no longer supported"
+    },
+    "syncWarning": "This feature has been removed. Click the switch to learn how to handle old cloud data.",
     "title": "Other"
   },
   "perf": {

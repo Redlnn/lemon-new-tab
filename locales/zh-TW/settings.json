@@ -165,7 +165,7 @@
         "appearance": "顏色、陰影與尺寸",
         "behavior": "互動方式與開啟行為",
         "danger": "不可逆操作，請謹慎使用",
-        "data": "同步、備份與快取",
+        "data": "備份與快取",
         "display": "可見內容與呈現方式",
         "effects": "逐項控制透明度和模糊",
         "general": "常用設定",
@@ -267,8 +267,25 @@
       "icon": "清除圖示快取",
       "wallpaper": "清除壁紙快取"
     },
-    "sync": "雲端同步（實驗功能）",
-    "syncWarning": "雲端同步可能會覆蓋本機設定，且無法同步以下項目：背景圖片、最常造訪網站、深色模式狀態等。不支援同步的項目後方會顯示如右側所示的標示：",
+    "sync": "雲端同步（已停止支援）",
+    "syncRetirement": {
+      "acknowledge": "好的",
+      "clearFailedMessage": "舊的雲端資料暫時未能刪除。我們不會再上傳或套用這些資料，下次啟動時會再次提醒你。",
+      "clearFailedTitle": "未能刪除雲端資料",
+      "clearCloudData": "清理雲端資料",
+      "clearSuccess": "舊的雲端資料已清除",
+      "downloadCloudData": "下載雲端資料",
+      "downloadFailed": "無法讀取或下載雲端資料，請稍後再試",
+      "downloadNote": "您可以下載目前的雲端資料，但該檔案無法重新匯入擴充功能。",
+      "downloadStarted": "雲端資料檔案已開始下載",
+      "importIgnored": "備份中的舊雲端同步選項已忽略，雲端同步仍保持關閉",
+      "message": "雲端同步有時可能以較舊的內容覆蓋目前設定。為了保護你的資料，這項功能已移除並自動關閉。目前裝置上的設定不受影響。",
+      "noCloudData": "找不到需要下載的雲端資料",
+      "residualMessage": "偵測到以前留下的雲端資料。你可以刪除它，目前裝置上的設定不受影響。",
+      "residualTitle": "發現舊的雲端資料",
+      "title": "雲端同步已停止支援"
+    },
+    "syncWarning": "此功能已移除。點擊開關可查看舊雲端資料的處理說明。",
     "title": "其他"
   },
   "perf": {

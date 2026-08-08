@@ -40,7 +40,7 @@ export async function initI18n() {
     },
     load: 'currentOnly',
     nonExplicitSupportedLngs: true,
-    ns: ['newtab', 'settings', 'sync', 'faq'],
+    ns: ['newtab', 'settings', 'faq'],
     defaultNS: 'newtab',
     debug: import.meta.env.DEV,
     interpolation: {

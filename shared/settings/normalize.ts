@@ -90,7 +90,6 @@ function normalizePerfSurface<K extends PerfTransparencyKey>(
   perf: CURRENT_CONFIG_SCHEMA['perf'],
   key: K,
 ): CURRENT_CONFIG_SCHEMA['perf'][K] {
-  // 读取当前配置中对应性能分组的原始值，可能来自旧配置、导入文件或云同步数据。
   const current = perf[key]
   // 先克隆默认配置，确保新增字段或缺失字段都有稳定的默认值。
   const normalized = {
@@ -121,7 +120,7 @@ function normalizePerfSurface<K extends PerfTransparencyKey>(
 }
 
 /**
- * 补齐同一配置版本内新增的可选设置，并约束外部导入或同步数据的取值范围。
+ * 补齐同一配置版本内新增的可选设置，并约束外部导入数据的取值范围。
  * 这里不提升配置版本，避免为纯新增字段引入一次完整迁移。
  */
 export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRENT_CONFIG_SCHEMA {

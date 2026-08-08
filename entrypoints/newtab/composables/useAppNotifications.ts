@@ -8,41 +8,13 @@ import { shownFaviconCacheHintStorage } from '@newtab/shared/storages/notificati
 
 import { shouldShowChangelog } from '../shared/utils'
 
-import { useSyncEventCallback } from './useSyncEventCallback'
-
 /**
- * 处理应用级通知（欢迎、图标缓存提示、版本更新、同步错误）。
+ * 处理应用级通知（欢迎、图标缓存提示、版本更新）。
  * @param showChangelog 用于自动弹出更新日志，调用方可在其中懒加载 Changelog。
  */
 export function useAppNotifications(showChangelog: () => void | Promise<void>) {
   const settings = useSettingsStore()
-  const { t } = useTranslation('sync')
-
-  useSyncEventCallback((type, payload) => {
-    if (type === 'version-too-new') {
-      const p = payload as { cloud: number; local: number }
-      ElNotification.error({
-        title: t('fail.title'),
-        message: t('fail.message', { cloud: String(p.cloud), local: String(p.local) }),
-      })
-    } else if (type === 'legacy-detected') {
-      ElNotification.warning({
-        title: t('legacyFormat.title'),
-        message: t('legacyFormat.message'),
-      })
-    } else if (type === 'conflict') {
-      ElNotification.warning({
-        title: t('conflict.title'),
-        message: t('conflict.message'),
-      })
-    } else if (type === 'sync-error') {
-      const err = payload as Error
-      ElNotification.error({
-        title: t('error.title'),
-        message: err.message || 'Unknown error.',
-      })
-    }
-  })
+  const { t } = useTranslation()
 
   onMounted(async () => {
     // 全新用户欢迎通知

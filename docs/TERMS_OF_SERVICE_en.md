@@ -12,7 +12,7 @@ Contact email: <lemon@redlnn.top>
 
 Lemon New Tab is a **local-first** browser new tab extension that provides page customization, Quick Links, bookmark display, frequently visited sites display, search, wallpapers, poetry/quote display, and related features. To support site display features, the extension may also locally read or process **page titles, page URLs / hostnames, and favicon information** from tabs you visit.
 
-Some features depend on browser platform capabilities or third-party services, including without limitation search suggestions, Bing wallpapers, Jinrishici, Hitokoto, third-party favicon services, browser sync capabilities, and online resources configured by you. Those third-party services are not controlled by the developer and do not constitute services independently guaranteed by the developer under these Terms.
+Some features depend on browser platform capabilities or third-party services, including without limitation search suggestions, Bing wallpapers, Jinrishici, Hitokoto, third-party favicon services, and online resources configured by you. The current version may also temporarily access sync data retained by the browser vendor from older versions so that you can download or clear it. Those third-party services are not controlled by the developer and do not constitute services independently guaranteed by the developer under these Terms.
 
 ## 2. Eligibility and Acceptance
 
@@ -49,13 +49,13 @@ The extension may connect to or display third-party services, third-party conten
 - Baidu or Google search suggestions;
 - third-party favicon services;
 - online images, videos, APIs, or other network resources configured by you;
-- browser vendor sync, distribution, diagnostic, or app store services.
+- historical sync data retained by browser vendors, and their distribution, diagnostic, or app store services.
 
 The developer does **not** own, control, or guarantee the availability, stability, accuracy, security, legality, continuity, or compliance of such third-party services. Your access to and use of such services may also be subject to their own terms, privacy policies, and other rules.
 
 ## 6. Default Online Features and User Choice
 
-You understand and agree that some online features are **enabled by default or available by default**, such as search suggestions, Jinrishici content, and third-party favicon lookup, while other online features require your own activation or configuration, such as online wallpapers, custom media URLs, or browser sync. You also understand that, to display Quick Links, frequently visited sites, or related site cards, the extension may locally access tab titles, page URLs / hostnames, and favicon information.
+You understand and agree that some online features are **enabled by default or available by default**, such as search suggestions, Jinrishici content, and third-party favicon lookup, while other online features require your own activation or configuration, such as online wallpapers or custom media URLs. Cloud Sync is no longer supported; the current version only provides temporary controls to detect, download, or clear old cloud data. You also understand that, to display Quick Links, frequently visited sites, or related site cards, the extension may locally access tab titles, page URLs / hostnames, and favicon information.
 
 You may decide whether to continue using such online features through extension settings, browser permission settings, network blocking rules, or by uninstalling the extension. Disabling or blocking them may affect feature availability or user experience.
 
@@ -94,7 +94,7 @@ To the maximum extent permitted by applicable law, the developer will not be lia
 
 - your use of or inability to use the extension;
 - any unavailability, modification, rate limiting, suspension, redirection, error, or shutdown of third-party services;
-- issues caused by browsers, operating systems, network conditions, regional restrictions, app store policies, or sync infrastructure;
+- issues caused by browsers, operating systems, network conditions, regional restrictions, app store policies, or historical sync-data handling;
 - data loss, configuration corruption, business interruption, device issues, lost profits, or lost opportunities;
 - unauthorized access, malware, attacks, user misconfiguration, or third-party causes.
 

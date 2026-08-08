@@ -43,8 +43,8 @@ Lemon New Tab is a local-first, open-source browser extension with no additional
 **⚡ Fast and Easy to Use**  
 &emsp;&ensp;Continuously optimized for faster loading and lower resource usage, with responsive layouts and independent controls for performance and visual effects.
 
-**🔄 Easy Backup and Sync**  
-&emsp;&ensp;Import or export your settings, or use experimental cloud sync through your browser account. There is no separate account system, making setup and everyday use more convenient.
+**🔄 Easy Backup**
+&emsp;&ensp;Import or export extension settings to back up your current data or move it to another device.
 
 **⚛️ Built for Trust**  
 &emsp;&ensp;Lemon New Tab makes all of its source code available under the AGPL-3.0 license and does not actively collect or send private data. It supports Chrome, Edge, and Firefox, providing a consistent experience across browsers.

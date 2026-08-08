@@ -2,7 +2,6 @@
 import { ElCheckbox, ElLoading } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import DeleteForeverOutlined from '~icons/ic/outline-delete-forever'
-import CloudOffRound from '~icons/ic/round-cloud-off'
 import DownloadRound from '~icons/ic/round-download'
 import FileUploadRound from '~icons/ic/round-file-upload'
 
@@ -18,7 +17,6 @@ import {
 } from '@/shared/settings'
 import { clearExtensionData, reloadNewtabTabs } from '@/shared/settings/legacySettingsRecovery'
 import { idbClearMany } from '@/shared/storage/idb'
-import { useSyncDataStore } from '@/shared/sync'
 
 import {
   PermissionContext,
@@ -29,6 +27,7 @@ import {
   type CustomSearchEngineStorage,
   useCustomSearchEngineStore,
 } from '@newtab/shared/customSearchEngine'
+import { OPEN_SYNC_RETIREMENT } from '@newtab/shared/keys'
 import { wallpaperUrlCache } from '@newtab/shared/wallpaper'
 
 import SettingsSection from './SettingsSection.vue'
@@ -38,6 +37,7 @@ const { t, i18next } = useTranslation('settings')
 const settings = useSettingsStore()
 const quickLinks = useQuickLinksStore()
 const customSearchEngineStore = useCustomSearchEngineStore()
+const openSyncRetirement = inject(OPEN_SYNC_RETIREMENT, () => {})
 
 const { checkAndRequestPermission } = usePermission()
 
@@ -88,7 +88,7 @@ async function confirmClearExtensionData() {
             ElCheckbox,
             {
               modelValue: includeSync.value,
-              'onUpdate:modelValue': (value) => (includeSync.value = value === true),
+              'onUpdate:modelValue': (value: boolean) => (includeSync.value = value === true),
             },
             () => t('other.purge.confirm.data.includeSync'),
           ),
@@ -182,7 +182,6 @@ async function clearWallpaperData() {
 
 async function clearExtensionDataAndReload(includeSync: boolean) {
   await runClearAndReload(t('other.purge.confirm.data.purging'), async () => {
-    useSyncDataStore().deinit()
     await clearExtensionData({ includeSync })
   })
 }
@@ -191,13 +190,9 @@ async function clearIconCache() {
   await runClearAndReload(t('other.purge.confirm.icon.purging'), clearFaviconCache)
 }
 
-function sendSyncMessage() {
-  const syncStore = useSyncDataStore()
-  if (settings.sync.enabled) {
-    syncStore.init()
-  } else {
-    syncStore.deinit()
-  }
+function beforeSyncChange(): boolean {
+  openSyncRetirement()
+  return false
 }
 
 const fileInput = useTemplateRef('fileInput')
@@ -261,9 +256,7 @@ function handleFileChange(event: Event) {
       throw new Error(t('other.importExport.versionMismatch'))
     }
 
-    const originalSyncState = settings.$state.sync.enabled
-    const nextSyncEnabled = data.settings?.sync.enabled ?? originalSyncState
-    const syncStore = useSyncDataStore()
+    const ignoredEnabledSync = data.settings?.sync?.enabled === true
 
     if (data.settings) {
       data.settings.background.local = settings.$state.background.local
@@ -275,10 +268,9 @@ function handleFileChange(event: Event) {
       data.settings.background.bing = settings.$state.background.bing
       data.settings.background.online.url = settings.$state.background.online.url
 
-      settings.$patch(normalizeCurrentSettings(data.settings))
-      if (originalSyncState && !nextSyncEnabled) {
-        syncStore.deinit()
-      }
+      const importedSettings = normalizeCurrentSettings(data.settings)
+      importedSettings.sync.enabled = false
+      settings.$patch(importedSettings)
     }
 
     // quickLinks 部分
@@ -297,9 +289,7 @@ function handleFileChange(event: Event) {
       customSearchEngineStore.items.map((engine) => engine.id),
     )
 
-    if (!originalSyncState && nextSyncEnabled) {
-      await syncStore.init()
-    }
+    if (ignoredEnabledSync) ElMessage.info(t('other.syncRetirement.importIgnored'))
   })
 }
 
@@ -407,10 +397,9 @@ function changeLanguage(lang: string) {
         class="settings__item settings__item--horizontal settings__item--with-note settings-control-wide"
       >
         <div class="settings__label">{{ t('other.sync') }}</div>
-        <el-switch v-model="settings.sync.enabled" @change="sendSyncMessage" />
+        <el-switch :model-value="false" :before-change="beforeSyncChange" />
         <p class="settings__item-note">
           {{ t('other.syncWarning') }}
-          <cloud-off-round />
         </p>
       </div>
       <div class="settings__item settings__item--horizontal">

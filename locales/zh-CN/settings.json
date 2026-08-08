@@ -165,7 +165,7 @@
         "appearance": "颜色、阴影与尺寸",
         "behavior": "交互方式与打开行为",
         "danger": "不可逆操作，请谨慎使用",
-        "data": "同步、备份与缓存",
+        "data": "备份与缓存",
         "display": "可见内容与呈现方式",
         "effects": "逐项控制透明度和模糊",
         "general": "常用设置",
@@ -267,8 +267,25 @@
       "icon": "清除图标缓存",
       "wallpaper": "清除壁纸缓存"
     },
-    "sync": "云同步（实验性）",
-    "syncWarning": "云同步可能会导致本地设置被覆盖，且不能同步以下内容：背景图片、最常访问网站、深色模式状态等。不支持同步的项目后面会有如右侧的标识：",
+    "sync": "云同步（已停止支持）",
+    "syncRetirement": {
+      "acknowledge": "好的",
+      "clearFailedMessage": "旧的云端数据暂时没有删除成功。我们不会再上传或应用这些数据，下次启动时会再次提醒你。",
+      "clearFailedTitle": "未能删除云端数据",
+      "clearCloudData": "清理云端数据",
+      "clearSuccess": "旧的云端数据已清除",
+      "downloadCloudData": "下载云端数据",
+      "downloadFailed": "无法读取或下载云端数据，请稍后重试",
+      "downloadNote": "您可以下载当前的云端数据，但该文件无法被重新导入扩展。",
+      "downloadStarted": "云端数据文件已开始下载",
+      "importIgnored": "备份中的旧云同步选项已忽略，云同步仍保持关闭",
+      "message": "云同步有时可能用较旧的内容覆盖当前设置。为了保护你的数据，这项功能已被移除并自动关闭。当前设备上的设置不会受到影响。",
+      "noCloudData": "没有找到需要下载的云端数据",
+      "residualMessage": "检测到以前留下的云端数据。你可以删除它，本设备上的当前设置不会受到影响。",
+      "residualTitle": "发现旧的云端数据",
+      "title": "云同步已停止支持"
+    },
+    "syncWarning": "此功能已移除。点击开关可查看旧云端数据的处理说明。",
     "title": "其他"
   },
   "perf": {

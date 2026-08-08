@@ -77,13 +77,7 @@ export const main = async () => {
 
   app.mount('body')
 
-  void dataStoresInit
-    .then(() => {
-      if (settings.sync.enabled) {
-        void import('@/shared/sync').then(({ useSyncDataStore }) => useSyncDataStore().init())
-      }
-    })
-    .catch((error) => {
-      console.error('[newtab] Failed to initialize data stores:', error)
-    })
+  void dataStoresInit.catch((error) => {
+    console.error('[newtab] Failed to initialize data stores:', error)
+  })
 }
