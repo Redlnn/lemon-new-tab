@@ -2,6 +2,35 @@
 
 > Translated by AI from Chinese.
 
+## Unreleased
+
+### New Features✨
+
+- **Clock:** Added a date-size control.
+- **Wallpaper:** Added an option to show or hide the download button for online/Bing wallpapers.
+- **Page display:** Added double-clicking the blank background to toggle minimal mode.
+- **Page display:** Added an option to keep the clock and date visible while page elements fade when inactive.
+- **Search:** Added an option to disable search suggestions.
+- **Search:** Added an option to left-align search input text.
+- **Bookmarks:** When adding a bookmark to Quick Links, the current Quick Links group is selected by default.
+- **Settings:** Reorganized settings sections and appearance.
+
+### Improvements⚡️
+
+- **Search:** Added a shortcut from the search-engine menu in the search box to Search Preferences.
+- **Quick Links:** In grouped mode, changed the Top Sites context-menu label from “Pin” to “Add to Quick Links”.
+- Removed third-party favicon services to reduce extra third-party requests.
+- Clearing wallpaper or icon caches now reloads open new-tab pages and provides clearer failure hints and recovery.
+- Simplified some settings UI wording and reordered options.
+
+### Bug Fixes🐛
+
+- Fixed a failed local-wallpaper write potentially deleting the current wallpaper.
+- Fixed incomplete bookmark-search results caused by stale search caches.
+- Fixed Dock items jumping or appearing outside the first screen during initialization.
+- Fixed Quick Links icons occasionally showing stale icons or flickering when the URL changes.
+- Fixed incorrect clock and quote text colors in inverted-color mode.
+
 ## 3.5.0 (Aug 01, 2026)
 
 ### New Features✨
