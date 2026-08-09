@@ -1,6 +1,12 @@
-import { searchHistoriesStorage } from '@newtab/shared/storages/searchHistoriesStorage'
+import type { SearchHistoryEntryV1 } from '@/shared/webdavSync'
 
-const historiesRef: Ref<string[]> = shallowRef([])
+import {
+  getSearchHistoryData,
+  searchHistoriesStorage,
+} from '@newtab/shared/storages/searchHistoriesStorage'
+
+const entriesRef: Ref<SearchHistoryEntryV1[]> = shallowRef([])
+const histories = computed(() => entriesRef.value.map((entry) => entry.text))
 let loaded = false
 let loadingPromise: Promise<void> | null = null
 let activeConsumers = 0
@@ -8,8 +14,8 @@ let stopWatching: (() => void) | null = null
 let suppressNextWatch = false
 
 async function loadFromStorage() {
-  const list = await searchHistoriesStorage.getValue()
-  historiesRef.value = list
+  const data = await getSearchHistoryData()
+  entriesRef.value = data.items
 }
 
 async function ensureLoaded(force = false) {
@@ -53,10 +59,10 @@ function retainWatcher() {
   }
 }
 
-async function updateStorage(list: string[]) {
+async function updateStorage(items: SearchHistoryEntryV1[]) {
   suppressNextWatch = true
-  historiesRef.value = list
-  await searchHistoriesStorage.setValue(list)
+  entriesRef.value = items
+  await searchHistoriesStorage.setValue({ version: 1, items })
   loaded = true
 }
 
@@ -66,10 +72,17 @@ async function addHistory(text: string, limit = 15) {
   }
   await ensureLoaded()
 
-  const current = historiesRef.value
-  const next: string[] = [text]
+  const current = entriesRef.value
+  const existing = current.find((entry) => entry.text === text)
+  const next: SearchHistoryEntryV1[] = [
+    {
+      id: existing?.id ?? crypto.randomUUID(),
+      text,
+      createdAt: new Date().toISOString(),
+    },
+  ]
   for (let i = 0, len = current.length; i < len && next.length < limit; i++) {
-    if (current[i] !== text) {
+    if (current[i]?.text !== text) {
       next.push(current[i]!)
     }
   }
@@ -78,7 +91,7 @@ async function addHistory(text: string, limit = 15) {
 
 async function clearHistories() {
   await ensureLoaded()
-  if (historiesRef.value.length === 0) {
+  if (entriesRef.value.length === 0) {
     return
   }
   await updateStorage([])
@@ -92,7 +105,8 @@ export function useSearchHistoryCache() {
   }
 
   return {
-    histories: readonly(historiesRef),
+    histories: readonly(histories),
+    entries: readonly(entriesRef),
     ensureLoaded,
     addHistory,
     clearHistories,

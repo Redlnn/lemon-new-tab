@@ -10,6 +10,7 @@ import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   MAX_QUICK_LINK_GROUP_NAME_LENGTH,
   defaultQuickLinksData,
+  ensureQuickLinksStableIds,
   type QuickLink,
   type QuickLinkGroup,
   type QuickLinksData,
@@ -62,10 +63,14 @@ function hasQuickLinksData(data: QuickLinksData): boolean {
 
 function toStorageQuickLink(item: QuickLink): QuickLink {
   const quickLink: QuickLink = {
+    id: item.id ?? crypto.randomUUID(),
     url: item.url,
     title: item.title,
   }
-  if (item.favicon !== undefined) quickLink.favicon = item.favicon
+  if (item.favicon !== undefined) {
+    quickLink.favicon = item.favicon
+    if (item.faviconSource !== undefined) quickLink.faviconSource = item.faviconSource
+  }
   return quickLink
 }
 
@@ -79,8 +84,15 @@ function toStorageQuickLinkGroup(group: QuickLinkGroup): QuickLinkGroup {
 
 function isSameQuickLink(current: QuickLink, next: QuickLink): boolean {
   return (
-    current.url === next.url && current.title === next.title && current.favicon === next.favicon
+    current.url === next.url &&
+    current.title === next.title &&
+    current.favicon === next.favicon &&
+    current.faviconSource === next.faviconSource
   )
+}
+
+function withStableId(item: QuickLink, current?: QuickLink): QuickLink {
+  return { ...item, id: item.id ?? current?.id ?? crypto.randomUUID() }
 }
 
 export const useQuickLinksStore = defineStore('quickLinks', () => {
@@ -162,12 +174,13 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   }
 
   const applyItems = (nextItems: QuickLinksData['items'], nextGroups?: QuickLinkGroup[]) => {
-    const sanitizedGroups = sanitizeGroups(nextGroups)
+    const normalized = ensureQuickLinksStableIds({ items: nextItems, groups: nextGroups })
+    const sanitizedGroups = sanitizeGroups(normalized.value.groups)
     if (sanitizedGroups.length > 0) {
       groupState.value = sanitizedGroups
       flatItems.value = []
     } else {
-      flatItems.value = nextItems
+      flatItems.value = normalized.value.items
       groupState.value = []
     }
   }
@@ -325,19 +338,21 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   ) => {
     const group = getGroupForInsert(groupId)
     if (!group) return
-    group.items.push(quickLink)
+    group.items.push(withStableId(quickLink))
     await save(undefined, options)
   }
 
   const addFlatQuickLink = async (quickLink: QuickLink) => {
-    flatItems.value.push(quickLink)
+    flatItems.value.push(withStableId(quickLink))
     await save(undefined, { groupingEnabled: false })
   }
 
   const updateFlatQuickLink = async (index: number, quickLink: QuickLink) => {
     const current = flatItems.value[index]
-    if (!current || isSameQuickLink(current, quickLink)) return false
-    flatItems.value.splice(index, 1, quickLink)
+    if (!current) return false
+    const next = withStableId(quickLink, current)
+    if (isSameQuickLink(current, next)) return false
+    flatItems.value.splice(index, 1, next)
     await save(undefined, { groupingEnabled: false })
     return true
   }
@@ -352,8 +367,10 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   const updateQuickLinkInGroup = async (groupId: string, index: number, quickLink: QuickLink) => {
     const group = getGroup(groupId)
     const current = group?.items[index]
-    if (!current || isSameQuickLink(current, quickLink)) return
-    group.items.splice(index, 1, quickLink)
+    if (!current) return
+    const next = withStableId(quickLink, current)
+    if (isSameQuickLink(current, next)) return
+    group.items.splice(index, 1, next)
     await save()
   }
 
@@ -421,7 +438,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     }
 
     const nextItems = flatItems.value.slice()
-    nextItems.splice(insertIndex, 0, quickLink)
+    nextItems.splice(insertIndex, 0, withStableId(quickLink))
     flatItems.value = nextItems
     await save()
     return true
@@ -451,7 +468,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
       })
     }
 
-    toGroup.items.splice(insertIndex, 0, quickLink)
+    toGroup.items.splice(insertIndex, 0, withStableId(quickLink))
     await save()
     return true
   }

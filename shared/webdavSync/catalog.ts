@@ -1,0 +1,264 @@
+import type {
+  SearchHistoryEntryV1,
+  SyncAvailability,
+  SyncBlockedTopSitesV1,
+  SyncCustomSearchEngineDataV1,
+  SyncQuickLinksDataV1,
+  SyncScopePreferences,
+  SyncSnapshotV1,
+} from './types.ts'
+
+export const MAX_SYNC_WALLPAPER_BYTES = 20 * 1024 * 1024
+
+export type SyncCatalogKey =
+  | 'settings'
+  | 'quickLinks'
+  | 'customSearchEngines'
+  | 'ui.language'
+  | 'ui.colorMode'
+  | 'searchHistory'
+  | 'blockedTopSites'
+  | 'onlineWallpaperUrl'
+  | 'quickLinkIcons'
+  | 'wallpaper.light'
+  | 'wallpaper.dark'
+  | 'faviconCache'
+  | 'bookmarks'
+  | 'onlineWallpaperCache'
+  | 'permission.monet'
+  | 'permission.favicon'
+  | 'permission.wallpaper'
+
+export interface CapturableQuickLink {
+  id?: string
+  url: string
+  title: string
+  favicon?: string
+  faviconSource?: 'automatic' | 'user-selected'
+}
+
+export interface CapturableQuickLinkGroup {
+  id: string
+  name: string
+  items: CapturableQuickLink[]
+}
+
+export interface CaptureContext {
+  settings: unknown
+  quickLinks: {
+    items: CapturableQuickLink[]
+    groups?: CapturableQuickLinkGroup[]
+  }
+  customSearchEngines: {
+    items: Array<{ id: string; name: string; url: string; icon?: string }>
+  }
+  ui: SyncSnapshotV1['ui']
+  scope: SyncScopePreferences
+  searchHistory?: SearchHistoryEntryV1[]
+  blockedTopSites?: string[]
+}
+
+export interface WallpaperAvailabilityContext {
+  failed?: boolean
+  mediaType?: 'image' | 'video'
+  selected: boolean
+  size?: number
+}
+
+export interface AvailabilityContext {
+  scope: SyncScopePreferences
+  pendingPermissions?: ReadonlySet<'favicon' | 'monet' | 'wallpaper'>
+  wallpapers?: {
+    light?: WallpaperAvailabilityContext
+    dark?: WallpaperAvailabilityContext
+  }
+}
+
+export interface SyncCatalogEntry {
+  key: SyncCatalogKey
+  defaultIncluded: boolean
+  availability: (context: AvailabilityContext) => SyncAvailability
+}
+
+const included = (): SyncAvailability => ({ state: 'included' })
+const excludedByDesign = (reasonKey: string): SyncAvailability => ({
+  state: 'excluded-by-design',
+  reasonKey,
+})
+const excludedByUser = (reasonKey: string): SyncAvailability => ({
+  state: 'excluded-by-user',
+  reasonKey,
+})
+
+function wallpaperAvailability(
+  variant: 'dark' | 'light',
+  context: AvailabilityContext,
+): SyncAvailability {
+  const wallpaper = context.wallpapers?.[variant]
+  if (wallpaper?.mediaType === 'video') {
+    return { state: 'unsupported-resource', reasonKey: 'sync.availability.wallpaperVideo' }
+  }
+  if (!context.scope.wallpapers || !wallpaper?.selected) {
+    return excludedByUser('sync.availability.wallpaperScopeDisabled')
+  }
+  if ((wallpaper.size ?? 0) > MAX_SYNC_WALLPAPER_BYTES) {
+    return { state: 'too-large', reasonKey: 'sync.availability.wallpaperTooLarge' }
+  }
+  if (wallpaper.failed) {
+    return { state: 'failed', reasonKey: 'sync.availability.wallpaperFailed' }
+  }
+  return included()
+}
+
+function permissionAvailability(
+  permission: 'favicon' | 'monet' | 'wallpaper',
+  context: AvailabilityContext,
+): SyncAvailability {
+  return context.pendingPermissions?.has(permission)
+    ? { state: 'pending-permission', reasonKey: 'sync.availability.pendingPermission' }
+    : included()
+}
+
+export const syncCatalog: readonly SyncCatalogEntry[] = [
+  { key: 'settings', defaultIncluded: true, availability: included },
+  { key: 'quickLinks', defaultIncluded: true, availability: included },
+  { key: 'customSearchEngines', defaultIncluded: true, availability: included },
+  { key: 'ui.language', defaultIncluded: true, availability: included },
+  { key: 'ui.colorMode', defaultIncluded: true, availability: included },
+  {
+    key: 'searchHistory',
+    defaultIncluded: false,
+    availability: (context) =>
+      context.scope.searchHistory
+        ? included()
+        : excludedByUser('sync.availability.searchHistoryScopeDisabled'),
+  },
+  {
+    key: 'blockedTopSites',
+    defaultIncluded: false,
+    availability: (context) =>
+      context.scope.blockedTopSites
+        ? included()
+        : excludedByUser('sync.availability.blockedTopSitesScopeDisabled'),
+  },
+  {
+    key: 'onlineWallpaperUrl',
+    defaultIncluded: true,
+    availability: (context) =>
+      context.scope.onlineWallpaperUrl
+        ? included()
+        : excludedByUser('sync.availability.onlineWallpaperUrlScopeDisabled'),
+  },
+  {
+    key: 'quickLinkIcons',
+    defaultIncluded: true,
+    availability: (context) =>
+      context.scope.quickLinkIcons
+        ? included()
+        : excludedByUser('sync.availability.quickLinkIconsScopeDisabled'),
+  },
+  {
+    key: 'wallpaper.light',
+    defaultIncluded: false,
+    availability: (context) => wallpaperAvailability('light', context),
+  },
+  {
+    key: 'wallpaper.dark',
+    defaultIncluded: false,
+    availability: (context) => wallpaperAvailability('dark', context),
+  },
+  {
+    key: 'faviconCache',
+    defaultIncluded: false,
+    availability: () => excludedByDesign('sync.availability.faviconCacheLocal'),
+  },
+  {
+    key: 'bookmarks',
+    defaultIncluded: false,
+    availability: () => excludedByDesign('sync.availability.bookmarksBrowserManaged'),
+  },
+  {
+    key: 'onlineWallpaperCache',
+    defaultIncluded: false,
+    availability: () => excludedByDesign('sync.availability.onlineWallpaperCacheLocal'),
+  },
+  {
+    key: 'permission.monet',
+    defaultIncluded: true,
+    availability: (context) => permissionAvailability('monet', context),
+  },
+  {
+    key: 'permission.favicon',
+    defaultIncluded: true,
+    availability: (context) => permissionAvailability('favicon', context),
+  },
+  {
+    key: 'permission.wallpaper',
+    defaultIncluded: true,
+    availability: (context) => permissionAvailability('wallpaper', context),
+  },
+] as const
+
+export function getSyncAvailability(
+  key: SyncCatalogKey,
+  context: AvailabilityContext,
+): SyncAvailability {
+  const entry = syncCatalog.find((candidate) => candidate.key === key)
+  if (!entry) throw new Error(`Unknown sync catalog key: ${key}`)
+  return entry.availability(context)
+}
+
+export function toSyncQuickLinks(
+  data: CaptureContext['quickLinks'],
+  includeUserSelectedIcons: boolean,
+): SyncQuickLinksDataV1 {
+  const groups = data.groups?.length ? data.groups : []
+  const sourceItems = groups.length ? groups.flatMap((group) => group.items) : data.items
+  const items = new Map<string, CapturableQuickLink & { id: string }>()
+
+  for (const item of sourceItems) {
+    if (!item.id) throw new Error('Quick Link is missing its stable ID')
+    if (items.has(item.id)) throw new Error(`Duplicate Quick Link ID: ${item.id}`)
+    items.set(item.id, { ...item, id: item.id })
+  }
+
+  return {
+    items: [...items.values()].map((item) => ({
+      id: item.id,
+      url: item.url,
+      title: item.title,
+      ...(includeUserSelectedIcons && item.faviconSource === 'user-selected' && item.favicon
+        ? { favicon: item.favicon }
+        : {}),
+    })),
+    rootOrder: groups.length ? [] : data.items.map((item) => item.id!),
+    groups: groups.map((group) => ({
+      id: group.id,
+      name: group.name,
+      itemIds: group.items.map((item) => item.id!),
+    })),
+    groupOrder: groups.map((group) => group.id),
+  }
+}
+
+export function toSyncCustomSearchEngines(
+  data: CaptureContext['customSearchEngines'],
+): SyncCustomSearchEngineDataV1 {
+  return {
+    items: data.items.map((item) => ({ ...item })),
+    order: data.items.map((item) => item.id),
+  }
+}
+
+export function toSyncBlockedTopSites(urls: readonly string[]): SyncBlockedTopSitesV1 {
+  const normalized = new Set<string>()
+  for (const value of urls) {
+    try {
+      const url = new URL(value)
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') continue
+      url.hash = ''
+      normalized.add(url.toString())
+    } catch {}
+  }
+  return { urls: [...normalized].sort() }
+}

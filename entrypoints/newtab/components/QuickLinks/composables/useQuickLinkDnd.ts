@@ -330,6 +330,7 @@ export function getQuickLinkFromDndData(
     url: source.url,
     title: source.title,
     favicon: source.favicon,
+    faviconSource: source.origin === 'top-sites' && source.favicon ? 'automatic' : undefined,
   }
 }
 

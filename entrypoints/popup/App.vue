@@ -150,6 +150,7 @@ async function addCurrentPage() {
     // 此处若获取到图标则同时把缓存的base64结果存储到quickLinksStore
     // 后续QuickLinkItem组件优先使用该字段，避免每次都调用getFaviconURL函数获取图标
     favicon: finalFavicon ?? undefined,
+    faviconSource: finalFavicon ? ('automatic' as const) : undefined,
   }
 
   if (groupingEnabled.value) {

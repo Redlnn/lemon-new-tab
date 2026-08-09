@@ -37,6 +37,10 @@ interface LemonDBSchema extends DBSchema {
     key: string
     value: CachedImage
   }
+  webdavSync: {
+    key: string
+    value: unknown
+  }
 }
 
 const DB_NAME = '柠檬起始页'
@@ -47,6 +51,7 @@ const REQUIRED_STORES: readonly StoreName[] = [
   'wallpaperBing',
   'wallpaperDark',
   'onlineWallpaperCache',
+  'webdavSync',
 ]
 
 let dbPromise: Promise<import('idb').IDBPDatabase<LemonDBSchema>> | null = null
@@ -98,6 +103,7 @@ export type StoreName =
   | 'wallpaperBing'
   | 'wallpaperDark'
   | 'onlineWallpaperCache'
+  | 'webdavSync'
 
 /** 获取指定 store 中某个 key 的值 */
 export async function idbGet<S extends StoreName>(
