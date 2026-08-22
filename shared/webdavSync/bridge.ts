@@ -5,6 +5,7 @@ import type {
   SyncConflict,
   SyncConflictResolution,
 } from './types.ts'
+import type { SyncConflictDisplayContext } from './conflictPresentation.ts'
 import type {
   BrowserWebDavSetupInput,
   BrowserWebDavSetupPreview,
@@ -27,6 +28,7 @@ export interface BrowserSyncConflictDetails {
     deviceName: string
     modifiedAt: string
   }>
+  context: SyncConflictDisplayContext
 }
 
 export type WebDavSyncMessage =

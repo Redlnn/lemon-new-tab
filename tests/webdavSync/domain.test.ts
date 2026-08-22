@@ -36,7 +36,12 @@ import {
   validateSyncRevision,
   unlockVaultEncryption,
 } from '../../shared/webdavSync/index.ts'
+import {
+  createSyncConflictDisplayContext,
+  presentSyncConflict,
+} from '../../shared/webdavSync/conflictPresentation.ts'
 import type {
+  SyncConflict,
   SyncRevisionV1,
   SyncScopePreferences,
   SyncSnapshotV1,
@@ -135,6 +140,61 @@ test('history comparison lists changed fields and stable entities without choosi
   assert.ok(result.differences.some((item) => item.path === 'quickLinks.items.link-a.title'))
   assert.ok(result.differences.some((item) => item.path === 'quickLinks.items.link-b'))
   assert.ok(result.differences.some((item) => item.path === 'quickLinks.rootOrder'))
+})
+
+test('conflict presentation hides entity IDs and reuses settings labels', () => {
+  const local = snapshot()
+  local.quickLinks!.items[0] = {
+    id: 'internal-link-id',
+    title: 'Lemon Docs',
+    url: 'https://docs.example.com/start?token=secret',
+    faviconHash: 'internal-icon-hash',
+  }
+  const context = createSyncConflictDisplayContext([local])
+  const translated: string[] = []
+  const t = (key: string, options?: Record<string, unknown>) => {
+    translated.push(key)
+    return options?.name ? `${key}:${options.name}` : key
+  }
+  const quickLinkConflict: SyncConflict = {
+    id: 'quick-link-conflict',
+    category: 'quick-links',
+    kind: 'simultaneous-create',
+    path: 'quickLinks.items.internal-link-id',
+    local: local.quickLinks!.items[0]!,
+    remote: {
+      id: 'internal-link-id',
+      title: 'Remote Docs',
+      url: 'https://remote.example.com/',
+      faviconHash: 'another-internal-icon-hash',
+    },
+    canKeepBoth: true,
+  }
+
+  const quickLink = presentSyncConflict(quickLinkConflict, context, t)
+  assert.match(quickLink.title, /Lemon Docs/)
+  assert.match(quickLink.local, /Lemon Docs.*docs\.example\.com\/start/)
+  assert.doesNotMatch(quickLink.local, /internal-link-id|internal-icon-hash|token/)
+
+  const linkUrl = presentSyncConflict({
+    ...quickLinkConflict,
+    path: 'quickLinks.items.internal-link-id.url',
+    local: 'https://docs.example.com/start?token=secret',
+    remote: 'https://remote.example.com/start?token=other',
+  }, context, t)
+  assert.doesNotMatch(linkUrl.local, /token|secret/)
+
+  presentSyncConflict({
+    id: 'setting-conflict',
+    category: 'settings',
+    kind: 'field',
+    path: 'settings.theme.primaryColor',
+    base: '#f5b800',
+    local: '#1677ff',
+    remote: '#722ed1',
+    canKeepBoth: false,
+  }, context, t)
+  assert.ok(translated.includes('theme.primaryColor'))
 })
 
 test('settings capture removes device-only and cache fields', () => {

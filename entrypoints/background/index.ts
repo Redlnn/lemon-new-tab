@@ -2,6 +2,7 @@ import { defineBackground } from '#imports'
 import { browser } from 'wxt/browser'
 
 import { isWebDavSyncMessage } from '@/shared/webdavSync/bridge'
+import { createSyncConflictDisplayContext } from '@/shared/webdavSync/conflictPresentation'
 import { SyncCoordinator } from '@/shared/webdavSync/coordinator'
 import {
   getStoredConflict,
@@ -112,6 +113,7 @@ export default defineBackground(() => {
         conflicts: stored.conflicts,
         remoteRevisionIds: stored.remoteRevisionIds,
         remoteVersions: stored.remoteVersions ?? [],
+        context: createSyncConflictDisplayContext([stored.base, stored.local, stored.remote]),
       }
     }
     if (message.type === 'webdav-sync:list-history') {

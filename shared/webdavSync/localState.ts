@@ -96,6 +96,8 @@ export interface PendingApplyV1 {
     | 'optional'
   snapshot: SyncSnapshotV1
   scope: SyncScopePreferences
+  /** 已先于设置写入的主题偏好，避免恢复时重复触发主题切换。 */
+  uiPreferencesApplied?: true
   wallpapers?: Partial<Record<'dark' | 'light', PendingWallpaperApplyV1>>
 }
 

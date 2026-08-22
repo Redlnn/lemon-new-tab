@@ -32,10 +32,16 @@ import type {
 } from '@/shared/webdavSync/browserEngine'
 import type { BrowserCorruptionInspection } from '@/shared/webdavSync/browserManagement'
 import type {
+  JsonValue,
   LocalSyncStateV1,
   SyncConflict,
   SyncConflictResolution,
 } from '@/shared/webdavSync/types'
+import {
+  createSyncConflictDisplayContext,
+  displaySyncDifference,
+  presentSyncConflict,
+} from '@/shared/webdavSync/conflictPresentation'
 
 type DialogMode = 'conflict' | 'devices' | 'disconnect' | 'encryption' | 'history' | 'remote-deleted' | 'repair' | null
 
@@ -46,6 +52,7 @@ const { t } = useTranslation('settings')
 
 const loading = ref(false)
 const conflicts = shallowRef<SyncConflict[]>([])
+const conflictDisplayContext = shallowRef(createSyncConflictDisplayContext([]))
 const remoteVersions = ref<Array<{ revisionId: string; deviceName: string; modifiedAt: string }>>([])
 const resolutions = reactive<Record<string, SyncConflictResolution['choice']>>({})
 const history = ref<BrowserSyncHistoryEntry[]>([])
@@ -80,10 +87,12 @@ const remoteDeletedVisible = dialogVisible('remote-deleted')
 const repairVisible = dialogVisible('repair')
 const disconnectVisible = dialogVisible('disconnect')
 
-function readable(value: unknown) {
-  if (value === undefined) return t('webdavSync.conflicts.deleted')
-  if (typeof value === 'string') return value
-  return JSON.stringify(value, null, 2)
+function displayConflict(conflict: SyncConflict) {
+  return presentSyncConflict(conflict, conflictDisplayContext.value, t)
+}
+
+function displayDifference(difference: { category: SyncConflict['category']; path: string; value?: JsonValue }) {
+  return displaySyncDifference(difference, conflictDisplayContext.value, t)
 }
 
 function formatDate(value: string) {
@@ -101,6 +110,7 @@ async function loadConflicts() {
   try {
     const details = await getSyncConflict()
     conflicts.value = details?.conflicts ?? []
+    conflictDisplayContext.value = details?.context ?? createSyncConflictDisplayContext([])
     remoteVersions.value = details?.remoteVersions ?? []
     for (const key of Object.keys(resolutions)) delete resolutions[key]
   } catch (error) {
@@ -333,11 +343,11 @@ watch(
     </div>
     <div v-loading="loading" class="conflict-list">
       <article v-for="conflict in conflicts" :key="conflict.id" class="conflict-item">
-        <header><el-tag size="small" effect="plain">{{ t(`webdavSync.conflicts.categories.${conflict.category}`) }}</el-tag><strong>{{ conflict.path }}</strong></header>
-        <div class="conflict-base"><span>{{ t('webdavSync.conflicts.base') }}</span><code>{{ readable(conflict.base) }}</code></div>
+        <header><el-tag size="small" effect="plain">{{ t(`webdavSync.conflicts.categories.${conflict.category}`) }}</el-tag><strong>{{ displayConflict(conflict).title }}</strong></header>
+        <div class="conflict-base"><span>{{ t('webdavSync.conflicts.base') }}</span><span class="conflict-value">{{ displayConflict(conflict).base }}</span></div>
         <el-radio-group v-model="resolutions[conflict.id]" class="conflict-options">
-          <el-radio value="local" border><computer-round /> {{ t('webdavSync.conflicts.local', { device: state.deviceName }) }}<small>{{ readable(conflict.local) }}</small></el-radio>
-          <el-radio value="remote" border><storage-round /> {{ t('webdavSync.conflicts.remote') }}<small>{{ readable(conflict.remote) }}</small></el-radio>
+          <el-radio value="local" border><computer-round /> {{ t('webdavSync.conflicts.local', { device: state.deviceName }) }}<small>{{ displayConflict(conflict).local }}</small></el-radio>
+          <el-radio value="remote" border><storage-round /> {{ t('webdavSync.conflicts.remote') }}<small>{{ displayConflict(conflict).remote }}</small></el-radio>
           <el-radio v-if="conflict.canKeepBoth" value="both" border><call-merge-round /> {{ t('webdavSync.conflicts.both') }}<small>{{ t('webdavSync.conflicts.bothNote') }}</small></el-radio>
         </el-radio-group>
       </article>
@@ -352,9 +362,9 @@ watch(
         <el-alert v-if="historyPreview.wallpaperUnavailable.length" type="warning" :closable="false" show-icon :title="t('webdavSync.history.wallpaperMissing')" />
         <div class="history-diff-list">
           <article v-for="difference in historyPreview.differences" :key="`${difference.category}:${difference.path}`">
-            <header><el-tag size="small" effect="plain">{{ t(`webdavSync.conflicts.categories.${difference.category}`) }}</el-tag><strong>{{ difference.path }}</strong></header>
-            <div><span>{{ t('webdavSync.history.current') }}</span><code>{{ readable(difference.current) }}</code></div>
-            <div><span>{{ t('webdavSync.history.target') }}</span><code>{{ readable(difference.target) }}</code></div>
+            <header><el-tag size="small" effect="plain">{{ t(`webdavSync.conflicts.categories.${difference.category}`) }}</el-tag><strong>{{ displayDifference({ ...difference, value: difference.current }).title }}</strong></header>
+            <div><span>{{ t('webdavSync.history.current') }}</span><span class="conflict-value">{{ displayDifference({ ...difference, value: difference.current }).value }}</span></div>
+            <div><span>{{ t('webdavSync.history.target') }}</span><span class="conflict-value">{{ displayDifference({ ...difference, value: difference.target }).value }}</span></div>
           </article>
           <el-empty v-if="historyPreview.differences.length === 0" :description="t('webdavSync.history.noDifferences')" />
         </div>
@@ -445,14 +455,9 @@ watch(
     align-items: flex-start;
   }
 
-  span {
+  > div > span:first-child {
     flex: 0 0 70px;
     color: var(--el-text-color-secondary);
-  }
-
-  code {
-    overflow-wrap: anywhere;
-    white-space: pre-wrap;
   }
 }
 
@@ -482,6 +487,16 @@ watch(
   display: flex;
   gap: 8px;
   align-items: center;
+
+  strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.conflict-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .conflict-base {
@@ -490,10 +505,6 @@ watch(
   gap: 8px;
   margin: 10px 0;
 
-  code {
-    overflow-wrap: anywhere;
-    white-space: pre-wrap;
-  }
 }
 
 .conflict-options {
@@ -509,12 +520,9 @@ watch(
 
   small {
     display: block;
-    max-width: 620px;
     margin-top: 3px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     color: var(--el-text-color-secondary);
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 }
 

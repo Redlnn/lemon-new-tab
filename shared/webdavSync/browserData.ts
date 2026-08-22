@@ -232,6 +232,13 @@ async function continueApply(
     await setPendingApply(pending)
   }
   if (pending.phase === 'wallpapers') {
+    // 本地壁纸会跟随页面当前的深浅色状态选择。先切换主题偏好，再写入壁纸 ID，
+    // 避免旧主题在两个存储写入之间抢先解析到错误的壁纸变体。
+    if (scope.uiPreferences && pending.snapshot.ui && !pending.uiPreferencesApplied) {
+      await patchUiPreferences(pending.snapshot.ui)
+      pending = { ...pending, uiPreferencesApplied: true }
+      await setPendingApply(pending)
+    }
     if (scope.settings || scope.onlineWallpaperUrl || scope.wallpapers) {
       await writeSettings(pending.snapshot, scope)
     }
@@ -239,6 +246,12 @@ async function continueApply(
     await setPendingApply(pending)
   }
   if (pending.phase === 'settings') {
+    // 兼容升级前已写入设置、但尚未写入主题偏好的断点恢复。
+    if (scope.uiPreferences && pending.snapshot.ui && !pending.uiPreferencesApplied) {
+      await patchUiPreferences(pending.snapshot.ui)
+      pending = { ...pending, uiPreferencesApplied: true }
+      await setPendingApply(pending)
+    }
     if (scope.quickLinks) await writeQuickLinks(pending.snapshot, scope)
     pending = { ...pending, phase: 'quick-links' }
     await setPendingApply(pending)
@@ -262,7 +275,9 @@ async function continueApply(
     await setPendingApply(pending)
   }
   if (pending.phase === 'search-engines') {
-    if (scope.uiPreferences && pending.snapshot.ui) await patchUiPreferences(pending.snapshot.ui)
+    if (scope.uiPreferences && pending.snapshot.ui && !pending.uiPreferencesApplied) {
+      await patchUiPreferences(pending.snapshot.ui)
+    }
     pending = { ...pending, phase: 'ui' }
     await setPendingApply(pending)
   }
