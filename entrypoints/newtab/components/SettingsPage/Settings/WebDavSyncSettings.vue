@@ -21,7 +21,7 @@ import { useWebDavSyncState } from '../composables/useWebDavSyncState'
 
 import SettingsSection from './SettingsSection.vue'
 
-type DialogMode = 'conflict' | 'devices' | 'disconnect' | 'encryption' | 'history' | 'repair' | null
+type DialogMode = 'conflict' | 'devices' | 'disconnect' | 'encryption' | 'history' | 'remote-deleted' | 'repair' | null
 
 const SetupDialog = defineAsyncComponent(() => import('../components/WebDavSetupDialog.vue'))
 const ManagementDialogs = defineAsyncComponent(
@@ -146,6 +146,7 @@ function openPauseAction() {
   if (reason === 'conflict') dialogMode.value = 'conflict'
   else if (reason === 'corrupted-remote') dialogMode.value = 'repair'
   else if (reason === 'encryption-password') dialogMode.value = 'encryption'
+  else if (reason === 'remote-deleted') dialogMode.value = 'remote-deleted'
   else if (reason === 'storage-full') dialogMode.value = 'repair'
   else dialogMode.value = 'disconnect'
 }

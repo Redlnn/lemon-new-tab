@@ -66,6 +66,7 @@ import type {
 import { validateSyncRevision } from './validation.ts'
 import {
   probeWebDavAccess,
+  requireConfiguredVaultInspection,
   WebDavClient,
   WebDavError,
   type WebDavConnection,
@@ -235,7 +236,7 @@ export async function finalizeSnapshot(input: {
         : input.snapshot.scope,
     )
     if (!jsonEquals(applied, input.snapshot)) {
-      throw new WebDavError('corrupted', 'Applied local snapshot did not pass verification')
+      throw new WebDavError('precondition', 'Applied local snapshot did not pass verification')
     }
   }
 
@@ -717,7 +718,7 @@ async function runSynchronizationOnce(): Promise<void> {
   }
   if (revisions.length === 0) {
     if (initialState.baseRevisionId || (await getBaseline())) {
-      throw new WebDavError('corrupted', 'WebDAV vault has no committed revision')
+      throw new WebDavError('not-found', 'WebDAV vault no longer has a committed revision')
     }
     const capture = await captureBrowserSyncSnapshotResult(initialState.scope)
     await patchSyncState({ resourceOmissions: capture.resourceOmissions })
@@ -922,10 +923,10 @@ export async function unlockBrowserEncryption(password: string): Promise<LocalSy
     throw new WebDavError('authentication', 'WebDAV connection is not configured')
   }
   const repository = new WebDavVaultRepository(createClient(config, webDavPassword), config.directory)
-  const inspection = await repository.inspect()
-  if (inspection.state !== 'ready' || inspection.metadata.vaultId !== state.vaultId) {
-    throw new WebDavError('foreign-vault', 'Configured WebDAV vault identity changed')
-  }
+  const inspection = requireConfiguredVaultInspection(
+    await repository.inspect(),
+    { vaultId: state.vaultId },
+  )
   const metadata = inspection.metadata
   if (!metadata.encrypted || !metadata.encryption) {
     throw new WebDavError('invalid-response', 'WebDAV vault is not encrypted')
@@ -1377,14 +1378,10 @@ export async function resolveBrowserSyncConflict(
     throw new WebDavError('precondition', 'Local data changed while resolving the conflict')
   }
   const repository = new WebDavVaultRepository(createClient(config, webDavPassword), config.directory)
-  const inspection = await repository.inspect()
-  if (
-    inspection.state !== 'ready' ||
-    inspection.metadata.vaultId !== state.vaultId ||
-    inspection.metadata.generationId !== state.generationId
-  ) {
-    throw new WebDavError('foreign-vault', 'Configured WebDAV vault identity changed')
-  }
+  const inspection = requireConfiguredVaultInspection(
+    await repository.inspect(),
+    { generationId: state.generationId, vaultId: state.vaultId },
+  )
   const metadata = inspection.metadata
   const encryptionKey = metadata.encrypted
     ? await getStoredEncryptionKey(metadata.vaultId, metadata.generationId)
@@ -1522,14 +1519,10 @@ export async function openConfiguredVault(readAllRevisions = true): Promise<{
     throw new WebDavError('authentication', 'WebDAV connection is not configured')
   }
   const repository = new WebDavVaultRepository(createClient(config, webDavPassword), config.directory)
-  const inspection = await repository.inspect()
-  if (
-    inspection.state !== 'ready' ||
-    inspection.metadata.vaultId !== state.vaultId ||
-    inspection.metadata.generationId !== state.generationId
-  ) {
-    throw new WebDavError('foreign-vault', 'Configured WebDAV vault identity changed')
-  }
+  const inspection = requireConfiguredVaultInspection(
+    await repository.inspect(),
+    { generationId: state.generationId, vaultId: state.vaultId },
+  )
   const metadata = inspection.metadata
   const encryptionKey = metadata.encrypted
     ? await getStoredEncryptionKey(metadata.vaultId, metadata.generationId)

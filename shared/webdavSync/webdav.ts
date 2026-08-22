@@ -125,6 +125,24 @@ export type WebDavVaultInspection =
   | { state: 'foreign' }
   | { state: 'ready'; metadata: VaultMetadataV1 }
 
+/** 将“库已删除”与“连接到了另一个库”保留为两个可恢复的状态。 */
+export function requireConfiguredVaultInspection(
+  inspection: WebDavVaultInspection,
+  expected: Partial<Pick<VaultMetadataV1, 'generationId' | 'vaultId'>>,
+): Extract<WebDavVaultInspection, { state: 'ready' }> {
+  if (inspection.state === 'missing' || inspection.state === 'empty') {
+    throw new WebDavError('not-found', 'Configured WebDAV vault was deleted')
+  }
+  if (
+    inspection.state !== 'ready' ||
+    (expected.vaultId && inspection.metadata.vaultId !== expected.vaultId) ||
+    (expected.generationId && inspection.metadata.generationId !== expected.generationId)
+  ) {
+    throw new WebDavError('foreign-vault', 'Configured WebDAV vault identity changed')
+  }
+  return inspection
+}
+
 function isPrivateIpv4(hostname: string): boolean {
   const values = hostname.split('.').map(Number)
   if (values.length !== 4 || values.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) {

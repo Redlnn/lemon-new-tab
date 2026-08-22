@@ -627,6 +627,11 @@
       "wallpaperDescription": "超限或不支持的图片会被跳过。请关闭对应范围或选择更小的图片；扩展不会修改原图。",
       "wallpaperTitle": "部分图片未同步"
     },
+    "remoteDeleted": {
+      "action": "清除本机连接",
+      "description": "该设备连接的云端同步库已被删除。清除本机连接后可重新配置同步，不会访问或删除云端文件。",
+      "title": "云端同步库已删除"
+    },
     "resolve": "处理问题",
     "omissions": {
       "aggregate-too-large": "所选图标总大小超过 8 MB",

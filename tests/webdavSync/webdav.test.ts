@@ -16,6 +16,7 @@ import {
   hashCanonicalJson,
   parseWebDavMultiStatus,
   probeWebDavAccess,
+  requireConfiguredVaultInspection,
   serializeWebDavError,
   type SyncRevisionV1,
   type VaultMetadataV1,
@@ -226,6 +227,25 @@ test('address classification produces an exact origin permission and requires ex
     (error: unknown) => error instanceof WebDavError && error.category === 'insecure-http',
   )
   assert.throws(() => classifyWebDavAddress('https://user:secret@dav.example/dav'))
+})
+
+test('a deleted configured vault stays a not-found condition instead of an identity mismatch', () => {
+  assert.throws(
+    () => requireConfiguredVaultInspection({ state: 'missing' }, metadata()),
+    (error: unknown) => error instanceof WebDavError && error.category === 'not-found',
+  )
+  assert.throws(
+    () => requireConfiguredVaultInspection({ state: 'empty' }, metadata()),
+    (error: unknown) => error instanceof WebDavError && error.category === 'not-found',
+  )
+  assert.throws(
+    () => requireConfiguredVaultInspection({ state: 'foreign' }, metadata()),
+    (error: unknown) => error instanceof WebDavError && error.category === 'foreign-vault',
+  )
+  assert.equal(
+    requireConfiguredVaultInspection({ state: 'ready', metadata: metadata() }, metadata()).metadata.vaultId,
+    metadata().vaultId,
+  )
 })
 
 test('WebDAV client preserves the global fetch receiver in a service worker', async () => {

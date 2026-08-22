@@ -37,7 +37,7 @@ import type {
   SyncConflictResolution,
 } from '@/shared/webdavSync/types'
 
-type DialogMode = 'conflict' | 'devices' | 'disconnect' | 'encryption' | 'history' | 'repair' | null
+type DialogMode = 'conflict' | 'devices' | 'disconnect' | 'encryption' | 'history' | 'remote-deleted' | 'repair' | null
 
 const props = defineProps<{ state: LocalSyncStateV1 }>()
 const emit = defineEmits<{ updated: [] }>()
@@ -76,6 +76,7 @@ const conflictVisible = dialogVisible('conflict')
 const historyVisible = dialogVisible('history')
 const devicesVisible = dialogVisible('devices')
 const encryptionVisible = dialogVisible('encryption')
+const remoteDeletedVisible = dialogVisible('remote-deleted')
 const repairVisible = dialogVisible('repair')
 const disconnectVisible = dialogVisible('disconnect')
 
@@ -288,6 +289,20 @@ async function disconnect(deleteRemote: boolean) {
   }
 }
 
+async function clearDeletedConnection() {
+  loading.value = true
+  try {
+    await disconnectSyncConnection(false)
+    ElMessage.success(t('webdavSync.disconnect.disconnected'))
+    remoteDeletedVisible.value = false
+    emit('updated')
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
 async function loadDisconnectImpact() {
   deleteConfirmation.value = ''
   await Promise.all([loadDevices(), loadHistory()])
@@ -372,6 +387,12 @@ watch(
     </template>
     <el-alert v-else type="info" :closable="false">{{ t('webdavSync.encryption.fixedMode') }}</el-alert>
     <template #footer><el-button @click="encryptionVisible = false">{{ t('newtab:common.cancel') }}</el-button><el-button v-if="state.pauseReason === 'encryption-password'" type="primary" :icon="LockRound" :loading="loading" :disabled="!currentEncryptionPassword" @click="unlock">{{ t('webdavSync.encryption.unlock') }}</el-button></template>
+  </el-dialog>
+
+  <el-dialog v-model="remoteDeletedVisible" :title="t('webdavSync.remoteDeleted.title')" width="560px" destroy-on-close>
+    <el-result icon="warning" :title="t('webdavSync.remoteDeleted.title')" :sub-title="t('webdavSync.remoteDeleted.description')">
+      <template #extra><el-button type="primary" :loading="loading" @click="clearDeletedConnection">{{ t('webdavSync.remoteDeleted.action') }}</el-button></template>
+    </el-result>
   </el-dialog>
 
   <el-dialog v-model="repairVisible" :title="t('webdavSync.repair.title')" width="650px" destroy-on-close>

@@ -84,8 +84,12 @@ async function scanCorruptedRevisions(opened: Awaited<ReturnType<typeof openConf
         [commit],
       )
       if (revision) valid.push(revision)
-    } catch {
-      corrupted.push(commit)
+    } catch (error) {
+      if (error instanceof WebDavError && error.category === 'corrupted') {
+        corrupted.push(commit)
+        continue
+      }
+      throw error
     }
   }
   return { corrupted, valid }
@@ -94,8 +98,11 @@ async function scanCorruptedRevisions(opened: Awaited<ReturnType<typeof openConf
 export async function inspectBrowserSyncCorruption(): Promise<BrowserCorruptionInspection> {
   const opened = await openConfiguredVault(false)
   const scan = await scanCorruptedRevisions(opened)
-  if (scan.corrupted.length !== 1) {
-    throw new WebDavError('corrupted', 'Corruption repair requires exactly one damaged revision')
+  if (scan.corrupted.length === 0) {
+    throw new WebDavError('precondition', 'No damaged revision is available for corruption repair')
+  }
+  if (scan.corrupted.length > 1) {
+    throw new WebDavError('corrupted', 'Multiple damaged revisions require manual recovery')
   }
   const commit = scan.corrupted[0]!
   const raw = await opened.repository.readStoredPayloadUnchecked(commit)

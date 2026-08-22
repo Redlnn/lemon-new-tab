@@ -629,6 +629,11 @@
       "wallpaperDescription": "超過限制或不支援的圖片會被略過。請關閉對應範圍或選擇較小的圖片；擴充功能不會修改原圖。",
       "wallpaperTitle": "部分圖片未同步"
     },
+    "remoteDeleted": {
+      "action": "清除本機連線",
+      "description": "此裝置連線的雲端同步庫已被刪除。清除本機連線後可重新設定同步，不會存取或刪除雲端檔案。",
+      "title": "雲端同步庫已刪除"
+    },
     "resolve": "處理問題",
     "omissions": {
       "aggregate-too-large": "所選圖示總大小超過 8 MB",
