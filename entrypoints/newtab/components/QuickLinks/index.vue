@@ -10,7 +10,6 @@ import {
   type DragOverEvent,
   type DragStartEvent,
 } from '@dnd-kit/vue'
-import i18next from 'i18next'
 import { useTranslation } from 'i18next-vue'
 import PlusIcon from '~icons/fa6-solid/plus'
 import ChevronLeft20Filled from '~icons/fluent/chevron-left-20-filled'
@@ -101,7 +100,7 @@ const topSites = computed(() =>
 
 const topSitesGroupId = TOP_SITES_DND_GROUP_ID
 const legacyDndGroupId = FLAT_QUICK_LINK_DND_GROUP_ID
-const topSitesGroupName = i18next.t('newtab:quickLinks.groups.topSites')
+const topSitesGroupName = t('newtab:quickLinks.groups.topSites')
 
 const userGroups = computed(() => {
   if (!settings.quickLinks.grouping) return []
@@ -370,7 +369,7 @@ async function openAddQuickLink() {
   }
 
   const groupId = await groupSelectDialogRef.value?.open({
-    title: i18next.t('newtab:quickLinks.groups.selectAddTarget'),
+    title: t('newtab:quickLinks.groups.selectAddTarget'),
   })
   if (groupId) props.onOpenAddDialog?.(groupId)
 }
@@ -395,7 +394,7 @@ function openCtxMenu(event: MouseEvent | PointerEvent, item: DisplayItem): void 
 const { pinToGroup, moveToGroup, renameGroup, confirmDeleteGroup } = useQuickLinkGroupActions({
   groupSelectDialogRef,
   refresh: refreshDebounced,
-  t: (key, options) => i18next.t(`newtab:${key}`, options),
+  t: (key, options) => t(`newtab:${key}`, options),
   afterDelete: () => selectGroup(quickLinksStore.groups[0]?.id ?? DEFAULT_QUICK_LINK_GROUP_ID),
 })
 

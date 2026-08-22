@@ -10,6 +10,7 @@ import type {
   BrowserWebDavSetupInput,
   BrowserWebDavSetupPreview,
   BrowserSyncHistoryEntry,
+  BrowserSyncHistoryPreview,
   BrowserSyncDeviceEntry,
   BrowserCorruptionInspection,
 } from './browserEngine.ts'
@@ -17,6 +18,11 @@ import type {
 export interface BrowserSyncConflictDetails {
   conflicts: SyncConflict[]
   remoteRevisionIds: string[]
+  remoteVersions: Array<{
+    revisionId: string
+    deviceName: string
+    modifiedAt: string
+  }>
 }
 
 export type WebDavSyncMessage =
@@ -41,6 +47,7 @@ export type WebDavSyncMessage =
   | { type: 'webdav-sync:get-conflict' }
   | { type: 'webdav-sync:immediate' }
   | { type: 'webdav-sync:list-history' }
+  | { type: 'webdav-sync:preview-history'; revisionId: string }
   | { type: 'webdav-sync:list-devices' }
   | { type: 'webdav-sync:natural' }
   | { type: 'webdav-sync:online' }
@@ -49,7 +56,11 @@ export type WebDavSyncMessage =
   | { type: 'webdav-sync:resolve-conflict'; resolutions: SyncConflictResolution[] }
   | { type: 'webdav-sync:reset'; encryptionPassword?: string; snapshot: SyncSnapshotV1 }
   | { type: 'webdav-sync:accept-reset'; encryptionPassword?: string; mode: 'apply' | 'merge' }
-  | { type: 'webdav-sync:restore-history'; revisionId: string }
+  | {
+      type: 'webdav-sync:restore-history'
+      revisionId: string
+      expected: Pick<BrowserSyncHistoryPreview, 'currentSnapshotHash' | 'headRevisionId'>
+    }
   | {
       type: 'webdav-sync:repair-corruption'
       actualPayloadHash: string
@@ -164,10 +175,23 @@ export function getSyncDevices(): Promise<BrowserSyncDeviceEntry[]> {
   return browser.runtime.sendMessage({ type: 'webdav-sync:list-devices' } satisfies WebDavSyncMessage)
 }
 
-export function restoreSyncHistory(revisionId: string): Promise<LocalSyncStateV1> {
+export function previewSyncHistory(revisionId: string): Promise<BrowserSyncHistoryPreview> {
+  return browser.runtime.sendMessage({
+    type: 'webdav-sync:preview-history',
+    revisionId,
+  } satisfies WebDavSyncMessage)
+}
+
+export function restoreSyncHistory(
+  preview: Pick<BrowserSyncHistoryPreview, 'currentSnapshotHash' | 'headRevisionId' | 'revisionId'>,
+): Promise<LocalSyncStateV1> {
   return browser.runtime.sendMessage({
     type: 'webdav-sync:restore-history',
-    revisionId,
+    revisionId: preview.revisionId,
+    expected: {
+      currentSnapshotHash: preview.currentSnapshotHash,
+      headRevisionId: preview.headRevisionId,
+    },
   } satisfies WebDavSyncMessage)
 }
 
@@ -307,8 +331,19 @@ export function isWebDavSyncMessage(value: unknown): value is WebDavSyncMessage 
   if (type === 'webdav-sync:resolve-conflict') {
     return Array.isArray((value as { resolutions?: unknown }).resolutions)
   }
-  if (type === 'webdav-sync:restore-history') {
+  if (type === 'webdav-sync:preview-history') {
     return typeof (value as { revisionId?: unknown }).revisionId === 'string'
+  }
+  if (type === 'webdav-sync:restore-history') {
+    const message = value as {
+      expected?: { currentSnapshotHash?: unknown; headRevisionId?: unknown }
+      revisionId?: unknown
+    }
+    return (
+      typeof message.revisionId === 'string' &&
+      typeof message.expected?.currentSnapshotHash === 'string' &&
+      typeof message.expected.headRevisionId === 'string'
+    )
   }
   if (type === 'webdav-sync:reset') {
     const message = value as { encryptionPassword?: unknown; snapshot?: unknown }

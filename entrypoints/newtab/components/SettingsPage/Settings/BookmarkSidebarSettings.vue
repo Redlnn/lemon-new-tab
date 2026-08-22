@@ -5,6 +5,7 @@ import { DrawerDirection, SortMode } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 
 import SettingsSection from './SettingsSection.vue'
+import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
 
 const { t } = useTranslation('settings')
 const { t: tt } = useTranslation()
@@ -54,6 +55,10 @@ const sortModeOptions = [
       content-class="settings-control-grid"
       mobile-open
     >
+      <el-alert type="info" :closable="false" show-icon>
+        {{ t('bookmark.syncNote') }}
+        <SyncAvailabilityIcon catalog-key="bookmarks" />
+      </el-alert>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('bookmark.direction.title') }}</div>
         <el-select v-model="settings.bookmark.direction" placeholder="Select" style="width: 120px">

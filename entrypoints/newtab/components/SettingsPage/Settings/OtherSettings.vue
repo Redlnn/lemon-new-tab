@@ -1,44 +1,50 @@
 <script setup lang="ts">
-import { type CheckboxValueType, ElCheckbox, ElLoading } from 'element-plus'
+import {
+  type CheckboxValueType,
+  ElCheckbox,
+  ElLoading,
+  ElRadio,
+  ElRadioGroup,
+} from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import DeleteForeverOutlined from '~icons/ic/outline-delete-forever'
 import DownloadRound from '~icons/ic/round-download'
 import FileUploadRound from '~icons/ic/round-file-upload'
 
-import { downloadJSON } from '@/shared/download'
+import { downloadBlob } from '@/shared/download'
 import { clearFaviconCache } from '@/shared/media'
-import { type QuickLinksData, useQuickLinksStore } from '@/shared/quickLinks'
-import { ensureSearchEngineAvailable } from '@/shared/searchEngines'
-import {
-  type CURRENT_CONFIG_SCHEMA,
-  defaultSettings,
-  normalizeCurrentSettings,
-  useSettingsStore,
-} from '@/shared/settings'
+import { clearRetiredCloudStorage, defaultSettings, useSettingsStore } from '@/shared/settings'
 import { clearExtensionData, reloadNewtabTabs } from '@/shared/settings/legacySettingsRecovery'
 import { idbClearMany } from '@/shared/storage/idb'
+import {
+  applyPreparedBrowserImport,
+  createBrowserBackupArchive,
+  createBrowserJsonBackup,
+  prepareBrowserImport,
+} from '@/shared/webdavSync/browserBackup'
+import {
+  disconnectSyncConnection,
+  getSyncState,
+  resetSyncedData,
+  sendSyncDataChanged,
+} from '@/shared/webdavSync/bridge'
+import { captureSyncSnapshot } from '@/shared/webdavSync/capture'
 
 import {
   PermissionContext,
   PermissionResult,
   usePermission,
 } from '@newtab/composables/usePermission'
-import {
-  type CustomSearchEngineStorage,
-  useCustomSearchEngineStore,
-} from '@newtab/shared/customSearchEngine'
-import { OPEN_SYNC_RETIREMENT } from '@newtab/shared/keys'
 import { wallpaperUrlCache } from '@newtab/shared/wallpaper'
+import { searchHistoriesStorage } from '@newtab/shared/storages/searchHistoriesStorage'
+import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
 import SettingsSection from './SettingsSection.vue'
+import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
 
 const { t, i18next } = useTranslation('settings')
 
 const settings = useSettingsStore()
-const quickLinks = useQuickLinksStore()
-const customSearchEngineStore = useCustomSearchEngineStore()
-const openSyncRetirement = inject(OPEN_SYNC_RETIREMENT, () => {})
-
 const { checkAndRequestPermission } = usePermission()
 
 const beforeFaviconCacheChange = async (): Promise<boolean> => {
@@ -79,6 +85,8 @@ async function confirmAndRun(
 
 async function confirmClearExtensionData() {
   const includeSync = ref(false)
+  const syncState = await getSyncState().catch(() => null)
+  const resetMode = ref<'local' | 'sync'>('sync')
   try {
     await ElMessageBox.confirm(
       () =>
@@ -93,6 +101,28 @@ async function confirmClearExtensionData() {
             },
             () => t('other.purge.confirm.data.includeSync'),
           ),
+          ...(syncState?.configured
+            ? [
+                h('p', { style: 'margin: 16px 0 8px' }, t('other.purge.confirm.data.syncQuestion')),
+                h(
+                  ElRadioGroup,
+                  {
+                    modelValue: resetMode.value,
+                    'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
+                      if (value === 'sync' || value === 'local') resetMode.value = value
+                    },
+                  },
+                  () => [
+                    h(ElRadio, { value: 'sync' }, () =>
+                      t('other.purge.confirm.data.syncReset'),
+                    ),
+                    h(ElRadio, { value: 'local' }, () =>
+                      t('other.purge.confirm.data.localReset'),
+                    ),
+                  ],
+                ),
+              ]
+            : []),
         ]),
       t('other.purge.confirm.data.title'),
       {
@@ -105,7 +135,20 @@ async function confirmClearExtensionData() {
     return
   }
 
-  void clearExtensionDataAndReload(includeSync.value)
+  const selectedMode = syncState?.configured ? resetMode.value : 'local'
+  let encryptionPassword: string | undefined
+  if (selectedMode === 'sync' && syncState?.encrypted) {
+    try {
+      encryptionPassword = await ElMessageBox.prompt(
+        t('other.purge.confirm.data.passwordDescription'),
+        t('other.purge.confirm.data.passwordTitle'),
+        { inputType: 'password', showCancelButton: true },
+      ).then(({ value }) => value)
+    } catch {
+      return
+    }
+  }
+  void clearExtensionDataAndReload(includeSync.value, selectedMode, encryptionPassword)
 }
 
 async function confirmClearWallpaperData() {
@@ -181,9 +224,39 @@ async function clearWallpaperData() {
   })
 }
 
-async function clearExtensionDataAndReload(includeSync: boolean) {
+async function clearExtensionDataAndReload(
+  includeLegacySync: boolean,
+  resetMode: 'local' | 'sync',
+  encryptionPassword?: string,
+) {
   await runClearAndReload(t('other.purge.confirm.data.purging'), async () => {
-    await clearExtensionData({ includeSync })
+    if (resetMode === 'local') {
+      const state = await getSyncState().catch(() => null)
+      if (state?.configured) await disconnectSyncConnection(false)
+      await clearExtensionData({ includeSync: includeLegacySync })
+      return
+    }
+
+    const state = await getSyncState()
+    const snapshot = captureSyncSnapshot({
+      settings: structuredClone(defaultSettings),
+      quickLinks: { items: [], groups: [] },
+      customSearchEngines: { items: [] },
+      ui: { language: i18next.language || navigator.language, colorMode: 'auto' },
+      scope: state.scope,
+      searchHistory: [],
+      blockedTopSites: [],
+    })
+    await resetSyncedData(snapshot, encryptionPassword)
+    await Promise.all([
+      idbClearMany(['favicon', 'wallpaper', 'wallpaperDark', 'wallpaperBing', 'onlineWallpaperCache']),
+      wallpaperUrlCache.setValue({ light: '', dark: '', bing: '' }),
+      searchHistoriesStorage.setValue({ version: 1, items: [] }),
+      blockedTopSitesStorage.setValue([]),
+    ])
+    localStorage.clear()
+    sessionStorage.clear()
+    if (includeLegacySync) await clearRetiredCloudStorage()
   })
 }
 
@@ -191,27 +264,7 @@ async function clearIconCache() {
   await runClearAndReload(t('other.purge.confirm.icon.purging'), clearFaviconCache)
 }
 
-function beforeSyncChange(): boolean {
-  openSyncRetirement()
-  return false
-}
-
 const fileInput = useTemplateRef('fileInput')
-type Backup = {
-  settings: CURRENT_CONFIG_SCHEMA
-  quickLinks: QuickLinksData
-  customSearchEngines: CustomSearchEngineStorage
-}
-
-type ImportBackup = Partial<Backup> & {
-  bookmark?: QuickLinksData
-  bookmarks?: QuickLinksData
-  shortcuts?: QuickLinksData
-}
-
-/**
- * 通用文件选择器打开函数
- */
 async function openFilePicker() {
   await confirmAndRun(
     t('other.importExport.warningDialog.content'),
@@ -225,137 +278,109 @@ async function openFilePicker() {
 }
 
 async function exportBackup() {
-  const backup: Backup = {
-    settings: settings.$state,
-    quickLinks: quickLinks.getSnapshot(),
-    customSearchEngines: customSearchEngineStore.$state,
+  const loading = showLoading(t('other.importExport.exporting'))
+  try {
+    const json = await createBrowserJsonBackup()
+    downloadBlob(new Blob([json], { type: 'application/json' }), 'lemon-new-tab-backup.json')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('other.importExport.unknownError'))
+  } finally {
+    loading.close()
   }
-
-  downloadJSON<Backup>(backup, 'lemon-new-tab-backup.json')
 }
 
-function hasObjectKey(data: Record<string, unknown>, key: string): boolean {
-  return key in data && typeof data[key] === 'object' && data[key] !== null
+async function exportCompleteArchive() {
+  const loading = showLoading(t('other.importExport.exporting'))
+  try {
+    const archive = await createBrowserBackupArchive()
+    downloadBlob(archive, 'lemon-new-tab-backup.lemon-backup')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('other.importExport.unknownError'))
+  } finally {
+    loading.close()
+  }
 }
 
-function backupValidator(data: unknown): data is ImportBackup {
-  if (typeof data !== 'object' || data === null) return false
-  const record = data as Record<string, unknown>
-  if (hasObjectKey(record, 'settings')) return true
-  if (hasObjectKey(record, 'quickLinks')) return true
-  if (hasObjectKey(record, 'bookmark')) return true
-  if (hasObjectKey(record, 'bookmarks')) return true
-  if (hasObjectKey(record, 'shortcuts')) return true
-  if (hasObjectKey(record, 'customSearchEngines')) return true
-  return false
-}
-
-function handleFileChange(event: Event) {
-  return handleFileImport<ImportBackup>(event, fileInput, backupValidator, async (data) => {
-    // settings 部分（沿用之前的逻辑）
-    if (data.settings && settings.version !== data.settings.version) {
-      throw new Error(t('other.importExport.versionMismatch'))
-    }
-
-    const ignoredEnabledSync = data.settings?.sync?.enabled === true
-
-    if (data.settings) {
-      data.settings.background.local = settings.$state.background.local
-      data.settings.background.localDark = data.settings.background.localDark || {
-        id: '',
-        url: '',
-        mediaType: undefined,
-      }
-      data.settings.background.bing = settings.$state.background.bing
-      data.settings.background.online.url = settings.$state.background.online.url
-
-      const importedSettings = normalizeCurrentSettings(data.settings)
-      importedSettings.sync.enabled = false
-      settings.$patch(importedSettings)
-    }
-
-    // quickLinks 部分
-    const quickLinksData = data.quickLinks ?? data.bookmark ?? data.bookmarks ?? data.shortcuts
-    if (quickLinksData) {
-      await quickLinks.save(quickLinksData, { groupingEnabled: settings.quickLinks.grouping })
-    }
-
-    // custom search engines 部分
-    if (data.customSearchEngines) {
-      await customSearchEngineStore.save(data.customSearchEngines)
-    }
-
-    ensureSearchEngineAvailable(
-      settings.search,
-      customSearchEngineStore.items.map((engine) => engine.id),
+async function chooseImportMode(configured: boolean) {
+  if (!configured) return 'local' as const
+  const mode = ref<'merge' | 'replace' | 'local'>('merge')
+  try {
+    await ElMessageBox.confirm(
+      () =>
+        h('div', { class: 'backup-import-modes' }, [
+          h('p', null, t('other.importExport.syncMode.description')),
+          h(
+            ElRadioGroup,
+            {
+              modelValue: mode.value,
+              'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
+                if (value === 'merge' || value === 'replace' || value === 'local') mode.value = value
+              },
+            },
+            () => [
+              h(ElRadio, { value: 'merge' }, () => t('other.importExport.syncMode.merge')),
+              h(ElRadio, { value: 'replace' }, () => t('other.importExport.syncMode.replace')),
+              h(ElRadio, { value: 'local' }, () => t('other.importExport.syncMode.local')),
+            ],
+          ),
+        ]),
+      t('other.importExport.syncMode.title'),
+      { type: 'warning' },
     )
-
-    if (ignoredEnabledSync) ElMessage.info(t('other.syncRetirement.importIgnored'))
-  })
+    return mode.value
+  } catch {
+    return null
+  }
 }
 
-/**
- * 通用文件导入处理函数
- */
-function handleFileImport<T>(
-  event: Event,
-  inputRef: Ref<HTMLInputElement | null>,
-  validator: (data: unknown) => data is T,
-  onSuccess: (data: T) => Promise<void> | void,
-) {
+async function handleFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input?.files?.[0]
   if (!file) {
     ElMessage.error(
       t('other.importExport.importFailed', { reason: t('other.importExport.noFileSelected') }),
     )
-    console.error('No file selected')
     return
   }
+  const loading = showLoading(t('other.importExport.validating'))
+  let applying: ReturnType<typeof showLoading> | undefined
+  try {
+    const prepared = await prepareBrowserImport(file)
+    loading.close()
+    const state = await getSyncState()
+    const mode = await chooseImportMode(state.configured)
+    if (!mode) return
 
-  const reader = new FileReader()
-  let fileContent: T | null = null
-  let parseError: string | null = null
-
-  const showImportFailure = (reason: string) => {
-    ElMessage.error(t('other.importExport.importFailed', { reason }))
-  }
-
-  reader.onload = () => {
-    try {
-      const json = JSON.parse(reader.result as string)
-      if (validator(json)) {
-        fileContent = json
-      } else {
-        parseError = t('other.importExport.invalidFileFormat')
-        showImportFailure(parseError)
-      }
-    } catch {
-      parseError = t('other.importExport.invalidJSON')
-      showImportFailure(parseError)
+    let encryptionPassword: string | undefined
+    if (mode === 'replace' && state.encrypted) {
+      encryptionPassword = await ElMessageBox.prompt(
+        t('other.importExport.syncMode.passwordDescription'),
+        t('other.importExport.syncMode.passwordTitle'),
+        { inputType: 'password', showCancelButton: true },
+      ).then(({ value }) => value)
     }
-  }
-
-  reader.readAsText(file)
-  return new Promise<void>((resolve) => {
-    reader.onloadend = async () => {
-      try {
-        if (fileContent) {
-          await onSuccess(fileContent)
-          ElMessage.success(t('other.importExport.importSuccess'))
-        } else {
-          showImportFailure(parseError || t('other.importExport.unknownError'))
-        }
-      } catch (error) {
-        const reason = error instanceof Error ? error.message : String(error)
-        showImportFailure(reason || t('other.importExport.unknownError'))
-      } finally {
-        // 重置 file input 以允许导入同一个文件
-        if (inputRef.value) inputRef.value.value = ''
-        resolve()
-      }
+    applying = showLoading(t('other.importExport.importing'))
+    if (mode === 'local' && state.configured) await disconnectSyncConnection(false)
+    await applyPreparedBrowserImport(prepared)
+    if (mode === 'replace') {
+      await resetSyncedData(prepared.snapshot, encryptionPassword)
+    } else if (mode === 'merge') {
+      sendSyncDataChanged()
     }
-  })
+    ElMessage.success(t('other.importExport.importSuccess'))
+    if (!(await reloadNewtabTabs())) location.reload()
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    ElMessage.error(
+      t('other.importExport.importFailed', {
+        reason: reason || t('other.importExport.unknownError'),
+      }),
+    )
+  } finally {
+    applying?.close()
+    loading.close()
+    if (fileInput.value) fileInput.value.value = ''
+  }
 }
 
 const currentLanguage = ref(i18next.language)
@@ -394,15 +419,6 @@ function changeLanguage(lang: string) {
       content-class="settings-control-grid"
       mobile-open
     >
-      <div
-        class="settings__item settings__item--horizontal settings__item--with-note settings-control-wide"
-      >
-        <div class="settings__label">{{ t('other.sync') }}</div>
-        <el-switch :model-value="false" :before-change="beforeSyncChange" />
-        <p class="settings__item-note">
-          {{ t('other.syncWarning') }}
-        </p>
-      </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('other.language') }}</div>
         <el-select
@@ -437,9 +453,16 @@ function changeLanguage(lang: string) {
       >
         <div class="settings__label">{{ t('other.importExport.backup') }}</div>
         <span class="button-group">
-          <el-button type="primary" :icon="DownloadRound" @click="exportBackup">
+          <el-dropdown split-button type="primary" :icon="DownloadRound" @click="exportBackup">
             {{ t('other.importExport.export') }}
-          </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="exportCompleteArchive">
+                  {{ t('other.importExport.exportComplete') }}
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
           <el-button :icon="FileUploadRound" @click="openFilePicker">
             {{ t('other.importExport.import') }}
           </el-button>
@@ -448,7 +471,10 @@ function changeLanguage(lang: string) {
       <div
         class="settings__item settings__item--horizontal settings__item--with-note settings-control-wide"
       >
-        <div class="settings__label">{{ t('other.faviconCache.label') }}</div>
+        <div class="settings__label">
+          {{ t('other.faviconCache.label') }}
+          <SyncAvailabilityIcon catalog-key="faviconCache" />
+        </div>
         <el-switch
           v-model="settings.faviconCacheEnabled"
           :before-change="beforeFaviconCacheChange"
@@ -484,7 +510,7 @@ function changeLanguage(lang: string) {
     <input
       ref="fileInput"
       type="file"
-      accept="application/json"
+      accept="application/json,.json,.lemon-backup,application/vnd.lemon-new-tab.backup"
       style="display: none"
       @change="handleFileChange"
     />

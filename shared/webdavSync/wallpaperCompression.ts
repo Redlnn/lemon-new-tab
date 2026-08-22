@@ -2,6 +2,7 @@ import { MAX_SYNC_WALLPAPER_BYTES } from './catalog.ts'
 
 const MAX_DIMENSION = 16_384
 const MAX_PIXELS = 40_000_000
+const MAX_COMPRESSION_SOURCE_BYTES = 100 * 1024 * 1024
 
 export interface StaticImageInfo {
   height: number
@@ -16,8 +17,11 @@ export interface WallpaperCompressionCandidate {
   width: number
 }
 
-export async function inspectStaticWallpaper(blob: Blob): Promise<StaticImageInfo> {
-  if (blob.size === 0 || blob.size > MAX_SYNC_WALLPAPER_BYTES) {
+export async function inspectStaticWallpaper(
+  blob: Blob,
+  maxBytes = MAX_SYNC_WALLPAPER_BYTES,
+): Promise<StaticImageInfo> {
+  if (blob.size === 0 || blob.size > maxBytes) {
     throw new TypeError('Wallpaper size is unsupported')
   }
   const bytes = new Uint8Array(await blob.arrayBuffer())
@@ -42,7 +46,7 @@ export async function createWallpaperCompressionCandidate(
     quality?: number
   } = {},
 ): Promise<WallpaperCompressionCandidate> {
-  const info = await inspectStaticWallpaper(blob)
+  const info = await inspectStaticWallpaper(blob, MAX_COMPRESSION_SOURCE_BYTES)
   const maximum = Math.min(4096, Math.max(512, Math.trunc(options.maxDimension ?? 2560)))
   const scale = Math.min(1, maximum / Math.max(info.width, info.height))
   const width = Math.max(1, Math.round(info.width * scale))

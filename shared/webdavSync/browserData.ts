@@ -272,13 +272,20 @@ export async function getLocalWallpaperBlob(
   variant: 'dark' | 'light',
   expectedSha256: string,
 ): Promise<Blob | undefined> {
+  const blob = await getSelectedBrowserWallpaper(variant)
+  if (!blob || (await sha256Hex(await blob.arrayBuffer())) !== expectedSha256) return undefined
+  return blob
+}
+
+export async function getSelectedBrowserWallpaper(
+  variant: 'dark' | 'light',
+): Promise<Blob | undefined> {
   const settings = await settingsStorage.getValue()
   const selection =
     variant === 'light' ? settings.background.local : settings.background.localDark
   if (!selection.id || selection.mediaType === 'video') return undefined
   const blob = await idbGet(variant === 'light' ? 'wallpaper' : 'wallpaperDark', selection.id)
-  if (!blob || (await sha256Hex(await blob.arrayBuffer())) !== expectedSha256) return undefined
-  return blob
+  return blob instanceof Blob && blob.type.toLowerCase().startsWith('image/') ? blob : undefined
 }
 
 function stagedWallpaperKey(variant: 'dark' | 'light', sha256: string): string {

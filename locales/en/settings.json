@@ -102,6 +102,7 @@
     },
     "rightClickToOpen": "Right click on background to open",
     "showBtn": "Show bottom-right button",
+    "syncNote": "Browser bookmarks are managed by the browser and are not synced through WebDAV.",
     "title": "Bookmarks bar"
   },
   "clock": {
@@ -223,13 +224,26 @@
     "importExport": {
       "backup": "Back up extension settings",
       "export": "Export",
+      "exportComplete": "Export complete archive with image wallpapers",
+      "exporting": "Creating backup...",
       "import": "Import",
       "importFailed": "Import failed: {{reason}}",
       "importSuccess": "Import successful",
+      "importing": "Safely applying imported data...",
       "invalidFileFormat": "Invalid file format",
       "invalidJSON": "Invalid JSON format",
       "noFileSelected": "No file selected",
       "unknownError": "Unknown error",
+      "validating": "Validating backup integrity...",
+      "syncMode": {
+        "description": "WebDAV sync is enabled. Choose how this import should affect other devices.",
+        "local": "Import only on this device and disconnect sync",
+        "merge": "Merge into current data and sync (pause on conflicts)",
+        "passwordDescription": "Creating an encrypted reset generation requires the current independent sync encryption password.",
+        "passwordTitle": "Enter sync encryption password",
+        "replace": "Replace all synced data with the imported content",
+        "title": "Import and sync"
+      },
       "versionMismatch": "The configuration version in the file does not match the current extension configuration version.",
       "warningDialog": {
         "content": "Importing will overwrite your current data. Please be cautious when using this feature!",
@@ -243,9 +257,14 @@
       "btn": "Purge",
       "confirm": {
         "data": {
-          "includeSync": "Also clear cloud sync data",
+          "includeSync": "Also clear retired browser-sync data",
+          "localReset": "Reset only this device and disconnect sync",
           "message": "This operation will reset the extension settings, ignored most visited sites, pinned or favorited sites, selected background images or videos, etc.",
+          "passwordDescription": "Creating an encrypted reset version requires the current independent sync encryption password.",
+          "passwordTitle": "Enter sync encryption password",
           "purging": "Clearing extension data..",
+          "syncQuestion": "Sync is enabled. How should this reset be handled?",
+          "syncReset": "Sync the reset to other devices and stay connected",
           "title": "Are you sure you want to purge all data of this extension?"
         },
         "icon": {
@@ -441,7 +460,64 @@
     "primaryColor": "Primary color",
     "title": "Theme"
   },
+  "sync": {
+    "availability": {
+      "blockedTopSitesScopeDisabled": "Hidden-site records stay on this device. You can include them in the WebDAV sync scope.",
+      "bookmarksBrowserManaged": "Bookmarks are managed by the browser and are not synced through WebDAV.",
+      "faviconCacheLocal": "The website icon cache can be rebuilt and is never uploaded. Its enable preference is synced.",
+      "onlineWallpaperCacheLocal": "Cached files stay on this device; the enable preference is synced.",
+      "onlineWallpaperUrlScopeDisabled": "The online/API wallpaper address stays on this device. You can include it in Advanced sync scope.",
+      "pendingPermission": "The setting is synced, but this device has not granted permission. The feature is waiting for permission.",
+      "quickLinkIconsScopeDisabled": "User-selected Quick Link icons stay on this device. You can include them in Advanced sync scope.",
+      "searchHistoryScopeDisabled": "Search history stays on this device. You can include it in the WebDAV sync scope.",
+      "wallpaperFailed": "The wallpaper did not pass upload or integrity checks. Other data will still sync.",
+      "wallpaperScopeDisabled": "Local image wallpapers stay on this device. You can include them in the WebDAV sync scope.",
+      "wallpaperTooLarge": "This image is over 20 MB, so the wallpaper is not synced. Other data will still sync.",
+      "wallpaperVideo": "Video wallpapers are not synced through WebDAV."
+    }
+  },
   "title": "Settings",
+  "webdavSync": {
+    "connectionActions": { "description": "Disconnecting keeps remote data by default. Reset and permanent deletion need extra confirmation.", "open": "Manage connection", "title": "Disconnect, reset, and delete" },
+    "conflicts": {
+      "base": "Shared baseline", "both": "Keep both", "bothNote": "The changed copy receives a new stable ID.", "deleted": "Deleted or missing", "description": "Safe changes were merged automatically. Nothing is uploaded or applied until every conflict is resolved.", "empty": "No unresolved conflicts were found", "finish": "Create merge version", "local": "Use this device ({{device}})", "paused": "Sync remains paused until every conflict is resolved", "remote": "Use remote", "remoteVersions": "Remote changes", "resolved": "Conflicts resolved and a new merge version was created", "title": "Resolve sync conflicts",
+      "categories": { "blocked-top-sites": "Hidden sites", "quick-links": "Quick Links", "search-engines": "Search engines", "search-history": "Search history", "settings": "Settings", "ui": "UI preferences", "wallpaper": "Wallpaper" }
+    },
+    "deviceName": "Current device: {{name}}",
+    "devices": { "firstSeen": "First synced: {{time}}", "stale": "Offline for over 180 days", "title": "Synced devices", "unknownDescription": "Your WebDAV credentials may be exposed. Change the password or app password with your provider, then reconnect trusted devices. Removing a device record cannot revoke access.", "unknownTitle": "See a device you do not recognize?" },
+    "disconnect": {
+      "deleteAction": "Permanently delete and disconnect", "deleted": "Remote sync data was deleted and this device disconnected", "deleteDescription": "Only the LemonNewTab directory with the correct ownership marker is deleted. If deletion fails, this device keeps its connection so you can retry.", "deleteTitle": "Permanently delete the remote sync vault", "disconnected": "Remote data kept and this device disconnected", "impact": "Affects {{devices}} devices and {{versions}} versions", "keepAction": "Keep remote data and disconnect", "keepDescription": "Clears this device's connection. Other devices and remote data are unaffected.", "keepTitle": "Turn off WebDAV sync", "resetAction": "Create reset generation", "resetDescription": "Publish this device's current state as a new reset version. Other devices pause and ask before applying it.", "resetDone": "A new sync reset version was created", "resetTitle": "Sync a full reset", "title": "Manage WebDAV connection", "typePrompt": "Type “{{text}}” to continue"
+    },
+    "empty": { "action": "Set up WebDAV sync", "description": "WebDAV is network storage you choose yourself. Sync is off by default and does not access the network before setup.", "title": "WebDAV sync is not configured" },
+    "encrypted": "Client-side encrypted",
+    "encryption": { "currentPassword": "Current sync encryption password", "description": "This password is separate from your WebDAV login. If forgotten, the vault can only be deleted and cannot be recovered.", "disabled": "Encryption is off by default", "enabled": "This sync vault is encrypted", "keyNote": "After success, only a non-exportable derived key is stored. The password is never uploaded, exported, or logged.", "migrate": "Start safe migration", "migrated": "The new encryption generation was fully verified and activated", "migrationNote": "A new generation is created and recent versions plus current wallpapers are re-encrypted. The old generation stays valid until full verification succeeds.", "newPassword": "New sync encryption password", "password": "Independent sync encryption password", "title": "Client-side encryption", "unlock": "Unlock sync vault" },
+    "errors": { "authentication": "The password is incorrect or the provider denied access", "conflict": "Remote data has a conflict", "corrupted": "Remote data is corrupted", "network": "The server is temporarily unreachable", "server": "The WebDAV service returned an error", "storage-full": "The WebDAV storage is full", "timeout": "The connection timed out", "unknown": "Sync failed. Review its status and try again." },
+    "experimental": { "description": "This is a test release. Keep a local export before first use. Sync never silently chooses a winner by timestamp.", "tag": "Experimental", "title": "Two-way WebDAV sync" },
+    "history": { "back": "Back to history", "current": "Current", "noDifferences": "This version is identical to the current local data", "preview": "Review differences", "reasons": { "import": "Import", "initial": "Initial version", "local-change": "Local change", "merge": "Automatic merge", "repair": "Damage repair", "reset": "Global reset", "restore": "History restore" }, "restore": "Restore as new version", "restoreDescription": "The reviewed old content is submitted as a new latest version. The operation stops if local or remote data changed after this preview.", "restored": "A new latest version was created from history", "restoreTitle": "Restore the reviewed version?", "target": "History", "title": "Version history", "truncated": "Only the first 200 differences are shown. The entire version is still validated before restore.", "wallpaperMissing": "This historical wallpaper is no longer retained; the current wallpaper will be kept" },
+    "lastSuccess": "Last successful sync: {{time}}", "later": "Not now",
+    "legacy": { "clearConfirm": "This only clears data left by the retired browser sync feature. Current settings and the new WebDAV sync are unaffected. Continue?", "description": "This is leftover browser storage.sync data. It is never uploaded to WebDAV.", "found": "Data found", "title": "Legacy browser cloud-sync data" },
+    "management": { "devices": "Devices", "encryption": "Client encryption", "history": "History", "historyLimit": "Versions to keep", "repair": "Inspect and repair", "summary": "History, devices, encryption, and recovery", "title": "Sync management" },
+    "messages": { "syncComplete": "Sync check completed" }, "never": "Never synced successfully", "plaintext": "Client encryption is off", "refresh": "Refresh status",
+    "repair": { "action": "Create repair version", "applyReset": "Apply remote reset", "completed": "The damaged version was isolated and a repair version created", "compressionDone": "The compressed wallpaper was verified, synced, and replaced locally", "compressionFormat": "Output format", "compressionPreview": "Compressed wallpaper preview", "compressionQuality": "Quality: {{quality}}%", "compressionReplaceNote": "Confirming uploads and verifies the compressed image first, then replaces the local original. The original is not changed if any step fails.", "compressionVariant": "Wallpaper to compress", "corrupted": "The latest version is damaged; automatic sync stopped", "corruptedDescription": "Download the raw file first, then choose current local data or the previous complete remote version.", "darkWallpaper": "Dark wallpaper · {{size}}", "download": "Download damaged raw file", "downloaded": "Raw file downloaded", "healthy": "No repair is needed", "healthyDescription": "The latest version and sync state are healthy.", "lightWallpaper": "Light wallpaper · {{size}}", "local": "Use current local data", "mergeReset": "Safely merge remote reset", "previewCompression": "Generate preview", "previous": "Use previous complete remote version", "remoteReset": "Another device synced a global reset", "remoteResetDescription": "Choose safe merge or full apply. Uploads remain stopped until this is handled.", "replaceAndSync": "Replace locally and sync", "revision": "Damaged version: {{id}}", "same": "Local data matches the previous complete version, which will be used automatically to create a repair version.", "size": "Raw file size: {{size}} bytes", "stopWallpapers": "Stop syncing and delete remote wallpapers", "title": "Inspect and repair", "wallpaperDescription": "You can compress a static image after preview, or stop wallpaper sync and delete remote wallpapers. Core settings and Quick Links keep syncing.", "wallpapersStopped": "Wallpaper sync stopped and remote wallpapers deleted", "wallpaperTitle": "Wallpaper not synced or storage full" },
+    "resolve": "Resolve issue",
+    "scope": { "advanced": "Advanced scope (on by default)", "always": "Always synced", "blockedTopSites": "Hidden frequently visited sites", "core": "Core data", "coreSummary": "Settings, Quick Links, custom search engines, language, and color mode", "localOnlySummary": "Passwords, permissions, tokens, videos, bookmarks, and caches always stay on this device", "onlineWallpaperUrl": "Online/API wallpaper address", "onlineWallpaperUrlNote": "The address may contain a token; cached images are never uploaded.", "quickLinkIcons": "Embedded Quick Link icons", "quickLinkIconsNote": "Only icons explicitly selected by the user are synced. Cached or automatic icons are never uploaded.", "searchHistory": "Recent search history", "summary": "Core data always syncs; you choose sensitive or larger data", "title": "Sync scope", "unconfiguredSummary": "Optional data can be selected during setup", "wallpapers": "Current static image wallpapers", "wallpapersNote": "Off by default. Only current images are retained, up to 20 MB each. Videos are never uploaded." },
+    "setup": {
+      "advanced": "Advanced settings", "back": "Back", "connected": "WebDAV sync is enabled", "finish": "Enable sync", "next": "Next", "title": "Set up WebDAV sync",
+      "compare": { "conflicts": "{{count}} items need a choice", "description": "Times help identify devices; they are never used to pick a winner.", "existing": "Existing sync vault", "existingTitle": "Compare this device and remote", "initial": "New sync vault", "initialTitle": "Review the initial upload", "pauseNote": "After connecting, sync stays paused and opens item-by-item resolution. Nothing is uploaded or applied first.", "safe": "Non-overlapping changes can be merged safely" },
+      "confirm": { "autoDevice": "An anonymous name without exact OS version will be generated", "description": "The sync vault is only created or changed after this confirmation.", "disconnectNote": "Turning off sync keeps remote data by default. Permanent deletion requires typed confirmation.", "encrypted": "Enabled; a forgotten password cannot be recovered", "plaintext": "Off (default)", "title": "Final confirmation" },
+      "connection": { "description": "WebDAV is network storage you choose yourself. Your login password stays in this browser profile by default.", "deviceName": "Device name (optional)", "deviceNamePlaceholder": "For example: Office computer", "directory": "Extension-only directory", "password": "Password or app password", "remember": "Save in this browser profile and allow background sync", "rememberNote": "The password is never uploaded, exported, or logged.", "sessionNote": "This session only. It is cleared after the browser closes and background automatic sync is disabled.", "title": "Connect your own network storage", "url": "Server address", "username": "Username" },
+      "encryption": { "enable": "Encrypt synced content with an independent password", "password": "Independent sync encryption password (at least 8 characters)" },
+      "errors": { "authentication": "The password is incorrect or this account was denied. Check the username, password, or app password.", "encryption": "This vault is encrypted. Enter the correct independent sync encryption password under Advanced settings.", "foreign": "This directory contains data not owned by Lemon New Tab. Use an empty or correct extension-only directory.", "format": "This sync format was created by a newer extension. Upgrade the extension first.", "permission": "Access to this exact WebDAV server was not granted, so the connection was not saved." },
+      "http": { "accept": "I understand that LAN HTTP can be intercepted by others on the same network", "confirmText": "I UNDERSTAND HTTP RISK", "externalWarning": "External HTTP sends WebDAV credentials and unencrypted content in clear text. Strongly prefer HTTPS and enable client encryption.", "localWarning": "This is a LAN HTTP address. Credentials and unencrypted content can still be seen by others on the same network.", "typePrompt": "Type “{{text}}” to continue" },
+      "scan": { "degraded": "Reliable conditional writes are unavailable. Safe-degraded mode will limit high-risk operations.", "description": "Scanning completed during the connection test. Viewing this page does not upload or delete files again.", "empty": "The directory is empty and can host a new sync vault", "emptyNote": "LemonNewTab and its first version are only created after final confirmation.", "existing": "An existing sync vault was found", "existingNote": "Ownership and version integrity were verified. This device is compared next.", "remote-conflict": "The remote vault has multiple version branches", "remoteConflictNote": "A new device cannot safely choose a branch. Resolve the conflict on a device already connected to this vault, then scan again.", "title": "Remote scan result" },
+      "scope": { "blockedTopSitesNote": "May reflect browsing behavior; off by default.", "description": "Core data always syncs. Data that may contain browsing activity is off by default.", "searchHistoryNote": "May include text you typed; off by default.", "title": "Choose sync scope" },
+      "steps": { "compare": "Compare", "confirm": "Confirm", "connection": "Connect", "scan": "Scan", "scope": "Scope", "test": "Test", "wallpaper": "Wallpaper" },
+      "test": { "action": "Test connection", "description": "Only {{origin}} is requested; access to all websites is not a sync requirement.", "notTested": "Not tested yet", "permissionNote": "The browser explains why this address is needed, then the extension performs a read-only scan of its directory.", "retry": "Test again", "scanned": "Basic WebDAV operations work and the read-only remote scan completed.", "success": "Connection successful", "title": "Test connection and grant access" },
+      "wallpaper": { "description": "Only current static images are stored. Videos and historical wallpapers are never uploaded.", "empty": "There are no local image wallpapers to sync", "enable": "Sync these image wallpapers", "limit": "Each image is limited to 20 MB. An oversized wallpaper is skipped while other data still syncs.", "summary": "{{count}} images, {{size}} total", "title": "Sync current image wallpapers?" }
+    },
+    "status": { "authentication": "Sign-in required", "conflict": "Conflicts need attention", "corrupted": "The latest remote version is damaged", "encryptionPassword": "Sync encryption password required", "formatTooNew": "Sync format is newer; upgrade the extension", "paused": "Sync paused", "pending": "Changes waiting to upload", "ready": "Connected; waiting for first check", "remoteDeleted": "Remote sync data was deleted", "remoteReset": "Another device synced a global reset", "storageFull": "WebDAV storage is full", "synced": "Synced", "unconfigured": "Not configured", "wallpaperSkipped": "Core data synced; wallpaper not synced" },
+    "syncNow": "Sync now", "title": "WebDAV Sync"
+  },
   "yiyan": {
     "alwaysShow": "Always show",
     "borderRadius": "Quote background radius",

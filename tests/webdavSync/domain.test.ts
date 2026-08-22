@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   canonicalJson,
+  compareSyncSnapshots,
   captureSyncSnapshot,
   createTombstone,
   createEncryptionAad,
@@ -76,6 +77,22 @@ test('canonical JSON sorts object keys but preserves array order', () => {
   assert.equal(canonicalJson({ z: 1, a: { y: 2, x: [3, 1] } }), '{"a":{"x":[3,1],"y":2},"z":1}')
   assert.equal(canonicalJson(JSON.parse('{"__proto__":{"polluted":true}}')), '{"__proto__":{"polluted":true}}')
   assert.equal(Reflect.has(Object.prototype, 'polluted'), false)
+})
+
+test('history comparison lists changed fields and stable entities without choosing a winner', () => {
+  const current = snapshot()
+  const target = structuredClone(current)
+  target.settings.clock = { size: 60 }
+  target.quickLinks.items[0]!.title = 'Restored A'
+  target.quickLinks.items.push({ id: 'link-b', title: 'B', url: 'https://b.example/' })
+  target.quickLinks.rootOrder.push('link-b')
+
+  const result = compareSyncSnapshots(current, target)
+  assert.equal(result.truncated, false)
+  assert.ok(result.differences.some((item) => item.path === 'settings.clock.size'))
+  assert.ok(result.differences.some((item) => item.path === 'quickLinks.items.link-a.title'))
+  assert.ok(result.differences.some((item) => item.path === 'quickLinks.items.link-b'))
+  assert.ok(result.differences.some((item) => item.path === 'quickLinks.rootOrder'))
 })
 
 test('settings capture removes device-only and cache fields', () => {

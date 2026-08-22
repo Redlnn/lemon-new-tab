@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import i18next from 'i18next'
 import { useTranslation } from 'i18next-vue'
 import BubbleChartRound from '~icons/ic/round-bubble-chart'
-import CloudOffRound from '~icons/ic/round-cloud-off'
+
+import { browser } from 'wxt/browser'
 
 import { BgType } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
+import { idbGet } from '@/shared/storage/idb'
 
 import {
   PermissionContext,
@@ -14,6 +15,8 @@ import {
 } from '@newtab/composables/usePermission'
 import { OPEN_BACKGROUND_PREFERENCE } from '@newtab/shared/keys'
 import { isOnlyTouchDevice } from '@newtab/shared/touch'
+
+import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
 
 import SettingsSection from './SettingsSection.vue'
 
@@ -26,6 +29,48 @@ const predefineMaskColor = ['#f2f3f5', '#000']
 const openBackgroundPreference = inject(OPEN_BACKGROUND_PREFERENCE)
 
 const { checkAndRequestPermission } = usePermission()
+const localWallpaperSize = ref<number>()
+const onlinePermissionPending = ref(false)
+
+const localWallpaper = computed(() => {
+  const source = settings.background.local.id
+    ? settings.background.local
+    : settings.background.localDark
+  return {
+    selected: Boolean(source.id),
+    mediaType: source.mediaType,
+    size: localWallpaperSize.value,
+  }
+})
+
+async function refreshBackgroundAvailability() {
+  const source = settings.background.local.id
+    ? { store: 'wallpaper' as const, value: settings.background.local }
+    : { store: 'wallpaperDark' as const, value: settings.background.localDark }
+  const blob = source.value.id ? await idbGet(source.store, source.value.id) : undefined
+  localWallpaperSize.value = blob instanceof Blob ? blob.size : undefined
+  if (settings.background.bgType !== BgType.Online || !settings.background.online.url) {
+    onlinePermissionPending.value = false
+    return
+  }
+  try {
+    const origin = `${new URL(settings.background.online.url).origin}/*`
+    onlinePermissionPending.value = !(await browser.permissions.contains({ origins: [origin] }))
+  } catch {
+    onlinePermissionPending.value = false
+  }
+}
+
+onMounted(refreshBackgroundAvailability)
+watch(
+  () => [
+    settings.background.bgType,
+    settings.background.local.id,
+    settings.background.localDark.id,
+    settings.background.online.url,
+  ],
+  refreshBackgroundAvailability,
+)
 
 const beforeCacheChange = async () => {
   // 已经开了就是想要关，所以允许关
@@ -38,8 +83,8 @@ const beforeCacheChange = async () => {
   const { hostname } = new URL(settings.background.online.url)
   const result = await checkAndRequestPermission(hostname, true, PermissionContext.WallpaperCache)
   const res = result === PermissionResult.GrantedAll
-  if (res) ElMessage.success(i18next.t('settings:background.cache.nextStartup'))
-  else ElMessage.warning(i18next.t('settings:background.warning.cacheDisabled'))
+  if (res) ElMessage.success(t('settings:background.cache.nextStartup'))
+  else ElMessage.warning(t('settings:background.warning.cacheDisabled'))
   return res
 }
 </script>
@@ -54,7 +99,21 @@ const beforeCacheChange = async () => {
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">
           {{ t('background.change') }}
-          <cloud-off-round />
+          <SyncAvailabilityIcon
+            v-if="settings.background.bgType === BgType.Local"
+            catalog-key="wallpaper.light"
+            wallpaper-variant="light"
+            :wallpaper="localWallpaper"
+          />
+          <SyncAvailabilityIcon
+            v-else-if="settings.background.bgType === BgType.Online"
+            catalog-key="onlineWallpaperUrl"
+          />
+          <SyncAvailabilityIcon
+            v-if="onlinePermissionPending"
+            catalog-key="permission.wallpaper"
+            pending-permission="wallpaper"
+          />
         </div>
         <el-button
           :icon="BubbleChartRound"
@@ -160,7 +219,7 @@ const beforeCacheChange = async () => {
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">
           {{ t('background.cache.label') }}
-          <cloud-off-round />
+          <SyncAvailabilityIcon catalog-key="onlineWallpaperCache" />
         </div>
         <el-tooltip
           :content="t('background.cache.disabledTip')"

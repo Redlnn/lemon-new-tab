@@ -22,6 +22,7 @@ import {
   unlockVaultEncryption,
 } from './crypto.ts'
 import { resolveSyncConflicts } from './conflicts.ts'
+import { compareSyncSnapshots, type SyncDifference } from './differences.ts'
 import { deriveSnapshotTombstones, pruneExpiredTombstones } from './lifecycle.ts'
 import { mergeSyncSnapshots } from './merge.ts'
 import {
@@ -655,6 +656,7 @@ async function runSynchronizationOnce(): Promise<void> {
       local: decision.local,
       remote: decision.remote,
       remoteRevisionIds: decision.remoteRevisionIds,
+      remoteVersions: describeConflictRevisions(revisions, decision.remoteRevisionIds),
     })
     await patchSyncState({ paused: true, pauseReason: 'conflict' })
     return
@@ -1269,6 +1271,7 @@ export async function connectBrowserWebDav(
         local: scanned.local,
         remote: remote.snapshot,
         remoteRevisionIds: [remote.revisionId],
+        remoteVersions: describeConflictRevisions([remote], [remote.revisionId]),
       }),
     ])
     state = await patchSyncState({ paused: true, pauseReason: 'conflict' })
@@ -1483,6 +1486,29 @@ export interface BrowserSyncHistoryEntry {
   reason: SyncRevisionReason
   revisionId: string
   wallpaperAvailable: { dark?: boolean; light?: boolean }
+}
+
+export interface BrowserSyncHistoryPreview {
+  currentSnapshotHash: string
+  differences: SyncDifference[]
+  headRevisionId: string
+  revisionId: string
+  truncated: boolean
+  wallpaperUnavailable: Array<'dark' | 'light'>
+}
+
+function describeConflictRevisions(
+  revisions: readonly SyncRevisionV1[],
+  revisionIds: readonly string[],
+) {
+  const selected = new Set(revisionIds)
+  return revisions
+    .filter((revision) => selected.has(revision.revisionId))
+    .map((revision) => ({
+      revisionId: revision.revisionId,
+      deviceName: revision.device.name,
+      modifiedAt: revision.createdAt,
+    }))
 }
 
 export interface BrowserSyncDeviceEntry {
@@ -1782,24 +1808,20 @@ function validateDeviceRecord(
   return value as SyncDeviceRecordV1
 }
 
-export async function restoreBrowserSyncHistory(revisionId: string): Promise<LocalSyncStateV1> {
-  const opened = await openConfiguredVault()
-  if (opened.state.paused) throw new WebDavError('conflict', 'Resolve sync status before restoring history')
-  const heads = findRevisionHeads(opened.revisions)
-  if (heads.length !== 1) throw new WebDavError('conflict', 'Resolve remote branches first')
-  const target = opened.revisions.find((revision) => revision.revisionId === revisionId)
-  if (!target) throw new WebDavError('not-found', 'History revision no longer exists')
+function prepareHistoricalSnapshot(
+  target: SyncRevisionV1,
+  current: SyncRevisionV1,
+  knownAssets: ReadonlyMap<string, AssetReferenceV1>,
+): { snapshot: SyncSnapshotV1; wallpaperUnavailable: Array<'dark' | 'light'> } {
   const snapshot = structuredClone(target.snapshot)
-  const knownAssets = new Map<string, AssetReferenceV1>()
-  for (const asset of opened.revisions.flatMap((revision) => revision.assets)) {
-    knownAssets.set(asset.id, asset)
-  }
+  const wallpaperUnavailable: Array<'dark' | 'light'> = []
   for (const variant of ['light', 'dark'] as const) {
     const historical = snapshot.optional?.wallpapers?.[variant]
     if (!historical || knownAssets.has(historical.assetId)) continue
-    const current = heads[0]!.snapshot.optional?.wallpapers?.[variant]
-    if (current && knownAssets.has(current.assetId)) {
-      snapshot.optional!.wallpapers![variant] = structuredClone(current)
+    wallpaperUnavailable.push(variant)
+    const replacement = current.snapshot.optional?.wallpapers?.[variant]
+    if (replacement && knownAssets.has(replacement.assetId)) {
+      snapshot.optional!.wallpapers![variant] = structuredClone(replacement)
     } else if (snapshot.optional?.wallpapers) {
       delete snapshot.optional.wallpapers[variant]
     }
@@ -1808,6 +1830,69 @@ export async function restoreBrowserSyncHistory(revisionId: string): Promise<Loc
     delete snapshot.optional.wallpapers
   }
   if (snapshot.optional && Object.keys(snapshot.optional).length === 0) delete snapshot.optional
+  return { snapshot, wallpaperUnavailable }
+}
+
+export async function previewBrowserSyncHistory(
+  revisionId: string,
+): Promise<BrowserSyncHistoryPreview> {
+  const opened = await openConfiguredVault()
+  if (opened.state.paused) throw new WebDavError('conflict', 'Resolve sync status before restoring history')
+  const heads = findRevisionHeads(opened.revisions)
+  if (heads.length !== 1) throw new WebDavError('conflict', 'Resolve remote branches first')
+  const target = opened.revisions.find((revision) => revision.revisionId === revisionId)
+  if (!target) throw new WebDavError('not-found', 'History revision no longer exists')
+  const knownAssets = new Map<string, AssetReferenceV1>()
+  for (const asset of opened.revisions.flatMap((revision) => revision.assets)) {
+    knownAssets.set(asset.id, asset)
+  }
+  const prepared = prepareHistoricalSnapshot(target, heads[0]!, knownAssets)
+  const baseline = await getBaseline()
+  const local = preserveExcludedScope(
+    await captureBrowserSyncSnapshot(opened.state.scope),
+    baseline ?? heads[0]!.snapshot,
+    opened.state.scope,
+  )
+  const comparison = compareSyncSnapshots(local, prepared.snapshot)
+  return {
+    currentSnapshotHash: await hashCanonicalJson(local),
+    differences: comparison.differences,
+    headRevisionId: heads[0]!.revisionId,
+    revisionId,
+    truncated: comparison.truncated,
+    wallpaperUnavailable: prepared.wallpaperUnavailable,
+  }
+}
+
+export async function restoreBrowserSyncHistory(
+  revisionId: string,
+  expected?: { currentSnapshotHash: string; headRevisionId: string },
+): Promise<LocalSyncStateV1> {
+  const opened = await openConfiguredVault()
+  if (opened.state.paused) throw new WebDavError('conflict', 'Resolve sync status before restoring history')
+  const heads = findRevisionHeads(opened.revisions)
+  if (heads.length !== 1) throw new WebDavError('conflict', 'Resolve remote branches first')
+  const target = opened.revisions.find((revision) => revision.revisionId === revisionId)
+  if (!target) throw new WebDavError('not-found', 'History revision no longer exists')
+  const knownAssets = new Map<string, AssetReferenceV1>()
+  for (const asset of opened.revisions.flatMap((revision) => revision.assets)) {
+    knownAssets.set(asset.id, asset)
+  }
+  const { snapshot } = prepareHistoricalSnapshot(target, heads[0]!, knownAssets)
+  if (expected) {
+    const baseline = await getBaseline()
+    const local = preserveExcludedScope(
+      await captureBrowserSyncSnapshot(opened.state.scope),
+      baseline ?? heads[0]!.snapshot,
+      opened.state.scope,
+    )
+    if (
+      heads[0]!.revisionId !== expected.headRevisionId ||
+      (await hashCanonicalJson(local)) !== expected.currentSnapshotHash
+    ) {
+      throw new WebDavError('precondition', 'Local or remote data changed after history preview')
+    }
+  }
   const pending: PendingSyncOperation = {
     operationId: crypto.randomUUID(),
     phase: 'captured',
@@ -1916,6 +2001,10 @@ export async function commitCompressedBrowserWallpaper(
       local: decision.local,
       remote: decision.remote,
       remoteRevisionIds: decision.remoteRevisionIds,
+      remoteVersions: describeConflictRevisions(
+        opened.revisions,
+        decision.remoteRevisionIds,
+      ),
     })
     return patchSyncState({ paused: true, pauseReason: 'conflict' })
   }

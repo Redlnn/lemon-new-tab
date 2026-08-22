@@ -103,11 +103,16 @@ export default defineBackground(() => {
       return {
         conflicts: mergeSyncSnapshots(stored.base, stored.local, stored.remote).conflicts,
         remoteRevisionIds: stored.remoteRevisionIds,
+        remoteVersions: stored.remoteVersions ?? [],
       }
     }
     if (message.type === 'webdav-sync:list-history') {
       const { listBrowserSyncHistory } = await import('@/shared/webdavSync/browserEngine')
       return listBrowserSyncHistory()
+    }
+    if (message.type === 'webdav-sync:preview-history') {
+      const { previewBrowserSyncHistory } = await import('@/shared/webdavSync/browserEngine')
+      return runMaintenance(() => previewBrowserSyncHistory(message.revisionId))
     }
     if (message.type === 'webdav-sync:list-devices') {
       const { listBrowserSyncDevices } = await import('@/shared/webdavSync/browserEngine')
@@ -153,7 +158,7 @@ export default defineBackground(() => {
     }
     if (message.type === 'webdav-sync:restore-history') {
       const { restoreBrowserSyncHistory } = await import('@/shared/webdavSync/browserEngine')
-      return runMaintenance(() => restoreBrowserSyncHistory(message.revisionId))
+      return runMaintenance(() => restoreBrowserSyncHistory(message.revisionId, message.expected))
     }
     if (message.type === 'webdav-sync:reset') {
       const { resetBrowserSyncedData } = await import('@/shared/webdavSync/browserEngine')

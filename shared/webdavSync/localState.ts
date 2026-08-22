@@ -67,6 +67,11 @@ export interface StoredSyncConflictV1 {
   local: SyncSnapshotV1
   remote: SyncSnapshotV1
   remoteRevisionIds: string[]
+  remoteVersions?: Array<{
+    revisionId: string
+    deviceName: string
+    modifiedAt: string
+  }>
 }
 
 const BASELINE_KEY = 'baseline-v1'

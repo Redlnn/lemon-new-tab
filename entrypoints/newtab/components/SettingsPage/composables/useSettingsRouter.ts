@@ -9,6 +9,7 @@ import ApiRound from '~icons/ic/round-api'
 import BookmarkBorderRound from '~icons/ic/round-bookmark-border'
 import DashboardOutlined from '~icons/ic/round-dashboard'
 import FormatQuoteRound from '~icons/ic/round-format-quote'
+import CloudSyncRound from '~icons/ic/round-cloud-sync'
 
 export const SettingsRoute = {
   MENU: 'menu',
@@ -22,6 +23,7 @@ export const SettingsRoute = {
   BOOKMARK_SIDEBAR: 'bookmarkSidebar',
   YIYAN: 'yiyan',
   PERFORMANCE: 'performance',
+  WEBDAV_SYNC: 'webdavSync',
   OTHER: 'other',
 } as const
 export type SettingsRoute = (typeof SettingsRoute)[keyof typeof SettingsRoute]
@@ -82,6 +84,11 @@ export const MENU_ITEMS: MenuItem[] = [
     key: SettingsRoute.PERFORMANCE,
     icon: ApiRound,
     titleKey: 'perf.title',
+  },
+  {
+    key: SettingsRoute.WEBDAV_SYNC,
+    icon: CloudSyncRound,
+    titleKey: 'webdavSync.title',
   },
   {
     key: SettingsRoute.OTHER,

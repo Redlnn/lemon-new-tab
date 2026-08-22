@@ -24,6 +24,9 @@ const settingsViewsMap: Record<
   [SettingsRoute.PERFORMANCE]: defineAsyncComponent(
     () => import('../Settings/PerformanceSettings.vue'),
   ),
+  [SettingsRoute.WEBDAV_SYNC]: defineAsyncComponent(
+    () => import('../Settings/WebDavSyncSettings.vue'),
+  ),
   [SettingsRoute.OTHER]: defineAsyncComponent(() => import('../Settings/OtherSettings.vue')),
 } as const
 

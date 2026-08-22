@@ -1,6 +1,6 @@
 # Lemon New Tab Terms of Service
 
-> Last updated: 2026-05-04
+> Last updated: 2026-08-09
 
 These Terms of Service ("**Terms**") apply to the browser extension **Lemon New Tab**, its distribution channels, and its related public source code repository.
 
@@ -12,7 +12,7 @@ Contact email: <lemon@redlnn.top>
 
 Lemon New Tab is a **local-first** browser new tab extension that provides page customization, Quick Links, bookmark display, frequently visited sites display, search, wallpapers, poetry/quote display, and related features. To support site display features, the extension may also locally read or process **page titles, page URLs / hostnames, and favicon information** from tabs you visit.
 
-Some features depend on browser platform capabilities or third-party services, including without limitation search suggestions, Bing wallpapers, Jinrishici, Hitokoto, third-party favicon services, and online resources configured by you. The current version may also temporarily access sync data retained by the browser vendor from older versions so that you can download or clear it. Those third-party services are not controlled by the developer and do not constitute services independently guaranteed by the developer under these Terms.
+Some features depend on browser platform capabilities or third-party services, including without limitation search suggestions, Bing wallpapers, Jinrishici, Hitokoto, third-party favicon services, online resources configured by you, and a WebDAV provider you affirmatively choose. The current version may also temporarily access sync data retained by the browser vendor from older versions so that you can download or clear it. Those third-party services are not controlled by the developer and do not constitute services independently guaranteed by the developer under these Terms.
 
 ## 2. Eligibility and Acceptance
 
@@ -37,6 +37,7 @@ You agree not to:
 - interfere with, disrupt, overload, or bypass the normal operation of browser platforms, third-party services, or extension functionality;
 - call third-party APIs in an automated, excessive, abnormal, or large-scale manner beyond their reasonable use limits;
 - use the extension to access, collect, store, or distribute content that you do not have the right to handle;
+- connect the extension to a WebDAV account, directory, or server that you are not authorized to use, or use sync to store unlawful, infringing, or malicious content;
 - remove, obscure, or alter copyright notices, trademarks, attribution notices, or disclaimer language.
 
 ## 5. Third-Party Services and External Content
@@ -49,13 +50,16 @@ The extension may connect to or display third-party services, third-party conten
 - Baidu or Google search suggestions;
 - third-party favicon services;
 - online images, videos, APIs, or other network resources configured by you;
+- a WebDAV server or storage provider selected, configured, or operated by you;
 - historical sync data retained by browser vendors, and their distribution, diagnostic, or app store services.
 
 The developer does **not** own, control, or guarantee the availability, stability, accuracy, security, legality, continuity, or compliance of such third-party services. Your access to and use of such services may also be subject to their own terms, privacy policies, and other rules.
 
 ## 6. Default Online Features and User Choice
 
-You understand and agree that some online features are **enabled by default or available by default**, such as search suggestions, Jinrishici content, and third-party favicon lookup, while other online features require your own activation or configuration, such as online wallpapers or custom media URLs. Cloud Sync is no longer supported; the current version only provides temporary controls to detect, download, or clear old cloud data. You also understand that, to display Quick Links, frequently visited sites, or related site cards, the extension may locally access tab titles, page URLs / hostnames, and favicon information.
+You understand and agree that some online features are **enabled by default or available by default**, such as search suggestions, Jinrishici content, and third-party favicon lookup, while other online features require your own activation or configuration, such as online wallpapers, custom media URLs, and the experimental two-way WebDAV sync that is off by default. Legacy browser-account cloud sync is no longer supported; the current version only provides temporary controls to detect, download, or clear old cloud data. You also understand that, to display Quick Links, frequently visited sites, or related site cards, the extension may locally access tab titles, page URLs / hostnames, and favicon information.
+
+WebDAV sync sends content you select directly to the server you specify. You are responsible for confirming that you are authorized to use that server and for evaluating the provider's terms, privacy practices, data location, capacity, backups, deletion behavior, and security. HTTPS should be used by default. If you proceed with HTTP, credentials, unencrypted content, and network metadata may be intercepted. Client-side encryption does not protect the WebDAV login and cannot recover a forgotten independent sync encryption password.
 
 You may decide whether to continue using such online features through extension settings, browser permission settings, network blocking rules, or by uninstalling the extension. Disabling or blocking them may affect feature availability or user experience.
 
@@ -87,6 +91,7 @@ To the maximum extent permitted by applicable law:
 3. the developer does not guarantee that any third-party API, online resource, search result, wallpaper, poem, quote, or site icon will always be available, accurate, complete, or secure;
 4. the developer does not guarantee that the extension is fit for your particular purpose or that data loss, configuration conflicts, third-party restrictions, API changes, regional blocking, or compatibility issues will not occur;
 5. you are responsible for backing up important configuration, files, and other data, and for deciding whether to enable online features.
+6. experimental WebDAV sync may pause because of server incompatibility, concurrent writes, quotas, network failure, exposed credentials, a forgotten encryption password, remote deletion, or version corruption. The developer does not guarantee continuous compatibility with any third-party WebDAV service or that provider backups or trash are erased immediately by an extension deletion request.
 
 ## 11. Limitation of Liability
 
@@ -95,6 +100,7 @@ To the maximum extent permitted by applicable law, the developer will not be lia
 - your use of or inability to use the extension;
 - any unavailability, modification, rate limiting, suspension, redirection, error, or shutdown of third-party services;
 - issues caused by browsers, operating systems, network conditions, regional restrictions, app store policies, or historical sync-data handling;
+- issues caused by your WebDAV provider, HTTP transport, account credentials, quotas, server compatibility, backups, or propagation of remote deletion;
 - data loss, configuration corruption, business interruption, device issues, lost profits, or lost opportunities;
 - unauthorized access, malware, attacks, user misconfiguration, or third-party causes.
 
