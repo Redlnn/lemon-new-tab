@@ -21,7 +21,8 @@ async function refresh() {
 async function download() {
   loading.value = true
   try {
-    if (await downloadRetiredCloudSnapshot()) ElMessage.success(t('other.syncRetirement.downloadStarted'))
+    if (await downloadRetiredCloudSnapshot())
+      ElMessage.success(t('other.syncRetirement.downloadStarted'))
     else ElMessage.info(t('other.syncRetirement.noCloudData'))
   } catch {
     ElMessage.error(t('other.syncRetirement.downloadFailed'))
@@ -32,11 +33,9 @@ async function download() {
 
 async function clear() {
   try {
-    await ElMessageBox.confirm(
-      t('webdavSync.legacy.clearConfirm'),
-      t('webdavSync.legacy.title'),
-      { type: 'warning' },
-    )
+    await ElMessageBox.confirm(t('webdavSync.legacy.clearConfirm'), t('webdavSync.legacy.title'), {
+      type: 'warning',
+    })
   } catch {
     return
   }
@@ -56,12 +55,14 @@ onMounted(() => void refresh())
 </script>
 
 <template>
-  <el-collapse class="sync-compact-collapse">
+  <el-collapse class="sync-compact-collapse settings-section--wide">
     <el-collapse-item name="legacy">
       <template #title>
         <span class="sync-compact-title">
           <strong>{{ t('webdavSync.legacy.title') }}</strong>
-          <el-tag v-if="hasData" size="small" type="warning">{{ t('webdavSync.legacy.found') }}</el-tag>
+          <el-tag v-if="hasData" size="small" type="warning">{{
+            t('webdavSync.legacy.found')
+          }}</el-tag>
         </span>
       </template>
       <p>{{ t('webdavSync.legacy.description') }}</p>

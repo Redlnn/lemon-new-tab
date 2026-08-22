@@ -13,6 +13,11 @@ import type {
   BrowserSyncDeviceEntry,
 } from './browserEngine.ts'
 import type { BrowserCorruptionInspection } from './browserManagement.ts'
+import { parseLocalSyncState } from './validation.ts'
+import {
+  deserializeWebDavError,
+  type SerializedWebDavError,
+} from './webdav.ts'
 
 export interface BrowserSyncConflictDetails {
   conflicts: SyncConflict[]
@@ -75,6 +80,10 @@ export type WebDavSyncMessage =
     }
   | { type: 'webdav-sync:unlock-encryption'; password: string }
 
+async function sendStateMessage(message: WebDavSyncMessage): Promise<LocalSyncStateV1> {
+  return parseLocalSyncState(await browser.runtime.sendMessage(message))
+}
+
 export function sendSyncDataChanged(): void {
   void browser.runtime
     .sendMessage({ type: 'webdav-sync:data-changed' } satisfies WebDavSyncMessage)
@@ -82,11 +91,11 @@ export function sendSyncDataChanged(): void {
 }
 
 export function syncNow(): Promise<LocalSyncStateV1> {
-  return browser.runtime.sendMessage({ type: 'webdav-sync:immediate' } satisfies WebDavSyncMessage)
+  return sendStateMessage({ type: 'webdav-sync:immediate' })
 }
 
 export function getSyncState(): Promise<LocalSyncStateV1> {
-  return browser.runtime.sendMessage({ type: 'webdav-sync:get-state' } satisfies WebDavSyncMessage)
+  return sendStateMessage({ type: 'webdav-sync:get-state' })
 }
 
 export function inspectSyncCorruption(): Promise<BrowserCorruptionInspection> {
@@ -110,7 +119,7 @@ export function repairSyncCorruption(input: {
   downloaded: boolean
   revisionId: string
 }): Promise<LocalSyncStateV1> {
-  return browser.runtime.sendMessage({
+  return sendStateMessage({
     type: 'webdav-sync:repair-corruption',
     ...input,
   } satisfies WebDavSyncMessage)
@@ -120,7 +129,7 @@ export function deleteSyncCorruption(
   revisionId: string,
   actualPayloadHash: string,
 ): Promise<LocalSyncStateV1> {
-  return browser.runtime.sendMessage({
+  return sendStateMessage({
     type: 'webdav-sync:delete-corruption',
     revisionId,
     actualPayloadHash,
@@ -131,7 +140,7 @@ export function disconnectSyncConnection(
   deleteRemote: boolean,
   confirmationText?: string,
 ): Promise<LocalSyncStateV1> {
-  return browser.runtime.sendMessage({
+  return sendStateMessage({
     type: 'webdav-sync:disconnect',
     deleteRemote,
     confirmationText,
@@ -144,7 +153,18 @@ export function previewSyncConnection(
   return browser.runtime.sendMessage({
     type: 'webdav-sync:preview-connection',
     input,
-  } satisfies WebDavSyncMessage)
+  } satisfies WebDavSyncMessage).then(
+    (result: {
+      ok: true
+      value: BrowserWebDavSetupPreview
+    } | {
+      ok: false
+      error: SerializedWebDavError
+    }) => {
+      if (!result.ok) throw deserializeWebDavError(result.error)
+      return result.value
+    },
+  )
 }
 
 export function connectSyncConnection(
@@ -154,7 +174,7 @@ export function connectSyncConnection(
     'generationId' | 'headRevisionIds' | 'localSnapshotHash' | 'state' | 'vaultId'
   >,
 ): Promise<LocalSyncStateV1> {
-  return browser.runtime.sendMessage({
+  return sendStateMessage({
     type: 'webdav-sync:connect',
     input,
     expected,
@@ -183,7 +203,7 @@ export function previewSyncHistory(revisionId: string): Promise<BrowserSyncHisto
 export function restoreSyncHistory(
   preview: Pick<BrowserSyncHistoryPreview, 'currentSnapshotHash' | 'headRevisionId' | 'revisionId'>,
 ): Promise<LocalSyncStateV1> {
-  return browser.runtime.sendMessage({
+  return sendStateMessage({
     type: 'webdav-sync:restore-history',
     revisionId: preview.revisionId,
     expected: {
@@ -196,7 +216,7 @@ export function restoreSyncHistory(
 export function updateSyncPreferences(input: {
   scope?: Partial<LocalSyncStateV1['scope']>
 }): Promise<LocalSyncStateV1> {
-  return browser.runtime.sendMessage({
+  return sendStateMessage({
     type: 'webdav-sync:update-preferences',
     ...input,
   } satisfies WebDavSyncMessage)
@@ -205,14 +225,14 @@ export function updateSyncPreferences(input: {
 export function resolveSyncConflict(
   resolutions: SyncConflictResolution[],
 ): Promise<LocalSyncStateV1> {
-  return browser.runtime.sendMessage({
+  return sendStateMessage({
     type: 'webdav-sync:resolve-conflict',
     resolutions,
   } satisfies WebDavSyncMessage)
 }
 
 export function unlockSyncEncryption(password: string): Promise<LocalSyncStateV1> {
-  return browser.runtime.sendMessage({
+  return sendStateMessage({
     type: 'webdav-sync:unlock-encryption',
     password,
   } satisfies WebDavSyncMessage)

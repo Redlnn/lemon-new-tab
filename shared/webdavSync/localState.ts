@@ -28,7 +28,7 @@ export const DEFAULT_SYNC_SCOPE: Readonly<SyncScopePreferences> = {
 }
 
 function normalizeScope(value: Partial<SyncScopePreferences> | undefined): SyncScopePreferences {
-  return {
+  const scope: SyncScopePreferences = {
     settings: typeof value?.settings === 'boolean' ? value.settings : DEFAULT_SYNC_SCOPE.settings,
     quickLinks: typeof value?.quickLinks === 'boolean' ? value.quickLinks : DEFAULT_SYNC_SCOPE.quickLinks,
     customSearchEngines: typeof value?.customSearchEngines === 'boolean'
@@ -49,6 +49,23 @@ function normalizeScope(value: Partial<SyncScopePreferences> | undefined): SyncS
     userIcons: typeof value?.userIcons === 'boolean'
       ? value.userIcons
       : DEFAULT_SYNC_SCOPE.userIcons,
+  }
+  return Object.values(scope).some(Boolean) ? scope : { ...DEFAULT_SYNC_SCOPE }
+}
+
+export function normalizeLocalSyncState(value: unknown): LocalSyncStateV1 {
+  const current = value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Partial<LocalSyncStateV1>
+    : {}
+  return {
+    ...current,
+    configured: current.configured === true,
+    paused: current.paused === true,
+    deviceId: typeof current.deviceId === 'string' ? current.deviceId : '',
+    deviceName: typeof current.deviceName === 'string' ? current.deviceName : '',
+    resourceOmissions: Array.isArray(current.resourceOmissions) ? current.resourceOmissions : [],
+    scope: normalizeScope(current.scope),
+    encrypted: current.encrypted === true,
   }
 }
 
@@ -140,14 +157,15 @@ export const webDavSyncStateStorage = storage.defineItem<LocalSyncStateV1>(
 )
 
 export async function getOrCreateSyncState(): Promise<LocalSyncStateV1> {
-  const current = await webDavSyncStateStorage.getValue()
+  const stored = await webDavSyncStateStorage.getValue()
+  const current = normalizeLocalSyncState(stored)
   const state: LocalSyncStateV1 = {
     ...current,
     deviceId: current.deviceId || crypto.randomUUID(),
     resourceOmissions: current.resourceOmissions ?? [],
     scope: normalizeScope(current.scope),
   }
-  if (canonicalState(current) !== canonicalState(state)) await webDavSyncStateStorage.setValue(state)
+  if (canonicalState(stored) !== canonicalState(state)) await webDavSyncStateStorage.setValue(state)
   return state
 }
 
@@ -270,6 +288,6 @@ export function clearStoredConflict(): Promise<void> {
   return idbDelete('webdavSync', CONFLICT_KEY)
 }
 
-function canonicalState(value: LocalSyncStateV1): string {
+function canonicalState(value: unknown): string | undefined {
   return JSON.stringify(value)
 }

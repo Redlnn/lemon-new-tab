@@ -1,3 +1,5 @@
+import { DOMParser, type Element } from '@xmldom/xmldom'
+
 import { canonicalJson, hashCanonicalJson, sha256Hex } from './canonical.ts'
 import { MAX_PBKDF2_ITERATIONS, MIN_PBKDF2_ITERATIONS } from './crypto.ts'
 import {
@@ -73,6 +75,23 @@ export class WebDavError extends Error {
     this.status = status
     this.redirectOrigin = redirectOrigin
   }
+}
+
+export interface SerializedWebDavError {
+  category: WebDavErrorCategory
+  status?: number
+}
+
+/** 只跨扩展消息边界传递决策所需字段，避免带出地址或凭据。 */
+export function serializeWebDavError(error: WebDavError): SerializedWebDavError {
+  return {
+    category: error.category,
+    ...(error.status === undefined ? {} : { status: error.status }),
+  }
+}
+
+export function deserializeWebDavError(error: SerializedWebDavError): WebDavError {
+  return new WebDavError(error.category, 'WebDAV connection test failed', error.status)
 }
 
 export interface WebDavConnection {
@@ -253,7 +272,16 @@ function firstDavElement(parent: Element, localName: string): Element | undefine
 }
 
 export function parseWebDavMultiStatus(xml: string, requestUrl: URL): WebDavEntry[] {
-  const document = new DOMParser().parseFromString(xml, 'application/xml')
+  let document: ReturnType<DOMParser['parseFromString']>
+  try {
+    document = new DOMParser({
+      onError(level, message) {
+        if (level !== 'warning') throw new Error(message)
+      },
+    }).parseFromString(xml, 'application/xml')
+  } catch {
+    throw new WebDavError('invalid-response', 'WebDAV returned malformed XML')
+  }
   if (document.getElementsByTagName('parsererror').length > 0) {
     throw new WebDavError('invalid-response', 'WebDAV returned malformed XML')
   }
@@ -308,7 +336,7 @@ export class WebDavClient {
   ) {
     this.baseUrl = normalizeBaseUrl(connection)
     this.authorization = encodeBasicCredentials(connection.username, connection.password)
-    this.fetchImpl = fetchImpl
+    this.fetchImpl = fetchImpl.bind(globalThis)
     this.parseMultiStatus = parseMultiStatus
   }
 

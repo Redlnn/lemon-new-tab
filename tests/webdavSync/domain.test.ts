@@ -22,6 +22,7 @@ import {
   mergeImportedSnapshot,
   mergeSyncSettings,
   parseJsonBackup,
+  parseLocalSyncState,
   preserveExcludedScope,
   preserveBaselineWallpapers,
   mustReinitializeDevice,
@@ -102,6 +103,22 @@ test('canonical JSON sorts object keys but preserves array order', () => {
   assert.equal(canonicalJson({ z: 1, a: { y: 2, x: [3, 1] } }), '{"a":{"x":[3,1],"y":2},"z":1}')
   assert.equal(canonicalJson(JSON.parse('{"__proto__":{"polluted":true}}')), '{"__proto__":{"polluted":true}}')
   assert.equal(Reflect.has(Object.prototype, 'polluted'), false)
+})
+
+test('sync state bridge rejects an empty background response', () => {
+  assert.throws(() => parseLocalSyncState(null), /invalid sync state/i)
+  assert.deepEqual(
+    parseLocalSyncState({
+      configured: false,
+      paused: false,
+      deviceId: 'device-id',
+      deviceName: 'Test device',
+      resourceOmissions: [],
+      scope: syncScope(),
+      encrypted: false,
+    }).deviceId,
+    'device-id',
+  )
 })
 
 test('history comparison lists changed fields and stable entities without choosing a winner', () => {

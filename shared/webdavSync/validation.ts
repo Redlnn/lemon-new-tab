@@ -8,6 +8,7 @@ import {
 import type {
   AssetReferenceV1,
   CommitRecordV1,
+  LocalSyncStateV1,
   SyncRevisionReason,
   SyncRevisionV1,
   SyncScopePreferences,
@@ -211,6 +212,22 @@ export function isSyncScope(value: unknown): value is SyncScopePreferences {
   ]
   return keys.every((key) => typeof value[key] === 'boolean')
     && keys.some((key) => value[key] === true)
+}
+
+export function parseLocalSyncState(value: unknown): LocalSyncStateV1 {
+  if (
+    !isRecord(value) ||
+    typeof value.configured !== 'boolean' ||
+    typeof value.paused !== 'boolean' ||
+    typeof value.deviceId !== 'string' ||
+    typeof value.deviceName !== 'string' ||
+    !Array.isArray(value.resourceOmissions) ||
+    !isSyncScope(value.scope) ||
+    typeof value.encrypted !== 'boolean'
+  ) {
+    throw new TypeError('Invalid sync state response')
+  }
+  return value as unknown as LocalSyncStateV1
 }
 
 function isInlineImages(value: unknown): value is Record<string, string> {

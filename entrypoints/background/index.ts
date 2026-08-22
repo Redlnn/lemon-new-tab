@@ -9,6 +9,8 @@ import {
   webDavSyncConfigStorage,
 } from '@/shared/webdavSync/localState'
 import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
+import { hasExactWebDavPermission } from '@/shared/webdavSync/permissions'
+import { serializeWebDavError, WebDavError } from '@/shared/webdavSync/webdav'
 
 const SYNC_DATA_KEYS = new Set([
   'settings',
@@ -77,8 +79,18 @@ export default defineBackground(() => {
     }
     if (message.type === 'webdav-sync:get-state') return getOrCreateSyncState()
     if (message.type === 'webdav-sync:preview-connection') {
-      const { previewBrowserWebDavSetup } = await import('@/shared/webdavSync/browserEngine')
-      return previewBrowserWebDavSetup(message.input)
+      try {
+        if (!(await hasExactWebDavPermission(message.input.connection.baseUrl))) {
+          throw new WebDavError('forbidden', 'WebDAV host permission is not granted')
+        }
+        const { previewBrowserWebDavSetup } = await import('@/shared/webdavSync/browserEngine')
+        return { ok: true, value: await previewBrowserWebDavSetup(message.input) }
+      } catch (error) {
+        if (!(error instanceof WebDavError)) throw error
+        const safeError = serializeWebDavError(error)
+        console.error('[webdav-sync] Connection test failed', safeError)
+        return { ok: false, error: safeError }
+      }
     }
     if (message.type === 'webdav-sync:connect') {
       const { connectBrowserWebDav } = await import('@/shared/webdavSync/browserEngine')

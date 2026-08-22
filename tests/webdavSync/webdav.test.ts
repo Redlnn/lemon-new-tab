@@ -10,9 +10,12 @@ import {
   createEncryptionAad,
   createVaultEncryption,
   decryptSyncBytes,
+  deserializeWebDavError,
   encryptSyncBytes,
   probeWebDavCapabilities,
   hashCanonicalJson,
+  parseWebDavMultiStatus,
+  serializeWebDavError,
   type SyncRevisionV1,
   type VaultMetadataV1,
   type WebDavEntry,
@@ -232,6 +235,57 @@ test('address classification produces an exact origin permission and requires ex
   assert.throws(() => classifyWebDavAddress('https://user:secret@dav.example/dav'))
 })
 
+test('WebDAV client preserves the global fetch receiver in a service worker', async () => {
+  const fetchWithRequiredReceiver: typeof fetch = async function (input, init) {
+    assert.equal(this, globalThis)
+    assert.equal(init?.method, 'GET')
+    assert.equal(String(input), 'https://dav.example/dav/file.json')
+    return new Response('{}', { status: 200 })
+  }
+  const webDav = new WebDavClient(
+    { baseUrl: 'https://dav.example/dav/', username: 'lemon', password: 'secret' },
+    fetchWithRequiredReceiver,
+  )
+
+  await webDav.get('file.json')
+})
+
+test('WebDAV multi-status parser works without DOMParser in a service worker', () => {
+  const entries = parseWebDavMultiStatus(
+    '<?xml version="1.0"?><D:multistatus xmlns:D="DAV:"><D:response><D:href>/dav/</D:href><D:propstat><D:prop><D:resourcetype><D:collection/></D:resourcetype><D:getetag>"directory"</D:getetag></D:prop></D:propstat></D:response><D:response><D:href>/dav/hello%20world.json</D:href><D:propstat><D:prop><D:resourcetype/><D:getetag>"file"</D:getetag><D:getcontentlength>5</D:getcontentlength><D:getlastmodified>Sat, 22 Aug 2026 13:28:24 GMT</D:getlastmodified></D:prop></D:propstat></D:response></D:multistatus>',
+    new URL('http://127.0.0.1:6065/dav/'),
+  )
+
+  assert.deepEqual(entries, [
+    {
+      url: 'http://127.0.0.1:6065/dav/',
+      name: 'dav',
+      isCollection: true,
+      etag: '"directory"',
+      lastModified: undefined,
+    },
+    {
+      url: 'http://127.0.0.1:6065/dav/hello%20world.json',
+      name: 'hello world.json',
+      isCollection: false,
+      etag: '"file"',
+      contentLength: 5,
+      lastModified: 'Sat, 22 Aug 2026 13:28:24 GMT',
+    },
+  ])
+})
+
+test('WebDAV multi-status parser rejects malformed XML', () => {
+  assert.throws(
+    () =>
+      parseWebDavMultiStatus(
+        '<D:multistatus xmlns:D="DAV:"><D:response><D:href>/dav/</D:response>',
+        new URL('https://dav.example/dav/'),
+      ),
+    (error: unknown) => error instanceof WebDavError && error.category === 'invalid-response',
+  )
+})
+
 test('capability probe requires conditional writes and removes all test files', async () => {
   const server = new FakeWebDavServer()
   const result = await probeWebDavCapabilities(client(server))
@@ -419,6 +473,18 @@ test('HTTP error categories preserve safe coordinator decisions', async () => {
     client(server).put('file.json', '{}'),
     (error: unknown) => error instanceof WebDavError && error.category === 'storage-full',
   )
+})
+
+test('WebDAV errors cross the runtime boundary without leaking request details', () => {
+  const serialized = serializeWebDavError(
+    new WebDavError('authentication', 'failed for https://user:secret@dav.example', 401),
+  )
+  assert.deepEqual(serialized, { category: 'authentication', status: 401 })
+  assert.equal(JSON.stringify(serialized).includes('secret'), false)
+
+  const restored = deserializeWebDavError(serialized)
+  assert.equal(restored.category, 'authentication')
+  assert.equal(restored.status, 401)
 })
 
 test('history cleanup keeps the newest versions and refuses unresolved branches', async () => {
