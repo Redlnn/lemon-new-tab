@@ -103,11 +103,6 @@ export interface CommitRecordV1 {
   complete: true
 }
 
-export interface WebDavCapabilitiesV1 {
-  conditionalCreate: true
-  conditionalUpdate: true
-}
-
 export interface VaultMetadataV1 {
   product: 'lemon-new-tab'
   formatVersion: 1
@@ -115,8 +110,6 @@ export interface VaultMetadataV1 {
   generationId: string
   encrypted: boolean
   encryption?: VaultEncryptionMetadataV1
-  capabilities: WebDavCapabilitiesV1
-  currentRevisionId?: string
 }
 
 export interface VaultEncryptionMetadataV1 {
@@ -202,7 +195,6 @@ export type PendingSyncPhase =
   | 'captured'
   | 'assets-uploaded'
   | 'committed'
-  | 'head-updated'
   | 'applying-local'
 
 export interface PendingSyncOperation {

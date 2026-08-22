@@ -158,7 +158,6 @@ export async function repairBrowserSyncCorruption(input: {
   const previous = validHeads[0]!
   if (
     previous.reason === 'repair' &&
-    opened.metadata.currentRevisionId === previous.revisionId &&
     opened.state.baseRevisionId === previous.revisionId
   ) {
     return patchSyncState({ paused: true, pauseReason: 'corrupted-remote' })
@@ -178,7 +177,6 @@ export async function repairBrowserSyncCorruption(input: {
   await publishAndFinalize({
     repository: opened.repository,
     metadata: opened.metadata,
-    vaultEtag: opened.inspection.etag,
     state: opened.state,
     pending,
     parents: [previous.revisionId],
@@ -197,25 +195,23 @@ export async function deleteBrowserCorruptedRevision(input: {
   revisionId: string
 }): Promise<LocalSyncStateV1> {
   const opened = await openConfiguredVault(false)
-  const commits = await opened.repository.listCommits(opened.metadata)
-  const damaged = commits.find((commit) => commit.revisionId === input.revisionId)
-  const current = commits.find(
-    (commit) => commit.revisionId === opened.metadata.currentRevisionId,
-  )
-  if (!damaged || !current || current.revisionId !== opened.state.baseRevisionId) {
+  const scan = await scanCorruptedRevisions(opened)
+  const damaged = scan.corrupted.find((commit) => commit.revisionId === input.revisionId)
+  const heads = findRevisionHeads(scan.valid)
+  const current = heads.length === 1 ? heads[0] : undefined
+  if (
+    scan.corrupted.length !== 1 ||
+    !damaged ||
+    !current ||
+    current.revisionId !== opened.state.baseRevisionId
+  ) {
     throw new WebDavError('precondition', 'Repair state changed before damaged data was deleted')
   }
   const raw = await opened.repository.readStoredPayloadUnchecked(damaged)
   if ((await sha256Hex(raw)) !== input.actualPayloadHash) {
     throw new WebDavError('precondition', 'Damaged revision changed before deletion')
   }
-  const [repair] = await readRevisions(
-    opened.repository,
-    opened.metadata,
-    opened.encryptionKey,
-    [current],
-  )
-  if (!repair || repair.reason !== 'repair') {
+  if (current.reason !== 'repair') {
     throw new WebDavError('precondition', 'The verified repair revision is no longer current')
   }
   await opened.repository.deleteRevision(opened.metadata, damaged.revisionId)
@@ -420,7 +416,6 @@ export async function restoreBrowserSyncHistory(
   await publishAndFinalize({
     repository: opened.repository,
     metadata: opened.metadata,
-    vaultEtag: opened.inspection.etag,
     state: opened.state,
     pending,
     parents: [heads[0]!.revisionId],

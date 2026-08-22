@@ -12,9 +12,10 @@ import {
   decryptSyncBytes,
   deserializeWebDavError,
   encryptSyncBytes,
-  probeWebDavCapabilities,
+  findRevisionHeads,
   hashCanonicalJson,
   parseWebDavMultiStatus,
+  probeWebDavAccess,
   serializeWebDavError,
   type SyncRevisionV1,
   type VaultMetadataV1,
@@ -27,19 +28,17 @@ const encoder = new TextEncoder()
 type FakeResource = {
   bytes: Uint8Array
   collection: boolean
-  etag: string
   lastModified: string
 }
 
 class FakeWebDavServer {
   readonly resources = new Map<string, FakeResource>()
   readonly events: string[] = []
-  honorConditionalCreate = true
-  honorConditionalUpdate = true
+  conditionalHeadersSeen = false
   redirectTo: string | undefined
   corruptPath: string | undefined
   forcedStatus: number | undefined
-  private etagVersion = 0
+  losePutResponsePath: string | undefined
 
   constructor() {
     this.resources.set('/dav', this.resource(new Uint8Array(), true))
@@ -53,6 +52,9 @@ class FakeWebDavServer {
     const path = decodeURIComponent(url.pathname).replace(/\/$/, '') || '/'
     const headers = new Headers(init.headers)
     this.events.push(`${method} ${path}`)
+    if (headers.has('If-Match') || headers.has('If-None-Match')) {
+      this.conditionalHeadersSeen = true
+    }
 
     if (this.redirectTo) {
       return new Response(null, { status: 302, headers: { Location: this.redirectTo } })
@@ -69,20 +71,14 @@ class FakeWebDavServer {
     if (method === 'PUT') {
       if (!this.resources.get(this.parent(path))?.collection) return new Response(null, { status: 409 })
       const existing = this.resources.get(path)
-      if (this.honorConditionalCreate && headers.get('If-None-Match') === '*' && existing) {
-        return new Response(null, { status: 412 })
-      }
-      if (
-        this.honorConditionalUpdate &&
-        headers.has('If-Match') &&
-        (!existing || headers.get('If-Match') !== existing.etag)
-      ) {
-        return new Response(null, { status: 412 })
-      }
       const bytes = await this.readBody(init.body)
       const resource = this.resource(bytes, false)
       this.resources.set(path, resource)
-      return new Response(null, { status: existing ? 204 : 201, headers: { ETag: resource.etag } })
+      if (path === this.losePutResponsePath) {
+        this.losePutResponsePath = undefined
+        return new Response(null, { status: 500 })
+      }
+      return new Response(null, { status: existing ? 204 : 201 })
     }
     if (method === 'GET') {
       const resource = this.resources.get(path)
@@ -90,7 +86,7 @@ class FakeWebDavServer {
       const bytes = path === this.corruptPath ? encoder.encode('corrupted') : resource.bytes
       return new Response(bytes, {
         status: 200,
-        headers: { ETag: resource.etag, 'Content-Length': String(bytes.byteLength) },
+        headers: { 'Content-Length': String(bytes.byteLength) },
       })
     }
     if (method === 'DELETE') {
@@ -109,7 +105,6 @@ class FakeWebDavServer {
           url: `${url.origin}${key}${value.collection ? '/' : ''}`,
           name: key.slice(key.lastIndexOf('/') + 1),
           isCollection: value.collection,
-          etag: value.etag,
           contentLength: value.bytes.byteLength,
           lastModified: value.lastModified,
         }))
@@ -122,7 +117,6 @@ class FakeWebDavServer {
     return {
       bytes: bytes.slice(),
       collection,
-      etag: `"etag-${++this.etagVersion}"`,
       lastModified: new Date().toUTCString(),
     }
   }
@@ -147,14 +141,13 @@ function client(server: FakeWebDavServer) {
   )
 }
 
-function metadata(capabilities: VaultMetadataV1['capabilities']): VaultMetadataV1 {
+function metadata(): VaultMetadataV1 {
   return {
     product: 'lemon-new-tab',
     formatVersion: 1,
     vaultId: '11111111-1111-4111-8111-111111111111',
     generationId: '22222222-2222-4222-8222-222222222222',
     encrypted: false,
-    capabilities,
   }
 }
 
@@ -252,7 +245,7 @@ test('WebDAV client preserves the global fetch receiver in a service worker', as
 
 test('WebDAV multi-status parser works without DOMParser in a service worker', () => {
   const entries = parseWebDavMultiStatus(
-    '<?xml version="1.0"?><D:multistatus xmlns:D="DAV:"><D:response><D:href>/dav/</D:href><D:propstat><D:prop><D:resourcetype><D:collection/></D:resourcetype><D:getetag>"directory"</D:getetag></D:prop></D:propstat></D:response><D:response><D:href>/dav/hello%20world.json</D:href><D:propstat><D:prop><D:resourcetype/><D:getetag>"file"</D:getetag><D:getcontentlength>5</D:getcontentlength><D:getlastmodified>Sat, 22 Aug 2026 13:28:24 GMT</D:getlastmodified></D:prop></D:propstat></D:response></D:multistatus>',
+    '<?xml version="1.0"?><D:multistatus xmlns:D="DAV:"><D:response><D:href>/dav/</D:href><D:propstat><D:prop><D:resourcetype><D:collection/></D:resourcetype></D:prop></D:propstat></D:response><D:response><D:href>/dav/hello%20world.json</D:href><D:propstat><D:prop><D:resourcetype/><D:getcontentlength>5</D:getcontentlength><D:getlastmodified>Sat, 22 Aug 2026 13:28:24 GMT</D:getlastmodified></D:prop></D:propstat></D:response></D:multistatus>',
     new URL('http://127.0.0.1:6065/dav/'),
   )
 
@@ -261,14 +254,12 @@ test('WebDAV multi-status parser works without DOMParser in a service worker', (
       url: 'http://127.0.0.1:6065/dav/',
       name: 'dav',
       isCollection: true,
-      etag: '"directory"',
       lastModified: undefined,
     },
     {
       url: 'http://127.0.0.1:6065/dav/hello%20world.json',
       name: 'hello world.json',
       isCollection: false,
-      etag: '"file"',
       contentLength: 5,
       lastModified: 'Sat, 22 Aug 2026 13:28:24 GMT',
     },
@@ -286,34 +277,19 @@ test('WebDAV multi-status parser rejects malformed XML', () => {
   )
 })
 
-test('capability probe requires conditional writes and removes all test files', async () => {
+test('access probe verifies basic WebDAV operations without conditional headers and cleans up', async () => {
   const server = new FakeWebDavServer()
-  const result = await probeWebDavCapabilities(client(server))
-  assert.deepEqual(result, {
-    conditionalCreate: true,
-    conditionalUpdate: true,
-  })
-  assert.deepEqual([...server.resources.keys()], ['/dav'])
-})
-
-test('capability probe rejects servers that ignore conditional writes', async () => {
-  const server = new FakeWebDavServer()
-  server.honorConditionalCreate = false
-  server.honorConditionalUpdate = false
-  await assert.rejects(
-    probeWebDavCapabilities(client(server)),
-    (error: unknown) => error instanceof WebDavError && error.category === 'unsupported',
-  )
+  await probeWebDavAccess(client(server))
+  assert.equal(server.conditionalHeadersSeen, false)
   assert.deepEqual([...server.resources.keys()], ['/dav'])
 })
 
 test('vault publication makes a revision visible only after payload verification and commit', async () => {
   const server = new FakeWebDavServer()
-  const capabilities = await probeWebDavCapabilities(client(server))
   server.events.length = 0
-  const vault = metadata(capabilities)
+  const vault = metadata()
   const repository = new WebDavVaultRepository(client(server))
-  const initialized = await repository.initialize(vault)
+  await repository.initialize(vault)
   const value = await revision(vault)
   const commit = await repository.publishRevision(vault, value)
   const commits = await repository.listCommits(vault)
@@ -324,34 +300,99 @@ test('vault publication makes a revision visible only after payload verification
   const revisionGet = server.events.findIndex((event) => event.includes('GET /dav/LemonNewTab/generations/') && event.includes('/revisions/'))
   const commitPut = server.events.findIndex((event) => event.includes('PUT /dav/LemonNewTab/generations/') && event.includes('/commits/'))
   assert.ok(revisionPut >= 0 && revisionGet > revisionPut && commitPut > revisionGet)
-
-  const updated = await repository.updateCurrentRevision(vault, initialized.etag, value.revisionId)
-  assert.equal(updated.metadata.currentRevisionId, value.revisionId)
+  assert.equal(server.events.filter((event) => event === 'PUT /dav/LemonNewTab/vault.json').length, 1)
+  assert.equal(server.conditionalHeadersSeen, false)
 })
 
-test('stale vault ETag cannot overwrite a newer current pointer', async () => {
+test('concurrent revisions remain visible and a multi-parent revision converges the DAG', async () => {
   const server = new FakeWebDavServer()
-  const capabilities = await probeWebDavCapabilities(client(server))
-  const vault = metadata(capabilities)
+  const vault = metadata()
   const repository = new WebDavVaultRepository(client(server))
-  const initialized = await repository.initialize(vault)
-  await repository.updateCurrentRevision(vault, initialized.etag, 'revision-a')
-  await assert.rejects(
-    repository.updateCurrentRevision(vault, initialized.etag, 'revision-b'),
-    (error: unknown) => error instanceof WebDavError && error.category === 'precondition',
+  await repository.initialize(vault)
+  const root = await revision(vault)
+  await repository.publishRevision(vault, root)
+  const left = await revision(
+    vault,
+    '66666666-6666-4666-8666-666666666661',
+    [root.revisionId],
   )
+  const right = await revision(
+    vault,
+    '66666666-6666-4666-8666-666666666662',
+    [root.revisionId],
+  )
+  await Promise.all([
+    repository.publishRevision(vault, left),
+    repository.publishRevision(vault, right),
+  ])
+  const branched = await Promise.all(
+    (await repository.listCommits(vault)).map((commit) => repository.readRevision(commit)),
+  )
+  assert.deepEqual(
+    findRevisionHeads(branched).map((value) => value.revisionId).sort(),
+    [left.revisionId, right.revisionId].sort(),
+  )
+
+  const merged = await revision(
+    vault,
+    '66666666-6666-4666-8666-666666666663',
+    [left.revisionId, right.revisionId],
+  )
+  await repository.publishRevision(vault, merged)
+  const converged = await Promise.all(
+    (await repository.listCommits(vault)).map((commit) => repository.readRevision(commit)),
+  )
+  assert.deepEqual(findRevisionHeads(converged).map((value) => value.revisionId), [merged.revisionId])
+})
+
+test('a lost commit response is recognized without rewriting the published revision', async () => {
+  const server = new FakeWebDavServer()
+  const vault = metadata()
+  const repository = new WebDavVaultRepository(client(server))
+  await repository.initialize(vault)
+  const value = await revision(vault)
+  const commitPath = `/dav/LemonNewTab/generations/${vault.generationId}/commits/${value.revisionId}.json`
+  server.losePutResponsePath = commitPath
+  await assert.rejects(
+    repository.publishRevision(vault, value),
+    (error: unknown) => error instanceof WebDavError && error.category === 'server',
+  )
+  const writesBeforeRecovery = server.events.filter(
+    (event) => event === `PUT ${commitPath}`,
+  ).length
+  assert.equal(await repository.hasPublishedRevision(vault, value), true)
+  assert.equal(
+    server.events.filter((event) => event === `PUT ${commitPath}`).length,
+    writesBeforeRecovery,
+  )
+})
+
+test('a pending revision ID occupied by different content is not reusable', async () => {
+  const server = new FakeWebDavServer()
+  const vault = metadata()
+  const repository = new WebDavVaultRepository(client(server))
+  await repository.initialize(vault)
+  const existing = await revision(vault)
+  await repository.publishRevision(vault, existing)
+  const snapshot = structuredClone(existing.snapshot)
+  snapshot.settings = { version: 12 }
+  const pending: SyncRevisionV1 = {
+    ...existing,
+    operationId: '77777777-7777-4777-8777-777777777777',
+    snapshot,
+    snapshotHash: await hashCanonicalJson(snapshot),
+  }
+  assert.equal(await repository.hasPublishedRevision(vault, pending), false)
 })
 
 test('orphan revision bodies stay invisible and corrupted committed payloads stop reading', async () => {
   const server = new FakeWebDavServer()
-  const capabilities = await probeWebDavCapabilities(client(server))
-  const vault = metadata(capabilities)
+  const vault = metadata()
   const repository = new WebDavVaultRepository(client(server))
   await repository.initialize(vault)
   await client(server).put(
     `/LemonNewTab/generations/${vault.generationId}/revisions/orphan.json`,
     canonicalJson(await revision(vault)),
-    { ifNoneMatch: '*' },
   )
   assert.deepEqual(await repository.listCommits(vault), [])
 
@@ -363,10 +404,22 @@ test('orphan revision bodies stay invisible and corrupted committed payloads sto
   )
 })
 
+test('a commit that references a missing revision is treated as remote corruption', async () => {
+  const server = new FakeWebDavServer()
+  const vault = metadata()
+  const repository = new WebDavVaultRepository(client(server))
+  await repository.initialize(vault)
+  const commit = await repository.publishRevision(vault, await revision(vault))
+  server.resources.delete(`/dav/LemonNewTab/${commit.payloadPath}`)
+  await assert.rejects(
+    repository.readCommittedPayload(commit),
+    (error: unknown) => error instanceof WebDavError && error.category === 'corrupted',
+  )
+})
+
 test('wallpaper assets use SHA-256 names and are verified after upload and download', async () => {
   const server = new FakeWebDavServer()
-  const capabilities = await probeWebDavCapabilities(client(server))
-  const vault = metadata(capabilities)
+  const vault = metadata()
   const repository = new WebDavVaultRepository(client(server))
   await repository.initialize(vault)
   const blob = new Blob([encoder.encode('image bytes')], { type: 'image/png' })
@@ -382,8 +435,7 @@ test('wallpaper assets use SHA-256 names and are verified after upload and downl
 test('encrypted generations keep revision and wallpaper plaintext out of WebDAV', async () => {
   const server = new FakeWebDavServer()
   const repository = new WebDavVaultRepository(client(server), 'LemonNewTab')
-  const capabilities = await probeWebDavCapabilities(client(server))
-  const base = metadata(capabilities)
+  const base = metadata()
   const created = await createVaultEncryption(
     'independent encryption password',
     base.vaultId,
@@ -489,8 +541,7 @@ test('WebDAV errors cross the runtime boundary without leaking request details',
 
 test('history cleanup keeps the newest versions and refuses unresolved branches', async () => {
   const server = new FakeWebDavServer()
-  const capabilities = await probeWebDavCapabilities(client(server))
-  const vault = metadata(capabilities)
+  const vault = metadata()
   const repository = new WebDavVaultRepository(client(server))
   await repository.initialize(vault)
   const ids = Array.from(
@@ -528,8 +579,7 @@ test('history cleanup keeps the newest versions and refuses unresolved branches'
 
 test('history cleanup expires old commits but always protects current and previous', async () => {
   const server = new FakeWebDavServer()
-  const capabilities = await probeWebDavCapabilities(client(server))
-  const vault = metadata(capabilities)
+  const vault = metadata()
   const repository = new WebDavVaultRepository(client(server))
   await repository.initialize(vault)
   const ids = Array.from(

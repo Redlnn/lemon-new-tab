@@ -65,7 +65,7 @@ import type {
 } from './types.ts'
 import { validateSyncRevision } from './validation.ts'
 import {
-  probeWebDavCapabilities,
+  probeWebDavAccess,
   WebDavClient,
   WebDavError,
   type WebDavConnection,
@@ -255,7 +255,6 @@ export async function finalizeSnapshot(input: {
 export async function publishAndFinalize(input: {
   repository: WebDavVaultRepository
   metadata: VaultMetadataV1
-  vaultEtag?: string
   state: LocalSyncStateV1
   pending: PendingSyncOperation
   parents: string[]
@@ -329,11 +328,10 @@ export async function publishAndFinalize(input: {
     ) {
       throw error
     }
-    const published = await publishedRevisionMatches(
-      input.repository,
+    const published = await input.repository.hasPublishedRevision(
       input.metadata,
       revision,
-      input.encryptionKey,
+      storedRevision,
     )
     if (published) {
       // The server may return an error after persisting the immutable commit.
@@ -405,8 +403,6 @@ export async function publishAndFinalize(input: {
         assets,
         input.encryptionKey,
       )
-  await input.repository.updateCurrentRevision(input.metadata, input.vaultEtag, revisionId)
-  await setPendingPhase(pending, 'head-updated', revisionId)
   await finalizeSnapshot({
     operationId: pending.operationId,
     revisionId,
@@ -427,21 +423,6 @@ export async function publishAndFinalize(input: {
   if (!input.corruptedRevisionToIgnore) {
     await cleanupHistory(input.repository, input.metadata, input.encryptionKey)
   }
-}
-
-async function publishedRevisionMatches(
-  repository: WebDavVaultRepository,
-  metadata: VaultMetadataV1,
-  revision: SyncRevisionV1,
-  encryptionKey?: CryptoKey,
-): Promise<boolean> {
-  const commit = (await repository.listCommits(metadata)).find(
-    (item) => item.revisionId === revision.revisionId,
-  )
-  if (!commit) return false
-  const stored = await readRevisions(repository, metadata, encryptionKey, [commit])
-  return stored[0]?.operationId === revision.operationId &&
-    stored[0].snapshotHash === revision.snapshotHash
 }
 
 export function withoutWallpapers(snapshot: SyncSnapshotV1): SyncSnapshotV1 {
@@ -670,11 +651,12 @@ async function runSynchronizationOnce(): Promise<void> {
   const baselineAtStart = await getBaseline()
   const lastDeviceRecord = initialState.deviceRecordAt ?? initialState.lastSuccessAt
   const reinitialize = Boolean(lastDeviceRecord && mustReinitializeDevice(lastDeviceRecord))
-  const pending: PendingSyncOperation = initialState.pending ?? {
+  let pending: PendingSyncOperation = initialState.pending ?? {
     operationId: crypto.randomUUID(),
     phase: 'captured',
     startedAt: new Date().toISOString(),
   }
+  const resumeRevisionId = initialState.pending?.revisionId
   await patchSyncState({ pending })
 
   const repository = new WebDavVaultRepository(createClient(config, password), config.directory)
@@ -712,6 +694,27 @@ async function runSynchronizationOnce(): Promise<void> {
   }
 
   const revisions = await readRevisions(repository, metadata, encryptionKey)
+  if (resumeRevisionId) {
+    const resumed = revisions.find((revision) => revision.revisionId === resumeRevisionId)
+    if (!resumed || resumed.operationId !== pending.operationId) {
+      throw new WebDavError(
+        'precondition',
+        'Pending WebDAV revision must be retried with a new identifier',
+      )
+    }
+    const heads = findRevisionHeads(revisions)
+    if (heads.length !== 1 || heads[0]!.revisionId !== resumed.revisionId) {
+      throw new WebDavError('precondition', 'A concurrent remote branch must be merged')
+    }
+    // 已发布任务由正常三方决策收敛；先清除旧 ID，后续本机变化必须创建新版本。
+    pending = { ...pending, phase: 'captured', revisionId: undefined }
+    await patchSyncState({ pending })
+    if (!baselineAtStart || !initialState.baseRevisionId) {
+      await setBaseline(resumed.snapshot)
+      await patchSyncState({ baseRevisionId: resumed.revisionId })
+      throw new WebDavError('precondition', 'Published WebDAV revision was restored as the baseline')
+    }
+  }
   if (revisions.length === 0) {
     if (initialState.baseRevisionId || (await getBaseline())) {
       throw new WebDavError('corrupted', 'WebDAV vault has no committed revision')
@@ -721,7 +724,6 @@ async function runSynchronizationOnce(): Promise<void> {
     await publishAndFinalize({
       repository,
       metadata,
-      vaultEtag: inspection.etag,
       state: initialState,
       pending,
       parents: [],
@@ -844,7 +846,6 @@ async function runSynchronizationOnce(): Promise<void> {
   await publishAndFinalize({
     repository,
     metadata,
-    vaultEtag: inspection.etag,
     state,
     pending: { ...pending, revisionId },
     parents: decision.parents,
@@ -960,7 +961,6 @@ export interface BrowserWebDavSetupInput {
 }
 
 export interface BrowserWebDavSetupPreview {
-  capabilities: VaultMetadataV1['capabilities']
   conflicts: ReturnType<typeof mergeSyncSnapshots>['conflicts']
   encrypted: boolean
   generationId?: string
@@ -972,9 +972,7 @@ export interface BrowserWebDavSetupPreview {
 }
 
 interface SetupInspection {
-  capabilities: VaultMetadataV1['capabilities']
   encryptionKey?: CryptoKey
-  inspection: Awaited<ReturnType<WebDavVaultRepository['inspect']>>
   local: SyncSnapshotV1
   resourceOmissions: LocalSyncStateV1['resourceOmissions']
   metadata?: VaultMetadataV1
@@ -991,18 +989,14 @@ async function inspectBrowserWebDavSetup(
 ): Promise<SetupInspection> {
   const client = new WebDavClient(input.connection)
   const repository = new WebDavVaultRepository(client, input.directory)
-  const [capabilities, inspection] = await Promise.all([
-    probeWebDavCapabilities(client),
-    repository.inspect(),
-  ])
+  await probeWebDavAccess(client)
+  const inspection = await repository.inspect()
   if (inspection.state !== 'ready') {
     if (inspection.state === 'foreign') {
       throw new WebDavError('foreign-vault', 'WebDAV directory contains unrelated data')
     }
     const capture = await captureBrowserSyncSnapshotResult(setupScope(input))
     return {
-      capabilities,
-      inspection,
       local: capture.snapshot,
       resourceOmissions: capture.resourceOmissions,
       repository,
@@ -1032,9 +1026,7 @@ async function inspectBrowserWebDavSetup(
     : setupScope(input)
   const capture = await captureBrowserSyncSnapshotResult(scope)
   return {
-    capabilities,
     encryptionKey,
-    inspection,
     local: capture.snapshot,
     resourceOmissions: capture.resourceOmissions,
     metadata,
@@ -1056,7 +1048,6 @@ export async function previewBrowserWebDavSetup(
   const localSnapshotHash = await hashCanonicalJson(scanned.local)
   if (!scanned.metadata || scanned.revisions.length === 0) {
     return {
-      capabilities: scanned.metadata?.capabilities ?? scanned.capabilities,
       conflicts: [],
       encrypted: scanned.metadata?.encrypted ?? Boolean(input.encryptionPassword),
       generationId: scanned.metadata?.generationId,
@@ -1074,7 +1065,6 @@ export async function previewBrowserWebDavSetup(
     revisions: scanned.revisions,
   })
   return {
-    capabilities: scanned.metadata.capabilities,
     conflicts: decision.action === 'conflict' ? decision.conflicts : [],
     encrypted: scanned.metadata.encrypted,
     generationId: scanned.metadata.generationId,
@@ -1115,7 +1105,6 @@ export async function connectBrowserWebDav(
   }
   let metadata = scanned.metadata
   let encryptionKey = scanned.encryptionKey
-  let vaultEtag = scanned.inspection.state === 'ready' ? scanned.inspection.etag : undefined
   if (!metadata) {
     const vaultId = crypto.randomUUID()
     const generationId = crypto.randomUUID()
@@ -1133,7 +1122,6 @@ export async function connectBrowserWebDav(
         generationId,
         encrypted: true,
         encryption: encryption.metadata,
-        capabilities: scanned.capabilities,
       }
     } else {
       metadata = {
@@ -1142,10 +1130,9 @@ export async function connectBrowserWebDav(
         vaultId,
         generationId,
         encrypted: false,
-        capabilities: scanned.capabilities,
       }
     }
-    vaultEtag = (await scanned.repository.initialize(metadata)).etag
+    await scanned.repository.initialize(metadata)
   }
 
   const deviceName = input.deviceName?.trim().slice(0, 80) || (await createPrivateDeviceName())
@@ -1190,7 +1177,6 @@ export async function connectBrowserWebDav(
     await publishAndFinalize({
       repository: scanned.repository,
       metadata,
-      vaultEtag,
       state,
       pending,
       parents: [],
@@ -1280,7 +1266,6 @@ export async function connectBrowserWebDav(
   await publishAndFinalize({
     repository: scanned.repository,
     metadata,
-    vaultEtag,
     state,
     pending,
     parents: remote.headRevisionIds,
@@ -1463,7 +1448,6 @@ export async function resolveBrowserSyncConflict(
   await publishAndFinalize({
     repository,
     metadata,
-    vaultEtag: inspection.etag,
     state,
     pending,
     parents: headIds,

@@ -1,6 +1,6 @@
 import { DOMParser, type Element } from '@xmldom/xmldom'
 
-import { canonicalJson, hashCanonicalJson, sha256Hex } from './canonical.ts'
+import { canonicalJson, hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
 import { MAX_PBKDF2_ITERATIONS, MIN_PBKDF2_ITERATIONS } from './crypto.ts'
 import {
   HISTORY_RETENTION_DAYS,
@@ -13,7 +13,6 @@ import type {
   CommitRecordV1,
   SyncRevisionV1,
   VaultMetadataV1,
-  WebDavCapabilitiesV1,
 } from './types.ts'
 import {
   MAX_METADATA_BYTES,
@@ -105,21 +104,13 @@ export interface WebDavEntry {
   url: string
   name: string
   isCollection: boolean
-  etag?: string
   contentLength?: number
   lastModified?: string
 }
 
 export interface WebDavPutOptions {
   contentType?: string
-  ifMatch?: string
-  ifNoneMatch?: '*'
   timeoutMs?: number
-}
-
-export interface WebDavResponseMetadata {
-  etag?: string
-  status: number
 }
 
 export interface StoredDevicePayload {
@@ -132,7 +123,7 @@ export type WebDavMultiStatusParser = (xml: string, requestUrl: URL) => WebDavEn
 export type WebDavVaultInspection =
   | { state: 'missing' | 'empty' }
   | { state: 'foreign' }
-  | { state: 'ready'; metadata: VaultMetadataV1; etag?: string }
+  | { state: 'ready'; metadata: VaultMetadataV1 }
 
 function isPrivateIpv4(hostname: string): boolean {
   const values = hostname.split('.').map(Number)
@@ -223,7 +214,7 @@ function statusError(status: number): WebDavError {
   if (status === 403) return new WebDavError('forbidden', 'WebDAV access was denied', status)
   if (status === 404) return new WebDavError('not-found', 'WebDAV resource was not found', status)
   if (status === 409) return new WebDavError('conflict', 'WebDAV directory state changed', status)
-  if (status === 412) return new WebDavError('precondition', 'WebDAV conditional write failed', status)
+  if (status === 412) return new WebDavError('precondition', 'WebDAV request precondition failed', status)
   if (status === 423) return new WebDavError('locked', 'WebDAV resource is temporarily locked', status)
   if (status === 429) return new WebDavError('rate-limited', 'WebDAV rate limit was reached', status)
   if (status === 507) return new WebDavError('storage-full', 'WebDAV storage is full', status)
@@ -316,7 +307,6 @@ export function parseWebDavMultiStatus(xml: string, requestUrl: URL): WebDavEntr
       url: entryUrl.toString(),
       name,
       isCollection: Boolean(collection),
-      etag: directText(firstDavElement(element, 'getetag')),
       lastModified: directText(firstDavElement(element, 'getlastmodified')),
       ...(Number.isFinite(contentLength) ? { contentLength } : {}),
     }
@@ -347,27 +337,21 @@ export class WebDavClient {
   async get(path: string, maximum = MAX_METADATA_BYTES, timeoutMs = METADATA_TIMEOUT_MS) {
     const response = await this.request('GET', path, { timeoutMs })
     if (!response.ok) throw statusError(response.status)
-    return {
-      bytes: await readBoundedBytes(response, maximum),
-      etag: response.headers.get('etag') ?? undefined,
-    }
+    return { bytes: await readBoundedBytes(response, maximum) }
   }
 
   async put(
     path: string,
     body: string | Uint8Array,
     options: WebDavPutOptions = {},
-  ): Promise<WebDavResponseMetadata> {
+  ): Promise<void> {
     const headers = new Headers({ 'Content-Type': options.contentType ?? 'application/octet-stream' })
-    if (options.ifMatch) headers.set('If-Match', options.ifMatch)
-    if (options.ifNoneMatch) headers.set('If-None-Match', options.ifNoneMatch)
     const response = await this.request('PUT', path, {
       body,
       headers,
       timeoutMs: options.timeoutMs ?? METADATA_TIMEOUT_MS,
     })
     if (!response.ok) throw statusError(response.status)
-    return { status: response.status, etag: response.headers.get('etag') ?? undefined }
   }
 
   async delete(path: string, ignoreMissing = false): Promise<void> {
@@ -391,7 +375,7 @@ export class WebDavClient {
 
   async list(path: string): Promise<WebDavEntry[]> {
     const headers = new Headers({ Depth: '1', 'Content-Type': 'application/xml; charset=utf-8' })
-    const body = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:getetag/><d:getcontentlength/><d:getlastmodified/></d:prop></d:propfind>'
+    const body = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:getcontentlength/><d:getlastmodified/></d:prop></d:propfind>'
     const response = await this.request('PROPFIND', path, {
       body,
       headers,
@@ -466,67 +450,27 @@ export class WebDavClient {
   }
 }
 
-function strongEtag(value: string | undefined): value is string {
-  return Boolean(value && !value.startsWith('W/'))
-}
-
 function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
   return left.byteLength === right.byteLength && left.every((value, index) => value === right[index])
 }
 
-export async function probeWebDavCapabilities(client: WebDavClient): Promise<WebDavCapabilitiesV1> {
+export async function probeWebDavAccess(client: WebDavClient): Promise<void> {
   const directory = `.lemon-new-tab-probe-${crypto.randomUUID()}`
   const filename = `probe-${crypto.randomUUID()}.bin`
   const path = `${directory}/${filename}`
-  const first = textEncoder.encode('first')
-  const second = textEncoder.encode('second')
-  let conditionalCreate = false
-  let conditionalUpdate = false
+  const expected = crypto.getRandomValues(new Uint8Array(32))
 
   await client.ensureCollection(directory)
   try {
-    let current = await client.put(path, first, { ifNoneMatch: '*' })
-    try {
-      current = await client.put(path, second, { ifNoneMatch: '*' })
-    } catch (error) {
-      if (!(error instanceof WebDavError) || error.category !== 'precondition') throw error
-      conditionalCreate = true
-    }
-
-    const currentRead = await client.get(path, 64)
-    const expectedCurrent = conditionalCreate ? first : second
-    if (!sameBytes(currentRead.bytes, expectedCurrent)) {
+    await client.put(path, expected)
+    const stored = await client.get(path, expected.byteLength)
+    if (!sameBytes(stored.bytes, expected)) {
       throw new WebDavError('unsupported', 'WebDAV cannot reliably read a unique test file')
     }
     const listed = await client.list(directory)
     if (!listed.some((entry) => entry.name === filename)) {
       throw new WebDavError('unsupported', 'WebDAV cannot reliably enumerate unique files')
     }
-
-    const etag = currentRead.etag ?? current.etag
-    if (strongEtag(etag)) {
-      const updated = await client.put(path, first, { ifMatch: etag })
-      try {
-        await client.put(path, second, { ifMatch: etag })
-      } catch (error) {
-        if (!(error instanceof WebDavError) || error.category !== 'precondition') throw error
-        conditionalUpdate = true
-      }
-      if (conditionalUpdate) {
-        const verified = await client.get(path, 64)
-        if (!sameBytes(verified.bytes, first) || (updated.etag && verified.etag !== updated.etag)) {
-          throw new WebDavError('unsupported', 'WebDAV conditional update verification failed')
-        }
-      }
-    }
-
-    if (!conditionalCreate || !conditionalUpdate) {
-      throw new WebDavError(
-        'unsupported',
-        'WebDAV server does not enforce conditional create and update requests',
-      )
-    }
-    return { conditionalCreate: true, conditionalUpdate: true }
   } finally {
     await client.delete(path, true).catch(() => undefined)
     await client.delete(directory, true).catch(() => undefined)
@@ -560,7 +504,6 @@ function validateVaultMetadata(value: unknown): VaultMetadataV1 {
   if (typeof record.formatVersion === 'number' && record.formatVersion > 1) {
     throw new WebDavError('format-too-new', 'WebDAV vault format is newer than this extension')
   }
-  const capabilities = record.capabilities as Record<string, unknown> | undefined
   const encryption = record.encryption as Record<string, unknown> | undefined
   const validEncryption =
     record.encrypted === false
@@ -584,12 +527,7 @@ function validateVaultMetadata(value: unknown): VaultMetadataV1 {
     typeof record.generationId === 'string' &&
     UUID_PATTERN.test(record.generationId) &&
     typeof record.encrypted === 'boolean' &&
-    validEncryption &&
-    capabilities &&
-    capabilities.conditionalCreate === true &&
-    capabilities.conditionalUpdate === true &&
-    (record.currentRevisionId === undefined ||
-      (typeof record.currentRevisionId === 'string' && UUID_PATTERN.test(record.currentRevisionId)))
+    validEncryption
   if (!valid) throw new WebDavError('corrupted', 'WebDAV ownership marker is invalid')
   return value as VaultMetadataV1
 }
@@ -613,8 +551,8 @@ export class WebDavVaultRepository {
     }
 
     try {
-      const { bytes, etag } = await this.client.get(`${this.directory}/vault.json`)
-      return { state: 'ready', metadata: validateVaultMetadata(parseJson(bytes, 'Vault marker')), etag }
+      const { bytes } = await this.client.get(`${this.directory}/vault.json`)
+      return { state: 'ready', metadata: validateVaultMetadata(parseJson(bytes, 'Vault marker')) }
     } catch (error) {
       if (!(error instanceof WebDavError) || error.category !== 'not-found') throw error
       const collectionUrl = this.client.resolve(this.directory).toString().replace(/\/$/, '')
@@ -623,7 +561,7 @@ export class WebDavVaultRepository {
     }
   }
 
-  async initialize(metadata: VaultMetadataV1): Promise<{ etag?: string }> {
+  async initialize(metadata: VaultMetadataV1): Promise<void> {
     if (validateVaultMetadata(metadata).product !== PRODUCT_ID) {
       throw new WebDavError('foreign-vault', 'WebDAV ownership marker is invalid')
     }
@@ -632,7 +570,7 @@ export class WebDavVaultRepository {
       if (inspection.metadata.vaultId !== metadata.vaultId) {
         throw new WebDavError('foreign-vault', 'WebDAV directory already contains another vault')
       }
-      return { etag: inspection.etag }
+      return
     }
     if (inspection.state === 'foreign') {
       throw new WebDavError('foreign-vault', 'WebDAV directory is not empty')
@@ -640,15 +578,13 @@ export class WebDavVaultRepository {
 
     await this.prepareGeneration(metadata)
     await this.client.ensureCollection(`${this.directory}/control`)
-    const result = await this.client.put(`${this.directory}/vault.json`, canonicalJson(metadata), {
+    await this.client.put(`${this.directory}/vault.json`, canonicalJson(metadata), {
       contentType: 'application/json',
-      ifNoneMatch: '*',
     })
     const verified = await this.inspect()
     if (verified.state !== 'ready' || verified.metadata.vaultId !== metadata.vaultId) {
       throw new WebDavError('corrupted', 'WebDAV ownership marker could not be verified')
     }
-    return { etag: verified.etag ?? result.etag }
   }
 
   async prepareGeneration(metadata: VaultMetadataV1): Promise<void> {
@@ -700,6 +636,33 @@ export class WebDavVaultRepository {
     const commitText = canonicalJson(commit)
     await this.putImmutable(commitPath, textEncoder.encode(commitText), await sha256Hex(commitText))
     return commit
+  }
+
+  async hasPublishedRevision(
+    metadata: VaultMetadataV1,
+    revision: SyncRevisionV1,
+    storedPayload = textEncoder.encode(canonicalJson(revision)),
+  ): Promise<boolean> {
+    const commit = (await this.listCommits(metadata)).find(
+      (item) => item.revisionId === revision.revisionId,
+    )
+    if (!commit) return false
+    const revisionPath = `generations/${metadata.generationId}/revisions/${revision.revisionId}.${metadata.encrypted ? 'bin' : 'json'}`
+    const expected: CommitRecordV1 = {
+      formatVersion: 1,
+      vaultId: metadata.vaultId,
+      generationId: metadata.generationId,
+      revisionId: revision.revisionId,
+      payloadPath: revisionPath,
+      payloadHash: await sha256Hex(storedPayload),
+      payloadSize: storedPayload.byteLength,
+      encrypted: metadata.encrypted,
+      scope: { ...revision.snapshot.scope },
+      complete: true,
+    }
+    if (!jsonEquals(commit, expected)) return false
+    await this.readCommittedPayload(commit)
+    return true
   }
 
   async publishAsset(
@@ -778,7 +741,15 @@ export class WebDavVaultRepository {
   async readCommittedPayload(commit: CommitRecordV1): Promise<Uint8Array<ArrayBuffer>> {
     const validation = validateCommitRecord(commit)
     if (!validation.ok) throw new WebDavError('corrupted', validation.error)
-    const bytes = await this.readStoredPayloadUnchecked(commit)
+    let bytes: Uint8Array<ArrayBuffer>
+    try {
+      bytes = await this.readStoredPayloadUnchecked(commit)
+    } catch (error) {
+      if (error instanceof WebDavError && error.category === 'not-found') {
+        throw new WebDavError('corrupted', 'Committed revision payload is missing')
+      }
+      throw error
+    }
     if (bytes.byteLength !== commit.payloadSize || (await sha256Hex(bytes)) !== commit.payloadHash) {
       throw new WebDavError('corrupted', 'Committed revision payload failed integrity validation')
     }
@@ -867,22 +838,6 @@ export class WebDavVaultRepository {
       commits.push(validation.value)
     }
     return commits
-  }
-
-  async updateCurrentRevision(
-    metadata: VaultMetadataV1,
-    vaultEtag: string | undefined,
-    revisionId: string,
-  ): Promise<{ metadata: VaultMetadataV1; etag?: string }> {
-    if (!strongEtag(vaultEtag)) {
-      throw new WebDavError('unsupported', 'WebDAV vault marker has no strong ETag')
-    }
-    const next = { ...metadata, currentRevisionId: revisionId }
-    const result = await this.client.put(`${this.directory}/vault.json`, canonicalJson(next), {
-      contentType: 'application/json',
-      ifMatch: vaultEtag,
-    })
-    return { metadata: next, etag: result.etag }
   }
 
   async deleteOwnedVault(expectedVaultId: string): Promise<void> {
@@ -1029,11 +984,7 @@ export class WebDavVaultRepository {
     expectedHash: string,
     timeoutMs = METADATA_TIMEOUT_MS,
   ): Promise<void> {
-    try {
-      await this.client.put(path, bytes, { ifNoneMatch: '*', timeoutMs })
-    } catch (error) {
-      if (!(error instanceof WebDavError) || error.category !== 'precondition') throw error
-    }
+    await this.client.put(path, bytes, { timeoutMs })
     const stored = await this.client.get(path, bytes.byteLength, ASSET_TIMEOUT_MS)
     if (stored.bytes.byteLength !== bytes.byteLength || (await sha256Hex(stored.bytes)) !== expectedHash) {
       throw new WebDavError('corrupted', 'Immutable WebDAV object does not match the pending upload')

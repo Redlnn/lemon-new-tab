@@ -196,7 +196,7 @@ onMounted(() => void refresh())
     </template>
 
     <template v-else>
-      <section class="sync-status-card">
+      <section class="sync-status-card settings-section--wide">
         <component :is="statusIcon" class="sync-status-card__icon" />
         <div class="sync-status-card__body">
           <div class="sync-status-card__heading">
