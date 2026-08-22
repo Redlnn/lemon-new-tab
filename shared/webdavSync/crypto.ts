@@ -2,7 +2,8 @@ import type { VaultEncryptionMetadataV1 } from './types.ts'
 
 const MAGIC = new Uint8Array([0x4c, 0x4e, 0x45, 0x01])
 const IV_BYTES = 12
-const MIN_ITERATIONS = 600_000
+export const MIN_PBKDF2_ITERATIONS = 600_000
+export const MAX_PBKDF2_ITERATIONS = 2_000_000
 const encoder = new TextEncoder()
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -40,7 +41,11 @@ export async function deriveEncryptionKey(
   iterations: number,
 ): Promise<CryptoKey> {
   if (!password) throw new Error('Encryption password is required')
-  if (!Number.isSafeInteger(iterations) || iterations < MIN_ITERATIONS) {
+  if (
+    !Number.isSafeInteger(iterations) ||
+    iterations < MIN_PBKDF2_ITERATIONS ||
+    iterations > MAX_PBKDF2_ITERATIONS
+  ) {
     throw new Error('PBKDF2 iteration count is unsafe')
   }
   const material = await crypto.subtle.importKey(
@@ -112,7 +117,7 @@ export async function createVaultEncryption(
   password: string,
   vaultId: string,
   generationId: string,
-  iterations = MIN_ITERATIONS,
+  iterations = MIN_PBKDF2_ITERATIONS,
 ): Promise<{ key: CryptoKey; metadata: VaultEncryptionMetadataV1 }> {
   const salt = crypto.getRandomValues(new Uint8Array(16))
   const key = await deriveEncryptionKey(password, salt, iterations)
@@ -142,7 +147,8 @@ export async function unlockVaultEncryption(
   if (
     metadata.algorithm !== 'AES-256-GCM' ||
     metadata.kdf !== 'PBKDF2-HMAC-SHA-256' ||
-    metadata.iterations < MIN_ITERATIONS
+    metadata.iterations < MIN_PBKDF2_ITERATIONS ||
+    metadata.iterations > MAX_PBKDF2_ITERATIONS
   ) {
     throw new Error('Encrypted vault uses unsupported parameters')
   }

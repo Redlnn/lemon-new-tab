@@ -3,7 +3,6 @@ import { browser } from 'wxt/browser'
 
 import { isWebDavSyncMessage } from '@/shared/webdavSync/bridge'
 import { SyncCoordinator } from '@/shared/webdavSync/coordinator'
-import { mergeSyncSnapshots } from '@/shared/webdavSync/merge'
 import {
   getStoredConflict,
   getOrCreateSyncState,
@@ -22,16 +21,15 @@ const SYNC_DATA_KEYS = new Set([
 
 export default defineBackground(() => {
   let applyingRemote = false
+  let configured = false
   let maintenance = false
   const coordinator = new SyncCoordinator({
     isConfigured: async (trigger) => {
-      const [config, state] = await Promise.all([
-        webDavSyncConfigStorage.getValue(),
-        getOrCreateSyncState(),
-      ])
+      const config = await webDavSyncConfigStorage.getValue()
+      configured = Boolean(config)
+      if (!config || maintenance) return false
+      const state = await getOrCreateSyncState()
       return Boolean(
-        !maintenance &&
-        config &&
         state.configured &&
         (config.rememberPassword || trigger === 'manual'),
       )
@@ -51,16 +49,23 @@ export default defineBackground(() => {
       void coordinator.trigger('natural')
     }
   }
+  const scheduleConfiguredDataChange = () => {
+    if (configured) coordinator.dataChanged()
+  }
+  void webDavSyncConfigStorage.getValue().then((value) => {
+    configured = Boolean(value)
+  })
 
   browser.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return
+    if (changes.webdavSyncConfig) configured = Boolean(changes.webdavSyncConfig.newValue)
     const stateChange = changes.webdavSyncState
     if (stateChange?.newValue) {
       const state = stateChange.newValue as LocalSyncStateV1
       applyingRemote = state.pending?.phase === 'applying-local'
     }
     if (!applyingRemote && Object.keys(changes).some((key) => SYNC_DATA_KEYS.has(key))) {
-      coordinator.dataChanged()
+      scheduleConfiguredDataChange()
     }
   })
 
@@ -68,7 +73,7 @@ export default defineBackground(() => {
     if (sender.id && sender.id !== browser.runtime.id) return undefined
     if (!isWebDavSyncMessage(message)) return undefined
     if (message.type === 'webdav-sync:data-changed') {
-      coordinator.dataChanged()
+      scheduleConfiguredDataChange()
       return undefined
     }
     if (message.type === 'webdav-sync:get-state') return getOrCreateSyncState()
@@ -82,14 +87,14 @@ export default defineBackground(() => {
     }
     if (message.type === 'webdav-sync:commit-compressed-wallpaper') {
       const { commitCompressedBrowserWallpaper } = await import(
-        '@/shared/webdavSync/browserEngine'
+        '@/shared/webdavSync/browserManagement'
       )
       return runMaintenance(() =>
         commitCompressedBrowserWallpaper(message.variant, message.blob),
       )
     }
     if (message.type === 'webdav-sync:disconnect') {
-      const { disconnectBrowserWebDav } = await import('@/shared/webdavSync/browserEngine')
+      const { disconnectBrowserWebDav } = await import('@/shared/webdavSync/browserLifecycle')
       return runMaintenance(() =>
         disconnectBrowserWebDav({
           deleteRemote: message.deleteRemote,
@@ -101,33 +106,46 @@ export default defineBackground(() => {
       const stored = await getStoredConflict()
       if (!stored) return null
       return {
-        conflicts: mergeSyncSnapshots(stored.base, stored.local, stored.remote).conflicts,
+        conflicts: stored.conflicts,
         remoteRevisionIds: stored.remoteRevisionIds,
         remoteVersions: stored.remoteVersions ?? [],
       }
     }
     if (message.type === 'webdav-sync:list-history') {
-      const { listBrowserSyncHistory } = await import('@/shared/webdavSync/browserEngine')
+      const { listBrowserSyncHistory } = await import('@/shared/webdavSync/browserManagement')
       return listBrowserSyncHistory()
     }
     if (message.type === 'webdav-sync:preview-history') {
-      const { previewBrowserSyncHistory } = await import('@/shared/webdavSync/browserEngine')
+      const { previewBrowserSyncHistory } = await import('@/shared/webdavSync/browserManagement')
       return runMaintenance(() => previewBrowserSyncHistory(message.revisionId))
     }
     if (message.type === 'webdav-sync:list-devices') {
-      const { listBrowserSyncDevices } = await import('@/shared/webdavSync/browserEngine')
+      const { listBrowserSyncDevices } = await import('@/shared/webdavSync/browserManagement')
       return listBrowserSyncDevices()
     }
     if (message.type === 'webdav-sync:inspect-corruption') {
-      const { inspectBrowserSyncCorruption } = await import('@/shared/webdavSync/browserEngine')
+      const { inspectBrowserSyncCorruption } = await import('@/shared/webdavSync/browserManagement')
       return inspectBrowserSyncCorruption()
     }
     if (message.type === 'webdav-sync:download-corruption') {
-      const { downloadBrowserCorruptedPayload } = await import('@/shared/webdavSync/browserEngine')
+      const { downloadBrowserCorruptedPayload } = await import(
+        '@/shared/webdavSync/browserManagement'
+      )
       return downloadBrowserCorruptedPayload({
         revisionId: message.revisionId,
         actualPayloadHash: message.actualPayloadHash,
       })
+    }
+    if (message.type === 'webdav-sync:delete-corruption') {
+      const { deleteBrowserCorruptedRevision } = await import(
+        '@/shared/webdavSync/browserManagement'
+      )
+      return runMaintenance(() =>
+        deleteBrowserCorruptedRevision({
+          revisionId: message.revisionId,
+          actualPayloadHash: message.actualPayloadHash,
+        }),
+      )
     }
     if (message.type === 'webdav-sync:resume-apply') {
       const state = await getOrCreateSyncState()
@@ -157,17 +175,17 @@ export default defineBackground(() => {
       return runMaintenance(() => resolveBrowserSyncConflict(message.resolutions))
     }
     if (message.type === 'webdav-sync:restore-history') {
-      const { restoreBrowserSyncHistory } = await import('@/shared/webdavSync/browserEngine')
+      const { restoreBrowserSyncHistory } = await import('@/shared/webdavSync/browserManagement')
       return runMaintenance(() => restoreBrowserSyncHistory(message.revisionId, message.expected))
     }
     if (message.type === 'webdav-sync:reset') {
-      const { resetBrowserSyncedData } = await import('@/shared/webdavSync/browserEngine')
+      const { resetBrowserSyncedData } = await import('@/shared/webdavSync/browserLifecycle')
       return runMaintenance(() =>
-        resetBrowserSyncedData(message.snapshot, message.encryptionPassword),
+        resetBrowserSyncedData(message.snapshot, message.encryptionPassword, message.wallpapers),
       )
     }
     if (message.type === 'webdav-sync:accept-reset') {
-      const { acceptBrowserRemoteReset } = await import('@/shared/webdavSync/browserEngine')
+      const { acceptBrowserRemoteReset } = await import('@/shared/webdavSync/browserLifecycle')
       return runMaintenance(() =>
         acceptBrowserRemoteReset({
           mode: message.mode,
@@ -177,16 +195,16 @@ export default defineBackground(() => {
     }
     if (message.type === 'webdav-sync:stop-wallpapers') {
       const { stopAndDeleteBrowserSyncedWallpapers } = await import(
-        '@/shared/webdavSync/browserEngine'
+        '@/shared/webdavSync/browserManagement'
       )
       return runMaintenance(stopAndDeleteBrowserSyncedWallpapers)
     }
     if (message.type === 'webdav-sync:repair-corruption') {
-      const { repairBrowserSyncCorruption } = await import('@/shared/webdavSync/browserEngine')
+      const { repairBrowserSyncCorruption } = await import('@/shared/webdavSync/browserManagement')
       return runMaintenance(() => repairBrowserSyncCorruption(message))
     }
     if (message.type === 'webdav-sync:update-preferences') {
-      const { updateBrowserSyncPreferences } = await import('@/shared/webdavSync/browserEngine')
+      const { updateBrowserSyncPreferences } = await import('@/shared/webdavSync/browserLifecycle')
       const state = await updateBrowserSyncPreferences({
         historyLimit: message.historyLimit,
         scope: message.scope,

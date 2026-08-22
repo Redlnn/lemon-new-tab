@@ -72,6 +72,12 @@ const httpApproved = computed(() => {
   return false
 })
 
+const effectiveEncryption = computed(() =>
+  preview.value?.state === 'empty'
+    ? form.encrypted
+    : (preview.value?.encrypted ?? form.encrypted),
+)
+
 const canContinue = computed(() => {
   if (step.value === 0) {
     return Boolean(
@@ -83,8 +89,7 @@ const canContinue = computed(() => {
     )
   }
   if (step.value === 1) return Boolean(preview.value)
-  if (step.value === 2 && preview.value?.state === 'remote-conflict') return false
-  if (step.value === 6 && (form.encrypted || preview.value?.encrypted)) {
+  if (step.value === 6 && effectiveEncryption.value) {
     return form.encryptionPassword.length >= 8
   }
   return true
@@ -119,7 +124,7 @@ function createInput(): BrowserWebDavSetupInput {
     },
     directory: form.directory.trim() || 'LemonNewTab',
     deviceName: form.deviceName.trim() || undefined,
-    encryptionPassword: form.encryptionPassword || undefined,
+    encryptionPassword: effectiveEncryption.value ? form.encryptionPassword || undefined : undefined,
     historyLimit: form.historyLimit,
     rememberPassword: form.rememberPassword,
     scope: { ...scope },
@@ -184,6 +189,21 @@ async function finish() {
   } finally {
     connecting.value = false
   }
+}
+
+async function nextStep() {
+  if (step.value === 4) {
+    testing.value = true
+    try {
+      preview.value = await previewSyncConnection(createInput())
+    } catch (error) {
+      ElMessage.error(readableError(error))
+      return
+    } finally {
+      testing.value = false
+    }
+  }
+  step.value += 1
 }
 
 function reset() {
@@ -328,7 +348,7 @@ watch(
         <div class="final-list">
           <p><check-circle-round /><span><strong>{{ t('webdavSync.setup.connection.url') }}</strong><small>{{ form.url }} · {{ form.directory }}/</small></span></p>
           <p><check-circle-round /><span><strong>{{ t('webdavSync.setup.connection.deviceName') }}</strong><small>{{ form.deviceName || t('webdavSync.setup.confirm.autoDevice') }}</small></span></p>
-          <p><lock-round /><span><strong>{{ t('webdavSync.management.encryption') }}</strong><small>{{ form.encrypted || preview?.encrypted ? t('webdavSync.setup.confirm.encrypted') : t('webdavSync.setup.confirm.plaintext') }}</small></span></p>
+          <p><lock-round /><span><strong>{{ t('webdavSync.management.encryption') }}</strong><small>{{ effectiveEncryption ? t('webdavSync.setup.confirm.encrypted') : t('webdavSync.setup.confirm.plaintext') }}</small></span></p>
         </div>
         <el-alert type="info" :closable="false" show-icon>{{ t('webdavSync.setup.confirm.disconnectNote') }}</el-alert>
       </template>
@@ -339,7 +359,7 @@ watch(
         <el-button v-if="step > 0" @click="step--">{{ t('webdavSync.setup.back') }}</el-button>
         <span></span>
         <el-button @click="model = false">{{ t('newtab:common.cancel') }}</el-button>
-        <el-button v-if="step < steps.length - 1" type="primary" :disabled="!canContinue" @click="step++">{{ t('webdavSync.setup.next') }}</el-button>
+        <el-button v-if="step < steps.length - 1" type="primary" :loading="testing" :disabled="!canContinue" @click="nextStep">{{ t('webdavSync.setup.next') }}</el-button>
         <el-button v-else type="primary" :loading="connecting" :disabled="!canContinue" @click="finish">{{ t('webdavSync.setup.finish') }}</el-button>
       </div>
     </template>

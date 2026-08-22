@@ -7,6 +7,7 @@ import {
   ElRadioGroup,
 } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
+import { browser } from 'wxt/browser'
 import DeleteForeverOutlined from '~icons/ic/outline-delete-forever'
 import DownloadRound from '~icons/ic/round-download'
 import FileUploadRound from '~icons/ic/round-file-upload'
@@ -20,6 +21,8 @@ import {
   applyPreparedBrowserImport,
   createBrowserBackupArchive,
   createBrowserJsonBackup,
+  getPreparedImportWallpapers,
+  mergePreparedBrowserImport,
   prepareBrowserImport,
 } from '@/shared/webdavSync/browserBackup'
 import {
@@ -46,6 +49,16 @@ const { t, i18next } = useTranslation('settings')
 
 const settings = useSettingsStore()
 const { checkAndRequestPermission } = usePermission()
+const faviconPermissionPending = ref(false)
+
+async function refreshFaviconPermission() {
+  faviconPermissionPending.value =
+    settings.faviconCacheEnabled &&
+    !(await browser.permissions.contains({ origins: ['*://*/*'] }))
+}
+
+onMounted(refreshFaviconPermission)
+watch(() => settings.faviconCacheEnabled, refreshFaviconPermission)
 
 const beforeFaviconCacheChange = async (): Promise<boolean> => {
   // 正在关闭 → 直接允许（不撤销 *://*/* 权限）
@@ -360,12 +373,19 @@ async function handleFileChange(event: Event) {
       ).then(({ value }) => value)
     }
     applying = showLoading(t('other.importExport.importing'))
-    if (mode === 'local' && state.configured) await disconnectSyncConnection(false)
-    await applyPreparedBrowserImport(prepared)
     if (mode === 'replace') {
-      await resetSyncedData(prepared.snapshot, encryptionPassword)
+      await resetSyncedData(
+        prepared.snapshot,
+        encryptionPassword,
+        getPreparedImportWallpapers(prepared),
+      )
     } else if (mode === 'merge') {
+      const merged = await mergePreparedBrowserImport(prepared, state.scope)
+      await applyPreparedBrowserImport(prepared, merged)
       sendSyncDataChanged()
+    } else {
+      if (state.configured) await disconnectSyncConnection(false)
+      await applyPreparedBrowserImport(prepared)
     }
     ElMessage.success(t('other.importExport.importSuccess'))
     if (!(await reloadNewtabTabs())) location.reload()
@@ -474,6 +494,11 @@ function changeLanguage(lang: string) {
         <div class="settings__label">
           {{ t('other.faviconCache.label') }}
           <SyncAvailabilityIcon catalog-key="faviconCache" />
+          <SyncAvailabilityIcon
+            v-if="faviconPermissionPending"
+            catalog-key="permission.favicon"
+            pending-permission="favicon"
+          />
         </div>
         <el-switch
           v-model="settings.faviconCacheEnabled"

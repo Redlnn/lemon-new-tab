@@ -21,10 +21,16 @@ export async function inspectStaticWallpaper(
   blob: Blob,
   maxBytes = MAX_SYNC_WALLPAPER_BYTES,
 ): Promise<StaticImageInfo> {
-  if (blob.size === 0 || blob.size > maxBytes) {
+  return inspectStaticWallpaperBytes(new Uint8Array(await blob.arrayBuffer()), maxBytes)
+}
+
+export function inspectStaticWallpaperBytes(
+  bytes: Uint8Array,
+  maxBytes = MAX_SYNC_WALLPAPER_BYTES,
+): StaticImageInfo {
+  if (bytes.byteLength === 0 || bytes.byteLength > maxBytes) {
     throw new TypeError('Wallpaper size is unsupported')
   }
-  const bytes = new Uint8Array(await blob.arrayBuffer())
   const info = inspectImageBytes(bytes)
   if (
     info.width < 1 ||

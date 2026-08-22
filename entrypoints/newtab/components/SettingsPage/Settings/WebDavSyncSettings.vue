@@ -111,7 +111,8 @@ async function runSync() {
   syncing.value = true
   try {
     state.value = await syncNow()
-    if (!state.value.paused) ElMessage.success(t('webdavSync.messages.syncComplete'))
+    if (state.value.lastError) ElMessage.error(lastError.value)
+    else if (!state.value.paused) ElMessage.success(t('webdavSync.messages.syncComplete'))
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : t('webdavSync.errors.unknown'))
     await refresh()

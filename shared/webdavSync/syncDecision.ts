@@ -15,8 +15,15 @@ export interface RemoteSyncState {
   assets: AssetReferenceV1[]
 }
 
-type RemoteBuildResult =
-  | { kind: 'conflict'; conflicts: SyncConflict[]; headRevisionIds: string[]; remote: SyncSnapshotV1 }
+export type RemoteBuildResult =
+  | {
+      kind: 'conflict'
+      conflicts: SyncConflict[]
+      headRevisionIds: string[]
+      local: SyncSnapshotV1
+      remote: SyncSnapshotV1
+      remainingRemoteRevisionIds: string[]
+    }
   | { kind: 'ready'; state: RemoteSyncState }
 
 export type SyncDecision =
@@ -24,10 +31,13 @@ export type SyncDecision =
   | {
       action: 'conflict'
       base: SyncSnapshotV1
+      deviceLocal: SyncSnapshotV1
       local: SyncSnapshotV1
       remote: SyncSnapshotV1
       remoteRevisionIds: string[]
+      remainingRemoteRevisionIds: string[]
       conflicts: SyncConflict[]
+      stage: 'local-remote' | 'remote-branches'
     }
   | { action: 'publish'; parents: string[]; snapshot: SyncSnapshotV1; reason: 'local-change' | 'merge'; tombstones: TombstoneV1[]; assets: AssetReferenceV1[] }
   | { action: 'up-to-date'; revisionId: string; snapshot: SyncSnapshotV1 }
@@ -70,17 +80,29 @@ function buildRemoteState(
   const byId = new Map(revisions.map((revision) => [revision.revisionId, revision]))
   if (heads.some((head) => !descendsFrom(head.revisionId, baseRevisionId, byId))) return undefined
 
+  return mergeRemoteRevisionHeads(baseline, revisions)
+}
+
+export function mergeRemoteRevisionHeads(
+  baseline: SyncSnapshotV1,
+  revisions: readonly SyncRevisionV1[],
+): RemoteBuildResult | undefined {
+  const heads = findRevisionHeads(revisions)
+  if (heads.length === 0) return undefined
+
   let snapshot = baseline
   const tombstones = new Map<string, TombstoneV1>()
   const assets = new Map<string, AssetReferenceV1>()
-  for (const head of heads) {
+  for (const [index, head] of heads.entries()) {
     const merge = mergeSyncSnapshots(baseline, snapshot, head.snapshot)
     if (merge.conflicts.length > 0) {
       return {
         kind: 'conflict',
         conflicts: merge.conflicts,
         headRevisionIds: heads.map((item) => item.revisionId),
+        local: snapshot,
         remote: head.snapshot,
+        remainingRemoteRevisionIds: heads.slice(index + 1).map((item) => item.revisionId),
       }
     }
     snapshot = merge.snapshot
@@ -116,10 +138,13 @@ export function decideSynchronization(input: {
     return {
       action: 'conflict',
       base: input.baseline,
-      local: input.local,
+      deviceLocal: input.local,
+      local: builtRemote.local,
       remote: builtRemote.remote,
       remoteRevisionIds: builtRemote.headRevisionIds,
+      remainingRemoteRevisionIds: builtRemote.remainingRemoteRevisionIds,
       conflicts: builtRemote.conflicts,
+      stage: 'remote-branches',
     }
   }
   const remote = builtRemote.state
@@ -146,10 +171,13 @@ export function decideSynchronization(input: {
     return {
       action: 'conflict',
       base: input.baseline,
+      deviceLocal: input.local,
       local: input.local,
       remote: remote.snapshot,
       remoteRevisionIds: remote.headRevisionIds,
+      remainingRemoteRevisionIds: [],
       conflicts: merge.conflicts,
+      stage: 'local-remote',
     }
   }
   return {
@@ -157,6 +185,58 @@ export function decideSynchronization(input: {
     parents: remote.headRevisionIds,
     snapshot: merge.snapshot,
     reason: localChanged && !remoteChanged && !hasBranches ? 'local-change' : 'merge',
+    tombstones: remote.tombstones,
+    assets: remote.assets,
+  }
+}
+
+export function decideInitialization(input: {
+  base: SyncSnapshotV1
+  local: SyncSnapshotV1
+  revisions: readonly SyncRevisionV1[]
+}): SyncDecision {
+  const builtRemote = mergeRemoteRevisionHeads(input.base, input.revisions)
+  if (!builtRemote) return { action: 'unknown-ancestor', remoteRevisionIds: [] }
+  if (builtRemote.kind === 'conflict') {
+    return {
+      action: 'conflict',
+      base: input.base,
+      deviceLocal: input.local,
+      local: builtRemote.local,
+      remote: builtRemote.remote,
+      remoteRevisionIds: builtRemote.headRevisionIds,
+      remainingRemoteRevisionIds: builtRemote.remainingRemoteRevisionIds,
+      conflicts: builtRemote.conflicts,
+      stage: 'remote-branches',
+    }
+  }
+  const remote = builtRemote.state
+  const merge = mergeSyncSnapshots(input.base, input.local, remote.snapshot)
+  if (merge.conflicts.length > 0) {
+    return {
+      action: 'conflict',
+      base: input.base,
+      deviceLocal: input.local,
+      local: input.local,
+      remote: remote.snapshot,
+      remoteRevisionIds: remote.headRevisionIds,
+      remainingRemoteRevisionIds: [],
+      conflicts: merge.conflicts,
+      stage: 'local-remote',
+    }
+  }
+  if (remote.headRevisionIds.length === 1 && jsonEquals(merge.snapshot, remote.snapshot)) {
+    return {
+      action: 'apply-remote',
+      remote,
+      revisionId: remote.headRevisionIds[0]!,
+    }
+  }
+  return {
+    action: 'publish',
+    parents: remote.headRevisionIds,
+    snapshot: merge.snapshot,
+    reason: 'merge',
     tombstones: remote.tombstones,
     assets: remote.assets,
   }

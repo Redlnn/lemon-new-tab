@@ -156,7 +156,7 @@ function keepBothEntities(
   }
   const localValue = Object.hasOwn(conflict, 'local') ? conflict.local : undefined
   const remoteValue = Object.hasOwn(conflict, 'remote') ? conflict.remote : undefined
-  const modified = localValue ?? remoteValue
+  const modified = conflict.kind === 'simultaneous-create' ? remoteValue : (localValue ?? remoteValue)
   if (!modified || typeof modified !== 'object' || Array.isArray(modified)) {
     throw new TypeError('Conflict has no entity to duplicate')
   }
@@ -165,7 +165,7 @@ function keepBothEntities(
   }
   const duplicate = { ...(structuredClone(modified) as JsonObject), id: duplicateId } as EntityValue
   destination.items.push(duplicate)
-  const source = localValue ? local : remote
+  const source = conflict.kind === 'simultaneous-create' || !localValue ? remote : local
   insertEntityOrder(destination.order, target, source, conflict, originalId, duplicateId)
 }
 

@@ -88,6 +88,16 @@ function hasUniqueIds(items: readonly { id: string }[]): boolean {
 
 function isQuickLinks(value: unknown): boolean {
   if (!isRecord(value) || !Array.isArray(value.items) || !Array.isArray(value.groups)) return false
+  const icons = value.icons
+  if (
+    icons !== undefined &&
+    (!isRecord(icons) ||
+      !Object.entries(icons).every(
+        ([hash, icon]) => /^[0-9a-f]{64}$/.test(hash) && typeof icon === 'string',
+      ))
+  ) {
+    return false
+  }
 
   const items = value.items
   if (
@@ -97,7 +107,11 @@ function isQuickLinks(value: unknown): boolean {
         isEntityId(item.id) &&
         typeof item.url === 'string' &&
         typeof item.title === 'string' &&
-        (item.favicon === undefined || typeof item.favicon === 'string'),
+        (item.favicon === undefined || typeof item.favicon === 'string') &&
+        (item.faviconHash === undefined ||
+          (typeof item.faviconHash === 'string' &&
+            Boolean(icons && Object.hasOwn(icons, item.faviconHash)))) &&
+        !(item.favicon && item.faviconHash),
     )
   ) {
     return false

@@ -299,6 +299,11 @@ function mergeQuickLinks(
       ),
     }
   })
+  const availableIcons = { ...base.icons, ...local.icons, ...remote.icons }
+  const usedIconHashes = new Set(items.map((item) => item.faviconHash).filter(Boolean))
+  const icons = Object.fromEntries(
+    Object.entries(availableIcons).filter(([hash]) => usedIconHashes.has(hash)),
+  )
 
   return {
     items,
@@ -313,6 +318,7 @@ function mergeQuickLinks(
       groupIds,
       conflicts,
     ),
+    ...(Object.keys(icons).length ? { icons } : {}),
   }
 }
 

@@ -12,8 +12,8 @@ import type {
   BrowserSyncHistoryEntry,
   BrowserSyncHistoryPreview,
   BrowserSyncDeviceEntry,
-  BrowserCorruptionInspection,
 } from './browserEngine.ts'
+import type { BrowserCorruptionInspection } from './browserManagement.ts'
 
 export interface BrowserSyncConflictDetails {
   conflicts: SyncConflict[]
@@ -32,7 +32,7 @@ export type WebDavSyncMessage =
       input: BrowserWebDavSetupInput
       expected: Pick<
         BrowserWebDavSetupPreview,
-        'generationId' | 'headRevisionIds' | 'state' | 'vaultId'
+        'generationId' | 'headRevisionIds' | 'localSnapshotHash' | 'state' | 'vaultId'
       >
     }
   | { type: 'webdav-sync:data-changed' }
@@ -40,6 +40,11 @@ export type WebDavSyncMessage =
   | { type: 'webdav-sync:inspect-corruption' }
   | {
       type: 'webdav-sync:download-corruption'
+      actualPayloadHash: string
+      revisionId: string
+    }
+  | {
+      type: 'webdav-sync:delete-corruption'
       actualPayloadHash: string
       revisionId: string
     }
@@ -54,7 +59,12 @@ export type WebDavSyncMessage =
   | { type: 'webdav-sync:preview-connection'; input: BrowserWebDavSetupInput }
   | { type: 'webdav-sync:resume-apply' }
   | { type: 'webdav-sync:resolve-conflict'; resolutions: SyncConflictResolution[] }
-  | { type: 'webdav-sync:reset'; encryptionPassword?: string; snapshot: SyncSnapshotV1 }
+  | {
+      type: 'webdav-sync:reset'
+      encryptionPassword?: string
+      snapshot: SyncSnapshotV1
+      wallpapers?: Partial<Record<'dark' | 'light', Blob>>
+    }
   | { type: 'webdav-sync:accept-reset'; encryptionPassword?: string; mode: 'apply' | 'merge' }
   | {
       type: 'webdav-sync:restore-history'
@@ -129,6 +139,17 @@ export function repairSyncCorruption(input: {
   } satisfies WebDavSyncMessage)
 }
 
+export function deleteSyncCorruption(
+  revisionId: string,
+  actualPayloadHash: string,
+): Promise<LocalSyncStateV1> {
+  return browser.runtime.sendMessage({
+    type: 'webdav-sync:delete-corruption',
+    revisionId,
+    actualPayloadHash,
+  } satisfies WebDavSyncMessage)
+}
+
 export function disconnectSyncConnection(
   deleteRemote: boolean,
   confirmationText?: string,
@@ -153,7 +174,7 @@ export function connectSyncConnection(
   input: BrowserWebDavSetupInput,
   expected: Pick<
     BrowserWebDavSetupPreview,
-    'generationId' | 'headRevisionIds' | 'state' | 'vaultId'
+    'generationId' | 'headRevisionIds' | 'localSnapshotHash' | 'state' | 'vaultId'
   >,
 ): Promise<LocalSyncStateV1> {
   return browser.runtime.sendMessage({
@@ -221,11 +242,13 @@ export function resolveSyncConflict(
 export function resetSyncedData(
   snapshot: SyncSnapshotV1,
   encryptionPassword?: string,
+  wallpapers?: Partial<Record<'dark' | 'light', Blob>>,
 ): Promise<LocalSyncStateV1> {
   return browser.runtime.sendMessage({
     type: 'webdav-sync:reset',
     snapshot,
     encryptionPassword,
+    wallpapers,
   } satisfies WebDavSyncMessage)
 }
 
@@ -300,7 +323,7 @@ export function isWebDavSyncMessage(value: unknown): value is WebDavSyncMessage 
       (message.confirmationText === undefined || typeof message.confirmationText === 'string')
     )
   }
-  if (type === 'webdav-sync:download-corruption') {
+  if (type === 'webdav-sync:download-corruption' || type === 'webdav-sync:delete-corruption') {
     const message = value as { actualPayloadHash?: unknown; revisionId?: unknown }
     return typeof message.actualPayloadHash === 'string' && typeof message.revisionId === 'string'
   }
@@ -346,9 +369,18 @@ export function isWebDavSyncMessage(value: unknown): value is WebDavSyncMessage 
     )
   }
   if (type === 'webdav-sync:reset') {
-    const message = value as { encryptionPassword?: unknown; snapshot?: unknown }
+    const message = value as {
+      encryptionPassword?: unknown
+      snapshot?: unknown
+      wallpapers?: Record<string, unknown>
+    }
     return Boolean(
       message.snapshot &&
+      (message.wallpapers === undefined ||
+        (message.wallpapers &&
+          Object.entries(message.wallpapers).every(
+            ([key, wallpaper]) => (key === 'dark' || key === 'light') && wallpaper instanceof Blob,
+          ))) &&
       (message.encryptionPassword === undefined || typeof message.encryptionPassword === 'string'),
     )
   }

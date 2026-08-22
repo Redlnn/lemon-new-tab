@@ -626,6 +626,8 @@
       "corrupted": "最新版本損壞，自動同步已停止",
       "corruptedDescription": "先下載原始檔案保存，再選擇本機資料或雲端上一份完整版本。",
       "darkWallpaper": "深色桌布 · {{size}}",
+      "deleteEvidenceDescription": "系統會先上傳並驗證新的修復版本；只有成功後才刪除你已下載保存的雲端損壞版本。",
+      "deleteEvidenceTitle": "修復成功後刪除雲端損壞版本？",
       "download": "下載損壞的原始檔案",
       "downloaded": "原始檔案已下載",
       "healthy": "沒有需要修復的問題",
@@ -730,7 +732,7 @@
         "existing": "找到既有同步庫",
         "existingNote": "已驗證擁有權標記與版本完整性，下一步將比較本機資料。",
         "remote-conflict": "遠端有多個版本分支",
-        "remoteConflictNote": "首次連線的裝置不能安全選擇分支。請先在已連線此同步庫的裝置解決衝突，再重新掃描。",
+        "remoteConflictNote": "可在此裝置逐項處理這些分支；連線後同步會保持暫停，直到所有衝突解決。",
         "title": "遠端掃描結果"
       },
       "scope": {

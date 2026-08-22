@@ -74,12 +74,6 @@ export interface AvailabilityContext {
   }
 }
 
-export interface SyncCatalogEntry {
-  key: SyncCatalogKey
-  defaultIncluded: boolean
-  availability: (context: AvailabilityContext) => SyncAvailability
-}
-
 const included = (): SyncAvailability => ({ state: 'included' })
 const excludedByDesign = (reasonKey: string): SyncAvailability => ({
   state: 'excluded-by-design',
@@ -119,93 +113,55 @@ function permissionAvailability(
     : included()
 }
 
-export const syncCatalog: readonly SyncCatalogEntry[] = [
-  { key: 'settings', defaultIncluded: true, availability: included },
-  { key: 'quickLinks', defaultIncluded: true, availability: included },
-  { key: 'customSearchEngines', defaultIncluded: true, availability: included },
-  { key: 'ui.language', defaultIncluded: true, availability: included },
-  { key: 'ui.colorMode', defaultIncluded: true, availability: included },
-  {
-    key: 'searchHistory',
-    defaultIncluded: false,
-    availability: (context) =>
-      context.scope.searchHistory
-        ? included()
-        : excludedByUser('sync.availability.searchHistoryScopeDisabled'),
-  },
-  {
-    key: 'blockedTopSites',
-    defaultIncluded: false,
-    availability: (context) =>
-      context.scope.blockedTopSites
-        ? included()
-        : excludedByUser('sync.availability.blockedTopSitesScopeDisabled'),
-  },
-  {
-    key: 'onlineWallpaperUrl',
-    defaultIncluded: true,
-    availability: (context) =>
-      context.scope.onlineWallpaperUrl
-        ? included()
-        : excludedByUser('sync.availability.onlineWallpaperUrlScopeDisabled'),
-  },
-  {
-    key: 'quickLinkIcons',
-    defaultIncluded: true,
-    availability: (context) =>
-      context.scope.quickLinkIcons
-        ? included()
-        : excludedByUser('sync.availability.quickLinkIconsScopeDisabled'),
-  },
-  {
-    key: 'wallpaper.light',
-    defaultIncluded: false,
-    availability: (context) => wallpaperAvailability('light', context),
-  },
-  {
-    key: 'wallpaper.dark',
-    defaultIncluded: false,
-    availability: (context) => wallpaperAvailability('dark', context),
-  },
-  {
-    key: 'faviconCache',
-    defaultIncluded: false,
-    availability: () => excludedByDesign('sync.availability.faviconCacheLocal'),
-  },
-  {
-    key: 'bookmarks',
-    defaultIncluded: false,
-    availability: () => excludedByDesign('sync.availability.bookmarksBrowserManaged'),
-  },
-  {
-    key: 'onlineWallpaperCache',
-    defaultIncluded: false,
-    availability: () => excludedByDesign('sync.availability.onlineWallpaperCacheLocal'),
-  },
-  {
-    key: 'permission.monet',
-    defaultIncluded: true,
-    availability: (context) => permissionAvailability('monet', context),
-  },
-  {
-    key: 'permission.favicon',
-    defaultIncluded: true,
-    availability: (context) => permissionAvailability('favicon', context),
-  },
-  {
-    key: 'permission.wallpaper',
-    defaultIncluded: true,
-    availability: (context) => permissionAvailability('wallpaper', context),
-  },
-] as const
-
 export function getSyncAvailability(
   key: SyncCatalogKey,
   context: AvailabilityContext,
 ): SyncAvailability {
-  const entry = syncCatalog.find((candidate) => candidate.key === key)
-  if (!entry) throw new Error(`Unknown sync catalog key: ${key}`)
-  return entry.availability(context)
+  if (
+    key === 'settings' ||
+    key === 'quickLinks' ||
+    key === 'customSearchEngines' ||
+    key === 'ui.language' ||
+    key === 'ui.colorMode'
+  ) {
+    return included()
+  }
+  if (key === 'searchHistory') {
+    return context.scope.searchHistory
+      ? included()
+      : excludedByUser('sync.availability.searchHistoryScopeDisabled')
+  }
+  if (key === 'blockedTopSites') {
+    return context.scope.blockedTopSites
+      ? included()
+      : excludedByUser('sync.availability.blockedTopSitesScopeDisabled')
+  }
+  if (key === 'onlineWallpaperUrl') {
+    return context.scope.onlineWallpaperUrl
+      ? included()
+      : excludedByUser('sync.availability.onlineWallpaperUrlScopeDisabled')
+  }
+  if (key === 'quickLinkIcons') {
+    return context.scope.quickLinkIcons
+      ? included()
+      : excludedByUser('sync.availability.quickLinkIconsScopeDisabled')
+  }
+  if (key === 'wallpaper.light' || key === 'wallpaper.dark') {
+    return wallpaperAvailability(key === 'wallpaper.light' ? 'light' : 'dark', context)
+  }
+  if (key === 'faviconCache') {
+    return excludedByDesign('sync.availability.faviconCacheLocal')
+  }
+  if (key === 'bookmarks') {
+    return excludedByDesign('sync.availability.bookmarksBrowserManaged')
+  }
+  if (key === 'onlineWallpaperCache') {
+    return excludedByDesign('sync.availability.onlineWallpaperCacheLocal')
+  }
+  return permissionAvailability(
+    key === 'permission.monet' ? 'monet' : key === 'permission.favicon' ? 'favicon' : 'wallpaper',
+    context,
+  )
 }
 
 export function toSyncQuickLinks(

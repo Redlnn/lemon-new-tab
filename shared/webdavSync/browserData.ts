@@ -17,7 +17,7 @@ import {
 } from '@newtab/shared/storages/searchHistoriesStorage'
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
-import { captureSyncSnapshot } from './capture.ts'
+import { captureSyncSnapshot, deduplicateQuickLinkIcons } from './capture.ts'
 import { sha256Hex } from './canonical.ts'
 import { MAX_SYNC_WALLPAPER_BYTES } from './catalog.ts'
 import {
@@ -34,10 +34,29 @@ import type {
   SyncWallpaperV1,
 } from './types.ts'
 import { validateSyncSnapshot } from './validation.ts'
+import { inspectStaticWallpaperBytes } from './wallpaperCompression.ts'
+
+export interface BrowserSyncCaptureResult {
+  snapshot: SyncSnapshotV1
+  wallpaperStatus?: 'too-large' | 'unavailable'
+}
+
+interface CapturedWallpaper {
+  preserveBaseline?: boolean
+  status?: BrowserSyncCaptureResult['wallpaperStatus']
+  value?: SyncWallpaperV1
+}
 
 export async function captureBrowserSyncSnapshot(
   scope: SyncScopePreferences,
 ): Promise<SyncSnapshotV1> {
+  return (await captureBrowserSyncSnapshotResult(scope)).snapshot
+}
+
+export async function captureBrowserSyncSnapshotResult(
+  scope: SyncScopePreferences,
+  baseline?: SyncSnapshotV1,
+): Promise<BrowserSyncCaptureResult> {
   const [settings, quickLinks, searchEngines, ui, searchHistory, blockedTopSites] =
     await Promise.all([
       settingsStorage.getValue(),
@@ -60,41 +79,93 @@ export async function captureBrowserSyncSnapshot(
     searchHistory: searchHistory?.items,
     blockedTopSites,
   })
+  await deduplicateQuickLinkIcons(snapshot)
   if (scope.wallpapers) {
     const [light, dark] = await Promise.all([
       captureWallpaper(settings.background.local, 'wallpaper'),
       captureWallpaper(settings.background.localDark, 'wallpaperDark'),
     ])
-    if (light || dark) {
+    const lightValue = light.value ?? (light.preserveBaseline ? baseline?.optional?.wallpapers?.light : undefined)
+    const darkValue = dark.value ?? (dark.preserveBaseline ? baseline?.optional?.wallpapers?.dark : undefined)
+    if (lightValue || darkValue) {
       snapshot.optional ??= {}
       snapshot.optional.wallpapers = {
-        ...(light ? { light } : {}),
-        ...(dark ? { dark } : {}),
+        ...(lightValue ? { light: structuredClone(lightValue) } : {}),
+        ...(darkValue ? { dark: structuredClone(darkValue) } : {}),
       }
     }
+    const wallpaperStatus =
+      light.status === 'too-large' || dark.status === 'too-large'
+        ? 'too-large'
+        : (light.status ?? dark.status)
+    return { snapshot, wallpaperStatus }
   }
-  return snapshot
+  return { snapshot }
 }
 
 async function captureWallpaper(
   selection: CURRENT_CONFIG_SCHEMA['background']['local'],
   store: 'wallpaper' | 'wallpaperDark',
 ) {
-  if (!selection.id || selection.mediaType === 'video') return undefined
+  if (!selection.id) return {}
+  if (selection.mediaType === 'video') {
+    return { preserveBaseline: true, status: 'unavailable' } satisfies CapturedWallpaper
+  }
+  const blob = await idbGet(store, selection.id)
+  if (!blob || !blob.type.toLowerCase().startsWith('image/')) {
+    return { preserveBaseline: true, status: 'unavailable' } satisfies CapturedWallpaper
+  }
+  if (blob.size > MAX_SYNC_WALLPAPER_BYTES) {
+    return { preserveBaseline: true, status: 'too-large' } satisfies CapturedWallpaper
+  }
+  const bytes = new Uint8Array(await blob.arrayBuffer())
+  try {
+    inspectStaticWallpaperBytes(bytes)
+  } catch {
+    return { preserveBaseline: true, status: 'unavailable' } satisfies CapturedWallpaper
+  }
+  const sha256 = await sha256Hex(bytes)
+  return {
+    value: {
+      assetId: `sha256-${sha256}`,
+      size: blob.size,
+      mimeType: blob.type,
+      sha256,
+    },
+  } satisfies CapturedWallpaper
+}
+
+export async function getUnavailableSelectedWallpaperVariants(): Promise<Set<'dark' | 'light'>> {
+  const settings = await settingsStorage.getValue()
+  const [light, dark] = await Promise.all([
+    selectedWallpaperIsUnavailable(settings.background.local, 'wallpaper'),
+    selectedWallpaperIsUnavailable(settings.background.localDark, 'wallpaperDark'),
+  ])
+  const result = new Set<'dark' | 'light'>()
+  if (light) result.add('light')
+  if (dark) result.add('dark')
+  return result
+}
+
+async function selectedWallpaperIsUnavailable(
+  selection: CURRENT_CONFIG_SCHEMA['background']['local'],
+  store: 'wallpaper' | 'wallpaperDark',
+): Promise<boolean> {
+  if (!selection.id) return false
+  if (selection.mediaType === 'video') return true
   const blob = await idbGet(store, selection.id)
   if (
     !blob ||
     blob.size > MAX_SYNC_WALLPAPER_BYTES ||
     !blob.type.toLowerCase().startsWith('image/')
   ) {
-    return undefined
+    return true
   }
-  const sha256 = await sha256Hex(await blob.arrayBuffer())
-  return {
-    assetId: `sha256-${sha256}`,
-    size: blob.size,
-    mimeType: blob.type,
-    sha256,
+  try {
+    inspectStaticWallpaperBytes(new Uint8Array(await blob.arrayBuffer()))
+    return false
+  } catch {
+    return true
   }
 }
 

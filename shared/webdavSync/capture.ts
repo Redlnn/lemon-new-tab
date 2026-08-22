@@ -1,6 +1,6 @@
 import { toSyncBlockedTopSites, toSyncCustomSearchEngines, toSyncQuickLinks } from './catalog.ts'
 import type { CaptureContext } from './catalog.ts'
-import { canonicalize } from './canonical.ts'
+import { canonicalize, sha256Hex } from './canonical.ts'
 import type { JsonObject, SyncSnapshotV1 } from './types.ts'
 
 function asObject(value: unknown): Record<string, unknown> {
@@ -69,4 +69,23 @@ export function captureSyncSnapshot(context: CaptureContext): SyncSnapshotV1 {
   }
 
   return snapshot
+}
+
+export async function deduplicateQuickLinkIcons(snapshot: SyncSnapshotV1): Promise<void> {
+  const icons: Record<string, string> = {}
+  for (const item of snapshot.quickLinks.items) {
+    if (!item.favicon) continue
+    const hash = await sha256Hex(item.favicon)
+    icons[hash] = item.favicon
+    item.faviconHash = hash
+    delete item.favicon
+  }
+  if (Object.keys(icons).length > 0) snapshot.quickLinks.icons = icons
+}
+
+export async function quickLinkIconHashesAreValid(snapshot: SyncSnapshotV1): Promise<boolean> {
+  for (const [hash, icon] of Object.entries(snapshot.quickLinks.icons ?? {})) {
+    if ((await sha256Hex(icon)) !== hash) return false
+  }
+  return true
 }

@@ -11,6 +11,7 @@ export interface SyncQuickLinkV1 {
   url: string
   title: string
   favicon?: string
+  faviconHash?: string
 }
 
 export interface SyncQuickLinkGroupV1 {
@@ -24,6 +25,7 @@ export interface SyncQuickLinksDataV1 {
   rootOrder: string[]
   groups: SyncQuickLinkGroupV1[]
   groupOrder: string[]
+  icons?: Record<string, string>
 }
 
 export interface SyncCustomSearchEngineV1 {
@@ -201,7 +203,6 @@ export type SyncPauseReason =
 export type PendingSyncPhase =
   | 'captured'
   | 'assets-uploaded'
-  | 'revision-uploaded'
   | 'committed'
   | 'head-updated'
   | 'applying-local'
@@ -233,7 +234,6 @@ export interface LocalSyncStateV1 {
   deviceName: string
   deviceRecordAt?: string
   baseRevisionId?: string
-  lastRemoteEtag?: string
   lastSuccessAt?: string
   pending?: PendingSyncOperation
   lastError?: SanitizedSyncError

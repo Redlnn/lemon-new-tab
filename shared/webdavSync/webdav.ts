@@ -1,4 +1,5 @@
 import { canonicalJson, hashCanonicalJson, sha256Hex } from './canonical.ts'
+import { MAX_PBKDF2_ITERATIONS, MIN_PBKDF2_ITERATIONS } from './crypto.ts'
 import type {
   AssetReferenceV1,
   CommitRecordV1,
@@ -531,7 +532,8 @@ function validateVaultMetadata(value: unknown): VaultMetadataV1 {
         encryption.kdf === 'PBKDF2-HMAC-SHA-256' &&
         typeof encryption.iterations === 'number' &&
         Number.isSafeInteger(encryption.iterations) &&
-        encryption.iterations >= 600_000 &&
+        encryption.iterations >= MIN_PBKDF2_ITERATIONS &&
+        encryption.iterations <= MAX_PBKDF2_ITERATIONS &&
         typeof encryption.salt === 'string' &&
         encryption.salt.length >= 20 &&
         encryption.salt.length <= 64 &&

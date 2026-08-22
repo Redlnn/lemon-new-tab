@@ -17,6 +17,7 @@ import {
   prepareAndApplyBrowserSnapshot,
 } from './browserData.ts'
 import { captureSyncSnapshot } from './capture.ts'
+import { mergeImportedSnapshot } from './apply.ts'
 import { DEFAULT_SYNC_SCOPE } from './localState.ts'
 import type { SyncScopePreferences, SyncSnapshotV1 } from './types.ts'
 
@@ -76,7 +77,23 @@ export async function prepareBrowserImport(file: Blob): Promise<PreparedBrowserI
   }
 }
 
-export function applyPreparedBrowserImport(input: PreparedBrowserImport): Promise<void> {
+export function getPreparedImportWallpapers(
+  input: PreparedBrowserImport,
+): Partial<Record<'dark' | 'light', Blob>> {
+  return { ...input.wallpapers }
+}
+
+export async function mergePreparedBrowserImport(
+  input: PreparedBrowserImport,
+  scope: SyncScopePreferences,
+): Promise<SyncSnapshotV1> {
+  return mergeImportedSnapshot(await captureBrowserSyncSnapshot(scope), input.snapshot)
+}
+
+export function applyPreparedBrowserImport(
+  input: PreparedBrowserImport,
+  snapshot: SyncSnapshotV1 = input.snapshot,
+): Promise<void> {
   const wallpapers = Object.fromEntries(
     Object.entries(input.wallpapers).map(([variant, blob]) => {
       const reference = input.snapshot.optional?.wallpapers?.[variant as 'dark' | 'light']
@@ -87,7 +104,7 @@ export function applyPreparedBrowserImport(input: PreparedBrowserImport): Promis
   return prepareAndApplyBrowserSnapshot(
     crypto.randomUUID(),
     crypto.randomUUID(),
-    input.snapshot,
+    snapshot,
     input.scope,
     wallpapers,
   )

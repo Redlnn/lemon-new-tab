@@ -10,6 +10,7 @@ import {
 
 import type {
   LocalSyncStateV1,
+  SyncConflict,
   SyncScopePreferences,
   SyncSnapshotV1,
 } from './types.ts'
@@ -64,9 +65,13 @@ export interface PendingWallpaperApplyV1 {
 export interface StoredSyncConflictV1 {
   version: 1
   base: SyncSnapshotV1
+  conflicts: SyncConflict[]
+  deviceLocal: SyncSnapshotV1
   local: SyncSnapshotV1
   remote: SyncSnapshotV1
   remoteRevisionIds: string[]
+  remainingRemoteRevisionIds: string[]
+  stage: 'local-remote' | 'remote-branches'
   remoteVersions?: Array<{
     revisionId: string
     deviceName: string
@@ -75,7 +80,6 @@ export interface StoredSyncConflictV1 {
 }
 
 const BASELINE_KEY = 'baseline-v1'
-const PENDING_SNAPSHOT_KEY = 'pending-snapshot-v1'
 const PENDING_APPLY_KEY = 'pending-apply-v1'
 const CONFLICT_KEY = 'conflict-v1'
 const ENCRYPTION_KEY_PREFIX = 'encryption-key-v1:'
@@ -209,18 +213,6 @@ export function getBaseline(): Promise<SyncSnapshotV1 | undefined> {
 
 export function setBaseline(snapshot: SyncSnapshotV1): Promise<void> {
   return idbSet('webdavSync', BASELINE_KEY, snapshot)
-}
-
-export function getPendingSnapshot(): Promise<SyncSnapshotV1 | undefined> {
-  return idbGet('webdavSync', PENDING_SNAPSHOT_KEY) as Promise<SyncSnapshotV1 | undefined>
-}
-
-export function setPendingSnapshot(snapshot: SyncSnapshotV1): Promise<void> {
-  return idbSet('webdavSync', PENDING_SNAPSHOT_KEY, snapshot)
-}
-
-export function clearPendingSnapshot(): Promise<void> {
-  return idbDelete('webdavSync', PENDING_SNAPSHOT_KEY)
 }
 
 export function getPendingApply(): Promise<PendingApplyV1 | undefined> {

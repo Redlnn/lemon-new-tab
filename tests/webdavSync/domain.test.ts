@@ -10,18 +10,24 @@ import {
   createLocalBackupArchive,
   createVaultEncryption,
   decryptSyncBytes,
+  deriveEncryptionKey,
+  decideInitialization,
+  deduplicateQuickLinkIcons,
   decideSynchronization,
   getSyncAvailability,
   inspectStaticWallpaper,
   encryptSyncBytes,
   materializeQuickLinks,
   mergeSyncSnapshots,
+  mergeImportedSnapshot,
   mergeSyncSettings,
   parseJsonBackup,
   parseLocalBackupArchive,
   preserveExcludedScope,
+  preserveBaselineWallpapers,
   mustReinitializeDevice,
   pruneExpiredTombstones,
+  quickLinkIconHashesAreValid,
   resolveSyncConflicts,
   sanitizeSettings,
   serializeJsonBackup,
@@ -195,6 +201,27 @@ test('snapshot only includes explicitly user-selected Quick Link icons', () => {
   assert.equal(makeSnapshot(false).quickLinks.items[0]?.favicon, undefined)
 })
 
+test('snapshot stores duplicate user-selected Quick Link icons once by SHA-256', async () => {
+  const value = snapshot()
+  value.quickLinks.items.push({
+    id: 'link-b',
+    title: 'B',
+    url: 'https://b.example/',
+  })
+  value.quickLinks.rootOrder.push('link-b')
+  for (const item of value.quickLinks.items) item.favicon = 'data:image/png;base64,same'
+
+  await deduplicateQuickLinkIcons(value)
+
+  const hashes = value.quickLinks.items.map((item) => item.faviconHash)
+  assert.equal(new Set(hashes).size, 1)
+  assert.equal(Object.keys(value.quickLinks.icons ?? {}).length, 1)
+  assert.ok(value.quickLinks.items.every((item) => item.favicon === undefined))
+  assert.equal(await quickLinkIconHashesAreValid(value), true)
+  value.quickLinks.icons![hashes[0]!] = 'tampered'
+  assert.equal(await quickLinkIconHashesAreValid(value), false)
+})
+
 test('online wallpaper URL follows its advanced scope without removing other preferences', () => {
   const settings = {
     background: {
@@ -311,6 +338,61 @@ test('disabled optional ranges preserve the confirmed baseline instead of creati
     'https://remote.example/api',
   )
   assert.deepEqual(result.optional, base.optional)
+})
+
+test('core-only storage fallback preserves the confirmed wallpaper state', () => {
+  const base = snapshot()
+  base.optional = {
+    wallpapers: {
+      light: {
+        assetId: `sha256-${'a'.repeat(64)}`,
+        size: 10,
+        mimeType: 'image/png',
+        sha256: 'a'.repeat(64),
+      },
+    },
+  }
+  const changed = snapshot()
+  changed.settings.clock = { size: 60 }
+  changed.optional = {
+    wallpapers: {
+      dark: {
+        assetId: `sha256-${'b'.repeat(64)}`,
+        size: 20,
+        mimeType: 'image/webp',
+        sha256: 'b'.repeat(64),
+      },
+    },
+  }
+
+  const fallback = preserveBaselineWallpapers(changed, base)
+  assert.deepEqual(fallback.optional?.wallpapers, base.optional.wallpapers)
+  assert.deepEqual(fallback.settings.clock, { size: 60 })
+  assert.equal(preserveBaselineWallpapers(changed).optional, undefined)
+})
+
+test('merge import preserves current entities that are absent from the backup', () => {
+  const current = snapshot()
+  current.quickLinks.items.push({ id: 'current-only', title: 'Current', url: 'https://current.example/' })
+  current.quickLinks.rootOrder.push('current-only')
+  current.customSearchEngines = {
+    items: [{ id: 'current-engine', name: 'Current', url: 'https://current.example/?q=%s' }],
+    order: ['current-engine'],
+  }
+  const imported = snapshot()
+  imported.quickLinks.items[0]!.title = 'Imported A'
+  imported.quickLinks.items.push({ id: 'imported-only', title: 'Imported', url: 'https://imported.example/' })
+  imported.quickLinks.rootOrder.push('imported-only')
+  imported.customSearchEngines = {
+    items: [{ id: 'imported-engine', name: 'Imported', url: 'https://imported.example/?q=%s' }],
+    order: ['imported-engine'],
+  }
+
+  const merged = mergeImportedSnapshot(current, imported)
+
+  assert.deepEqual(merged.quickLinks.rootOrder, ['link-a', 'imported-only', 'current-only'])
+  assert.equal(merged.quickLinks.items.find((item) => item.id === 'link-a')?.title, 'Imported A')
+  assert.deepEqual(merged.customSearchEngines.order, ['imported-engine', 'current-engine'])
 })
 
 test('snapshot capture rejects duplicate stable entity IDs instead of collapsing data', () => {
@@ -496,6 +578,32 @@ test('conflict choices apply only after every unresolved value has a decision', 
   assert.deepEqual(resolved.settings.clock, { size: 70 })
 })
 
+test('keeping simultaneous creates preserves the remote entity as the duplicate', () => {
+  const base = snapshot()
+  base.quickLinks = { items: [], rootOrder: [], groups: [], groupOrder: [] }
+  const local = structuredClone(base)
+  const remote = structuredClone(base)
+  local.quickLinks.items = [{ id: 'shared', title: 'Local', url: 'https://local.example/' }]
+  local.quickLinks.rootOrder = ['shared']
+  remote.quickLinks.items = [{ id: 'shared', title: 'Remote', url: 'https://remote.example/' }]
+  remote.quickLinks.rootOrder = ['shared']
+  const conflict = mergeSyncSnapshots(base, local, remote).conflicts.find(
+    (item) => item.kind === 'simultaneous-create',
+  )!
+
+  const resolved = resolveSyncConflicts({
+    base,
+    local,
+    remote,
+    resolutions: [{ conflictId: conflict.id, choice: 'both', duplicateId: 'remote-copy' }],
+  })
+
+  assert.deepEqual(resolved.quickLinks.items, [
+    { id: 'shared', title: 'Local', url: 'https://local.example/' },
+    { id: 'remote-copy', title: 'Remote', url: 'https://remote.example/' },
+  ])
+})
+
 test('sync decision converges concurrent non-overlapping branches without choosing by time', () => {
   const baseRevisionId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
   const base = snapshot()
@@ -541,6 +649,12 @@ test('sync decision stops on conflicting branches or an unknown ancestor', () =>
     ],
   })
   assert.equal(conflict.action, 'conflict')
+  if (conflict.action === 'conflict') {
+    assert.deepEqual(
+      mergeSyncSnapshots(conflict.base, conflict.local, conflict.remote).conflicts,
+      conflict.conflicts,
+    )
+  }
 
   const unknown = decideSynchronization({
     baseRevisionId,
@@ -557,12 +671,59 @@ test('sync decision stops on conflicting branches or an unknown ancestor', () =>
   assert.equal(unknown.action, 'unknown-ancestor')
 })
 
+test('initialization keeps the device snapshot separate from conflicting remote branches', () => {
+  const base = snapshot()
+  const device = structuredClone(base)
+  const left = structuredClone(base)
+  const right = structuredClone(base)
+  ;(device.settings.search as { placeholder: string }).placeholder = 'Device'
+  ;(left.settings.clock as { size: number }).size = 60
+  ;(right.settings.clock as { size: number }).size = 70
+
+  const decision = decideInitialization({
+    base,
+    local: device,
+    revisions: [
+      branchRevision('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', [], left),
+      branchRevision('cccccccc-cccc-4ccc-8ccc-cccccccccccc', [], right),
+    ],
+  })
+
+  assert.equal(decision.action, 'conflict')
+  if (decision.action === 'conflict') {
+    assert.equal(decision.stage, 'remote-branches')
+    assert.deepEqual(decision.deviceLocal, device)
+    assert.deepEqual(
+      mergeSyncSnapshots(decision.base, decision.local, decision.remote).conflicts,
+      decision.conflicts,
+    )
+  }
+})
+
 test('tombstones expire after 180 days and stale devices reinitialize', () => {
   const deletedAt = new Date('2026-01-01T00:00:00.000Z')
   const tombstone = createTombstone('quick-link', 'link-a', 'revision-a', deletedAt)
   assert.equal(pruneExpiredTombstones([tombstone], new Date('2026-06-29T23:59:59.000Z')).length, 1)
   assert.equal(pruneExpiredTombstones([tombstone], new Date('2026-06-30T00:00:00.001Z')).length, 0)
   assert.equal(mustReinitializeDevice('2026-01-01T00:00:00.000Z', new Date('2026-07-01')), true)
+
+  const base = snapshot()
+  const local = structuredClone(base)
+  const remote = structuredClone(base)
+  ;(local.settings.clock as { size: number }).size = 60
+  ;(remote.settings.search as { placeholder: string }).placeholder = 'Remote'
+  const decision = decideInitialization({
+    base,
+    local,
+    revisions: [
+      branchRevision('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', [], remote),
+    ],
+  })
+  assert.equal(decision.action, 'publish')
+  if (decision.action === 'publish') {
+    assert.equal((decision.snapshot.settings.clock as { size: number }).size, 60)
+    assert.equal((decision.snapshot.settings.search as { placeholder: string }).placeholder, 'Remote')
+  }
 })
 
 test('commit validation rejects unsafe paths and accepts complete metadata', () => {
@@ -703,6 +864,13 @@ test('client encryption binds ciphertext to its vault object and rejects wrong p
   )
   await assert.rejects(
     unlockVaultEncryption('wrong password', vaultId, generationId, created.metadata),
+  )
+})
+
+test('client encryption rejects excessive PBKDF2 work factors before deriving a key', async () => {
+  await assert.rejects(
+    deriveEncryptionKey('password', new Uint8Array(16), 2_000_001),
+    /iteration count is unsafe/,
   )
 })
 

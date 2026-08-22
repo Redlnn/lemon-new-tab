@@ -7,8 +7,6 @@
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
     "dev:edge": "wxt -b edge",
-    "prototype:webdav": "vite --config prototypes/webdav-sync/vite.config.ts",
-    "prototype:webdav:build": "vite build --config prototypes/webdav-sync/vite.config.ts",
     "build": "vue-tsc --build && wxt build",
     "build:firefox": "vue-tsc --build && wxt build -b firefox",
     "build:edge": "vue-tsc --build && wxt build -b edge",

@@ -16,6 +16,7 @@ import {
   acceptRemoteSyncReset,
   commitCompressedSyncWallpaper,
   disconnectSyncConnection,
+  deleteSyncCorruption,
   downloadSyncCorruption,
   getSyncConflict,
   getSyncDevices,
@@ -40,11 +41,11 @@ import {
   type WallpaperCompressionCandidate,
 } from '@/shared/webdavSync/wallpaperCompression'
 import type {
-  BrowserCorruptionInspection,
   BrowserSyncDeviceEntry,
   BrowserSyncHistoryEntry,
   BrowserSyncHistoryPreview,
 } from '@/shared/webdavSync/browserEngine'
+import type { BrowserCorruptionInspection } from '@/shared/webdavSync/browserManagement'
 import type {
   LocalSyncStateV1,
   SyncConflict,
@@ -363,6 +364,21 @@ async function repairCorruption() {
       revisionId: corruption.value.corruptedRevisionId,
     })
     ElMessage.success(t('webdavSync.repair.completed'))
+    try {
+      await ElMessageBox.confirm(
+        t('webdavSync.repair.deleteEvidenceDescription'),
+        t('webdavSync.repair.deleteEvidenceTitle'),
+        { type: 'warning' },
+      )
+    } catch {
+      repairVisible.value = false
+      emit('updated')
+      return
+    }
+    await deleteSyncCorruption(
+      corruption.value.corruptedRevisionId,
+      corruption.value.actualPayloadHash,
+    )
     repairVisible.value = false
     emit('updated')
   } catch (error) {
@@ -449,13 +465,17 @@ async function loadDisconnectImpact() {
   await Promise.all([loadDevices(), loadHistory()])
 }
 
-watch(model, (mode) => {
-  if (mode === 'conflict') void loadConflicts()
-  else if (mode === 'history') void loadHistory()
-  else if (mode === 'devices') void loadDevices()
-  else if (mode === 'repair') void loadRepair()
-  else if (mode === 'disconnect') void loadDisconnectImpact()
-})
+watch(
+  model,
+  (mode) => {
+    if (mode === 'conflict') void loadConflicts()
+    else if (mode === 'history') void loadHistory()
+    else if (mode === 'devices') void loadDevices()
+    else if (mode === 'repair') void loadRepair()
+    else if (mode === 'disconnect') void loadDisconnectImpact()
+  },
+  { immediate: true },
+)
 
 watch(compressionVariant, clearCompressionPreview)
 onBeforeUnmount(clearCompressionPreview)
