@@ -4,20 +4,14 @@ import { getQuickLinksStorageValue, quickLinksStorage } from '@/shared/quickLink
 import { getUiPreferences, patchUiPreferences } from '@/shared/uiPreferences'
 import {
   idbDelete,
-  idbDeleteMany,
   idbGet,
-  idbGetAllEntries,
   idbSet,
 } from '@/shared/storage/idb'
 
 import { customSearchEngineStorage } from '@newtab/shared/customSearchEngine/customSearchEngineStorage'
-import {
-  getSearchHistoryData,
-  searchHistoriesStorage,
-} from '@newtab/shared/storages/searchHistoriesStorage'
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
-import { captureSyncSnapshot, deduplicateQuickLinkIcons } from './capture.ts'
+import { captureSyncSnapshot, deduplicateInlineImages } from './capture.ts'
 import { sha256Hex } from './canonical.ts'
 import { MAX_SYNC_WALLPAPER_BYTES } from './catalog.ts'
 import {
@@ -29,21 +23,21 @@ import {
 } from './localState.ts'
 import { materializeQuickLinks, mergeSyncSettings } from './apply.ts'
 import type {
+  LocalResourceOmission,
   SyncScopePreferences,
   SyncSnapshotV1,
   SyncWallpaperV1,
 } from './types.ts'
 import { validateSyncSnapshot } from './validation.ts'
-import { inspectStaticWallpaperBytes } from './wallpaperCompression.ts'
 
 export interface BrowserSyncCaptureResult {
   snapshot: SyncSnapshotV1
-  wallpaperStatus?: 'too-large' | 'unavailable'
+  resourceOmissions: LocalResourceOmission[]
 }
 
 interface CapturedWallpaper {
   preserveBaseline?: boolean
-  status?: BrowserSyncCaptureResult['wallpaperStatus']
+  reason?: Extract<LocalResourceOmission, { kind: 'wallpaper' }>['reason']
   value?: SyncWallpaperV1
 }
 
@@ -57,13 +51,12 @@ export async function captureBrowserSyncSnapshotResult(
   scope: SyncScopePreferences,
   baseline?: SyncSnapshotV1,
 ): Promise<BrowserSyncCaptureResult> {
-  const [settings, quickLinks, searchEngines, ui, searchHistory, blockedTopSites] =
+  const [settings, quickLinks, searchEngines, ui, blockedTopSites] =
     await Promise.all([
       settingsStorage.getValue(),
       getQuickLinksStorageValue(),
       customSearchEngineStorage.getValue(),
       getUiPreferences(),
-      scope.searchHistory ? getSearchHistoryData() : undefined,
       scope.blockedTopSites ? blockedTopSitesStorage.getValue() : undefined,
     ])
 
@@ -76,10 +69,9 @@ export async function captureBrowserSyncSnapshotResult(
       colorMode: ui.colorMode || 'auto',
     },
     scope,
-    searchHistory: searchHistory?.items,
     blockedTopSites,
   })
-  await deduplicateQuickLinkIcons(snapshot)
+  const resourceOmissions = await deduplicateInlineImages(snapshot, baseline)
   if (scope.wallpapers) {
     const [light, dark] = await Promise.all([
       captureWallpaper(settings.background.local, 'wallpaper'),
@@ -94,13 +86,10 @@ export async function captureBrowserSyncSnapshotResult(
         ...(darkValue ? { dark: structuredClone(darkValue) } : {}),
       }
     }
-    const wallpaperStatus =
-      light.status === 'too-large' || dark.status === 'too-large'
-        ? 'too-large'
-        : (light.status ?? dark.status)
-    return { snapshot, wallpaperStatus }
+    if (light.reason) resourceOmissions.push({ kind: 'wallpaper', variant: 'light', reason: light.reason })
+    if (dark.reason) resourceOmissions.push({ kind: 'wallpaper', variant: 'dark', reason: dark.reason })
   }
-  return { snapshot }
+  return { snapshot, resourceOmissions }
 }
 
 async function captureWallpaper(
@@ -109,20 +98,20 @@ async function captureWallpaper(
 ) {
   if (!selection.id) return {}
   if (selection.mediaType === 'video') {
-    return { preserveBaseline: true, status: 'unavailable' } satisfies CapturedWallpaper
+    return { preserveBaseline: true, reason: 'unsupported' } satisfies CapturedWallpaper
   }
   const blob = await idbGet(store, selection.id)
   if (!blob || !blob.type.toLowerCase().startsWith('image/')) {
-    return { preserveBaseline: true, status: 'unavailable' } satisfies CapturedWallpaper
+    return { preserveBaseline: true, reason: 'unavailable' } satisfies CapturedWallpaper
   }
   if (blob.size > MAX_SYNC_WALLPAPER_BYTES) {
-    return { preserveBaseline: true, status: 'too-large' } satisfies CapturedWallpaper
+    return { preserveBaseline: true, reason: 'too-large' } satisfies CapturedWallpaper
   }
   const bytes = new Uint8Array(await blob.arrayBuffer())
   try {
-    inspectStaticWallpaperBytes(bytes)
+    if (isAnimatedImage(bytes, blob.type)) throw new TypeError('Animated image')
   } catch {
-    return { preserveBaseline: true, status: 'unavailable' } satisfies CapturedWallpaper
+    return { preserveBaseline: true, reason: 'unsupported' } satisfies CapturedWallpaper
   }
   const sha256 = await sha256Hex(bytes)
   return {
@@ -162,16 +151,23 @@ async function selectedWallpaperIsUnavailable(
     return true
   }
   try {
-    inspectStaticWallpaperBytes(new Uint8Array(await blob.arrayBuffer()))
-    return false
+    return isAnimatedImage(new Uint8Array(await blob.arrayBuffer()), blob.type)
   } catch {
     return true
   }
 }
 
-async function writeSettings(snapshot: SyncSnapshotV1): Promise<void> {
+async function writeSettings(
+  snapshot: SyncSnapshotV1,
+  scope: SyncScopePreferences,
+): Promise<void> {
   const current = await settingsStorage.getValue()
-  const merged = mergeSyncSettings<CURRENT_CONFIG_SCHEMA>(current, snapshot.settings)
+  const merged = scope.settings && snapshot.settings
+    ? mergeSyncSettings<CURRENT_CONFIG_SCHEMA>(current, snapshot.settings)
+    : structuredClone(current)
+  if (snapshot.scope.onlineWallpaperUrl && snapshot.optional?.onlineWallpaperUrl !== undefined) {
+    merged.background.online.url = snapshot.optional.onlineWallpaperUrl
+  }
   const pending = await getPendingApply()
   if (pending?.wallpapers?.light) {
     merged.background.local = {
@@ -195,8 +191,9 @@ async function writeQuickLinks(
   scope: SyncScopePreferences,
 ): Promise<void> {
   const current = await getQuickLinksStorageValue()
+  if (!snapshot.quickLinks) return
   await quickLinksStorage.setValue(
-    materializeQuickLinks(snapshot.quickLinks, current, scope.quickLinkIcons),
+    materializeQuickLinks(snapshot.quickLinks, current, scope.userIcons, snapshot.inlineImages),
   )
 }
 
@@ -205,16 +202,6 @@ async function writeOptional(
   scope: SyncScopePreferences,
 ): Promise<void> {
   const tasks: Promise<unknown>[] = []
-  if (scope.searchHistory && snapshot.optional?.searchHistory) {
-    tasks.push(
-      searchHistoriesStorage.setValue({
-        version: 1,
-        items: snapshot.optional.searchHistory.order.map(
-          (id) => snapshot.optional!.searchHistory!.items.find((item) => item.id === id)!,
-        ),
-      }),
-    )
-  }
   if (scope.blockedTopSites && snapshot.optional?.blockedTopSites) {
     tasks.push(blockedTopSitesStorage.setValue(snapshot.optional.blockedTopSites.urls))
   }
@@ -245,26 +232,37 @@ async function continueApply(
     await setPendingApply(pending)
   }
   if (pending.phase === 'wallpapers') {
-    await writeSettings(pending.snapshot)
+    if (scope.settings || scope.onlineWallpaperUrl || scope.wallpapers) {
+      await writeSettings(pending.snapshot, scope)
+    }
     pending = { ...pending, phase: 'settings' }
     await setPendingApply(pending)
   }
   if (pending.phase === 'settings') {
-    await writeQuickLinks(pending.snapshot, scope)
+    if (scope.quickLinks) await writeQuickLinks(pending.snapshot, scope)
     pending = { ...pending, phase: 'quick-links' }
     await setPendingApply(pending)
   }
   if (pending.phase === 'quick-links') {
-    await customSearchEngineStorage.setValue({
-      items: pending.snapshot.customSearchEngines.order.map(
-        (id) => pending.snapshot.customSearchEngines.items.find((item) => item.id === id)!,
-      ),
-    })
+    const engines = pending.snapshot.customSearchEngines
+    if (scope.customSearchEngines && engines) {
+      const current = await customSearchEngineStorage.getValue()
+      const currentById = new Map(current.items.map((item) => [item.id, item]))
+      await customSearchEngineStorage.setValue({
+        items: engines.order.map((id) => {
+          const item = engines.items.find((engine) => engine.id === id)!
+          const icon = scope.userIcons
+            ? item.iconHash && pending.snapshot.inlineImages?.[item.iconHash]
+            : currentById.get(item.id)?.icon
+          return { id: item.id, name: item.name, url: item.url, ...(icon ? { icon } : {}) }
+        }),
+      })
+    }
     pending = { ...pending, phase: 'search-engines' }
     await setPendingApply(pending)
   }
   if (pending.phase === 'search-engines') {
-    await patchUiPreferences(pending.snapshot.ui)
+    if (scope.uiPreferences && pending.snapshot.ui) await patchUiPreferences(pending.snapshot.ui)
     pending = { ...pending, phase: 'ui' }
     await setPendingApply(pending)
   }
@@ -333,6 +331,7 @@ export async function prepareAndApplyBrowserSnapshot(
     revisionId,
     phase: 'validated',
     snapshot: validation.value,
+    scope: { ...scope },
     ...(Object.keys(pendingWallpapers).length ? { wallpapers: pendingWallpapers } : {}),
   }
   await setPendingApply(pending)
@@ -359,58 +358,29 @@ export async function getSelectedBrowserWallpaper(
   return blob instanceof Blob && blob.type.toLowerCase().startsWith('image/') ? blob : undefined
 }
 
-function stagedWallpaperKey(variant: 'dark' | 'light', sha256: string): string {
-  return `staged-wallpaper-${variant}-${sha256}`
-}
-
-export async function stageWallpaperSyncCandidate(
-  variant: 'dark' | 'light',
-  blob: Blob,
-): Promise<SyncWallpaperV1> {
-  if (
-    blob.size === 0 ||
-    blob.size > MAX_SYNC_WALLPAPER_BYTES ||
-    !blob.type.toLowerCase().startsWith('image/')
-  ) {
-    throw new TypeError('Compressed wallpaper is invalid or too large')
-  }
-  const sha256 = await sha256Hex(await blob.arrayBuffer())
-  await idbSet('webdavSync', stagedWallpaperKey(variant, sha256), blob)
-  return {
-    assetId: `sha256-${sha256}`,
-    mimeType: blob.type,
-    sha256,
-    size: blob.size,
-  }
-}
-
-export async function getStagedWallpaperSyncCandidate(
-  variant: 'dark' | 'light',
-  sha256: string,
-): Promise<Blob | undefined> {
-  const value = await idbGet('webdavSync', stagedWallpaperKey(variant, sha256))
-  return value instanceof Blob ? value : undefined
-}
-
-export function clearStagedWallpaperSyncCandidate(
-  variant: 'dark' | 'light',
-  sha256: string,
-): Promise<void> {
-  return idbDelete('webdavSync', stagedWallpaperKey(variant, sha256))
-}
-
-export async function clearAllStagedWallpaperSyncCandidates(): Promise<void> {
-  const keys = (await idbGetAllEntries('webdavSync'))
-    .map(([key]) => key)
-    .filter((key) => key.startsWith('staged-wallpaper-'))
-  await idbDeleteMany('webdavSync', keys)
-}
-
-export async function resumePendingBrowserApply(scope: SyncScopePreferences): Promise<boolean> {
+export async function resumePendingBrowserApply(): Promise<boolean> {
   const pending = await getPendingApply()
   if (!pending) return false
   const validation = validateSyncSnapshot(pending.snapshot)
   if (!validation.ok) throw new Error(validation.error)
-  await continueApply({ ...pending, snapshot: validation.value }, scope)
+  await continueApply({ ...pending, snapshot: validation.value }, pending.scope)
   return true
+}
+
+function isAnimatedImage(bytes: Uint8Array, mimeType: string): boolean {
+  const type = mimeType.toLowerCase()
+  if (type === 'image/gif') return true
+  if (type === 'image/png') return includesAscii(bytes, 'acTL')
+  if (type === 'image/webp') return includesAscii(bytes, 'ANIM') || includesAscii(bytes, 'ANMF')
+  return false
+}
+
+function includesAscii(bytes: Uint8Array, value: string): boolean {
+  outer: for (let index = 0; index <= bytes.length - value.length; index += 1) {
+    for (let offset = 0; offset < value.length; offset += 1) {
+      if (bytes[index + offset] !== value.charCodeAt(offset)) continue outer
+    }
+    return true
+  }
+  return false
 }

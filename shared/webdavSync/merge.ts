@@ -1,4 +1,9 @@
 import { canonicalize, jsonEquals } from './canonical.ts'
+import {
+  normalizeRemoteSyncSettings,
+  pickSyncSettings,
+  preserveUnknownSyncSettings,
+} from './settingsWhitelist.ts'
 import type {
   JsonObject,
   JsonValue,
@@ -7,7 +12,6 @@ import type {
   SyncCustomSearchEngineV1,
   SyncQuickLinkGroupV1,
   SyncQuickLinkV1,
-  SyncSearchHistoryV1,
   SyncSnapshotV1,
   ThreeWayMergeResult,
 } from './types.ts'
@@ -215,11 +219,11 @@ function mergeOrder(
 }
 
 function mergeQuickLinks(
-  base: SyncSnapshotV1['quickLinks'],
-  local: SyncSnapshotV1['quickLinks'],
-  remote: SyncSnapshotV1['quickLinks'],
+  base: NonNullable<SyncSnapshotV1['quickLinks']>,
+  local: NonNullable<SyncSnapshotV1['quickLinks']>,
+  remote: NonNullable<SyncSnapshotV1['quickLinks']>,
   conflicts: SyncConflict[],
-): SyncSnapshotV1['quickLinks'] {
+): NonNullable<SyncSnapshotV1['quickLinks']> {
   const items = mergeEntities<SyncQuickLinkV1>(
     'quick-links',
     'quickLinks.items',
@@ -241,7 +245,7 @@ function mergeQuickLinks(
   )
   const groupIds = new Set(groups.map((group) => group.id))
   const locations = new Map<string, string>()
-  const locationMap = (value: SyncSnapshotV1['quickLinks']) => {
+  const locationMap = (value: NonNullable<SyncSnapshotV1['quickLinks']>) => {
     const result = new Map(value.rootOrder.map((id) => [id, 'root']))
     for (const group of value.groups) {
       for (const id of group.itemIds) result.set(id, group.id)
@@ -270,7 +274,7 @@ function mergeQuickLinks(
   }
   const idsAt = (location: string) =>
     new Set([...locations].filter(([, value]) => value === location).map(([id]) => id))
-  const orderAt = (value: SyncSnapshotV1['quickLinks'], location: string) =>
+  const orderAt = (value: NonNullable<SyncSnapshotV1['quickLinks']>, location: string) =>
     location === 'root'
       ? value.rootOrder
       : (value.groups.find((group) => group.id === location)?.itemIds ?? [])
@@ -299,12 +303,6 @@ function mergeQuickLinks(
       ),
     }
   })
-  const availableIcons = { ...base.icons, ...local.icons, ...remote.icons }
-  const usedIconHashes = new Set(items.map((item) => item.faviconHash).filter(Boolean))
-  const icons = Object.fromEntries(
-    Object.entries(availableIcons).filter(([hash]) => usedIconHashes.has(hash)),
-  )
-
   return {
     items,
     rootOrder,
@@ -318,16 +316,15 @@ function mergeQuickLinks(
       groupIds,
       conflicts,
     ),
-    ...(Object.keys(icons).length ? { icons } : {}),
   }
 }
 
 function mergeSearchEngines(
-  base: SyncSnapshotV1['customSearchEngines'],
-  local: SyncSnapshotV1['customSearchEngines'],
-  remote: SyncSnapshotV1['customSearchEngines'],
+  base: NonNullable<SyncSnapshotV1['customSearchEngines']>,
+  local: NonNullable<SyncSnapshotV1['customSearchEngines']>,
+  remote: NonNullable<SyncSnapshotV1['customSearchEngines']>,
   conflicts: SyncConflict[],
-): SyncSnapshotV1['customSearchEngines'] {
+): NonNullable<SyncSnapshotV1['customSearchEngines']> {
   const items = mergeEntities<SyncCustomSearchEngineV1>(
     'search-engines',
     'customSearchEngines.items',
@@ -350,34 +347,6 @@ function mergeSearchEngines(
   }
 }
 
-function mergeSearchHistory(
-  base: SyncSearchHistoryV1,
-  local: SyncSearchHistoryV1,
-  remote: SyncSearchHistoryV1,
-  conflicts: SyncConflict[],
-): SyncSearchHistoryV1 {
-  const items = mergeEntities(
-    'search-history',
-    'optional.searchHistory.items',
-    base.items.map((item) => canonicalize(item) as Entity),
-    local.items.map((item) => canonicalize(item) as Entity),
-    remote.items.map((item) => canonicalize(item) as Entity),
-    conflicts,
-  ) as unknown as SyncSearchHistoryV1['items']
-  return {
-    items,
-    order: mergeOrder(
-      'search-history',
-      'optional.searchHistory.order',
-      base.order,
-      local.order,
-      remote.order,
-      new Set(items.map((item) => item.id)),
-      conflicts,
-    ),
-  }
-}
-
 function mergeOptional(
   base: SyncSnapshotV1['optional'],
   local: SyncSnapshotV1['optional'],
@@ -385,17 +354,6 @@ function mergeOptional(
   conflicts: SyncConflict[],
 ): SyncSnapshotV1['optional'] {
   const result: NonNullable<SyncSnapshotV1['optional']> = {}
-  if (local?.searchHistory && remote?.searchHistory) {
-    result.searchHistory = mergeSearchHistory(
-      base?.searchHistory ?? { items: [], order: [] },
-      local.searchHistory,
-      remote.searchHistory,
-      conflicts,
-    )
-  } else {
-    result.searchHistory = local?.searchHistory ?? remote?.searchHistory
-  }
-
   if (local?.blockedTopSites && remote?.blockedTopSites) {
     const baseUrls = new Set(base?.blockedTopSites?.urls ?? [])
     const localUrls = new Set(local.blockedTopSites.urls)
@@ -425,7 +383,21 @@ function mergeOptional(
     result.wallpapers = local?.wallpapers ?? remote?.wallpapers
   }
 
-  return result.searchHistory || result.blockedTopSites || result.wallpapers ? result : undefined
+  const onlineWallpaperUrl = mergeJson(
+    'settings',
+    'optional.onlineWallpaperUrl',
+    base?.onlineWallpaperUrl ?? MISSING,
+    local?.onlineWallpaperUrl ?? MISSING,
+    remote?.onlineWallpaperUrl ?? MISSING,
+    conflicts,
+  )
+  if (onlineWallpaperUrl !== MISSING && typeof onlineWallpaperUrl === 'string') {
+    result.onlineWallpaperUrl = onlineWallpaperUrl
+  }
+
+  return result.blockedTopSites || result.wallpapers || result.onlineWallpaperUrl !== undefined
+    ? result
+    : undefined
 }
 
 export function mergeSyncSnapshots(
@@ -433,29 +405,85 @@ export function mergeSyncSnapshots(
   local: SyncSnapshotV1,
   remote: SyncSnapshotV1,
 ): ThreeWayMergeResult {
-  if (jsonEquals(local, remote)) return { status: 'unchanged', snapshot: local, conflicts: [] }
-  if (jsonEquals(local, base)) return { status: 'use-remote', snapshot: remote, conflicts: [] }
-  if (jsonEquals(remote, base)) return { status: 'use-local', snapshot: local, conflicts: [] }
-
   const conflicts: SyncConflict[] = []
-  const settings = mergeJson('settings', 'settings', base.settings, local.settings, remote.settings, conflicts)
-  const ui = mergeJson('ui', 'ui', base.ui, local.ui, remote.ui, conflicts)
+  const hasSettings = Boolean(base.settings || local.settings || remote.settings)
+  const normalizedRemoteSettings = normalizeRemoteSyncSettings(
+    base.settings ?? {},
+    remote.settings ?? {},
+  )
+  const settings = hasSettings
+    ? preserveUnknownSyncSettings(
+        mergeJson(
+          'settings',
+          'settings',
+          pickSyncSettings(base.settings ?? {}),
+          pickSyncSettings(normalizeRemoteSyncSettings(base.settings ?? {}, local.settings ?? {})),
+          pickSyncSettings(normalizedRemoteSettings),
+          conflicts,
+        ) as JsonObject,
+        normalizedRemoteSettings,
+      )
+    : MISSING
+  const ui = mergeJson(
+    'ui', 'ui', base.ui ?? MISSING, local.ui ?? MISSING, remote.ui ?? MISSING, conflicts,
+  )
+  const scope = mergeJson(
+    'scope', 'scope', canonicalize(base.scope), canonicalize(local.scope),
+    canonicalize(remote.scope), conflicts,
+  ) as unknown as SyncSnapshotV1['scope']
+  const quickLinks = base.quickLinks && local.quickLinks && remote.quickLinks
+    ? mergeQuickLinks(base.quickLinks, local.quickLinks, remote.quickLinks, conflicts)
+    : mergeJson(
+        'quick-links', 'quickLinks', base.quickLinks ? canonicalize(base.quickLinks) : MISSING,
+        local.quickLinks ? canonicalize(local.quickLinks) : MISSING,
+        remote.quickLinks ? canonicalize(remote.quickLinks) : MISSING, conflicts,
+      )
+  const searchEngines = base.customSearchEngines
+    && local.customSearchEngines
+    && remote.customSearchEngines
+    ? mergeSearchEngines(
+        base.customSearchEngines,
+        local.customSearchEngines,
+        remote.customSearchEngines,
+        conflicts,
+      )
+    : mergeJson(
+        'search-engines', 'customSearchEngines',
+        base.customSearchEngines ? canonicalize(base.customSearchEngines) : MISSING,
+        local.customSearchEngines ? canonicalize(local.customSearchEngines) : MISSING,
+        remote.customSearchEngines ? canonicalize(remote.customSearchEngines) : MISSING,
+        conflicts,
+      )
   const snapshot: SyncSnapshotV1 = {
-    settings: settings as JsonObject,
-    quickLinks: mergeQuickLinks(base.quickLinks, local.quickLinks, remote.quickLinks, conflicts),
-    customSearchEngines: mergeSearchEngines(
-      base.customSearchEngines,
-      local.customSearchEngines,
-      remote.customSearchEngines,
-      conflicts,
-    ),
-    ui: ui as SyncSnapshotV1['ui'],
+    scope,
     optional: mergeOptional(base.optional, local.optional, remote.optional, conflicts),
   }
-
+  if (settings !== MISSING) snapshot.settings = settings as JsonObject
+  if (quickLinks !== MISSING) snapshot.quickLinks = quickLinks as SyncSnapshotV1['quickLinks']
+  if (searchEngines !== MISSING) {
+    snapshot.customSearchEngines = searchEngines as SyncSnapshotV1['customSearchEngines']
+  }
+  if (ui !== MISSING) snapshot.ui = ui as SyncSnapshotV1['ui']
+  const usedImages = new Set([
+    ...(snapshot.quickLinks?.items.map((item) => item.faviconHash) ?? []),
+    ...(snapshot.customSearchEngines?.items.map((item) => item.iconHash) ?? []),
+  ].filter((hash): hash is string => Boolean(hash)))
+  const images = { ...base.inlineImages, ...local.inlineImages, ...remote.inlineImages }
+  snapshot.inlineImages = Object.fromEntries(
+    Object.entries(images).filter(([hash]) => usedImages.has(hash)),
+  )
+  if (Object.keys(snapshot.inlineImages).length === 0) delete snapshot.inlineImages
   if (!snapshot.optional) delete snapshot.optional
   return {
-    status: conflicts.length ? 'conflict' : 'merged',
+    status: conflicts.length
+      ? 'conflict'
+      : jsonEquals(snapshot, local) && jsonEquals(snapshot, remote)
+        ? 'unchanged'
+        : jsonEquals(snapshot, local)
+          ? 'use-local'
+          : jsonEquals(snapshot, remote)
+            ? 'use-remote'
+            : 'merged',
     snapshot,
     conflicts,
   }

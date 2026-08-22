@@ -7,7 +7,6 @@ import {
   captureSyncSnapshot,
   createTombstone,
   createEncryptionAad,
-  createLocalBackupArchive,
   createVaultEncryption,
   decryptSyncBytes,
   deriveEncryptionKey,
@@ -15,14 +14,14 @@ import {
   deduplicateQuickLinkIcons,
   decideSynchronization,
   getSyncAvailability,
-  inspectStaticWallpaper,
   encryptSyncBytes,
   materializeQuickLinks,
+  MAX_SYNC_INLINE_IMAGE_BYTES,
+  MAX_SYNC_INLINE_IMAGES_BYTES,
   mergeSyncSnapshots,
   mergeImportedSnapshot,
   mergeSyncSettings,
   parseJsonBackup,
-  parseLocalBackupArchive,
   preserveExcludedScope,
   preserveBaselineWallpapers,
   mustReinitializeDevice,
@@ -31,16 +30,36 @@ import {
   resolveSyncConflicts,
   sanitizeSettings,
   serializeJsonBackup,
-  sha256Hex,
   SyncCoordinator,
   validateCommitRecord,
   validateSyncRevision,
   unlockVaultEncryption,
 } from '../../shared/webdavSync/index.ts'
-import type { SyncRevisionV1, SyncSnapshotV1 } from '../../shared/webdavSync/types.ts'
+import type {
+  SyncRevisionV1,
+  SyncScopePreferences,
+  SyncSnapshotV1,
+} from '../../shared/webdavSync/types.ts'
+
+function syncScope(
+  overrides: Partial<SyncScopePreferences> = {},
+): SyncScopePreferences {
+  return {
+    settings: true,
+    quickLinks: true,
+    customSearchEngines: true,
+    uiPreferences: true,
+    blockedTopSites: false,
+    wallpapers: false,
+    onlineWallpaperUrl: false,
+    userIcons: false,
+    ...overrides,
+  }
+}
 
 function snapshot(): SyncSnapshotV1 {
   return {
+    scope: syncScope(),
     settings: {
       clock: { size: 50 },
       search: { placeholder: '' },
@@ -123,7 +142,6 @@ test('settings capture removes device-only and cache fields', () => {
 
   assert.deepEqual(result, {
     background: { bgType: 'bing', bing: { resolution: 'uhd' } },
-    version: 11,
   })
 })
 
@@ -137,27 +155,17 @@ test('snapshot capture keeps stable entity IDs and selected optional data', () =
       items: [{ id: 'engine-a', name: 'A', url: 'https://a.example/?q=%s' }],
     },
     ui: { language: 'en', colorMode: 'dark' },
-    scope: {
-      searchHistory: true,
-      blockedTopSites: true,
-      wallpapers: false,
-      onlineWallpaperUrl: true,
-      quickLinkIcons: true,
-    },
-    searchHistory: [
-      { id: 'history-a', text: 'lemon', createdAt: '2026-08-09T00:00:00.000Z' },
-    ],
+    scope: syncScope({ blockedTopSites: true, onlineWallpaperUrl: true, userIcons: true }),
     blockedTopSites: ['https://example.com/#section', 'javascript:alert(1)'],
   })
 
-  assert.deepEqual(result.quickLinks.rootOrder, ['link-a'])
-  assert.deepEqual(result.customSearchEngines.order, ['engine-a'])
+  assert.deepEqual(result.quickLinks?.rootOrder, ['link-a'])
+  assert.deepEqual(result.customSearchEngines?.order, ['engine-a'])
   assert.deepEqual(result.optional?.blockedTopSites?.urls, ['https://example.com/'])
-  assert.deepEqual(result.optional?.searchHistory?.order, ['history-a'])
 })
 
 test('snapshot only includes explicitly user-selected Quick Link icons', () => {
-  const makeSnapshot = (quickLinkIcons: boolean) =>
+  const makeSnapshot = (userIcons: boolean) =>
     captureSyncSnapshot({
       settings: { version: 11 },
       quickLinks: {
@@ -186,53 +194,87 @@ test('snapshot only includes explicitly user-selected Quick Link icons', () => {
       },
       customSearchEngines: { items: [] },
       ui: { language: 'zh-CN', colorMode: 'auto' },
-      scope: {
-        searchHistory: false,
-        blockedTopSites: false,
-        wallpapers: false,
-        onlineWallpaperUrl: true,
-        quickLinkIcons,
-      },
+      scope: syncScope({ onlineWallpaperUrl: true, userIcons }),
     })
 
-  assert.equal(makeSnapshot(true).quickLinks.items[0]?.favicon, 'data:image/png;base64,user')
-  assert.equal(makeSnapshot(true).quickLinks.items[1]?.favicon, undefined)
-  assert.equal(makeSnapshot(true).quickLinks.items[2]?.favicon, undefined)
-  assert.equal(makeSnapshot(false).quickLinks.items[0]?.favicon, undefined)
+  assert.equal(makeSnapshot(true).quickLinks?.items[0]?.favicon, 'data:image/png;base64,user')
+  assert.equal(makeSnapshot(true).quickLinks?.items[1]?.favicon, undefined)
+  assert.equal(makeSnapshot(true).quickLinks?.items[2]?.favicon, undefined)
+  assert.equal(makeSnapshot(false).quickLinks?.items[0]?.favicon, undefined)
 })
 
 test('snapshot stores duplicate user-selected Quick Link icons once by SHA-256', async () => {
   const value = snapshot()
-  value.quickLinks.items.push({
+  value.quickLinks!.items.push({
     id: 'link-b',
     title: 'B',
     url: 'https://b.example/',
   })
-  value.quickLinks.rootOrder.push('link-b')
-  for (const item of value.quickLinks.items) item.favicon = 'data:image/png;base64,same'
+  value.quickLinks!.rootOrder.push('link-b')
+  for (const item of value.quickLinks!.items) item.favicon = 'data:image/png;base64,same'
 
   await deduplicateQuickLinkIcons(value)
 
-  const hashes = value.quickLinks.items.map((item) => item.faviconHash)
+  const hashes = value.quickLinks!.items.map((item) => item.faviconHash)
   assert.equal(new Set(hashes).size, 1)
-  assert.equal(Object.keys(value.quickLinks.icons ?? {}).length, 1)
-  assert.ok(value.quickLinks.items.every((item) => item.favicon === undefined))
+  assert.equal(Object.keys(value.inlineImages ?? {}).length, 1)
+  assert.ok(value.quickLinks!.items.every((item) => item.favicon === undefined))
   assert.equal(await quickLinkIconHashesAreValid(value), true)
-  value.quickLinks.icons![hashes[0]!] = 'tampered'
+  value.inlineImages![hashes[0]!] = 'tampered'
   assert.equal(await quickLinkIconHashesAreValid(value), false)
 })
 
-test('online wallpaper URL follows its advanced scope without removing other preferences', () => {
+test('oversized user icons are omitted without removing an existing baseline icon', async () => {
+  const base = snapshot()
+  base.quickLinks!.items[0]!.favicon = 'data:image/png;base64,previous'
+  await deduplicateQuickLinkIcons(base)
+  const previousHash = base.quickLinks!.items[0]!.faviconHash!
+  const next = structuredClone(base)
+  next.quickLinks!.items[0]!.favicon = `data:image/png;base64,${'x'.repeat(MAX_SYNC_INLINE_IMAGE_BYTES)}`
+  delete next.quickLinks!.items[0]!.faviconHash
+  delete next.inlineImages
+
+  const omissions = await deduplicateQuickLinkIcons(next, base)
+
+  assert.deepEqual(omissions, [
+    { kind: 'quick-link-icon', id: 'link-a', reason: 'item-too-large' },
+  ])
+  assert.equal(next.quickLinks!.items[0]!.faviconHash, previousHash)
+  assert.equal(next.inlineImages?.[previousHash], base.inlineImages?.[previousHash])
+})
+
+test('aggregate user icon limit skips whole icons before the snapshot exceeds 8 MB', async () => {
+  const value = snapshot()
+  value.quickLinks = {
+    items: Array.from({ length: 5 }, (_, index) => ({
+      id: `link-${index}`,
+      title: String(index),
+      url: `https://${index}.example/`,
+      favicon: `${index}${'x'.repeat(1_800_000)}`,
+    })),
+    rootOrder: Array.from({ length: 5 }, (_, index) => `link-${index}`),
+    groups: [],
+    groupOrder: [],
+  }
+
+  const omissions = await deduplicateQuickLinkIcons(value)
+  const total = Object.values(value.inlineImages ?? {})
+    .reduce((sum, item) => sum + new TextEncoder().encode(item).byteLength, 0)
+
+  assert.ok(omissions.some((item) => item.reason === 'aggregate-too-large'))
+  assert.ok(total <= MAX_SYNC_INLINE_IMAGES_BYTES)
+})
+
+test('online wallpaper URL is excluded from the settings whitelist', () => {
   const settings = {
     background: {
       online: { url: 'https://images.example/api?token=secret', cache: { enabled: true } },
     },
   }
 
-  assert.deepEqual(sanitizeSettings(settings, { includeOnlineWallpaperUrl: false }), {
+  assert.deepEqual(sanitizeSettings(settings), {
     background: { online: { cache: { enabled: true } } },
   })
-  assert.deepEqual(sanitizeSettings(settings, { includeOnlineWallpaperUrl: true }), settings)
 })
 
 test('local apply preserves excluded settings and only applies fields present in the snapshot', () => {
@@ -256,6 +298,33 @@ test('local apply preserves excluded settings and only applies fields present in
   })
 })
 
+test('missing and unknown remote settings do not reset local whitelisted values', () => {
+  const base = snapshot()
+  base.settings = {
+    clock: { size: 50 },
+    future: { opaque: 'base' },
+  }
+  const local = structuredClone(base)
+  local.settings!.clock = { size: 64 }
+  const remote = structuredClone(base)
+  remote.settings = {
+    search: { placeholder: 'Remote' },
+    future: { opaque: 'remote', added: true },
+  }
+
+  const result = mergeSyncSnapshots(base, local, remote)
+  assert.equal(result.conflicts.length, 0)
+  assert.deepEqual(result.snapshot.settings, {
+    clock: { size: 64 },
+    search: { placeholder: 'Remote' },
+    future: { opaque: 'remote', added: true },
+  })
+  assert.deepEqual(mergeSyncSettings({ clock: { size: 50 } }, remote.settings), {
+    clock: { size: 50 },
+    search: { placeholder: 'Remote' },
+  })
+})
+
 test('local Quick Link apply preserves device-only icons without reviving removed user icons', () => {
   const incoming = {
     items: [
@@ -265,7 +334,7 @@ test('local Quick Link apply preserves device-only icons without reviving remove
         id: 'remote-user',
         title: 'Remote',
         url: 'https://remote.example/',
-        favicon: 'data:image/png;base64,remote',
+        faviconHash: 'a'.repeat(64),
       },
     ],
     rootOrder: ['auto', 'removed-user', 'remote-user'],
@@ -290,7 +359,9 @@ test('local Quick Link apply preserves device-only icons without reviving remove
       },
     ],
   }
-  const result = materializeQuickLinks(incoming, current, true)
+  const result = materializeQuickLinks(incoming, current, true, {
+    ['a'.repeat(64)]: 'data:image/png;base64,remote',
+  })
   assert.equal(result.items[0]?.faviconSource, 'automatic')
   assert.equal(result.items[1]?.favicon, undefined)
   assert.equal(result.items[2]?.faviconSource, 'user-selected')
@@ -302,15 +373,9 @@ test('local Quick Link apply preserves device-only icons without reviving remove
 
 test('disabled optional ranges preserve the confirmed baseline instead of creating deletions', () => {
   const base = snapshot()
-  base.quickLinks.items[0]!.favicon = 'data:image/png;base64,remote'
-  ;(base.settings.background as Record<string, unknown>) = {
-    online: { url: 'https://remote.example/api', cache: { enabled: true } },
-  }
+  base.quickLinks!.items[0]!.faviconHash = 'a'.repeat(64)
+  base.inlineImages = { ['a'.repeat(64)]: 'data:image/png;base64,remote' }
   base.optional = {
-    searchHistory: {
-      items: [{ id: 'history-a', text: 'remote', createdAt: '2026-08-09T00:00:00.000Z' }],
-      order: ['history-a'],
-    },
     blockedTopSites: { urls: ['https://hidden.example/'] },
     wallpapers: {
       light: {
@@ -320,23 +385,12 @@ test('disabled optional ranges preserve the confirmed baseline instead of creati
         sha256: 'a'.repeat(64),
       },
     },
+    onlineWallpaperUrl: 'https://remote.example/api',
   }
   const captured = snapshot()
-  ;(captured.settings.background as Record<string, unknown>) = {
-    online: { cache: { enabled: false } },
-  }
-  const result = preserveExcludedScope(captured, base, {
-    searchHistory: false,
-    blockedTopSites: false,
-    wallpapers: false,
-    onlineWallpaperUrl: false,
-    quickLinkIcons: false,
-  })
-  assert.equal(result.quickLinks.items[0]?.favicon, 'data:image/png;base64,remote')
-  assert.equal(
-    ((result.settings.background as Record<string, unknown>).online as Record<string, unknown>).url,
-    'https://remote.example/api',
-  )
+  const result = preserveExcludedScope(captured, base, syncScope())
+  assert.equal(result.quickLinks?.items[0]?.faviconHash, 'a'.repeat(64))
+  assert.equal(result.optional?.onlineWallpaperUrl, 'https://remote.example/api')
   assert.deepEqual(result.optional, base.optional)
 })
 
@@ -367,22 +421,22 @@ test('core-only storage fallback preserves the confirmed wallpaper state', () =>
 
   const fallback = preserveBaselineWallpapers(changed, base)
   assert.deepEqual(fallback.optional?.wallpapers, base.optional.wallpapers)
-  assert.deepEqual(fallback.settings.clock, { size: 60 })
+  assert.deepEqual(fallback.settings?.clock, { size: 60 })
   assert.equal(preserveBaselineWallpapers(changed).optional, undefined)
 })
 
 test('merge import preserves current entities that are absent from the backup', () => {
   const current = snapshot()
-  current.quickLinks.items.push({ id: 'current-only', title: 'Current', url: 'https://current.example/' })
-  current.quickLinks.rootOrder.push('current-only')
+  current.quickLinks!.items.push({ id: 'current-only', title: 'Current', url: 'https://current.example/' })
+  current.quickLinks!.rootOrder.push('current-only')
   current.customSearchEngines = {
     items: [{ id: 'current-engine', name: 'Current', url: 'https://current.example/?q=%s' }],
     order: ['current-engine'],
   }
   const imported = snapshot()
-  imported.quickLinks.items[0]!.title = 'Imported A'
-  imported.quickLinks.items.push({ id: 'imported-only', title: 'Imported', url: 'https://imported.example/' })
-  imported.quickLinks.rootOrder.push('imported-only')
+  imported.quickLinks!.items[0]!.title = 'Imported A'
+  imported.quickLinks!.items.push({ id: 'imported-only', title: 'Imported', url: 'https://imported.example/' })
+  imported.quickLinks!.rootOrder.push('imported-only')
   imported.customSearchEngines = {
     items: [{ id: 'imported-engine', name: 'Imported', url: 'https://imported.example/?q=%s' }],
     order: ['imported-engine'],
@@ -390,9 +444,9 @@ test('merge import preserves current entities that are absent from the backup', 
 
   const merged = mergeImportedSnapshot(current, imported)
 
-  assert.deepEqual(merged.quickLinks.rootOrder, ['link-a', 'imported-only', 'current-only'])
-  assert.equal(merged.quickLinks.items.find((item) => item.id === 'link-a')?.title, 'Imported A')
-  assert.deepEqual(merged.customSearchEngines.order, ['imported-engine', 'current-engine'])
+  assert.deepEqual(merged.quickLinks?.rootOrder, ['link-a', 'imported-only', 'current-only'])
+  assert.equal(merged.quickLinks?.items.find((item) => item.id === 'link-a')?.title, 'Imported A')
+  assert.deepEqual(merged.customSearchEngines?.order, ['imported-engine', 'current-engine'])
 })
 
 test('snapshot capture rejects duplicate stable entity IDs instead of collapsing data', () => {
@@ -404,13 +458,7 @@ test('snapshot capture rejects duplicate stable entity IDs instead of collapsing
         quickLinks: { items: [link, link] },
         customSearchEngines: { items: [] },
         ui: { language: 'en', colorMode: 'auto' },
-        scope: {
-          searchHistory: false,
-          blockedTopSites: false,
-          wallpapers: false,
-          onlineWallpaperUrl: true,
-          quickLinkIcons: true,
-        },
+        scope: syncScope({ onlineWallpaperUrl: true, userIcons: true }),
       }),
     /Duplicate Quick Link ID/,
   )
@@ -418,15 +466,15 @@ test('snapshot capture rejects duplicate stable entity IDs instead of collapsing
 
 test('catalog explains user exclusions, unsupported video, size and pending permission', () => {
   const scope = {
-    searchHistory: false,
-    blockedTopSites: false,
+    ...syncScope(),
     wallpapers: true,
     onlineWallpaperUrl: true,
-    quickLinkIcons: true,
+    userIcons: true,
   }
-  assert.equal(getSyncAvailability('searchHistory', { scope }).state, 'excluded-by-user')
+  assert.equal(getSyncAvailability('blockedTopSites', { scope }).state, 'excluded-by-user')
   assert.equal(getSyncAvailability('onlineWallpaperUrl', { scope }).state, 'included')
-  assert.equal(getSyncAvailability('quickLinkIcons', { scope }).state, 'included')
+  assert.equal(getSyncAvailability('userIcons', { scope }).state, 'included')
+  assert.equal(getSyncAvailability('searchHistory', { scope }).state, 'excluded-by-design')
   assert.equal(
     getSyncAvailability('wallpaper.light', {
       scope,
@@ -461,6 +509,18 @@ test('three-way merge combines non-overlapping settings changes', () => {
   assert.equal(result.status, 'merged')
   assert.equal((result.snapshot.settings.clock as { size: number }).size, 64)
   assert.equal((result.snapshot.settings.search as { placeholder: string }).placeholder, 'Search')
+})
+
+test('a vault-wide remote scope change is adopted when this device did not change it', () => {
+  const base = snapshot()
+  const local = structuredClone(base)
+  const remote = structuredClone(base)
+  remote.scope.quickLinks = false
+
+  const result = mergeSyncSnapshots(base, local, remote)
+
+  assert.equal(result.conflicts.length, 0)
+  assert.equal(result.snapshot.scope.quickLinks, false)
 })
 
 test('three-way merge combines different fields of the same entity', () => {
@@ -736,6 +796,7 @@ test('commit validation rejects unsafe paths and accepts complete metadata', () 
     payloadHash: 'a'.repeat(64),
     payloadSize: 128,
     encrypted: false,
+    scope: syncScope(),
     complete: true,
   }
   assert.equal(validateCommitRecord(record).ok, true)
@@ -874,59 +935,23 @@ test('client encryption rejects excessive PBKDF2 work factors before deriving a 
   )
 })
 
-test('local backup formats reuse the validated snapshot and keep image bytes outside JSON', async () => {
+test('JSON backup uses the validated portable snapshot and omits wallpaper files', () => {
   const value = snapshot()
-  const wallpaper = new Blob([new TextEncoder().encode('wallpaper-bytes')], {
-    type: 'image/png',
-  })
-  const hash = await sha256Hex(await wallpaper.arrayBuffer())
+  const hash = 'b'.repeat(64)
+  value.scope.wallpapers = true
   value.optional = {
     wallpapers: {
       light: {
         assetId: `sha256-${hash}`,
-        mimeType: wallpaper.type,
+        mimeType: 'image/png',
         sha256: hash,
-        size: wallpaper.size,
+        size: 42,
       },
     },
   }
 
   const json = serializeJsonBackup(value)
-  assert.equal(json.includes('wallpaper-bytes'), false)
-  assert.equal(parseJsonBackup(JSON.parse(json)).snapshot.optional, undefined)
-
-  const archive = await createLocalBackupArchive(value, { light: wallpaper })
-  const restored = await parseLocalBackupArchive(archive)
-  assert.deepEqual(restored.snapshot, value)
-  assert.deepEqual(
-    new Uint8Array(await restored.wallpapers.light!.arrayBuffer()),
-    new Uint8Array(await wallpaper.arrayBuffer()),
-  )
-
-  const tampered = new Uint8Array(await archive.arrayBuffer())
-  tampered[tampered.length - 1] ^= 1
-  await assert.rejects(parseLocalBackupArchive(new Blob([tampered])))
-})
-
-test('wallpaper compression inspection rejects animation before browser decoding', async () => {
-  const png = new Uint8Array(45)
-  png.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-  new DataView(png.buffer).setUint32(8, 13)
-  png.set(new TextEncoder().encode('IHDR'), 12)
-  new DataView(png.buffer).setUint32(16, 1920)
-  new DataView(png.buffer).setUint32(20, 1080)
-  new DataView(png.buffer).setUint32(33, 0)
-  png.set(new TextEncoder().encode('IEND'), 37)
-  assert.deepEqual(await inspectStaticWallpaper(new Blob([png])), {
-    width: 1920,
-    height: 1080,
-    mimeType: 'image/png',
-  })
-
-  const animated = new Uint8Array(57)
-  animated.set(png.subarray(0, 33))
-  new DataView(animated.buffer).setUint32(33, 8)
-  animated.set(new TextEncoder().encode('acTL'), 37)
-  new DataView(animated.buffer).setUint32(53, 0)
-  await assert.rejects(inspectStaticWallpaper(new Blob([animated])))
+  const restored = parseJsonBackup(JSON.parse(json)).snapshot
+  assert.equal(restored.scope.wallpapers, false)
+  assert.equal(restored.optional, undefined)
 })

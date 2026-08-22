@@ -5,18 +5,15 @@ import { getUiPreferences } from '@/shared/uiPreferences'
 import { customSearchEngineStorage } from '@newtab/shared/customSearchEngine/customSearchEngineStorage'
 
 import {
-  createLocalBackupArchive,
   parseJsonBackup,
-  parseLocalBackupArchive,
   serializeJsonBackup,
   type ParsedLocalBackup,
-} from './archive.ts'
+} from './backupFormat.ts'
 import {
-  captureBrowserSyncSnapshot,
-  getLocalWallpaperBlob,
+  captureBrowserSyncSnapshotResult,
   prepareAndApplyBrowserSnapshot,
 } from './browserData.ts'
-import { captureSyncSnapshot } from './capture.ts'
+import { captureSyncSnapshot, deduplicateInlineImages } from './capture.ts'
 import { mergeImportedSnapshot } from './apply.ts'
 import { DEFAULT_SYNC_SCOPE } from './localState.ts'
 import type { SyncScopePreferences, SyncSnapshotV1 } from './types.ts'
@@ -25,39 +22,25 @@ const MAX_JSON_BACKUP_BYTES = 25 * 1024 * 1024
 const textDecoder = new TextDecoder('utf-8', { fatal: true })
 
 export interface PreparedBrowserImport extends ParsedLocalBackup {
-  source: 'archive-v1' | 'json-v1' | 'legacy-json'
+  source: 'json-v1' | 'legacy-json'
   scope: SyncScopePreferences
 }
 
-export async function createBrowserJsonBackup(): Promise<string> {
-  const snapshot = await captureBrowserSyncSnapshot({ ...DEFAULT_SYNC_SCOPE, wallpapers: false })
-  return serializeJsonBackup(snapshot)
-}
-
-export async function createBrowserBackupArchive(): Promise<Blob> {
-  const scope = { ...DEFAULT_SYNC_SCOPE, wallpapers: true }
-  const snapshot = await captureBrowserSyncSnapshot(scope)
-  const wallpapers: ParsedLocalBackup['wallpapers'] = {}
-  for (const variant of ['light', 'dark'] as const) {
-    const reference = snapshot.optional?.wallpapers?.[variant]
-    if (reference) {
-      const blob = await getLocalWallpaperBlob(variant, reference.sha256)
-      if (blob) wallpapers[variant] = blob
-    }
-  }
-  return createLocalBackupArchive(snapshot, wallpapers)
+export async function createBrowserJsonBackup() {
+  const capture = await captureBrowserSyncSnapshotResult({
+    settings: true,
+    quickLinks: true,
+    customSearchEngines: true,
+    uiPreferences: true,
+    blockedTopSites: true,
+    wallpapers: false,
+    onlineWallpaperUrl: true,
+    userIcons: true,
+  })
+  return { json: serializeJsonBackup(capture.snapshot), omissions: capture.resourceOmissions }
 }
 
 export async function prepareBrowserImport(file: Blob): Promise<PreparedBrowserImport> {
-  const prefix = new Uint8Array(await file.slice(0, 12).arrayBuffer())
-  if (new TextDecoder().decode(prefix) === 'LEMONBACKUP\0') {
-    const parsed = await parseLocalBackupArchive(file)
-    return {
-      ...parsed,
-      source: 'archive-v1',
-      scope: inferImportScope(parsed.snapshot, true),
-    }
-  }
   if (file.size > MAX_JSON_BACKUP_BYTES) throw new TypeError('JSON backup is too large')
   let value: unknown
   try {
@@ -70,56 +53,43 @@ export async function prepareBrowserImport(file: Blob): Promise<PreparedBrowserI
     return {
       ...parsed,
       source: 'json-v1',
-      scope: inferImportScope(parsed.snapshot, false),
+      scope: inferImportScope(parsed.snapshot),
     }
   } catch {
     return prepareLegacyImport(value)
   }
 }
 
-export function getPreparedImportWallpapers(
-  input: PreparedBrowserImport,
-): Partial<Record<'dark' | 'light', Blob>> {
-  return { ...input.wallpapers }
-}
-
 export async function mergePreparedBrowserImport(
   input: PreparedBrowserImport,
   scope: SyncScopePreferences,
 ): Promise<SyncSnapshotV1> {
-  return mergeImportedSnapshot(await captureBrowserSyncSnapshot(scope), input.snapshot)
+  const current = await captureBrowserSyncSnapshotResult(scope)
+  return mergeImportedSnapshot(current.snapshot, input.snapshot)
 }
 
 export function applyPreparedBrowserImport(
   input: PreparedBrowserImport,
   snapshot: SyncSnapshotV1 = input.snapshot,
 ): Promise<void> {
-  const wallpapers = Object.fromEntries(
-    Object.entries(input.wallpapers).map(([variant, blob]) => {
-      const reference = input.snapshot.optional?.wallpapers?.[variant as 'dark' | 'light']
-      if (!reference) throw new TypeError('Imported wallpaper reference is missing')
-      return [variant, { assetId: reference.assetId, blob, sha256: reference.sha256 }]
-    }),
-  )
   return prepareAndApplyBrowserSnapshot(
     crypto.randomUUID(),
     crypto.randomUUID(),
     snapshot,
-    input.scope,
-    wallpapers,
+    snapshot.scope,
   )
 }
 
-function inferImportScope(
-  snapshot: SyncSnapshotV1,
-  wallpapers: boolean,
-): SyncScopePreferences {
+function inferImportScope(snapshot: SyncSnapshotV1): SyncScopePreferences {
   return {
-    searchHistory: Boolean(snapshot.optional?.searchHistory),
+    settings: Boolean(snapshot.settings),
+    quickLinks: Boolean(snapshot.quickLinks),
+    customSearchEngines: Boolean(snapshot.customSearchEngines),
+    uiPreferences: Boolean(snapshot.ui),
     blockedTopSites: Boolean(snapshot.optional?.blockedTopSites),
-    wallpapers: wallpapers && Boolean(snapshot.optional?.wallpapers),
-    onlineWallpaperUrl: true,
-    quickLinkIcons: true,
+    wallpapers: false,
+    onlineWallpaperUrl: snapshot.optional?.onlineWallpaperUrl !== undefined,
+    userIcons: Boolean(snapshot.inlineImages),
   }
 }
 
@@ -137,7 +107,7 @@ async function prepareLegacyImport(value: unknown): Promise<PreparedBrowserImpor
   if (!hasKnownField) throw new TypeError('Backup format is unsupported')
 
   const [current, currentEngines, ui] = await Promise.all([
-    captureBrowserSyncSnapshot({ ...DEFAULT_SYNC_SCOPE }),
+    captureBrowserSyncSnapshotResult({ ...DEFAULT_SYNC_SCOPE }).then((result) => result.snapshot),
     customSearchEngineStorage.getValue(),
     getUiPreferences(),
   ])
@@ -165,26 +135,27 @@ async function prepareLegacyImport(value: unknown): Promise<PreparedBrowserImpor
     quickLinks,
     customSearchEngines,
     ui: {
-      language: ui.language || current.ui.language,
-      colorMode: ui.colorMode || current.ui.colorMode,
+      language: ui.language || current.ui?.language || 'en',
+      colorMode: ui.colorMode || current.ui?.colorMode || 'auto',
     },
-    scope: { ...DEFAULT_SYNC_SCOPE, quickLinkIcons: false },
+    scope: { ...DEFAULT_SYNC_SCOPE, userIcons: false },
   })
+  await deduplicateInlineImages(snapshot)
   return {
     snapshot,
-    wallpapers: {},
     source: 'legacy-json',
-    scope: { ...DEFAULT_SYNC_SCOPE, quickLinkIcons: false },
+    scope: { ...DEFAULT_SYNC_SCOPE, userIcons: false },
   }
 }
 
 function materializeLegacyQuickLinks(snapshot: SyncSnapshotV1): QuickLinksData {
-  const items = new Map(snapshot.quickLinks.items.map((item) => [item.id, { ...item }]))
-  return snapshot.quickLinks.groups.length
+  const quickLinks = snapshot.quickLinks ?? { items: [], rootOrder: [], groups: [], groupOrder: [] }
+  const items = new Map(quickLinks.items.map((item) => [item.id, { ...item }]))
+  return quickLinks.groups.length
     ? {
-        items: snapshot.quickLinks.items.map((item) => ({ ...item })),
-        groups: snapshot.quickLinks.groupOrder.map((id) => {
-          const group = snapshot.quickLinks.groups.find((item) => item.id === id)!
+        items: quickLinks.items.map((item) => ({ ...item })),
+        groups: quickLinks.groupOrder.map((id) => {
+          const group = quickLinks.groups.find((item) => item.id === id)!
           return {
             id: group.id,
             name: group.name,
@@ -193,7 +164,7 @@ function materializeLegacyQuickLinks(snapshot: SyncSnapshotV1): QuickLinksData {
         }),
       }
     : {
-        items: snapshot.quickLinks.rootOrder.map((id) => items.get(id)!),
+        items: quickLinks.rootOrder.map((id) => items.get(id)!),
         groups: [],
       }
 }

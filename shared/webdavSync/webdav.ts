@@ -1,5 +1,11 @@
 import { canonicalJson, hashCanonicalJson, sha256Hex } from './canonical.ts'
 import { MAX_PBKDF2_ITERATIONS, MIN_PBKDF2_ITERATIONS } from './crypto.ts'
+import {
+  HISTORY_RETENTION_DAYS,
+  MAX_HISTORY_VERSIONS,
+  MIN_COMPLETE_HISTORY_VERSIONS,
+  ORPHAN_RESOURCE_GRACE_MS,
+} from './lifecycle.ts'
 import type {
   AssetReferenceV1,
   CommitRecordV1,
@@ -73,7 +79,7 @@ export interface WebDavConnection {
   baseUrl: string
   username: string
   password: string
-  insecureHttpApproval?: 'external-confirmation' | 'local-warning'
+  insecureHttpApproval?: 'local-warning'
 }
 
 export interface WebDavEntry {
@@ -82,6 +88,7 @@ export interface WebDavEntry {
   isCollection: boolean
   etag?: string
   contentLength?: number
+  lastModified?: string
 }
 
 export interface WebDavPutOptions {
@@ -131,7 +138,7 @@ function isPrivateIpv6(hostname: string): boolean {
 export function classifyWebDavAddress(value: string): {
   origin: string
   permissionOrigin: string
-  transport: 'https' | 'local-http' | 'external-http'
+  transport: 'https' | 'local-http'
 } {
   let url: URL
   try {
@@ -151,10 +158,13 @@ export function classifyWebDavAddress(value: string): {
       url.hostname.endsWith('.local') ||
       isPrivateIpv4(url.hostname) ||
       isPrivateIpv6(url.hostname))
+  if (url.protocol === 'http:' && !localHttp) {
+    throw new WebDavError('insecure-http', 'Public HTTP WebDAV addresses are not supported')
+  }
   return {
     origin: url.origin,
     permissionOrigin: `${url.origin}/*`,
-    transport: url.protocol === 'https:' ? 'https' : localHttp ? 'local-http' : 'external-http',
+    transport: url.protocol === 'https:' ? 'https' : 'local-http',
   }
 }
 
@@ -162,11 +172,7 @@ function normalizeBaseUrl(connection: WebDavConnection): URL {
   const assessment = classifyWebDavAddress(connection.baseUrl)
   const approved =
     assessment.transport === 'https' ||
-    (assessment.transport === 'local-http' &&
-      (connection.insecureHttpApproval === 'local-warning' ||
-        connection.insecureHttpApproval === 'external-confirmation')) ||
-    (assessment.transport === 'external-http' &&
-      connection.insecureHttpApproval === 'external-confirmation')
+    (assessment.transport === 'local-http' && connection.insecureHttpApproval === 'local-warning')
   if (!approved) {
     throw new WebDavError('insecure-http', 'HTTP WebDAV requires explicit risk confirmation')
   }
@@ -283,6 +289,7 @@ export function parseWebDavMultiStatus(xml: string, requestUrl: URL): WebDavEntr
       name,
       isCollection: Boolean(collection),
       etag: directText(firstDavElement(element, 'getetag')),
+      lastModified: directText(firstDavElement(element, 'getlastmodified')),
       ...(Number.isFinite(contentLength) ? { contentLength } : {}),
     }
   })
@@ -356,7 +363,7 @@ export class WebDavClient {
 
   async list(path: string): Promise<WebDavEntry[]> {
     const headers = new Headers({ Depth: '1', 'Content-Type': 'application/xml; charset=utf-8' })
-    const body = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:getetag/><d:getcontentlength/></d:prop></d:propfind>'
+    const body = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:getetag/><d:getcontentlength/><d:getlastmodified/></d:prop></d:propfind>'
     const response = await this.request('PROPFIND', path, {
       body,
       headers,
@@ -485,11 +492,13 @@ export async function probeWebDavCapabilities(client: WebDavClient): Promise<Web
       }
     }
 
-    return {
-      conditionalCreate,
-      conditionalUpdate,
-      mode: conditionalCreate && conditionalUpdate ? 'conditional' : 'safe-degraded',
+    if (!conditionalCreate || !conditionalUpdate) {
+      throw new WebDavError(
+        'unsupported',
+        'WebDAV server does not enforce conditional create and update requests',
+      )
     }
+    return { conditionalCreate: true, conditionalUpdate: true }
   } finally {
     await client.delete(path, true).catch(() => undefined)
     await client.delete(directory, true).catch(() => undefined)
@@ -540,18 +549,6 @@ function validateVaultMetadata(value: unknown): VaultMetadataV1 {
         typeof encryption.keyCheck === 'string' &&
         encryption.keyCheck.length >= 40 &&
         encryption.keyCheck.length <= 256
-  const modeMatchesCapabilities =
-    capabilities?.mode === 'safe-degraded' ||
-    (capabilities?.mode === 'conditional' &&
-      capabilities.conditionalCreate === true &&
-      capabilities.conditionalUpdate === true)
-  const reset = record.reset as Record<string, unknown> | undefined
-  const validReset =
-    reset === undefined ||
-    (typeof reset.previousGenerationId === 'string' &&
-      UUID_PATTERN.test(reset.previousGenerationId) &&
-      typeof reset.resetRevisionId === 'string' &&
-      UUID_PATTERN.test(reset.resetRevisionId))
   const valid =
     record.formatVersion === 1 &&
     typeof record.vaultId === 'string' &&
@@ -560,11 +557,9 @@ function validateVaultMetadata(value: unknown): VaultMetadataV1 {
     UUID_PATTERN.test(record.generationId) &&
     typeof record.encrypted === 'boolean' &&
     validEncryption &&
-    validReset &&
     capabilities &&
-    typeof capabilities.conditionalCreate === 'boolean' &&
-    typeof capabilities.conditionalUpdate === 'boolean' &&
-    modeMatchesCapabilities &&
+    capabilities.conditionalCreate === true &&
+    capabilities.conditionalUpdate === true &&
     (record.currentRevisionId === undefined ||
       (typeof record.currentRevisionId === 'string' && UUID_PATTERN.test(record.currentRevisionId)))
   if (!valid) throw new WebDavError('corrupted', 'WebDAV ownership marker is invalid')
@@ -637,59 +632,6 @@ export class WebDavVaultRepository {
     await this.client.ensureCollection(`${generationRoot}/devices`)
   }
 
-  async activateGeneration(
-    current: VaultMetadataV1,
-    vaultEtag: string | undefined,
-    next: VaultMetadataV1,
-  ): Promise<{ metadata: VaultMetadataV1; etag?: string }> {
-    validateVaultMetadata(next)
-    if (
-      current.vaultId !== next.vaultId ||
-      current.generationId === next.generationId ||
-      current.capabilities.mode !== 'conditional' ||
-      next.capabilities.mode !== 'conditional'
-    ) {
-      throw new WebDavError('unsupported', 'WebDAV generation migration is not safe')
-    }
-    if (!strongEtag(vaultEtag)) {
-      throw new WebDavError('unsupported', 'WebDAV vault marker has no strong ETag')
-    }
-    const result = await this.client.put(`${this.directory}/vault.json`, canonicalJson(next), {
-      contentType: 'application/json',
-      ifMatch: vaultEtag,
-    })
-    const verified = await this.inspect()
-    if (
-      verified.state !== 'ready' ||
-      verified.metadata.vaultId !== next.vaultId ||
-      verified.metadata.generationId !== next.generationId
-    ) {
-      throw new WebDavError('corrupted', 'New WebDAV generation could not be verified')
-    }
-    return { metadata: verified.metadata, etag: verified.etag ?? result.etag }
-  }
-
-  async deleteObsoleteGeneration(
-    active: VaultMetadataV1,
-    obsoleteGenerationId: string,
-  ): Promise<void> {
-    if (!UUID_PATTERN.test(obsoleteGenerationId) || obsoleteGenerationId === active.generationId) {
-      throw new WebDavError('invalid-response', 'Obsolete generation target is invalid')
-    }
-    const inspection = await this.inspect()
-    if (
-      inspection.state !== 'ready' ||
-      inspection.metadata.vaultId !== active.vaultId ||
-      inspection.metadata.generationId !== active.generationId
-    ) {
-      throw new WebDavError('precondition', 'Active WebDAV generation changed during cleanup')
-    }
-    await this.client.delete(
-      `${this.directory}/generations/${obsoleteGenerationId}`,
-      true,
-    )
-  }
-
   async publishRevision(
     metadata: VaultMetadataV1,
     revision: SyncRevisionV1,
@@ -724,6 +666,7 @@ export class WebDavVaultRepository {
       payloadHash,
       payloadSize: storedPayload.byteLength,
       encrypted: metadata.encrypted,
+      scope: { ...revision.snapshot.scope },
       complete: true,
     }
     const commitText = canonicalJson(commit)
@@ -903,7 +846,6 @@ export class WebDavVaultRepository {
     vaultEtag: string | undefined,
     revisionId: string,
   ): Promise<{ metadata: VaultMetadataV1; etag?: string }> {
-    if (metadata.capabilities.mode === 'safe-degraded') return { metadata, etag: vaultEtag }
     if (!strongEtag(vaultEtag)) {
       throw new WebDavError('unsupported', 'WebDAV vault marker has no strong ETag')
     }
@@ -942,35 +884,67 @@ export class WebDavVaultRepository {
   async pruneHistory(
     metadata: VaultMetadataV1,
     revisions: readonly SyncRevisionV1[],
-    requestedLimit: number,
   ): Promise<{ deletedAssets: number; deletedRevisions: number; skipped: boolean }> {
-    if (metadata.capabilities.mode === 'safe-degraded') {
-      return { deletedAssets: 0, deletedRevisions: 0, skipped: true }
-    }
-    const heads = new Set(revisions.flatMap((revision) => revision.parentRevisionIds))
-    const headRevisions = revisions.filter((revision) => !heads.has(revision.revisionId))
+    const parentIds = new Set(revisions.flatMap((revision) => revision.parentRevisionIds))
+    const headRevisions = revisions.filter((revision) => !parentIds.has(revision.revisionId))
     if (headRevisions.length !== 1) {
       return { deletedAssets: 0, deletedRevisions: 0, skipped: true }
     }
 
-    const limit = Math.min(20, Math.max(2, Math.trunc(requestedLimit)))
-    const ordered = [...revisions].sort(
-      (left, right) =>
-        Date.parse(right.createdAt) - Date.parse(left.createdAt) ||
-        right.revisionId.localeCompare(left.revisionId),
+    const root = `${this.directory}/generations/${metadata.generationId}`
+    const commitEntries = (await this.client.list(`${root}/commits`))
+      .filter((entry) => !entry.isCollection && entry.name.endsWith('.json'))
+    const commitEntryById = new Map(
+      commitEntries.map((entry) => [entry.name.slice(0, -5), entry]),
     )
-    const keep = new Set(ordered.slice(0, limit).map((revision) => revision.revisionId))
-    keep.add(headRevisions[0]!.revisionId)
-    const removing = revisions.filter((revision) => !keep.has(revision.revisionId))
-    if (removing.length === 0) {
-      return { deletedAssets: 0, deletedRevisions: 0, skipped: false }
-    }
-
     const before = await this.listCommits(metadata)
     const expectedIds = new Set(revisions.map((revision) => revision.revisionId))
-    if (before.length !== expectedIds.size || before.some((commit) => !expectedIds.has(commit.revisionId))) {
+    if (
+      before.length !== expectedIds.size ||
+      before.some((commit) => !expectedIds.has(commit.revisionId)) ||
+      commitEntryById.size !== expectedIds.size
+    ) {
       return { deletedAssets: 0, deletedRevisions: 0, skipped: true }
     }
+
+    const byId = new Map(revisions.map((revision) => [revision.revisionId, revision]))
+    const distances = new Map<string, number>([[headRevisions[0]!.revisionId, 0]])
+    const queue = [headRevisions[0]!.revisionId]
+    while (queue.length) {
+      const id = queue.shift()!
+      const distance = distances.get(id)!
+      for (const parent of byId.get(id)?.parentRevisionIds ?? []) {
+        const previous = distances.get(parent)
+        if (previous === undefined || previous > distance + 1) {
+          distances.set(parent, distance + 1)
+          queue.push(parent)
+        }
+      }
+    }
+    const ordered = [...revisions].sort(
+      (left, right) =>
+        (distances.get(left.revisionId) ?? Number.MAX_SAFE_INTEGER) -
+          (distances.get(right.revisionId) ?? Number.MAX_SAFE_INTEGER) ||
+        left.revisionId.localeCompare(right.revisionId),
+    )
+    const protectedIds = new Set(
+      ordered.slice(0, MIN_COMPLETE_HISTORY_VERSIONS).map((revision) => revision.revisionId),
+    )
+    const countKeep = new Set(
+      ordered.slice(0, MAX_HISTORY_VERSIONS).map((revision) => revision.revisionId),
+    )
+    const cutoff = Date.now() - HISTORY_RETENTION_DAYS * 24 * 60 * 60 * 1000
+    const removing = revisions.filter((revision) => {
+      if (protectedIds.has(revision.revisionId)) return false
+      if (!countKeep.has(revision.revisionId)) return true
+      const modified = Date.parse(commitEntryById.get(revision.revisionId)?.lastModified ?? '')
+      return Number.isFinite(modified) && modified < cutoff
+    })
+    const keep = new Set(
+      revisions
+        .filter((revision) => !removing.includes(revision))
+        .map((revision) => revision.revisionId),
+    )
     for (const revision of removing) await this.deleteRevision(metadata, revision.revisionId)
 
     const remainingCommits = await this.listCommits(metadata)
@@ -985,15 +959,37 @@ export class WebDavVaultRepository {
         .filter((revision) => keep.has(revision.revisionId))
         .flatMap((revision) => revision.assets.map((asset) => asset.path)),
     )
-    const deletedAssets = new Map<string, AssetReferenceV1>()
-    for (const revision of removing) {
-      for (const asset of revision.assets) {
-        if (!retainedAssets.has(asset.path)) deletedAssets.set(asset.path, asset)
+    const graceCutoff = Date.now() - ORPHAN_RESOURCE_GRACE_MS
+    let deletedAssets = 0
+    const assetRoot = `${root}/assets`
+    for (const entry of await this.client.list(assetRoot)) {
+      if (entry.isCollection) continue
+      const path = `generations/${metadata.generationId}/assets/${entry.name}`
+      const modified = Date.parse(entry.lastModified ?? '')
+      if (!retainedAssets.has(path) && Number.isFinite(modified) && modified < graceCutoff) {
+        await this.client.delete(`${assetRoot}/${entry.name}`, true)
+        deletedAssets += 1
       }
     }
-    for (const asset of deletedAssets.values()) await this.deleteAsset(asset)
+    const revisionRoot = `${root}/revisions`
+    for (const entry of await this.client.list(revisionRoot)) {
+      if (entry.isCollection) continue
+      const id = entry.name.replace(/\.(?:bin|json)$/i, '')
+      const modified = Date.parse(entry.lastModified ?? '')
+      if (!keep.has(id) && Number.isFinite(modified) && modified < graceCutoff) {
+        await this.client.delete(`${revisionRoot}/${entry.name}`, true)
+      }
+    }
+    const deviceCutoff = Date.now() - HISTORY_RETENTION_DAYS * 24 * 60 * 60 * 1000
+    const deviceRoot = `${root}/devices`
+    for (const entry of await this.client.list(deviceRoot)) {
+      const modified = Date.parse(entry.lastModified ?? '')
+      if (!entry.isCollection && Number.isFinite(modified) && modified < deviceCutoff) {
+        await this.client.delete(`${deviceRoot}/${entry.name}`, true)
+      }
+    }
     return {
-      deletedAssets: deletedAssets.size,
+      deletedAssets,
       deletedRevisions: removing.length,
       skipped: false,
     }

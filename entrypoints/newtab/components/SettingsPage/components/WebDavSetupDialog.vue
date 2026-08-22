@@ -14,6 +14,7 @@ import type {
   BrowserWebDavSetupInput,
   BrowserWebDavSetupPreview,
 } from '@/shared/webdavSync/browserEngine'
+import { MAX_SYNC_WALLPAPER_BYTES } from '@/shared/webdavSync/catalog'
 import { DEFAULT_SYNC_SCOPE } from '@/shared/webdavSync/localState'
 import { requestExactWebDavPermission } from '@/shared/webdavSync/permissions'
 import { classifyWebDavAddress } from '@/shared/webdavSync/webdav'
@@ -29,7 +30,6 @@ const connecting = ref(false)
 const preview = shallowRef<BrowserWebDavSetupPreview>()
 const testError = ref('')
 const localHttpAccepted = ref(false)
-const externalHttpConfirmation = ref('')
 const wallpaperInfo = reactive({ count: 0, totalSize: 0, lightSize: 0, darkSize: 0 })
 const scope = reactive({ ...DEFAULT_SYNC_SCOPE })
 const form = reactive({
@@ -41,7 +41,6 @@ const form = reactive({
   rememberPassword: true,
   encrypted: false,
   encryptionPassword: '',
-  historyLimit: 10,
 })
 
 const steps = computed(() => [
@@ -66,11 +65,11 @@ const addressAssessment = computed(() => {
 const httpApproved = computed(() => {
   if (addressAssessment.value?.transport === 'https') return true
   if (addressAssessment.value?.transport === 'local-http') return localHttpAccepted.value
-  if (addressAssessment.value?.transport === 'external-http') {
-    return externalHttpConfirmation.value === t('webdavSync.setup.http.confirmText')
-  }
   return false
 })
+const publicHttpUnsupported = computed(() =>
+  /^http:\/\//i.test(form.url.trim()) && !addressAssessment.value,
+)
 
 const effectiveEncryption = computed(() =>
   preview.value?.state === 'empty'
@@ -96,6 +95,11 @@ const canContinue = computed(() => {
 })
 
 const formattedWallpaperSize = computed(() => formatBytes(wallpaperInfo.totalSize))
+const oversizedWallpaperCount = computed(() =>
+  [wallpaperInfo.lightSize, wallpaperInfo.darkSize]
+    .filter((size) => size > MAX_SYNC_WALLPAPER_BYTES)
+    .length,
+)
 const comparisonTitle = computed(() =>
   preview.value?.state === 'empty'
     ? t('webdavSync.setup.compare.initialTitle')
@@ -112,9 +116,7 @@ function createInput(): BrowserWebDavSetupInput {
   const insecureHttpApproval =
     transport === 'local-http'
       ? ('local-warning' as const)
-      : transport === 'external-http'
-        ? ('external-confirmation' as const)
-        : undefined
+      : undefined
   return {
     connection: {
       baseUrl: form.url.trim(),
@@ -125,7 +127,6 @@ function createInput(): BrowserWebDavSetupInput {
     directory: form.directory.trim() || 'LemonNewTab',
     deviceName: form.deviceName.trim() || undefined,
     encryptionPassword: effectiveEncryption.value ? form.encryptionPassword || undefined : undefined,
-    historyLimit: form.historyLimit,
     rememberPassword: form.rememberPassword,
     scope: { ...scope },
   }
@@ -211,7 +212,6 @@ function reset() {
   preview.value = undefined
   testError.value = ''
   localHttpAccepted.value = false
-  externalHttpConfirmation.value = ''
   Object.assign(scope, DEFAULT_SYNC_SCOPE)
   form.password = ''
   form.encryptionPassword = ''
@@ -263,18 +263,13 @@ watch(
             {{ t('webdavSync.setup.http.localWarning') }}
             <el-checkbox v-model="localHttpAccepted">{{ t('webdavSync.setup.http.accept') }}</el-checkbox>
           </el-alert>
-          <el-alert v-else-if="addressAssessment?.transport === 'external-http'" type="error" :closable="false" show-icon>
-            {{ t('webdavSync.setup.http.externalWarning') }}
-            <p>{{ t('webdavSync.setup.http.typePrompt', { text: t('webdavSync.setup.http.confirmText') }) }}</p>
-            <el-input v-model="externalHttpConfirmation" autocomplete="off" />
+          <el-alert v-else-if="publicHttpUnsupported" type="error" :closable="false" show-icon>
+            {{ t('webdavSync.setup.http.publicUnsupported') }}
           </el-alert>
           <el-collapse class="setup-advanced">
             <el-collapse-item name="advanced" :title="t('webdavSync.setup.advanced')">
               <el-form-item :label="t('webdavSync.setup.connection.directory')">
                 <el-input v-model="form.directory" />
-              </el-form-item>
-              <el-form-item :label="t('webdavSync.management.historyLimit')">
-                <el-input-number v-model="form.historyLimit" :min="2" :max="20" />
               </el-form-item>
               <el-checkbox v-model="form.rememberPassword">{{ t('webdavSync.setup.connection.remember') }}</el-checkbox>
               <p class="setup-note">{{ form.rememberPassword ? t('webdavSync.setup.connection.rememberNote') : t('webdavSync.setup.connection.sessionNote') }}</p>
@@ -304,21 +299,22 @@ watch(
           :title="t(`webdavSync.setup.scan.${preview?.state ?? 'empty'}`)"
           :sub-title="t(preview?.state === 'empty' ? 'webdavSync.setup.scan.emptyNote' : preview?.state === 'remote-conflict' ? 'webdavSync.setup.scan.remoteConflictNote' : 'webdavSync.setup.scan.existingNote')"
         />
-        <el-alert v-if="preview?.capabilities.mode === 'safe-degraded'" type="warning" :closable="false" show-icon :title="t('webdavSync.setup.scan.degraded')" />
       </template>
 
       <template v-else-if="step === 3">
         <header><h3>{{ t('webdavSync.setup.scope.title') }}</h3><p>{{ t('webdavSync.setup.scope.description') }}</p></header>
         <div class="setup-scope-list">
-          <label><span><strong>{{ t('webdavSync.scope.core') }}</strong><small>{{ t('webdavSync.scope.coreSummary') }}</small></span><el-tag type="success">{{ t('webdavSync.scope.always') }}</el-tag></label>
-          <label><span><strong>{{ t('webdavSync.scope.searchHistory') }}</strong><small>{{ t('webdavSync.setup.scope.searchHistoryNote') }}</small></span><el-switch v-model="scope.searchHistory" /></label>
+          <label><span><strong>{{ t('webdavSync.scope.settings') }}</strong></span><el-switch v-model="scope.settings" /></label>
+          <label><span><strong>{{ t('webdavSync.scope.quickLinks') }}</strong></span><el-switch v-model="scope.quickLinks" /></label>
+          <label><span><strong>{{ t('webdavSync.scope.customSearchEngines') }}</strong></span><el-switch v-model="scope.customSearchEngines" /></label>
+          <label><span><strong>{{ t('webdavSync.scope.uiPreferences') }}</strong></span><el-switch v-model="scope.uiPreferences" /></label>
           <label><span><strong>{{ t('webdavSync.scope.blockedTopSites') }}</strong><small>{{ t('webdavSync.setup.scope.blockedTopSitesNote') }}</small></span><el-switch v-model="scope.blockedTopSites" /></label>
         </div>
         <el-collapse class="setup-advanced">
           <el-collapse-item name="scope" :title="t('webdavSync.scope.advanced')">
             <div class="setup-scope-list">
               <label><span><strong>{{ t('webdavSync.scope.onlineWallpaperUrl') }}</strong><small>{{ t('webdavSync.scope.onlineWallpaperUrlNote') }}</small></span><el-switch v-model="scope.onlineWallpaperUrl" /></label>
-              <label><span><strong>{{ t('webdavSync.scope.quickLinkIcons') }}</strong><small>{{ t('webdavSync.scope.quickLinkIconsNote') }}</small></span><el-switch v-model="scope.quickLinkIcons" /></label>
+              <label><span><strong>{{ t('webdavSync.scope.userIcons') }}</strong><small>{{ t('webdavSync.scope.userIconsNote') }}</small></span><el-switch v-model="scope.userIcons" /></label>
             </div>
           </el-collapse-item>
         </el-collapse>
@@ -331,6 +327,7 @@ watch(
           <div><strong>{{ t('webdavSync.setup.wallpaper.summary', { count: wallpaperInfo.count, size: formattedWallpaperSize }) }}</strong><p>{{ t('webdavSync.setup.wallpaper.limit') }}</p></div>
           <el-checkbox v-model="scope.wallpapers">{{ t('webdavSync.setup.wallpaper.enable') }}</el-checkbox>
         </section>
+        <el-alert v-if="oversizedWallpaperCount" type="warning" :closable="false" show-icon :title="t('webdavSync.setup.wallpaper.oversized', { count: oversizedWallpaperCount })" />
       </template>
 
       <template v-else-if="step === 5">
@@ -341,6 +338,7 @@ watch(
           <el-tag :type="preview?.conflicts.length ? 'warning' : 'success'">{{ preview?.state === 'empty' ? t('webdavSync.setup.compare.initial') : t('webdavSync.setup.compare.existing') }}</el-tag>
         </div>
         <el-alert v-if="preview?.conflicts.length" type="warning" :closable="false" show-icon :title="t('webdavSync.setup.compare.pauseNote')" />
+        <el-alert v-if="preview?.resourceOmissions.length" type="warning" :closable="false" show-icon :title="t('webdavSync.setup.scope.omittedResources', { count: preview.resourceOmissions.length })" />
       </template>
 
       <template v-else>

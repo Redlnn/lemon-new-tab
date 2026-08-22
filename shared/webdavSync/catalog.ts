@@ -1,5 +1,4 @@
 import type {
-  SearchHistoryEntryV1,
   SyncAvailability,
   SyncBlockedTopSitesV1,
   SyncCustomSearchEngineDataV1,
@@ -9,6 +8,9 @@ import type {
 } from './types.ts'
 
 export const MAX_SYNC_WALLPAPER_BYTES = 20 * 1024 * 1024
+export const MAX_SYNC_INLINE_IMAGE_BYTES = 2 * 1024 * 1024
+export const MAX_SYNC_INLINE_IMAGES_BYTES = 8 * 1024 * 1024
+export const MAX_SYNC_SNAPSHOT_BYTES = 10 * 1024 * 1024
 
 export type SyncCatalogKey =
   | 'settings'
@@ -19,7 +21,7 @@ export type SyncCatalogKey =
   | 'searchHistory'
   | 'blockedTopSites'
   | 'onlineWallpaperUrl'
-  | 'quickLinkIcons'
+  | 'userIcons'
   | 'wallpaper.light'
   | 'wallpaper.dark'
   | 'faviconCache'
@@ -52,9 +54,8 @@ export interface CaptureContext {
   customSearchEngines: {
     items: Array<{ id: string; name: string; url: string; icon?: string }>
   }
-  ui: SyncSnapshotV1['ui']
+  ui: NonNullable<SyncSnapshotV1['ui']>
   scope: SyncScopePreferences
-  searchHistory?: SearchHistoryEntryV1[]
   blockedTopSites?: string[]
 }
 
@@ -117,20 +118,11 @@ export function getSyncAvailability(
   key: SyncCatalogKey,
   context: AvailabilityContext,
 ): SyncAvailability {
-  if (
-    key === 'settings' ||
-    key === 'quickLinks' ||
-    key === 'customSearchEngines' ||
-    key === 'ui.language' ||
-    key === 'ui.colorMode'
-  ) {
-    return included()
-  }
-  if (key === 'searchHistory') {
-    return context.scope.searchHistory
-      ? included()
-      : excludedByUser('sync.availability.searchHistoryScopeDisabled')
-  }
+  if (key === 'settings') return context.scope.settings ? included() : excludedByUser('sync.availability.settingsScopeDisabled')
+  if (key === 'quickLinks') return context.scope.quickLinks ? included() : excludedByUser('sync.availability.quickLinksScopeDisabled')
+  if (key === 'customSearchEngines') return context.scope.customSearchEngines ? included() : excludedByUser('sync.availability.searchEnginesScopeDisabled')
+  if (key === 'ui.language' || key === 'ui.colorMode') return context.scope.uiPreferences ? included() : excludedByUser('sync.availability.uiScopeDisabled')
+  if (key === 'searchHistory') return excludedByDesign('sync.availability.searchHistoryLocal')
   if (key === 'blockedTopSites') {
     return context.scope.blockedTopSites
       ? included()
@@ -141,10 +133,10 @@ export function getSyncAvailability(
       ? included()
       : excludedByUser('sync.availability.onlineWallpaperUrlScopeDisabled')
   }
-  if (key === 'quickLinkIcons') {
-    return context.scope.quickLinkIcons
+  if (key === 'userIcons') {
+    return context.scope.userIcons && (context.scope.quickLinks || context.scope.customSearchEngines)
       ? included()
-      : excludedByUser('sync.availability.quickLinkIconsScopeDisabled')
+      : excludedByUser('sync.availability.userIconsScopeDisabled')
   }
   if (key === 'wallpaper.light' || key === 'wallpaper.dark') {
     return wallpaperAvailability(key === 'wallpaper.light' ? 'light' : 'dark', context)
@@ -199,9 +191,15 @@ export function toSyncQuickLinks(
 
 export function toSyncCustomSearchEngines(
   data: CaptureContext['customSearchEngines'],
+  includeUserIcons: boolean,
 ): SyncCustomSearchEngineDataV1 {
   return {
-    items: data.items.map((item) => ({ ...item })),
+    items: data.items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      url: item.url,
+      ...(includeUserIcons && item.icon ? { icon: item.icon } : {}),
+    })),
     order: data.items.map((item) => item.id),
   }
 }

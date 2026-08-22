@@ -9,6 +9,18 @@ import type {
 import { validateSyncSnapshot } from './validation.ts'
 
 type EntityValue = { id: string; [key: string]: JsonValue }
+type QuickLinks = NonNullable<SyncSnapshotV1['quickLinks']>
+type SearchEngines = NonNullable<SyncSnapshotV1['customSearchEngines']>
+
+function quickLinks(snapshot: SyncSnapshotV1): QuickLinks {
+  if (!snapshot.quickLinks) throw new TypeError('Quick Link conflict has no data')
+  return snapshot.quickLinks
+}
+
+function searchEngines(snapshot: SyncSnapshotV1): SearchEngines {
+  if (!snapshot.customSearchEngines) throw new TypeError('Search engine conflict has no data')
+  return snapshot.customSearchEngines
+}
 
 export function resolveSyncConflicts(input: {
   base: SyncSnapshotV1
@@ -75,29 +87,24 @@ function entityTarget(
   conflict: SyncConflict,
 ): { items: EntityValue[]; order: string[] } {
   if (conflict.path.startsWith('quickLinks.items.')) {
+    const links = quickLinks(snapshot)
     return {
-      items: snapshot.quickLinks.items as unknown as EntityValue[],
-      order: snapshot.quickLinks.rootOrder,
+      items: links.items as unknown as EntityValue[],
+      order: links.rootOrder,
     }
   }
   if (conflict.path.startsWith('quickLinks.groups.')) {
+    const links = quickLinks(snapshot)
     return {
-      items: snapshot.quickLinks.groups as unknown as EntityValue[],
-      order: snapshot.quickLinks.groupOrder,
+      items: links.groups as unknown as EntityValue[],
+      order: links.groupOrder,
     }
   }
   if (conflict.path.startsWith('customSearchEngines.items.')) {
+    const engines = searchEngines(snapshot)
     return {
-      items: snapshot.customSearchEngines.items as unknown as EntityValue[],
-      order: snapshot.customSearchEngines.order,
-    }
-  }
-  if (conflict.path.startsWith('optional.searchHistory.items.')) {
-    snapshot.optional ??= {}
-    snapshot.optional.searchHistory ??= { items: [], order: [] }
-    return {
-      items: snapshot.optional.searchHistory.items as unknown as EntityValue[],
-      order: snapshot.optional.searchHistory.order,
+      items: engines.items as unknown as EntityValue[],
+      order: engines.order,
     }
   }
   throw new TypeError(`Unsupported entity conflict: ${conflict.path}`)
@@ -108,9 +115,7 @@ function entityId(conflict: SyncConflict): string {
     ? 'quickLinks.items.'
     : conflict.path.startsWith('quickLinks.groups.')
       ? 'quickLinks.groups.'
-    : conflict.path.startsWith('customSearchEngines.items.')
-      ? 'customSearchEngines.items.'
-      : 'optional.searchHistory.items.'
+    : 'customSearchEngines.items.'
   return conflict.path.slice(prefix.length)
 }
 
@@ -126,12 +131,13 @@ function applyEntity(
   if (!value || typeof value !== 'object' || Array.isArray(value)) return
   const entity = structuredClone(value) as EntityValue
   if (conflict.path.startsWith('quickLinks.groups.')) {
-    const sourceGroup = source.quickLinks.groups.find((group) => group.id === id)
-    const validIds = new Set(target.quickLinks.items.map((item) => item.id))
+    const sourceGroup = quickLinks(source).groups.find((group) => group.id === id)
+    const targetLinks = quickLinks(target)
+    const validIds = new Set(targetLinks.items.map((item) => item.id))
     const itemIds = sourceGroup?.itemIds.filter((itemId) => validIds.has(itemId)) ?? []
     for (const itemId of itemIds) {
-      target.quickLinks.rootOrder = target.quickLinks.rootOrder.filter((item) => item !== itemId)
-      for (const group of target.quickLinks.groups) {
+      targetLinks.rootOrder = targetLinks.rootOrder.filter((item) => item !== itemId)
+      for (const group of targetLinks.groups) {
         group.itemIds = group.itemIds.filter((item) => item !== itemId)
       }
     }
@@ -176,20 +182,21 @@ function removeEntity(
   id: string,
 ): void {
   const index = target.items.findIndex((item) => item.id === id)
+  const links = conflict.path.startsWith('quickLinks.') ? quickLinks(snapshot) : undefined
   const removedGroup = conflict.path.startsWith('quickLinks.groups.')
-    ? snapshot.quickLinks.groups.find((group) => group.id === id)
+    ? links?.groups.find((group) => group.id === id)
     : undefined
   if (index >= 0) target.items.splice(index, 1)
   target.order.splice(0, target.order.length, ...target.order.filter((item) => item !== id))
   if (conflict.path.startsWith('quickLinks.items.')) {
-    for (const group of snapshot.quickLinks.groups) {
+    for (const group of links!.groups) {
       group.itemIds = group.itemIds.filter((item) => item !== id)
     }
   } else if (conflict.path.startsWith('quickLinks.groups.')) {
     if (removedGroup) {
       for (const itemId of removedGroup.itemIds) {
-        if (!snapshot.quickLinks.rootOrder.includes(itemId)) {
-          snapshot.quickLinks.rootOrder.push(itemId)
+        if (!links!.rootOrder.includes(itemId)) {
+          links!.rootOrder.push(itemId)
         }
       }
     }
@@ -205,12 +212,13 @@ function insertEntityOrder(
   insertedId: string,
 ): void {
   if (conflict.path.startsWith('quickLinks.items.')) {
-    const sourceGroup = source.quickLinks.groups.find((group) => group.itemIds.includes(sourceId))
+    const sourceLinks = quickLinks(source)
+    const sourceGroup = sourceLinks.groups.find((group) => group.itemIds.includes(sourceId))
     if (!sourceGroup) {
-      insertAfterSource(fallbackOrder, source.quickLinks.rootOrder, sourceId, insertedId)
+      insertAfterSource(fallbackOrder, sourceLinks.rootOrder, sourceId, insertedId)
       return
     }
-    const targetGroup = target.quickLinks.groups.find((group) => group.id === sourceGroup.id)
+    const targetGroup = quickLinks(target).groups.find((group) => group.id === sourceGroup.id)
     if (targetGroup) {
       insertAfterSource(targetGroup.itemIds, sourceGroup.itemIds, sourceId, insertedId)
     } else {
@@ -221,15 +229,13 @@ function insertEntityOrder(
   if (conflict.path.startsWith('quickLinks.groups.')) {
     insertAfterSource(
       fallbackOrder,
-      source.quickLinks.groupOrder,
+      quickLinks(source).groupOrder,
       sourceId,
       insertedId,
     )
     return
   }
-  const sourceOrder = conflict.path.startsWith('customSearchEngines.items.')
-    ? source.customSearchEngines.order
-    : (source.optional?.searchHistory?.order ?? [])
+  const sourceOrder = searchEngines(source).order
   insertAfterSource(fallbackOrder, sourceOrder, sourceId, insertedId)
 }
 
@@ -257,7 +263,7 @@ function applyPathValue(
   }
   if (path.startsWith('quickLinks.items.')) {
     applyEntityField(
-      snapshot.quickLinks.items as unknown as EntityValue[],
+      quickLinks(snapshot).items as unknown as EntityValue[],
       path.slice('quickLinks.items.'.length),
       value,
       present,
@@ -270,12 +276,12 @@ function applyPathValue(
   }
   if (path === 'quickLinks.rootOrder' || path === 'quickLinks.groupOrder') {
     const key = path.endsWith('rootOrder') ? 'rootOrder' : 'groupOrder'
-    snapshot.quickLinks[key] = present && Array.isArray(value) ? [...value] as string[] : []
+    quickLinks(snapshot)[key] = present && Array.isArray(value) ? [...value] as string[] : []
     return
   }
   if (path.startsWith('customSearchEngines.items.')) {
     applyEntityField(
-      snapshot.customSearchEngines.items as unknown as EntityValue[],
+      searchEngines(snapshot).items as unknown as EntityValue[],
       path.slice('customSearchEngines.items.'.length),
       value,
       present,
@@ -283,28 +289,11 @@ function applyPathValue(
     return
   }
   if (path === 'customSearchEngines.order') {
-    snapshot.customSearchEngines.order = present && Array.isArray(value) ? [...value] as string[] : []
-    return
-  }
-  if (path.startsWith('optional.searchHistory.items.')) {
-    snapshot.optional ??= {}
-    snapshot.optional.searchHistory ??= { items: [], order: [] }
-    applyEntityField(
-      snapshot.optional.searchHistory.items as unknown as EntityValue[],
-      path.slice('optional.searchHistory.items.'.length),
-      value,
-      present,
-    )
-    return
-  }
-  if (path === 'optional.searchHistory.order') {
-    snapshot.optional ??= {}
-    snapshot.optional.searchHistory ??= { items: [], order: [] }
-    snapshot.optional.searchHistory.order = present && Array.isArray(value) ? [...value] as string[] : []
+    searchEngines(snapshot).order = present && Array.isArray(value) ? [...value] as string[] : []
     return
   }
   const [root, ...keys] = path.split('.')
-  if (root !== 'settings' && root !== 'ui' && root !== 'optional') {
+  if (!root || !['settings', 'ui', 'optional', 'scope', 'quickLinks', 'customSearchEngines', 'inlineImages'].includes(root)) {
     throw new TypeError(`Unsupported conflict path: ${path}`)
   }
   applyObjectPath(snapshot as unknown as JsonObject, [root, ...keys], value, present)
@@ -334,7 +323,7 @@ function applyQuickLinkGroupPath(
   if (separator < 1) throw new TypeError(`Quick Link group path is invalid: ${path}`)
   const id = path.slice(0, separator)
   const key = path.slice(separator + 1)
-  const group = snapshot.quickLinks.groups.find((candidate) => candidate.id === id)
+  const group = quickLinks(snapshot).groups.find((candidate) => candidate.id === id)
   if (!group) throw new TypeError(`Quick Link group is missing: ${id}`)
   if (key === 'itemIds') {
     group.itemIds = present && Array.isArray(value) ? [...value] as string[] : []
@@ -344,18 +333,19 @@ function applyQuickLinkGroupPath(
 }
 
 function moveQuickLink(snapshot: SyncSnapshotV1, id: string, value: JsonValue | undefined): void {
-  snapshot.quickLinks.rootOrder = snapshot.quickLinks.rootOrder.filter((item) => item !== id)
-  for (const group of snapshot.quickLinks.groups) {
+  const links = quickLinks(snapshot)
+  links.rootOrder = links.rootOrder.filter((item) => item !== id)
+  for (const group of links.groups) {
     group.itemIds = group.itemIds.filter((item) => item !== id)
   }
   if (typeof value === 'string' && value !== 'root') {
-    const group = snapshot.quickLinks.groups.find((candidate) => candidate.id === value)
+    const group = links.groups.find((candidate) => candidate.id === value)
     if (group) {
       group.itemIds.push(id)
       return
     }
   }
-  snapshot.quickLinks.rootOrder.push(id)
+  links.rootOrder.push(id)
 }
 
 function applyObjectPath(

@@ -73,7 +73,7 @@ const alertType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'inf
         <p style="margin: 0.5em 0">1. {{ t('quickLinks.tip') }}</p>
         <p style="margin: 0.5em 0">
           2. {{ t('quickLinks.iconCacheTip') }}
-          <SyncAvailabilityIcon catalog-key="quickLinkIcons" />
+          <SyncAvailabilityIcon catalog-key="userIcons" />
         </p>
       </el-alert>
     </SettingsSection>

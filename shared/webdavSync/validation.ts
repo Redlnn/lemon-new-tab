@@ -1,16 +1,22 @@
 import { jsonByteLength } from './canonical.ts'
-import { MAX_SYNC_WALLPAPER_BYTES } from './catalog.ts'
+import {
+  MAX_SYNC_INLINE_IMAGE_BYTES,
+  MAX_SYNC_INLINE_IMAGES_BYTES,
+  MAX_SYNC_SNAPSHOT_BYTES,
+  MAX_SYNC_WALLPAPER_BYTES,
+} from './catalog.ts'
 import type {
   AssetReferenceV1,
   CommitRecordV1,
   SyncRevisionReason,
   SyncRevisionV1,
+  SyncScopePreferences,
   SyncSnapshotV1,
   TombstoneV1,
 } from './types.ts'
 
 export const MAX_METADATA_BYTES = 256 * 1024
-export const MAX_REVISION_BYTES = 25 * 1024 * 1024
+export const MAX_REVISION_BYTES = MAX_SYNC_SNAPSHOT_BYTES
 const MAX_STORED_REVISION_BYTES = MAX_REVISION_BYTES + 64 * 1024
 
 export type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string }
@@ -23,7 +29,6 @@ const REVISION_REASONS = new Set<SyncRevisionReason>([
   'local-change',
   'merge',
   'restore',
-  'reset',
   'repair',
   'import',
 ])
@@ -86,19 +91,8 @@ function hasUniqueIds(items: readonly { id: string }[]): boolean {
   return new Set(items.map((item) => item.id)).size === items.length
 }
 
-function isQuickLinks(value: unknown): boolean {
+function isQuickLinks(value: unknown, images: Readonly<Record<string, string>>): boolean {
   if (!isRecord(value) || !Array.isArray(value.items) || !Array.isArray(value.groups)) return false
-  const icons = value.icons
-  if (
-    icons !== undefined &&
-    (!isRecord(icons) ||
-      !Object.entries(icons).every(
-        ([hash, icon]) => /^[0-9a-f]{64}$/.test(hash) && typeof icon === 'string',
-      ))
-  ) {
-    return false
-  }
-
   const items = value.items
   if (
     !items.every(
@@ -107,11 +101,10 @@ function isQuickLinks(value: unknown): boolean {
         isEntityId(item.id) &&
         typeof item.url === 'string' &&
         typeof item.title === 'string' &&
-        (item.favicon === undefined || typeof item.favicon === 'string') &&
         (item.faviconHash === undefined ||
           (typeof item.faviconHash === 'string' &&
-            Boolean(icons && Object.hasOwn(icons, item.faviconHash)))) &&
-        !(item.favicon && item.faviconHash),
+            Object.hasOwn(images, item.faviconHash))) &&
+        item.favicon === undefined,
     )
   ) {
     return false
@@ -151,7 +144,7 @@ function isQuickLinks(value: unknown): boolean {
   )
 }
 
-function isCustomSearchEngines(value: unknown): boolean {
+function isCustomSearchEngines(value: unknown, images: Readonly<Record<string, string>>): boolean {
   if (!isRecord(value) || !Array.isArray(value.items)) return false
   const items = value.items
   if (
@@ -161,25 +154,9 @@ function isCustomSearchEngines(value: unknown): boolean {
         isEntityId(item.id) &&
         typeof item.name === 'string' &&
         typeof item.url === 'string' &&
-        (item.icon === undefined || typeof item.icon === 'string'),
-    )
-  ) {
-    return false
-  }
-  const typedItems = items as Array<{ id: string }>
-  return hasUniqueIds(typedItems) && hasExactOrder(value.order, new Set(typedItems.map(({ id }) => id)))
-}
-
-function isSearchHistory(value: unknown): boolean {
-  if (!isRecord(value) || !Array.isArray(value.items)) return false
-  const items = value.items
-  if (
-    !items.every(
-      (item) =>
-        isRecord(item) &&
-        isEntityId(item.id) &&
-        typeof item.text === 'string' &&
-        isDate(item.createdAt),
+        item.icon === undefined &&
+        (item.iconHash === undefined ||
+          (typeof item.iconHash === 'string' && Object.hasOwn(images, item.iconHash))),
     )
   ) {
     return false
@@ -226,25 +203,52 @@ function isWallpapers(value: unknown): boolean {
   )
 }
 
+export function isSyncScope(value: unknown): value is SyncScopePreferences {
+  if (!isRecord(value)) return false
+  const keys: Array<keyof SyncScopePreferences> = [
+    'settings', 'quickLinks', 'customSearchEngines', 'uiPreferences',
+    'blockedTopSites', 'wallpapers', 'onlineWallpaperUrl', 'userIcons',
+  ]
+  return keys.every((key) => typeof value[key] === 'boolean')
+    && keys.some((key) => value[key] === true)
+}
+
+function isInlineImages(value: unknown): value is Record<string, string> {
+  if (value === undefined) return true
+  if (!isRecord(value)) return false
+  let total = 0
+  for (const [hash, image] of Object.entries(value)) {
+    if (!HASH_PATTERN.test(hash) || typeof image !== 'string') return false
+    const size = new TextEncoder().encode(image).byteLength
+    if (size > MAX_SYNC_INLINE_IMAGE_BYTES) return false
+    total += size
+  }
+  return total <= MAX_SYNC_INLINE_IMAGES_BYTES
+}
+
 function isSyncSnapshot(value: unknown): boolean {
-  if (!isRecord(value) || !isRecord(value.settings) || !isRecord(value.ui)) return false
-  if (
+  if (!isRecord(value) || !isSyncScope(value.scope) || !isInlineImages(value.inlineImages)) return false
+  const images = (value.inlineImages ?? {}) as Record<string, string>
+  if (value.settings !== undefined && !isRecord(value.settings)) return false
+  if (value.ui !== undefined && (
+    !isRecord(value.ui) ||
     typeof value.ui.language !== 'string' ||
     value.ui.language.length === 0 ||
     !['auto', 'dark', 'light'].includes(String(value.ui.colorMode))
-  ) {
-    return false
-  }
-  if (!isQuickLinks(value.quickLinks) || !isCustomSearchEngines(value.customSearchEngines)) {
-    return false
-  }
+  )) return false
+  if (value.quickLinks !== undefined && !isQuickLinks(value.quickLinks, images)) return false
+  if (
+    value.customSearchEngines !== undefined &&
+    !isCustomSearchEngines(value.customSearchEngines, images)
+  ) return false
   if (value.optional === undefined) return true
   if (!isRecord(value.optional)) return false
   return (
-    (value.optional.searchHistory === undefined || isSearchHistory(value.optional.searchHistory)) &&
     (value.optional.blockedTopSites === undefined ||
       isBlockedTopSites(value.optional.blockedTopSites)) &&
-    (value.optional.wallpapers === undefined || isWallpapers(value.optional.wallpapers))
+    (value.optional.wallpapers === undefined || isWallpapers(value.optional.wallpapers)) &&
+    (value.optional.onlineWallpaperUrl === undefined ||
+      typeof value.optional.onlineWallpaperUrl === 'string')
   )
 }
 
@@ -305,6 +309,7 @@ export function validateCommitRecord(value: unknown): ValidationResult<CommitRec
   if (typeof value.encrypted !== 'boolean' || value.complete !== true) {
     return invalid('Commit completion fields are invalid')
   }
+  if (!isSyncScope(value.scope)) return invalid('Commit scope is invalid')
   return { ok: true, value: value as unknown as CommitRecordV1 }
 }
 

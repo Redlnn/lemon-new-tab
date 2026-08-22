@@ -170,6 +170,7 @@ const tagType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'info'
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">
           {{ t('theme.mode.dark') }}
+          <SyncAvailabilityIcon catalog-key="ui.colorMode" />
         </div>
       </div>
       <div class="settings__item theme-mode-selector">

@@ -1,5 +1,6 @@
 import { jsonEquals } from './canonical.ts'
 import { mergeSyncSnapshots } from './merge.ts'
+import { normalizeRemoteSyncSettings } from './settingsWhitelist.ts'
 import type {
   AssetReferenceV1,
   SyncConflict,
@@ -94,14 +95,21 @@ export function mergeRemoteRevisionHeads(
   const tombstones = new Map<string, TombstoneV1>()
   const assets = new Map<string, AssetReferenceV1>()
   for (const [index, head] of heads.entries()) {
-    const merge = mergeSyncSnapshots(baseline, snapshot, head.snapshot)
+    const headSnapshot = structuredClone(head.snapshot)
+    if (baseline.settings || headSnapshot.settings) {
+      headSnapshot.settings = normalizeRemoteSyncSettings(
+        baseline.settings ?? {},
+        headSnapshot.settings ?? {},
+      )
+    }
+    const merge = mergeSyncSnapshots(baseline, snapshot, headSnapshot)
     if (merge.conflicts.length > 0) {
       return {
         kind: 'conflict',
         conflicts: merge.conflicts,
         headRevisionIds: heads.map((item) => item.revisionId),
         local: snapshot,
-        remote: head.snapshot,
+        remote: headSnapshot,
         remainingRemoteRevisionIds: heads.slice(index + 1).map((item) => item.revisionId),
       }
     }

@@ -38,7 +38,15 @@ const syncing = ref(false)
 const setupVisible = ref(false)
 const dialogMode = ref<DialogMode>(null)
 const updatingScope = ref<keyof SyncScopePreferences | null>(null)
-const updatingHistory = ref(false)
+
+const primaryScopeKeys = [
+  'settings',
+  'quickLinks',
+  'customSearchEngines',
+  'uiPreferences',
+  'blockedTopSites',
+  'wallpapers',
+] as const satisfies readonly (keyof SyncScopePreferences)[]
 
 watch(sharedState, (value) => {
   state.value = value
@@ -51,7 +59,6 @@ const pauseLabels: Record<NonNullable<LocalSyncStateV1['pauseReason']>, string> 
   'encryption-password': 'webdavSync.status.encryptionPassword',
   'format-too-new': 'webdavSync.status.formatTooNew',
   'remote-deleted': 'webdavSync.status.remoteDeleted',
-  'remote-reset': 'webdavSync.status.remoteReset',
   'storage-full': 'webdavSync.status.storageFull',
 }
 
@@ -64,7 +71,7 @@ const status = computed(() => {
     }
   }
   if (state.value.pending) return { key: 'webdavSync.status.pending', type: 'warning' as const }
-  if (state.value.wallpaperStatus) {
+  if (state.value.resourceOmissions.length) {
     return { key: 'webdavSync.status.wallpaperSkipped', type: 'warning' as const }
   }
   return {
@@ -76,7 +83,7 @@ const status = computed(() => {
 const statusIcon = computed(() => {
   if (!state.value.configured) return CloudOffRound
   if (state.value.paused) return ErrorRound
-  if (state.value.pending || state.value.wallpaperStatus) return WarningRound
+  if (state.value.pending || state.value.resourceOmissions.length) return WarningRound
   return CloudDoneRound
 })
 
@@ -133,24 +140,12 @@ async function changeScope(key: keyof SyncScopePreferences, value: boolean | str
   }
 }
 
-async function changeHistoryLimit(value: number | undefined) {
-  if (!value) return
-  updatingHistory.value = true
-  try {
-    state.value = await updateSyncPreferences({ historyLimit: value })
-  } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('webdavSync.errors.unknown'))
-  } finally {
-    updatingHistory.value = false
-  }
-}
-
 function openPauseAction() {
   const reason = state.value.pauseReason
   if (reason === 'conflict') dialogMode.value = 'conflict'
   else if (reason === 'corrupted-remote') dialogMode.value = 'repair'
   else if (reason === 'encryption-password') dialogMode.value = 'encryption'
-  else if (reason === 'remote-reset') dialogMode.value = 'repair'
+  else if (reason === 'storage-full') dialogMode.value = 'repair'
   else dialogMode.value = 'disconnect'
 }
 
@@ -186,7 +181,7 @@ onMounted(() => void refresh())
         :summary="t('webdavSync.scope.unconfiguredSummary')"
       >
         <div class="sync-inclusion-list">
-          <p><el-icon><CloudDoneRound /></el-icon>{{ t('webdavSync.scope.coreSummary') }}</p>
+          <p><el-icon><CloudDoneRound /></el-icon>{{ t('webdavSync.scope.summary') }}</p>
           <p><el-icon><CloudOffRound /></el-icon>{{ t('webdavSync.scope.localOnlySummary') }}</p>
         </div>
       </SettingsSection>
@@ -227,35 +222,19 @@ onMounted(() => void refresh())
         content-class="settings-control-grid"
         mobile-open
       >
-        <div class="settings__item settings__item--horizontal settings-control-wide settings__item--with-note">
-          <div class="settings__label">{{ t('webdavSync.scope.core') }}</div>
-          <el-tag type="success" effect="plain">{{ t('webdavSync.scope.always') }}</el-tag>
-          <p class="settings__item-note">{{ t('webdavSync.scope.coreSummary') }}</p>
-        </div>
-        <div class="settings__item settings__item--horizontal">
-          <div class="settings__label">{{ t('webdavSync.scope.searchHistory') }}</div>
+        <div
+          v-for="key in primaryScopeKeys"
+          :key="key"
+          class="settings__item settings__item--horizontal"
+          :class="{ 'settings-control-wide settings__item--with-note': key === 'wallpapers' }"
+        >
+          <div class="settings__label">{{ t(`webdavSync.scope.${key}`) }}</div>
           <el-switch
-            :model-value="state.scope.searchHistory"
-            :loading="updatingScope === 'searchHistory'"
-            @change="changeScope('searchHistory', $event)"
+            :model-value="state.scope[key]"
+            :loading="updatingScope === key"
+            @change="changeScope(key, $event)"
           />
-        </div>
-        <div class="settings__item settings__item--horizontal">
-          <div class="settings__label">{{ t('webdavSync.scope.blockedTopSites') }}</div>
-          <el-switch
-            :model-value="state.scope.blockedTopSites"
-            :loading="updatingScope === 'blockedTopSites'"
-            @change="changeScope('blockedTopSites', $event)"
-          />
-        </div>
-        <div class="settings__item settings__item--horizontal settings-control-wide settings__item--with-note">
-          <div class="settings__label">{{ t('webdavSync.scope.wallpapers') }}</div>
-          <el-switch
-            :model-value="state.scope.wallpapers"
-            :loading="updatingScope === 'wallpapers'"
-            @change="changeScope('wallpapers', $event)"
-          />
-          <p class="settings__item-note">{{ t('webdavSync.scope.wallpapersNote') }}</p>
+          <p v-if="key === 'wallpapers'" class="settings__item-note">{{ t('webdavSync.scope.wallpapersNote') }}</p>
         </div>
         <el-collapse class="sync-advanced-scope settings-control-wide">
           <el-collapse-item name="advanced" :title="t('webdavSync.scope.advanced')">
@@ -269,11 +248,11 @@ onMounted(() => void refresh())
                 />
               </label>
               <label>
-                <span><strong>{{ t('webdavSync.scope.quickLinkIcons') }}</strong><small>{{ t('webdavSync.scope.quickLinkIconsNote') }}</small></span>
+                <span><strong>{{ t('webdavSync.scope.userIcons') }}</strong><small>{{ t('webdavSync.scope.userIconsNote') }}</small></span>
                 <el-switch
-                  :model-value="state.scope.quickLinkIcons"
-                  :loading="updatingScope === 'quickLinkIcons'"
-                  @change="changeScope('quickLinkIcons', $event)"
+                  :model-value="state.scope.userIcons"
+                  :loading="updatingScope === 'userIcons'"
+                  @change="changeScope('userIcons', $event)"
                 />
               </label>
             </div>
@@ -286,17 +265,6 @@ onMounted(() => void refresh())
         :summary="t('webdavSync.management.summary')"
         content-class="settings-control-grid"
       >
-        <div class="settings__item settings__item--horizontal">
-          <div class="settings__label">{{ t('webdavSync.management.historyLimit') }}</div>
-          <el-input-number
-            :model-value="state.historyLimit"
-            :min="2"
-            :max="20"
-            :disabled="updatingHistory"
-            controls-position="right"
-            @change="changeHistoryLimit"
-          />
-        </div>
         <div class="settings__item sync-button-grid settings-control-wide">
           <el-button :icon="HistoryRound" @click="dialogMode = 'history'">{{ t('webdavSync.management.history') }}</el-button>
           <el-button :icon="DevicesRound" @click="dialogMode = 'devices'">{{ t('webdavSync.management.devices') }}</el-button>

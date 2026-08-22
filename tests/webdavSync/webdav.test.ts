@@ -25,6 +25,7 @@ type FakeResource = {
   bytes: Uint8Array
   collection: boolean
   etag: string
+  lastModified: string
 }
 
 class FakeWebDavServer {
@@ -107,6 +108,7 @@ class FakeWebDavServer {
           isCollection: value.collection,
           etag: value.etag,
           contentLength: value.bytes.byteLength,
+          lastModified: value.lastModified,
         }))
       return new Response(JSON.stringify(entries), { status: 207 })
     }
@@ -114,7 +116,12 @@ class FakeWebDavServer {
   }
 
   private resource(bytes: Uint8Array, collection: boolean): FakeResource {
-    return { bytes: bytes.slice(), collection, etag: `"etag-${++this.etagVersion}"` }
+    return {
+      bytes: bytes.slice(),
+      collection,
+      etag: `"etag-${++this.etagVersion}"`,
+      lastModified: new Date().toUTCString(),
+    }
   }
 
   private parent(path: string): string {
@@ -155,6 +162,16 @@ async function revision(
   createdAt = '2026-08-09T00:00:00.000Z',
 ): Promise<SyncRevisionV1> {
   const snapshot = {
+    scope: {
+      settings: true,
+      quickLinks: true,
+      customSearchEngines: true,
+      uiPreferences: true,
+      blockedTopSites: false,
+      wallpapers: false,
+      onlineWallpaperUrl: false,
+      userIcons: false,
+    },
     settings: { version: 11 },
     quickLinks: { items: [], rootOrder: [], groups: [], groupOrder: [] },
     customSearchEngines: { items: [], order: [] },
@@ -185,7 +202,10 @@ test('address classification produces an exact origin permission and requires ex
     transport: 'https',
   })
   assert.equal(classifyWebDavAddress('http://192.168.1.2/dav').transport, 'local-http')
-  assert.equal(classifyWebDavAddress('http://dav.example/dav').transport, 'external-http')
+  assert.throws(
+    () => classifyWebDavAddress('http://dav.example/dav'),
+    (error: unknown) => error instanceof WebDavError && error.category === 'insecure-http',
+  )
   assert.throws(
     () => new WebDavClient({ baseUrl: 'http://192.168.1.2/dav', username: 'a', password: 'b' }),
     (error: unknown) => error instanceof WebDavError && error.category === 'insecure-http',
@@ -212,25 +232,25 @@ test('address classification produces an exact origin permission and requires ex
   assert.throws(() => classifyWebDavAddress('https://user:secret@dav.example/dav'))
 })
 
-test('capability probe selects conditional mode and removes all test files', async () => {
+test('capability probe requires conditional writes and removes all test files', async () => {
   const server = new FakeWebDavServer()
   const result = await probeWebDavCapabilities(client(server))
   assert.deepEqual(result, {
     conditionalCreate: true,
     conditionalUpdate: true,
-    mode: 'conditional',
   })
   assert.deepEqual([...server.resources.keys()], ['/dav'])
 })
 
-test('capability probe enters safe degraded mode when conditions are ignored', async () => {
+test('capability probe rejects servers that ignore conditional writes', async () => {
   const server = new FakeWebDavServer()
   server.honorConditionalCreate = false
   server.honorConditionalUpdate = false
-  const result = await probeWebDavCapabilities(client(server))
-  assert.equal(result.mode, 'safe-degraded')
-  assert.equal(result.conditionalCreate, false)
-  assert.equal(result.conditionalUpdate, false)
+  await assert.rejects(
+    probeWebDavCapabilities(client(server)),
+    (error: unknown) => error instanceof WebDavError && error.category === 'unsupported',
+  )
+  assert.deepEqual([...server.resources.keys()], ['/dav'])
 })
 
 test('vault publication makes a revision visible only after payload verification and commit', async () => {
@@ -320,7 +340,7 @@ test('encrypted generations keep revision and wallpaper plaintext out of WebDAV'
     encrypted: true,
     encryption: created.metadata,
   }
-  const initialized = await repository.initialize(encryptedMetadata)
+  await repository.initialize(encryptedMetadata)
   const value = await revision(encryptedMetadata)
   const storedRevision = await encryptSyncBytes(
     created.key,
@@ -377,25 +397,6 @@ test('encrypted generations keep revision and wallpaper plaintext out of WebDAV'
     new TextDecoder().decode(await repository.readEncryptedAsset(asset)).includes('wallpaper'),
     false,
   )
-
-  const nextGenerationId = '77777777-7777-4777-8777-777777777777'
-  const nextEncryption = await createVaultEncryption(
-    'new independent password',
-    base.vaultId,
-    nextGenerationId,
-  )
-  const next: VaultMetadataV1 = {
-    ...encryptedMetadata,
-    generationId: nextGenerationId,
-    encryption: nextEncryption.metadata,
-  }
-  await repository.prepareGeneration(next)
-  await repository.activateGeneration(encryptedMetadata, initialized.etag, next)
-  await repository.deleteObsoleteGeneration(next, encryptedMetadata.generationId)
-  assert.equal(
-    [...server.resources.keys()].some((path) => path.includes(encryptedMetadata.generationId)),
-    false,
-  )
 })
 
 test('cross-origin redirects stop before credentials can be forwarded', async () => {
@@ -426,37 +427,64 @@ test('history cleanup keeps the newest versions and refuses unresolved branches'
   const vault = metadata(capabilities)
   const repository = new WebDavVaultRepository(client(server))
   await repository.initialize(vault)
-  const ids = [
-    '10000000-0000-4000-8000-000000000001',
-    '10000000-0000-4000-8000-000000000002',
-    '10000000-0000-4000-8000-000000000003',
-    '10000000-0000-4000-8000-000000000004',
-  ]
+  const ids = Array.from(
+    { length: 12 },
+    (_, index) => `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+  )
   const revisions: SyncRevisionV1[] = []
   for (let index = 0; index < ids.length; index += 1) {
     const value = await revision(
       vault,
       ids[index],
       index === 0 ? [] : [ids[index - 1]!],
-      `2026-08-0${index + 1}T00:00:00.000Z`,
+      new Date(Date.UTC(2026, 7, index + 1)).toISOString(),
     )
     revisions.push(value)
     await repository.publishRevision(vault, value)
   }
-  const result = await repository.pruneHistory(vault, revisions, 2)
+  const result = await repository.pruneHistory(vault, revisions)
   assert.deepEqual(result, { deletedAssets: 0, deletedRevisions: 2, skipped: false })
   assert.deepEqual(
     (await repository.listCommits(vault)).map((commit) => commit.revisionId).sort(),
-    ids.slice(2),
+    ids.slice(-10),
   )
 
   const branch = await revision(
     vault,
     '20000000-0000-4000-8000-000000000001',
-    [ids[2]!],
-    '2026-08-05T00:00:00.000Z',
+    [ids[10]!],
+    '2026-08-20T00:00:00.000Z',
   )
   await repository.publishRevision(vault, branch)
-  const retained = [revisions[2]!, revisions[3]!, branch]
-  assert.equal((await repository.pruneHistory(vault, retained, 2)).skipped, true)
+  const retained = [...revisions.slice(2), branch]
+  assert.equal((await repository.pruneHistory(vault, retained)).skipped, true)
+})
+
+test('history cleanup expires old commits but always protects current and previous', async () => {
+  const server = new FakeWebDavServer()
+  const capabilities = await probeWebDavCapabilities(client(server))
+  const vault = metadata(capabilities)
+  const repository = new WebDavVaultRepository(client(server))
+  await repository.initialize(vault)
+  const ids = Array.from(
+    { length: 5 },
+    (_, index) => `30000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+  )
+  const revisions: SyncRevisionV1[] = []
+  for (let index = 0; index < ids.length; index += 1) {
+    const value = await revision(vault, ids[index], index ? [ids[index - 1]!] : [])
+    revisions.push(value)
+    await repository.publishRevision(vault, value)
+  }
+  const old = new Date('2025-01-01T00:00:00.000Z').toUTCString()
+  for (const [path, resource] of server.resources) {
+    if (path.includes('/commits/')) resource.lastModified = old
+  }
+
+  const result = await repository.pruneHistory(vault, revisions)
+  assert.equal(result.deletedRevisions, 3)
+  assert.deepEqual(
+    (await repository.listCommits(vault)).map((commit) => commit.revisionId).sort(),
+    ids.slice(-2),
+  )
 })

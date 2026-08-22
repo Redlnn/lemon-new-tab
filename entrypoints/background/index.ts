@@ -15,7 +15,6 @@ const SYNC_DATA_KEYS = new Set([
   'quickLinks',
   'customSearchEngine',
   'uiPreferences',
-  'searchHistories',
   'blockedTopStites',
 ])
 
@@ -85,14 +84,6 @@ export default defineBackground(() => {
       const { connectBrowserWebDav } = await import('@/shared/webdavSync/browserEngine')
       return connectBrowserWebDav(message.input, message.expected)
     }
-    if (message.type === 'webdav-sync:commit-compressed-wallpaper') {
-      const { commitCompressedBrowserWallpaper } = await import(
-        '@/shared/webdavSync/browserManagement'
-      )
-      return runMaintenance(() =>
-        commitCompressedBrowserWallpaper(message.variant, message.blob),
-      )
-    }
     if (message.type === 'webdav-sync:disconnect') {
       const { disconnectBrowserWebDav } = await import('@/shared/webdavSync/browserLifecycle')
       return runMaintenance(() =>
@@ -148,9 +139,8 @@ export default defineBackground(() => {
       )
     }
     if (message.type === 'webdav-sync:resume-apply') {
-      const state = await getOrCreateSyncState()
       const { resumePendingBrowserApply } = await import('@/shared/webdavSync/browserData')
-      await resumePendingBrowserApply(state.scope)
+      await resumePendingBrowserApply()
       return getOrCreateSyncState()
     }
     if (message.type === 'webdav-sync:unlock-encryption') {
@@ -158,17 +148,6 @@ export default defineBackground(() => {
       const state = await unlockBrowserEncryption(message.password)
       await coordinator.trigger('manual')
       return state
-    }
-    if (message.type === 'webdav-sync:migrate-encryption') {
-      return runMaintenance(async () => {
-        const { migrateBrowserVaultEncryption } = await import(
-          '@/shared/webdavSync/browserEngine'
-        )
-        return await migrateBrowserVaultEncryption({
-          newPassword: message.newPassword,
-          oldPassword: message.oldPassword,
-        })
-      })
     }
     if (message.type === 'webdav-sync:resolve-conflict') {
       const { resolveBrowserSyncConflict } = await import('@/shared/webdavSync/browserEngine')
@@ -178,27 +157,6 @@ export default defineBackground(() => {
       const { restoreBrowserSyncHistory } = await import('@/shared/webdavSync/browserManagement')
       return runMaintenance(() => restoreBrowserSyncHistory(message.revisionId, message.expected))
     }
-    if (message.type === 'webdav-sync:reset') {
-      const { resetBrowserSyncedData } = await import('@/shared/webdavSync/browserLifecycle')
-      return runMaintenance(() =>
-        resetBrowserSyncedData(message.snapshot, message.encryptionPassword, message.wallpapers),
-      )
-    }
-    if (message.type === 'webdav-sync:accept-reset') {
-      const { acceptBrowserRemoteReset } = await import('@/shared/webdavSync/browserLifecycle')
-      return runMaintenance(() =>
-        acceptBrowserRemoteReset({
-          mode: message.mode,
-          encryptionPassword: message.encryptionPassword,
-        }),
-      )
-    }
-    if (message.type === 'webdav-sync:stop-wallpapers') {
-      const { stopAndDeleteBrowserSyncedWallpapers } = await import(
-        '@/shared/webdavSync/browserManagement'
-      )
-      return runMaintenance(stopAndDeleteBrowserSyncedWallpapers)
-    }
     if (message.type === 'webdav-sync:repair-corruption') {
       const { repairBrowserSyncCorruption } = await import('@/shared/webdavSync/browserManagement')
       return runMaintenance(() => repairBrowserSyncCorruption(message))
@@ -206,7 +164,6 @@ export default defineBackground(() => {
     if (message.type === 'webdav-sync:update-preferences') {
       const { updateBrowserSyncPreferences } = await import('@/shared/webdavSync/browserLifecycle')
       const state = await updateBrowserSyncPreferences({
-        historyLimit: message.historyLimit,
         scope: message.scope,
       })
       coordinator.dataChanged()

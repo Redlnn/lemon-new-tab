@@ -224,7 +224,6 @@
     "importExport": {
       "backup": "備份擴充功能設定",
       "export": "匯出",
-      "exportComplete": "匯出包含圖片桌布的完整封存檔",
       "exporting": "正在建立備份...",
       "import": "匯入",
       "importFailed": "匯入失敗：{{reason}}",
@@ -233,14 +232,17 @@
       "invalidFileFormat": "檔案格式不正確",
       "invalidJSON": "無效的 JSON 格式",
       "noFileSelected": "未選擇檔案",
+      "omittedIcons": "今次備份已略過 {{count}} 個過大的使用者圖示",
       "unknownError": "未知錯誤",
       "validating": "正在驗證備份完整性...",
       "syncMode": {
         "description": "偵測到 WebDAV 同步已開啟。請選擇今次匯入如何影響其他裝置。",
-        "local": "只匯入本機並中斷同步",
+        "confirmMismatch": "輸入的確認文字不符",
+        "deletePrompt": "請輸入「{{text}}」以刪除 WebDAV 資料",
+        "deleteRemote": "刪除雲端同步庫並中斷連線，然後取代本機資料",
+        "disconnectTitle": "取代本機資料前中斷同步",
+        "keepRemote": "保留雲端同步庫並中斷連線，然後取代本機資料",
         "merge": "合併到目前資料並同步（衝突時暫停）",
-        "passwordDescription": "建立加密重設世代需要目前的獨立同步加密密碼。",
-        "passwordTitle": "輸入同步加密密碼",
         "replace": "用匯入內容取代所有已同步資料",
         "title": "匯入與同步"
       },
@@ -258,13 +260,13 @@
       "confirm": {
         "data": {
           "includeSync": "同時清除舊版瀏覽器同步殘留",
-          "localReset": "只重設本機並中斷同步",
+          "deleteRemote": "刪除雲端資料並中斷連線，然後重設",
+          "deleteRemotePrompt": "請輸入「{{text}}」以刪除雲端同步庫",
+          "deleteRemoteTitle": "刪除雲端同步資料？",
           "message": "此操作將會重設擴充設定、已忽略的常用網站、已釘選或收藏的網站，以及已選擇的背景圖片/影片等。",
-          "passwordDescription": "建立加密重設版本需要目前的獨立同步加密密碼。",
-          "passwordTitle": "輸入同步加密密碼",
+          "keepRemote": "保留雲端資料並中斷連線，然後重設",
           "purging": "正在清除擴充功能資料...",
           "syncQuestion": "同步已開啟。要如何處理今次重設？",
-          "syncReset": "把重設同步到其他裝置並保持連線",
           "title": "確定要清除所有資料？"
         },
         "icon": {
@@ -468,8 +470,12 @@
       "onlineWallpaperCacheLocal": "快取檔案只保存在本機；啟用偏好會同步。",
       "onlineWallpaperUrlScopeDisabled": "線上/API 桌布網址只保存在此裝置，可在進階同步範圍中開啟。",
       "pendingPermission": "設定已同步，但此裝置尚未授權；功能正在等待授權。",
-      "quickLinkIconsScopeDisabled": "使用者選擇的快速連結圖示只保存在此裝置，可在進階同步範圍中開啟。",
-      "searchHistoryScopeDisabled": "搜尋記錄只保存在此裝置，可在 WebDAV 同步範圍中開啟。",
+      "quickLinksScopeDisabled": "快速連結同步已關閉，資料只保存在此裝置。",
+      "searchEnginesScopeDisabled": "自訂搜尋引擎同步已關閉，資料只保存在此裝置。",
+      "searchHistoryLocal": "搜尋記錄只會保留在此裝置，不會上載。",
+      "settingsScopeDisabled": "設定同步已關閉，資料只保存在此裝置。",
+      "uiScopeDisabled": "語言與色彩模式同步已關閉，只保存在此裝置。",
+      "userIconsScopeDisabled": "使用者選擇的圖示只保存在此裝置，可在進階同步範圍中開啟。",
       "wallpaperFailed": "桌布未通過上傳或完整性驗證，其他資料仍會同步。",
       "wallpaperScopeDisabled": "本機圖片桌布只保存在此裝置，可在 WebDAV 同步範圍中開啟。",
       "wallpaperTooLarge": "圖片超過 20 MB，桌布未同步；其他資料仍會同步。",
@@ -479,9 +485,9 @@
   "title": "設定",
   "webdavSync": {
     "connectionActions": {
-      "description": "中斷連線預設保留雲端資料；重設與永久刪除需要額外確認。",
+      "description": "中斷連線預設保留雲端資料；永久刪除需要輸入確認文字。",
       "open": "管理連線",
-      "title": "中斷、重設與刪除"
+      "title": "中斷或刪除"
     },
     "conflicts": {
       "base": "共同基準",
@@ -500,8 +506,8 @@
       "categories": {
         "blocked-top-sites": "隱藏網站",
         "quick-links": "快速連結",
+        "scope": "同步範圍",
         "search-engines": "搜尋引擎",
-        "search-history": "搜尋記錄",
         "settings": "設定",
         "ui": "介面偏好",
         "wallpaper": "桌布"
@@ -525,10 +531,6 @@
       "keepAction": "保留雲端並中斷",
       "keepDescription": "清除本機連線設定，其他裝置與雲端資料不受影響。",
       "keepTitle": "關閉 WebDAV 同步",
-      "resetAction": "建立重設世代",
-      "resetDescription": "把目前本機狀態作為新的重設版本同步到其他裝置；其他裝置會暫停並詢問是否套用。",
-      "resetDone": "已建立新的同步重設版本",
-      "resetTitle": "同步完整重設",
       "title": "管理 WebDAV 連線",
       "typePrompt": "請輸入「{{text}}」繼續"
     },
@@ -539,15 +541,11 @@
     },
     "encrypted": "已使用用戶端加密",
     "encryption": {
-      "currentPassword": "目前同步加密密碼",
       "description": "加密密碼與 WebDAV 登入密碼分開；忘記後只能刪除同步庫，無法復原。",
       "disabled": "加密預設關閉",
       "enabled": "此同步庫已加密",
+      "fixedMode": "同步庫建立後不能更改加密狀態或加密密碼。",
       "keyNote": "成功後只保存不可匯出的衍生金鑰；密碼不會上傳、匯出或寫入記錄。",
-      "migrate": "開始安全遷移",
-      "migrated": "加密世代已完整驗證並切換",
-      "migrationNote": "會建立新世代並重新加密最近版本和目前桌布；完整驗證前舊世代仍有效。",
-      "newPassword": "新的同步加密密碼",
       "password": "獨立同步加密密碼",
       "title": "用戶端加密",
       "unlock": "解鎖同步庫"
@@ -578,7 +576,6 @@
         "local-change": "本機修改",
         "merge": "自動合併",
         "repair": "損壞修復",
-        "reset": "全域重設",
         "restore": "歷史還原"
       },
       "restore": "還原為新版本",
@@ -602,7 +599,6 @@
       "devices": "裝置",
       "encryption": "用戶端加密",
       "history": "歷史",
-      "historyLimit": "保留版本數",
       "repair": "檢查與修復",
       "summary": "歷史、裝置、加密與異常復原",
       "title": "同步管理"
@@ -615,58 +611,50 @@
     "refresh": "重新整理狀態",
     "repair": {
       "action": "建立修復版本",
-      "applyReset": "套用雲端重設",
       "completed": "損壞版本已隔離並建立修復版本",
-      "compressionDone": "已驗證並同步壓縮桌布，且完成本機替換",
-      "compressionFormat": "輸出格式",
-      "compressionPreview": "壓縮桌布預覽",
-      "compressionQuality": "品質：{{quality}}%",
-      "compressionReplaceNote": "確認後會先上傳並驗證壓縮圖片，成功後才替換本機原圖；任一步驟失敗都不會修改原圖。",
-      "compressionVariant": "要壓縮的桌布",
       "corrupted": "最新版本損壞，自動同步已停止",
       "corruptedDescription": "先下載原始檔案保存，再選擇本機資料或雲端上一份完整版本。",
-      "darkWallpaper": "深色桌布 · {{size}}",
       "deleteEvidenceDescription": "系統會先上傳並驗證新的修復版本；只有成功後才刪除你已下載保存的雲端損壞版本。",
       "deleteEvidenceTitle": "修復成功後刪除雲端損壞版本？",
       "download": "下載損壞的原始檔案",
       "downloaded": "原始檔案已下載",
       "healthy": "沒有需要修復的問題",
       "healthyDescription": "最近版本與同步狀態正常。",
-      "lightWallpaper": "淺色桌布 · {{size}}",
       "local": "使用目前本機資料",
-      "mergeReset": "安全合併雲端重設",
-      "previewCompression": "產生預覽",
       "previous": "使用雲端上一份完整版本",
-      "remoteReset": "另一台裝置同步了全域重設",
-      "remoteResetDescription": "請選擇安全合併或完整套用；處理前不會繼續上傳。",
-      "replaceAndSync": "替換本機並同步",
       "revision": "損壞版本：{{id}}",
       "same": "本機資料與上一完整版本相同，將自動使用上一版本建立修復版本。",
       "size": "原始檔案大小：{{size}} 位元組",
-      "stopWallpapers": "停止同步並刪除雲端桌布",
       "title": "檢查與修復",
-      "wallpaperDescription": "可在預覽後壓縮靜態圖片，或停止桌布同步並刪除雲端桌布；核心設定與快速連結仍會繼續同步。",
-      "wallpapersStopped": "已停止同步桌布並刪除雲端桌布",
-      "wallpaperTitle": "桌布未同步或空間不足"
+      "wallpaperDescription": "超過限制或不支援的圖片會被略過。請關閉對應範圍或選擇較小的圖片；擴充功能不會修改原圖。",
+      "wallpaperTitle": "部分圖片未同步"
     },
     "resolve": "處理問題",
+    "omissions": {
+      "aggregate-too-large": "所選圖示總大小超過 8 MB",
+      "item-too-large": "單個所選圖示超過 2 MB",
+      "storage-full": "WebDAV 空間不足",
+      "too-large": "單張桌布超過 20 MB",
+      "unavailable": "無法讀取所選本機圖片",
+      "unsupported": "不同步動畫圖片和影片"
+    },
     "scope": {
-      "advanced": "進階範圍（預設開啟）",
-      "always": "一律同步",
+      "advanced": "進階範圍",
       "blockedTopSites": "隱藏的常用網站",
-      "core": "核心資料",
-      "coreSummary": "設定、快速連結、自訂搜尋引擎、語言與色彩模式",
-      "localOnlySummary": "密碼、權限、Token、影片、書籤與快取一律只保存在本機",
+      "customSearchEngines": "自訂搜尋引擎",
+      "localOnlySummary": "密碼、權限、Token、影片、書籤、快取與搜尋記錄一律只保存在本機",
       "onlineWallpaperUrl": "線上/API 桌布網址",
       "onlineWallpaperUrlNote": "網址可能包含存取 Token；快取圖片永不上傳。",
-      "quickLinkIcons": "快速連結內嵌圖示",
-      "quickLinkIconsNote": "只同步使用者明確選擇的圖示，快取或自動取得的圖示不會上傳。",
-      "searchHistory": "最近搜尋記錄",
-      "summary": "核心資料一律同步；敏感或較大的內容由你選擇",
+      "quickLinks": "快速連結",
+      "settings": "設定",
+      "summary": "可逐項選擇；範圍會記錄到整個同步庫，並同步到其他裝置。",
       "title": "同步範圍",
-      "unconfiguredSummary": "設定時可以選擇可選範圍",
+      "uiPreferences": "語言與色彩模式",
+      "unconfiguredSummary": "設定時選擇要同步的項目",
+      "userIcons": "使用者選擇的圖示",
+      "userIconsNote": "只同步使用者明確選擇的圖示，不上傳快取或自動取得的圖示；單個最多 2 MB，總計最多 8 MB。",
       "wallpapers": "目前靜態圖片桌布",
-      "wallpapersNote": "預設關閉；只保留正在使用的圖片，每張最多 20 MB，影片永不上傳。"
+      "wallpapersNote": "預設關閉；只保留正在使用的圖片，每張最多 20 MB，影片和動畫圖片永不上傳。"
     },
     "setup": {
       "advanced": "進階設定",
@@ -719,13 +707,10 @@
       },
       "http": {
         "accept": "我了解區域網路 HTTP 也可能被同一網路中的人竊聽",
-        "confirmText": "我了解 HTTP 風險",
-        "externalWarning": "外部 HTTP 會以明文傳輸 WebDAV 登入資訊與未加密內容。強烈建議改用 HTTPS 並開啟用戶端加密。",
         "localWarning": "這是區域網路 HTTP 位址。登入資訊與未加密內容仍可能被同一網路中的其他人看到。",
-        "typePrompt": "請輸入「{{text}}」繼續"
+        "publicUnsupported": "不支援外部公網 HTTP WebDAV 位址。請使用 HTTPS 或區域網路位址。"
       },
       "scan": {
-        "degraded": "伺服器的條件寫入不可靠，將進入安全降級模式；高風險操作會受限。",
         "description": "掃描已在測試連線時完成，不會因瀏覽此頁再次上傳或刪除檔案。",
         "empty": "目錄為空，可以建立新同步庫",
         "emptyNote": "只有最終確認後才會建立 LemonNewTab 目錄與第一個版本。",
@@ -737,8 +722,8 @@
       },
       "scope": {
         "blockedTopSitesNote": "可能反映瀏覽行為，預設關閉。",
-        "description": "核心資料一律同步。可能包含瀏覽內容的資料預設關閉。",
-        "searchHistoryNote": "可能包含你輸入過的內容，預設關閉。",
+        "description": "逐項選擇同步內容。此選擇對整個同步庫生效，其他裝置也會採用。",
+        "omittedResources": "{{count}} 個過大或不支援的所選圖片將被略過",
         "title": "選擇同步範圍"
       },
       "steps": {
@@ -765,6 +750,7 @@
         "empty": "目前沒有可同步的本機圖片桌布",
         "enable": "同步這些圖片桌布",
         "limit": "每張最多 20 MB。超過限制時只略過桌布，其他資料繼續同步。",
+        "oversized": "{{count}} 張所選桌布超過 20 MB，將被略過",
         "summary": "{{count}} 張，共 {{size}}",
         "title": "要同步目前圖片桌布嗎？"
       }
@@ -779,7 +765,6 @@
       "pending": "有待上傳修改",
       "ready": "已連線，等待首次檢查",
       "remoteDeleted": "雲端同步資料已被刪除",
-      "remoteReset": "另一台裝置同步了全域重設",
       "storageFull": "WebDAV 空間不足",
       "synced": "已同步",
       "unconfigured": "未設定",

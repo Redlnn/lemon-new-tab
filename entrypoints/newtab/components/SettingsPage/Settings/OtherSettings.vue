@@ -14,24 +14,20 @@ import FileUploadRound from '~icons/ic/round-file-upload'
 
 import { downloadBlob } from '@/shared/download'
 import { clearFaviconCache } from '@/shared/media'
-import { clearRetiredCloudStorage, defaultSettings, useSettingsStore } from '@/shared/settings'
+import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import { clearExtensionData, reloadNewtabTabs } from '@/shared/settings/legacySettingsRecovery'
 import { idbClearMany } from '@/shared/storage/idb'
 import {
   applyPreparedBrowserImport,
-  createBrowserBackupArchive,
   createBrowserJsonBackup,
-  getPreparedImportWallpapers,
   mergePreparedBrowserImport,
   prepareBrowserImport,
 } from '@/shared/webdavSync/browserBackup'
 import {
   disconnectSyncConnection,
   getSyncState,
-  resetSyncedData,
   sendSyncDataChanged,
 } from '@/shared/webdavSync/bridge'
-import { captureSyncSnapshot } from '@/shared/webdavSync/capture'
 
 import {
   PermissionContext,
@@ -39,8 +35,6 @@ import {
   usePermission,
 } from '@newtab/composables/usePermission'
 import { wallpaperUrlCache } from '@newtab/shared/wallpaper'
-import { searchHistoriesStorage } from '@newtab/shared/storages/searchHistoriesStorage'
-import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
 import SettingsSection from './SettingsSection.vue'
 import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
@@ -99,7 +93,7 @@ async function confirmAndRun(
 async function confirmClearExtensionData() {
   const includeSync = ref(false)
   const syncState = await getSyncState().catch(() => null)
-  const resetMode = ref<'local' | 'sync'>('sync')
+  const resetMode = ref<'delete' | 'keep'>('keep')
   try {
     await ElMessageBox.confirm(
       () =>
@@ -122,15 +116,15 @@ async function confirmClearExtensionData() {
                   {
                     modelValue: resetMode.value,
                     'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
-                      if (value === 'sync' || value === 'local') resetMode.value = value
+                      if (value === 'delete' || value === 'keep') resetMode.value = value
                     },
                   },
                   () => [
-                    h(ElRadio, { value: 'sync' }, () =>
-                      t('other.purge.confirm.data.syncReset'),
+                    h(ElRadio, { value: 'keep' }, () =>
+                      t('other.purge.confirm.data.keepRemote'),
                     ),
-                    h(ElRadio, { value: 'local' }, () =>
-                      t('other.purge.confirm.data.localReset'),
+                    h(ElRadio, { value: 'delete' }, () =>
+                      t('other.purge.confirm.data.deleteRemote'),
                     ),
                   ],
                 ),
@@ -148,20 +142,20 @@ async function confirmClearExtensionData() {
     return
   }
 
-  const selectedMode = syncState?.configured ? resetMode.value : 'local'
-  let encryptionPassword: string | undefined
-  if (selectedMode === 'sync' && syncState?.encrypted) {
+  const selectedMode = syncState?.configured ? resetMode.value : 'keep'
+  if (syncState?.configured && selectedMode === 'delete') {
     try {
-      encryptionPassword = await ElMessageBox.prompt(
-        t('other.purge.confirm.data.passwordDescription'),
-        t('other.purge.confirm.data.passwordTitle'),
-        { inputType: 'password', showCancelButton: true },
-      ).then(({ value }) => value)
+      const confirmation = await ElMessageBox.prompt(
+        t('other.purge.confirm.data.deleteRemotePrompt', { text: 'DELETE WEBDAV DATA' }),
+        t('other.purge.confirm.data.deleteRemoteTitle'),
+        { showCancelButton: true },
+      )
+      if (confirmation.value !== 'DELETE WEBDAV DATA') return
     } catch {
       return
     }
   }
-  void clearExtensionDataAndReload(includeSync.value, selectedMode, encryptionPassword)
+  void clearExtensionDataAndReload(includeSync.value, selectedMode)
 }
 
 async function confirmClearWallpaperData() {
@@ -239,37 +233,17 @@ async function clearWallpaperData() {
 
 async function clearExtensionDataAndReload(
   includeLegacySync: boolean,
-  resetMode: 'local' | 'sync',
-  encryptionPassword?: string,
+  resetMode: 'delete' | 'keep',
 ) {
   await runClearAndReload(t('other.purge.confirm.data.purging'), async () => {
-    if (resetMode === 'local') {
-      const state = await getSyncState().catch(() => null)
-      if (state?.configured) await disconnectSyncConnection(false)
-      await clearExtensionData({ includeSync: includeLegacySync })
-      return
+    const state = await getSyncState().catch(() => null)
+    if (state?.configured) {
+      await disconnectSyncConnection(
+        resetMode === 'delete',
+        resetMode === 'delete' ? 'DELETE WEBDAV DATA' : undefined,
+      )
     }
-
-    const state = await getSyncState()
-    const snapshot = captureSyncSnapshot({
-      settings: structuredClone(defaultSettings),
-      quickLinks: { items: [], groups: [] },
-      customSearchEngines: { items: [] },
-      ui: { language: i18next.language || navigator.language, colorMode: 'auto' },
-      scope: state.scope,
-      searchHistory: [],
-      blockedTopSites: [],
-    })
-    await resetSyncedData(snapshot, encryptionPassword)
-    await Promise.all([
-      idbClearMany(['favicon', 'wallpaper', 'wallpaperDark', 'wallpaperBing', 'onlineWallpaperCache']),
-      wallpaperUrlCache.setValue({ light: '', dark: '', bing: '' }),
-      searchHistoriesStorage.setValue({ version: 1, items: [] }),
-      blockedTopSitesStorage.setValue([]),
-    ])
-    localStorage.clear()
-    sessionStorage.clear()
-    if (includeLegacySync) await clearRetiredCloudStorage()
+    await clearExtensionData({ includeSync: includeLegacySync })
   })
 }
 
@@ -293,20 +267,9 @@ async function openFilePicker() {
 async function exportBackup() {
   const loading = showLoading(t('other.importExport.exporting'))
   try {
-    const json = await createBrowserJsonBackup()
+    const { json, omissions } = await createBrowserJsonBackup()
     downloadBlob(new Blob([json], { type: 'application/json' }), 'lemon-new-tab-backup.json')
-  } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : t('other.importExport.unknownError'))
-  } finally {
-    loading.close()
-  }
-}
-
-async function exportCompleteArchive() {
-  const loading = showLoading(t('other.importExport.exporting'))
-  try {
-    const archive = await createBrowserBackupArchive()
-    downloadBlob(archive, 'lemon-new-tab-backup.lemon-backup')
+    if (omissions.length) ElMessage.warning(t('other.importExport.omittedIcons', { count: omissions.length }))
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : t('other.importExport.unknownError'))
   } finally {
@@ -315,8 +278,8 @@ async function exportCompleteArchive() {
 }
 
 async function chooseImportMode(configured: boolean) {
-  if (!configured) return 'local' as const
-  const mode = ref<'merge' | 'replace' | 'local'>('merge')
+  if (!configured) return 'replace' as const
+  const mode = ref<'merge' | 'replace'>('merge')
   try {
     await ElMessageBox.confirm(
       () =>
@@ -327,13 +290,12 @@ async function chooseImportMode(configured: boolean) {
             {
               modelValue: mode.value,
               'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
-                if (value === 'merge' || value === 'replace' || value === 'local') mode.value = value
+                if (value === 'merge' || value === 'replace') mode.value = value
               },
             },
             () => [
               h(ElRadio, { value: 'merge' }, () => t('other.importExport.syncMode.merge')),
               h(ElRadio, { value: 'replace' }, () => t('other.importExport.syncMode.replace')),
-              h(ElRadio, { value: 'local' }, () => t('other.importExport.syncMode.local')),
             ],
           ),
         ]),
@@ -344,6 +306,34 @@ async function chooseImportMode(configured: boolean) {
   } catch {
     return null
   }
+}
+
+async function disconnectBeforeReplacement() {
+  const disposition = ref<'delete' | 'keep'>('keep')
+  await ElMessageBox.confirm(
+    () => h(ElRadioGroup, {
+      modelValue: disposition.value,
+      'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
+        if (value === 'delete' || value === 'keep') disposition.value = value
+      },
+    }, () => [
+      h(ElRadio, { value: 'keep' }, () => t('other.importExport.syncMode.keepRemote')),
+      h(ElRadio, { value: 'delete' }, () => t('other.importExport.syncMode.deleteRemote')),
+    ]),
+    t('other.importExport.syncMode.disconnectTitle'),
+    { type: 'warning' },
+  )
+  if (disposition.value === 'delete') {
+    const { value } = await ElMessageBox.prompt(
+      t('other.importExport.syncMode.deletePrompt', { text: 'DELETE WEBDAV DATA' }),
+      t('other.importExport.syncMode.disconnectTitle'),
+    )
+    if (value !== 'DELETE WEBDAV DATA') throw new Error(t('other.importExport.syncMode.confirmMismatch'))
+  }
+  await disconnectSyncConnection(
+    disposition.value === 'delete',
+    disposition.value === 'delete' ? 'DELETE WEBDAV DATA' : undefined,
+  )
 }
 
 async function handleFileChange(event: Event) {
@@ -364,28 +354,14 @@ async function handleFileChange(event: Event) {
     const mode = await chooseImportMode(state.configured)
     if (!mode) return
 
-    let encryptionPassword: string | undefined
-    if (mode === 'replace' && state.encrypted) {
-      encryptionPassword = await ElMessageBox.prompt(
-        t('other.importExport.syncMode.passwordDescription'),
-        t('other.importExport.syncMode.passwordTitle'),
-        { inputType: 'password', showCancelButton: true },
-      ).then(({ value }) => value)
-    }
     applying = showLoading(t('other.importExport.importing'))
     if (mode === 'replace') {
-      await resetSyncedData(
-        prepared.snapshot,
-        encryptionPassword,
-        getPreparedImportWallpapers(prepared),
-      )
-    } else if (mode === 'merge') {
+      if (state.configured) await disconnectBeforeReplacement()
+      await applyPreparedBrowserImport(prepared)
+    } else {
       const merged = await mergePreparedBrowserImport(prepared, state.scope)
       await applyPreparedBrowserImport(prepared, merged)
       sendSyncDataChanged()
-    } else {
-      if (state.configured) await disconnectSyncConnection(false)
-      await applyPreparedBrowserImport(prepared)
     }
     ElMessage.success(t('other.importExport.importSuccess'))
     if (!(await reloadNewtabTabs())) location.reload()
@@ -440,7 +416,10 @@ function changeLanguage(lang: string) {
       mobile-open
     >
       <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('other.language') }}</div>
+        <div class="settings__label">
+          {{ t('other.language') }}
+          <SyncAvailabilityIcon catalog-key="ui.language" />
+        </div>
         <el-select
           v-model="currentLanguage"
           style="width: 165px"
@@ -458,7 +437,10 @@ function changeLanguage(lang: string) {
         </el-select>
       </div>
       <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('newtab:changelog.hideMajor') }}</div>
+        <div class="settings__label">
+          {{ t('newtab:changelog.hideMajor') }}
+          <SyncAvailabilityIcon catalog-key="settings" />
+        </div>
         <el-switch v-model="settings.hideMajorChangelog" />
       </div>
     </SettingsSection>
@@ -473,16 +455,9 @@ function changeLanguage(lang: string) {
       >
         <div class="settings__label">{{ t('other.importExport.backup') }}</div>
         <span class="button-group">
-          <el-dropdown split-button type="primary" :icon="DownloadRound" @click="exportBackup">
+          <el-button type="primary" :icon="DownloadRound" @click="exportBackup">
             {{ t('other.importExport.export') }}
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item @click="exportCompleteArchive">
-                  {{ t('other.importExport.exportComplete') }}
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+          </el-button>
           <el-button :icon="FileUploadRound" @click="openFilePicker">
             {{ t('other.importExport.import') }}
           </el-button>
@@ -535,7 +510,7 @@ function changeLanguage(lang: string) {
     <input
       ref="fileInput"
       type="file"
-      accept="application/json,.json,.lemon-backup,application/vnd.lemon-new-tab.backup"
+      accept="application/json,.json"
       style="display: none"
       @change="handleFileChange"
     />

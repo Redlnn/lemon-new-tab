@@ -28,13 +28,14 @@ export function compareSyncSnapshots(
     JsonValue | undefined,
     JsonValue | undefined,
   ]> = [
+    ['scope', 'scope', current.scope as unknown as JsonValue, target.scope as unknown as JsonValue],
     ['settings', 'settings', current.settings, target.settings],
     ['quick-links', 'quickLinks', current.quickLinks as unknown as JsonValue, target.quickLinks as unknown as JsonValue],
     ['search-engines', 'customSearchEngines', current.customSearchEngines as unknown as JsonValue, target.customSearchEngines as unknown as JsonValue],
     ['ui', 'ui', current.ui as unknown as JsonValue, target.ui as unknown as JsonValue],
-    ['search-history', 'optional.searchHistory', current.optional?.searchHistory as unknown as JsonValue | undefined, target.optional?.searchHistory as unknown as JsonValue | undefined],
     ['blocked-top-sites', 'optional.blockedTopSites', current.optional?.blockedTopSites as unknown as JsonValue | undefined, target.optional?.blockedTopSites as unknown as JsonValue | undefined],
     ['wallpaper', 'optional.wallpapers', current.optional?.wallpapers as unknown as JsonValue | undefined, target.optional?.wallpapers as unknown as JsonValue | undefined],
+    ['settings', 'optional.onlineWallpaperUrl', current.optional?.onlineWallpaperUrl, target.optional?.onlineWallpaperUrl],
   ]
 
   for (const [category, path, left, right] of sections) {

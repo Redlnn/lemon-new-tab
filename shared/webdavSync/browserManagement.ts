@@ -1,16 +1,9 @@
-import {
-  captureBrowserSyncSnapshot,
-  clearStagedWallpaperSyncCandidate,
-  stageWallpaperSyncCandidate,
-} from './browserData.ts'
+import { captureBrowserSyncSnapshot } from './browserData.ts'
 import {
   cleanupHistory,
-  describeConflictRevisions,
-  mergeTombstones,
   openConfiguredVault,
   publishAndFinalize,
   readRevisions,
-  withoutWallpapers,
   type BrowserSyncDeviceEntry,
   type BrowserSyncHistoryEntry,
   type BrowserSyncHistoryPreview,
@@ -19,14 +12,12 @@ import { preserveExcludedScope } from './apply.ts'
 import { hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
 import { createEncryptionAad, decryptSyncBytes } from './crypto.ts'
 import { compareSyncSnapshots } from './differences.ts'
-import { deriveSnapshotTombstones } from './lifecycle.ts'
 import {
   getBaseline,
   getOrCreateSyncState,
   patchSyncState,
-  setStoredConflict,
 } from './localState.ts'
-import { decideSynchronization, findRevisionHeads } from './syncDecision.ts'
+import { findRevisionHeads } from './syncDecision.ts'
 import type {
   AssetReferenceV1,
   LocalSyncStateV1,
@@ -36,7 +27,6 @@ import type {
   SyncSnapshotV1,
   VaultMetadataV1,
 } from './types.ts'
-import { inspectStaticWallpaper } from './wallpaperCompression.ts'
 import { WebDavError } from './webdav.ts'
 
 const textDecoder = new TextDecoder('utf-8', { fatal: true })
@@ -152,9 +142,6 @@ export async function repairBrowserSyncCorruption(input: {
 }): Promise<LocalSyncStateV1> {
   if (!input.downloaded) throw new WebDavError('forbidden', 'Download the damaged file first')
   const opened = await openConfiguredVault(false)
-  if (opened.metadata.capabilities.mode !== 'conditional') {
-    throw new WebDavError('unsupported', 'Corruption repair requires reliable conditional writes')
-  }
   const scan = await scanCorruptedRevisions(opened)
   if (scan.corrupted.length !== 1 || scan.corrupted[0]!.revisionId !== input.revisionId) {
     throw new WebDavError('precondition', 'Damaged revision changed before repair')
@@ -235,7 +222,6 @@ export async function deleteBrowserCorruptedRevision(input: {
   await cleanupHistory(
     opened.repository,
     opened.metadata,
-    opened.state.historyLimit,
     opened.encryptionKey,
   )
   return patchSyncState({
@@ -444,138 +430,5 @@ export async function restoreBrowserSyncHistory(
     knownAssets: [...knownAssets.values()],
     encryptionKey: opened.encryptionKey,
   })
-  return getOrCreateSyncState()
-}
-
-export async function stopAndDeleteBrowserSyncedWallpapers(): Promise<LocalSyncStateV1> {
-  const opened = await openConfiguredVault()
-  if (opened.state.paused) throw new WebDavError('conflict', 'Resolve sync status first')
-  const heads = findRevisionHeads(opened.revisions)
-  if (heads.length !== 1) throw new WebDavError('conflict', 'Resolve remote branches first')
-  const baseline = await getBaseline()
-  if (!baseline || opened.state.baseRevisionId !== heads[0]!.revisionId) {
-    throw new WebDavError('precondition', 'Synchronize core data before deleting wallpapers')
-  }
-  const local = preserveExcludedScope(
-    await captureBrowserSyncSnapshot(opened.state.scope),
-    baseline,
-    opened.state.scope,
-  )
-  if (!jsonEquals(withoutWallpapers(local), withoutWallpapers(heads[0]!.snapshot))) {
-    throw new WebDavError('precondition', 'Synchronize core data before deleting wallpapers')
-  }
-  const snapshot = withoutWallpapers(heads[0]!.snapshot)
-  const pending: PendingSyncOperation = {
-    operationId: crypto.randomUUID(),
-    phase: 'captured',
-    startedAt: new Date().toISOString(),
-  }
-  await publishAndFinalize({
-    repository: opened.repository,
-    metadata: opened.metadata,
-    vaultEtag: opened.inspection.etag,
-    state: opened.state,
-    pending,
-    parents: [heads[0]!.revisionId],
-    reason: 'local-change',
-    snapshot,
-    tombstones: heads[0]!.tombstones,
-    knownAssets: [],
-    encryptionKey: opened.encryptionKey,
-  })
-  const assets = new Map<string, AssetReferenceV1>()
-  for (const asset of opened.revisions.flatMap((revision) => revision.assets)) {
-    assets.set(asset.path, asset)
-  }
-  await patchSyncState({
-    scope: { ...opened.state.scope, wallpapers: false },
-    wallpaperStatus: undefined,
-  })
-  for (const asset of assets.values()) await opened.repository.deleteAsset(asset)
-  return getOrCreateSyncState()
-}
-
-export async function commitCompressedBrowserWallpaper(
-  variant: 'dark' | 'light',
-  blob: Blob,
-): Promise<LocalSyncStateV1> {
-  await inspectStaticWallpaper(blob)
-  const opened = await openConfiguredVault()
-  if (opened.state.paused || !opened.state.scope.wallpapers) {
-    throw new WebDavError('conflict', 'Wallpaper sync is not ready')
-  }
-  const baseline = await getBaseline()
-  if (!baseline || !opened.state.baseRevisionId) {
-    throw new WebDavError('conflict', 'Synchronization baseline is unavailable')
-  }
-  const local = preserveExcludedScope(
-    await captureBrowserSyncSnapshot(opened.state.scope),
-    baseline,
-    opened.state.scope,
-  )
-  const reference = await stageWallpaperSyncCandidate(variant, blob)
-  local.optional ??= {}
-  local.optional.wallpapers ??= {}
-  local.optional.wallpapers[variant] = reference
-  const decision = decideSynchronization({
-    baseRevisionId: opened.state.baseRevisionId,
-    baseline,
-    local,
-    revisions: opened.revisions,
-  })
-  if (decision.action === 'unknown-ancestor') {
-    await clearStagedWallpaperSyncCandidate(variant, reference.sha256)
-    throw new WebDavError('conflict', 'Remote history no longer contains the local baseline')
-  }
-  if (decision.action === 'conflict') {
-    await setStoredConflict({
-      version: 1,
-      base: decision.base,
-      conflicts: decision.conflicts,
-      deviceLocal: decision.deviceLocal,
-      local: decision.local,
-      remote: decision.remote,
-      remoteRevisionIds: decision.remoteRevisionIds,
-      remainingRemoteRevisionIds: decision.remainingRemoteRevisionIds,
-      remoteVersions: describeConflictRevisions(
-        opened.revisions,
-        decision.remoteRevisionIds,
-      ),
-      stage: decision.stage,
-    })
-    return patchSyncState({ paused: true, pauseReason: 'conflict' })
-  }
-  if (decision.action !== 'publish') {
-    await clearStagedWallpaperSyncCandidate(variant, reference.sha256)
-    throw new WebDavError('precondition', 'Wallpaper candidate did not create a new version')
-  }
-  const revisionId = crypto.randomUUID()
-  const pending: PendingSyncOperation = {
-    operationId: crypto.randomUUID(),
-    phase: 'captured',
-    revisionId,
-    startedAt: new Date().toISOString(),
-  }
-  try {
-    await publishAndFinalize({
-      repository: opened.repository,
-      metadata: opened.metadata,
-      vaultEtag: opened.inspection.etag,
-      state: opened.state,
-      pending,
-      parents: decision.parents,
-      reason: decision.reason,
-      snapshot: decision.snapshot,
-      tombstones: mergeTombstones(
-        decision.tombstones,
-        deriveSnapshotTombstones(baseline, decision.snapshot, revisionId),
-      ),
-      knownAssets: decision.assets,
-      encryptionKey: opened.encryptionKey,
-    })
-  } catch (error) {
-    await clearStagedWallpaperSyncCandidate(variant, reference.sha256)
-    throw error
-  }
   return getOrCreateSyncState()
 }

@@ -1,6 +1,10 @@
 import type { SyncSnapshotV1, TombstoneV1 } from './types.ts'
 
 export const TOMBSTONE_RETENTION_DAYS = 180
+export const HISTORY_RETENTION_DAYS = 180
+export const MAX_HISTORY_VERSIONS = 10
+export const MIN_COMPLETE_HISTORY_VERSIONS = 2
+export const ORPHAN_RESOURCE_GRACE_MS = 24 * 60 * 60 * 1000
 const DAY_MS = 24 * 60 * 60 * 1000
 
 export function createTombstone(
@@ -51,23 +55,18 @@ export function deriveSnapshotTombstones(
 
   appendDeleted(
     'quick-link',
-    base.quickLinks.items.map((item) => item.id),
-    next.quickLinks.items.map((item) => item.id),
+    base.quickLinks?.items.map((item) => item.id) ?? [],
+    next.quickLinks?.items.map((item) => item.id) ?? [],
   )
   appendDeleted(
     'quick-link-group',
-    base.quickLinks.groups.map((item) => item.id),
-    next.quickLinks.groups.map((item) => item.id),
+    base.quickLinks?.groups.map((item) => item.id) ?? [],
+    next.quickLinks?.groups.map((item) => item.id) ?? [],
   )
   appendDeleted(
     'custom-search-engine',
-    base.customSearchEngines.items.map((item) => item.id),
-    next.customSearchEngines.items.map((item) => item.id),
-  )
-  appendDeleted(
-    'search-history',
-    base.optional?.searchHistory?.items.map((item) => item.id) ?? [],
-    next.optional?.searchHistory?.items.map((item) => item.id) ?? [],
+    base.customSearchEngines?.items.map((item) => item.id) ?? [],
+    next.customSearchEngines?.items.map((item) => item.id) ?? [],
   )
   return result
 }

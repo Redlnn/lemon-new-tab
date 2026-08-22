@@ -25,7 +25,6 @@ export interface SyncQuickLinksDataV1 {
   rootOrder: string[]
   groups: SyncQuickLinkGroupV1[]
   groupOrder: string[]
-  icons?: Record<string, string>
 }
 
 export interface SyncCustomSearchEngineV1 {
@@ -33,21 +32,11 @@ export interface SyncCustomSearchEngineV1 {
   name: string
   url: string
   icon?: string
+  iconHash?: string
 }
 
 export interface SyncCustomSearchEngineDataV1 {
   items: SyncCustomSearchEngineV1[]
-  order: string[]
-}
-
-export interface SearchHistoryEntryV1 {
-  id: string
-  text: string
-  createdAt: string
-}
-
-export interface SyncSearchHistoryV1 {
-  items: SearchHistoryEntryV1[]
   order: string[]
 }
 
@@ -68,17 +57,19 @@ export interface SyncWallpapersV1 {
 }
 
 export interface SyncSnapshotV1 {
-  settings: JsonObject
-  quickLinks: SyncQuickLinksDataV1
-  customSearchEngines: SyncCustomSearchEngineDataV1
-  ui: {
+  scope: SyncScopePreferences
+  settings?: JsonObject
+  quickLinks?: SyncQuickLinksDataV1
+  customSearchEngines?: SyncCustomSearchEngineDataV1
+  ui?: {
     language: string
     colorMode: ColorModePreference
   }
+  inlineImages?: Record<string, string>
   optional?: {
-    searchHistory?: SyncSearchHistoryV1
     blockedTopSites?: SyncBlockedTopSitesV1
     wallpapers?: SyncWallpapersV1
+    onlineWallpaperUrl?: string
   }
 }
 
@@ -108,15 +99,13 @@ export interface CommitRecordV1 {
   payloadHash: string
   payloadSize: number
   encrypted: boolean
+  scope: SyncScopePreferences
   complete: true
 }
 
-export type WebDavConcurrencyMode = 'conditional' | 'safe-degraded'
-
 export interface WebDavCapabilitiesV1 {
-  conditionalCreate: boolean
-  conditionalUpdate: boolean
-  mode: WebDavConcurrencyMode
+  conditionalCreate: true
+  conditionalUpdate: true
 }
 
 export interface VaultMetadataV1 {
@@ -128,10 +117,6 @@ export interface VaultMetadataV1 {
   encryption?: VaultEncryptionMetadataV1
   capabilities: WebDavCapabilitiesV1
   currentRevisionId?: string
-  reset?: {
-    previousGenerationId: string
-    resetRevisionId: string
-  }
 }
 
 export interface VaultEncryptionMetadataV1 {
@@ -147,7 +132,6 @@ export type SyncRevisionReason =
   | 'local-change'
   | 'merge'
   | 'restore'
-  | 'reset'
   | 'repair'
   | 'import'
 
@@ -183,12 +167,27 @@ export interface SyncDeviceRecordV1 {
 }
 
 export interface SyncScopePreferences {
-  searchHistory: boolean
+  settings: boolean
+  quickLinks: boolean
+  customSearchEngines: boolean
+  uiPreferences: boolean
   blockedTopSites: boolean
   wallpapers: boolean
   onlineWallpaperUrl: boolean
-  quickLinkIcons: boolean
+  userIcons: boolean
 }
+
+export type LocalResourceOmission =
+  | {
+      kind: 'quick-link-icon' | 'search-engine-icon'
+      id: string
+      reason: 'aggregate-too-large' | 'item-too-large'
+    }
+  | {
+      kind: 'wallpaper'
+      variant: 'dark' | 'light'
+      reason: 'storage-full' | 'too-large' | 'unavailable' | 'unsupported'
+    }
 
 export type SyncPauseReason =
   | 'authentication'
@@ -197,7 +196,6 @@ export type SyncPauseReason =
   | 'encryption-password'
   | 'format-too-new'
   | 'remote-deleted'
-  | 'remote-reset'
   | 'storage-full'
 
 export type PendingSyncPhase =
@@ -237,8 +235,7 @@ export interface LocalSyncStateV1 {
   lastSuccessAt?: string
   pending?: PendingSyncOperation
   lastError?: SanitizedSyncError
-  historyLimit: number
-  wallpaperStatus?: 'storage-full' | 'too-large' | 'unavailable'
+  resourceOmissions: readonly LocalResourceOmission[]
   scope: SyncScopePreferences
   encrypted: boolean
 }
@@ -264,9 +261,9 @@ export interface SyncConflict {
     | 'settings'
     | 'quick-links'
     | 'search-engines'
-    | 'search-history'
     | 'blocked-top-sites'
     | 'wallpaper'
+    | 'scope'
     | 'ui'
   kind: SyncConflictKind
   path: string

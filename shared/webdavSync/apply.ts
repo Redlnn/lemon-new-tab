@@ -1,53 +1,25 @@
 import type { QuickLink, QuickLinksData } from '@/shared/quickLinks'
 
+import { applySyncSettings, preserveUnknownSyncSettings } from './settingsWhitelist.ts'
 import type {
   JsonObject,
-  SearchHistoryEntryV1,
+  SyncCustomSearchEngineDataV1,
   SyncCustomSearchEngineV1,
   SyncQuickLinkV1,
+  SyncQuickLinksDataV1,
   SyncScopePreferences,
   SyncSnapshotV1,
 } from './types.ts'
 
-function defineSafe(target: Record<string, unknown>, key: string, value: unknown): void {
-  Object.defineProperty(target, key, {
-    configurable: true,
-    enumerable: true,
-    value,
-    writable: true,
-  })
-}
-
 export function mergeSyncSettings<T>(current: T, incoming: JsonObject): T {
-  function merge(currentValue: unknown, incomingValue: unknown): unknown {
-    if (
-      !currentValue ||
-      !incomingValue ||
-      typeof currentValue !== 'object' ||
-      typeof incomingValue !== 'object' ||
-      Array.isArray(currentValue) ||
-      Array.isArray(incomingValue)
-    ) {
-      return structuredClone(incomingValue)
-    }
-    const result = structuredClone(currentValue) as Record<string, unknown>
-    for (const [key, value] of Object.entries(incomingValue)) {
-      defineSafe(result, key, merge(result[key], value))
-    }
-    return result
-  }
-
-  return merge(current, incoming) as T
+  return applySyncSettings(current, incoming)
 }
 
 function appendMissing(order: readonly string[], fallback: readonly string[], excluded: ReadonlySet<string>) {
   return [...order, ...fallback.filter((id) => !excluded.has(id))]
 }
 
-function mergeEntities<T extends { id: string }>(
-  current: readonly T[],
-  incoming: readonly T[],
-): T[] {
+function mergeEntities<T extends { id: string }>(current: readonly T[], incoming: readonly T[]): T[] {
   const incomingIds = new Set(incoming.map((item) => item.id))
   return [
     ...structuredClone(incoming),
@@ -55,24 +27,29 @@ function mergeEntities<T extends { id: string }>(
   ]
 }
 
+function emptyQuickLinks(): SyncQuickLinksDataV1 {
+  return { items: [], rootOrder: [], groups: [], groupOrder: [] }
+}
+
+function emptySearchEngines(): SyncCustomSearchEngineDataV1 {
+  return { items: [], order: [] }
+}
+
 function mergeQuickLinkImport(
-  current: SyncSnapshotV1['quickLinks'],
-  incoming: SyncSnapshotV1['quickLinks'],
-): SyncSnapshotV1['quickLinks'] {
+  current = emptyQuickLinks(),
+  incoming = emptyQuickLinks(),
+): SyncQuickLinksDataV1 {
   const incomingItemIds = new Set(incoming.items.map((item) => item.id))
   const currentGroups = new Map(current.groups.map((group) => [group.id, group]))
   const incomingGroupIds = new Set(incoming.groups.map((group) => group.id))
-  const groups = incoming.groups.map((group) => {
-    const previous = currentGroups.get(group.id)
-    return {
-      ...structuredClone(group),
-      itemIds: appendMissing(
-        group.itemIds,
-        previous?.itemIds ?? [],
-        incomingItemIds,
-      ),
-    }
-  })
+  const groups = incoming.groups.map((group) => ({
+    ...structuredClone(group),
+    itemIds: appendMissing(
+      group.itemIds,
+      currentGroups.get(group.id)?.itemIds ?? [],
+      incomingItemIds,
+    ),
+  }))
   groups.push(
     ...current.groups
       .filter((group) => !incomingGroupIds.has(group.id))
@@ -81,18 +58,22 @@ function mergeQuickLinkImport(
         itemIds: group.itemIds.filter((id) => !incomingItemIds.has(id)),
       })),
   )
-  const items = mergeEntities<SyncQuickLinkV1>(current.items, incoming.items)
-  const availableIcons = { ...current.icons, ...incoming.icons }
-  const usedIconHashes = new Set(items.map((item) => item.faviconHash).filter(Boolean))
-  const icons = Object.fromEntries(
-    Object.entries(availableIcons).filter(([hash]) => usedIconHashes.has(hash)),
-  )
   return {
-    items,
+    items: mergeEntities<SyncQuickLinkV1>(current.items, incoming.items),
     rootOrder: appendMissing(incoming.rootOrder, current.rootOrder, incomingItemIds),
     groups,
     groupOrder: appendMissing(incoming.groupOrder, current.groupOrder, incomingGroupIds),
-    ...(Object.keys(icons).length ? { icons } : {}),
+  }
+}
+
+function mergeSearchEngineImport(
+  current = emptySearchEngines(),
+  incoming = emptySearchEngines(),
+): SyncCustomSearchEngineDataV1 {
+  const incomingIds = new Set(incoming.items.map((item) => item.id))
+  return {
+    items: mergeEntities<SyncCustomSearchEngineV1>(current.items, incoming.items),
+    order: appendMissing(incoming.order, current.order, incomingIds),
   }
 }
 
@@ -100,20 +81,6 @@ export function mergeImportedSnapshot(
   current: SyncSnapshotV1,
   incoming: SyncSnapshotV1,
 ): SyncSnapshotV1 {
-  const incomingEngineIds = new Set(incoming.customSearchEngines.items.map((item) => item.id))
-  const searchHistory = incoming.optional?.searchHistory
-    ? {
-        items: mergeEntities<SearchHistoryEntryV1>(
-          current.optional?.searchHistory?.items ?? [],
-          incoming.optional.searchHistory.items,
-        ),
-        order: appendMissing(
-          incoming.optional.searchHistory.order,
-          current.optional?.searchHistory?.order ?? [],
-          new Set(incoming.optional.searchHistory.items.map((item) => item.id)),
-        ),
-      }
-    : structuredClone(current.optional?.searchHistory)
   const blockedTopSites = incoming.optional?.blockedTopSites
     ? {
         urls: [...new Set([
@@ -125,46 +92,47 @@ export function mergeImportedSnapshot(
   const wallpapers = incoming.optional?.wallpapers
     ? { ...structuredClone(current.optional?.wallpapers), ...structuredClone(incoming.optional.wallpapers) }
     : structuredClone(current.optional?.wallpapers)
-  const optional = searchHistory || blockedTopSites || wallpapers
-    ? { searchHistory, blockedTopSites, wallpapers }
+  const onlineWallpaperUrl = incoming.optional?.onlineWallpaperUrl
+    ?? current.optional?.onlineWallpaperUrl
+  const optional = blockedTopSites || wallpapers || onlineWallpaperUrl !== undefined
+    ? { blockedTopSites, wallpapers, onlineWallpaperUrl }
     : undefined
-
-  return {
-    settings: mergeSyncSettings(current.settings, incoming.settings),
+  const result: SyncSnapshotV1 = {
+    scope: { ...current.scope },
+    settings: incoming.settings
+      ? mergeSyncSettings(current.settings ?? {}, incoming.settings)
+      : structuredClone(current.settings),
     quickLinks: mergeQuickLinkImport(current.quickLinks, incoming.quickLinks),
-    customSearchEngines: {
-      items: mergeEntities<SyncCustomSearchEngineV1>(
-        current.customSearchEngines.items,
-        incoming.customSearchEngines.items,
-      ),
-      order: appendMissing(
-        incoming.customSearchEngines.order,
-        current.customSearchEngines.order,
-        incomingEngineIds,
-      ),
-    },
-    ui: structuredClone(incoming.ui),
+    customSearchEngines: mergeSearchEngineImport(
+      current.customSearchEngines,
+      incoming.customSearchEngines,
+    ),
+    ui: structuredClone(incoming.ui ?? current.ui),
+    inlineImages: { ...current.inlineImages, ...incoming.inlineImages },
     optional,
   }
+  if (!result.settings) delete result.settings
+  if (!result.ui) delete result.ui
+  if (!result.optional) delete result.optional
+  pruneInlineImages(result)
+  return result
 }
 
 function toLocalQuickLink(
   incoming: SyncQuickLinkV1,
   current: QuickLink | undefined,
   includeIcons: boolean,
-  icons: Readonly<Record<string, string>>,
+  images: Readonly<Record<string, string>>,
 ): QuickLink {
   const result: QuickLink = { id: incoming.id, url: incoming.url, title: incoming.title }
-  const syncedIcon = incoming.favicon ?? (incoming.faviconHash ? icons[incoming.faviconHash] : undefined)
+  const syncedIcon = incoming.faviconHash ? images[incoming.faviconHash] : undefined
   if (includeIcons && syncedIcon) {
     result.favicon = syncedIcon
     result.faviconSource = 'user-selected'
     return result
   }
-
   const preserveAnyIcon = !includeIcons
-  const preserveLocalOnlyIcon =
-    current?.faviconSource !== 'user-selected' && current?.url === incoming.url
+  const preserveLocalOnlyIcon = current?.faviconSource !== 'user-selected' && current?.url === incoming.url
   if (current?.favicon && (preserveAnyIcon || preserveLocalOnlyIcon)) {
     result.favicon = current.favicon
     result.faviconSource = current.faviconSource
@@ -173,21 +141,19 @@ function toLocalQuickLink(
 }
 
 export function materializeQuickLinks(
-  snapshot: SyncSnapshotV1['quickLinks'],
+  snapshot: SyncQuickLinksDataV1,
   current: QuickLinksData,
   includeIcons: boolean,
+  images: Readonly<Record<string, string>> = {},
 ): QuickLinksData {
   const currentItems = current.groups?.length
     ? current.groups.flatMap((group) => group.items)
     : current.items
-  const currentById = new Map<string, QuickLink>()
-  for (const item of currentItems) {
-    if (item.id) currentById.set(item.id, item)
-  }
+  const currentById = new Map(currentItems.flatMap((item) => item.id ? [[item.id, item]] : []))
   const incomingById = new Map(
     snapshot.items.map((item) => [
       item.id,
-        toLocalQuickLink(item, currentById.get(item.id), includeIcons, snapshot.icons ?? {}),
+      toLocalQuickLink(item, currentById.get(item.id), includeIcons, images),
     ]),
   )
   const groups = snapshot.groupOrder.map((groupId) => {
@@ -205,60 +171,68 @@ export function materializeQuickLinks(
   return { items, groups }
 }
 
+function copyCategory<K extends keyof SyncSnapshotV1>(
+  target: SyncSnapshotV1,
+  baseline: SyncSnapshotV1,
+  key: K,
+): void {
+  const value = baseline[key]
+  if (value === undefined) delete target[key]
+  else target[key] = structuredClone(value) as SyncSnapshotV1[K]
+}
+
+function preserveEntityIcons(
+  result: SyncSnapshotV1,
+  baseline: SyncSnapshotV1,
+): void {
+  const baselineLinks = new Map(baseline.quickLinks?.items.map((item) => [item.id, item]))
+  for (const item of result.quickLinks?.items ?? []) {
+    item.faviconHash = baselineLinks.get(item.id)?.faviconHash
+    if (!item.faviconHash) delete item.faviconHash
+  }
+  const baselineEngines = new Map(
+    baseline.customSearchEngines?.items.map((item) => [item.id, item]),
+  )
+  for (const item of result.customSearchEngines?.items ?? []) {
+    item.iconHash = baselineEngines.get(item.id)?.iconHash
+    if (!item.iconHash) delete item.iconHash
+  }
+}
+
+function pruneInlineImages(snapshot: SyncSnapshotV1, baseline?: SyncSnapshotV1): void {
+  const used = new Set([
+    ...(snapshot.quickLinks?.items.map((item) => item.faviconHash) ?? []),
+    ...(snapshot.customSearchEngines?.items.map((item) => item.iconHash) ?? []),
+  ].filter((hash): hash is string => Boolean(hash)))
+  const available = { ...baseline?.inlineImages, ...snapshot.inlineImages }
+  const images = Object.fromEntries(
+    Object.entries(available).filter(([hash]) => used.has(hash)),
+  )
+  if (Object.keys(images).length) snapshot.inlineImages = images
+  else delete snapshot.inlineImages
+}
+
 export function preserveExcludedScope(
   captured: SyncSnapshotV1,
   baseline: SyncSnapshotV1,
   scope: SyncScopePreferences,
 ): SyncSnapshotV1 {
   const result = structuredClone(captured)
-  if (!scope.quickLinkIcons) {
-    const baselineById = new Map(baseline.quickLinks.items.map((item) => [item.id, item]))
-    result.quickLinks.items = result.quickLinks.items.map((item) => {
-      const baselineItem = baselineById.get(item.id)
-      if (baselineItem?.faviconHash) {
-        const icon = baseline.quickLinks.icons?.[baselineItem.faviconHash]
-        if (icon) {
-          result.quickLinks.icons ??= {}
-          result.quickLinks.icons[baselineItem.faviconHash] = icon
-          return { ...item, faviconHash: baselineItem.faviconHash }
-        }
-      }
-      return baselineItem?.favicon ? { ...item, favicon: baselineItem.favicon } : item
-    })
+  result.scope = { ...scope }
+  if (!scope.settings) copyCategory(result, baseline, 'settings')
+  else if (result.settings && baseline.settings) {
+    result.settings = preserveUnknownSyncSettings(result.settings, baseline.settings)
   }
-  if (!scope.onlineWallpaperUrl) {
-    const baselineBackground = baseline.settings.background
-    const capturedBackground = result.settings.background
-    if (
-      baselineBackground &&
-      capturedBackground &&
-      typeof baselineBackground === 'object' &&
-      typeof capturedBackground === 'object' &&
-      !Array.isArray(baselineBackground) &&
-      !Array.isArray(capturedBackground)
-    ) {
-      const baselineOnline = baselineBackground.online
-      const capturedOnline = capturedBackground.online
-      if (
-        baselineOnline &&
-        capturedOnline &&
-        typeof baselineOnline === 'object' &&
-        typeof capturedOnline === 'object' &&
-        !Array.isArray(baselineOnline) &&
-        !Array.isArray(capturedOnline) &&
-        Object.hasOwn(baselineOnline, 'url')
-      ) {
-        defineSafe(
-          capturedOnline as Record<string, unknown>,
-          'url',
-          structuredClone((baselineOnline as Record<string, unknown>).url),
-        )
-      }
-    }
+  if (!scope.quickLinks) copyCategory(result, baseline, 'quickLinks')
+  if (!scope.customSearchEngines) copyCategory(result, baseline, 'customSearchEngines')
+  if (!scope.uiPreferences) copyCategory(result, baseline, 'ui')
+  if (!scope.userIcons || (!scope.quickLinks && !scope.customSearchEngines)) {
+    preserveEntityIcons(result, baseline)
   }
-  preserveOptionalField(result, baseline, 'searchHistory', !scope.searchHistory)
   preserveOptionalField(result, baseline, 'blockedTopSites', !scope.blockedTopSites)
   preserveOptionalField(result, baseline, 'wallpapers', !scope.wallpapers)
+  preserveOptionalField(result, baseline, 'onlineWallpaperUrl', !scope.onlineWallpaperUrl)
+  pruneInlineImages(result, baseline)
   return result
 }
 
@@ -291,5 +265,5 @@ function preserveOptionalField(
     return
   }
   target.optional ??= {}
-  defineSafe(target.optional as Record<string, unknown>, key, structuredClone(value))
+  target.optional[key] = structuredClone(value) as never
 }

@@ -17,11 +17,39 @@ import type {
 import type { WebDavConnection } from './webdav.ts'
 
 export const DEFAULT_SYNC_SCOPE: Readonly<SyncScopePreferences> = {
-  searchHistory: false,
+  settings: true,
+  quickLinks: true,
+  customSearchEngines: true,
+  uiPreferences: true,
   blockedTopSites: false,
   wallpapers: false,
-  onlineWallpaperUrl: true,
-  quickLinkIcons: true,
+  onlineWallpaperUrl: false,
+  userIcons: false,
+}
+
+function normalizeScope(value: Partial<SyncScopePreferences> | undefined): SyncScopePreferences {
+  return {
+    settings: typeof value?.settings === 'boolean' ? value.settings : DEFAULT_SYNC_SCOPE.settings,
+    quickLinks: typeof value?.quickLinks === 'boolean' ? value.quickLinks : DEFAULT_SYNC_SCOPE.quickLinks,
+    customSearchEngines: typeof value?.customSearchEngines === 'boolean'
+      ? value.customSearchEngines
+      : DEFAULT_SYNC_SCOPE.customSearchEngines,
+    uiPreferences: typeof value?.uiPreferences === 'boolean'
+      ? value.uiPreferences
+      : DEFAULT_SYNC_SCOPE.uiPreferences,
+    blockedTopSites: typeof value?.blockedTopSites === 'boolean'
+      ? value.blockedTopSites
+      : DEFAULT_SYNC_SCOPE.blockedTopSites,
+    wallpapers: typeof value?.wallpapers === 'boolean'
+      ? value.wallpapers
+      : DEFAULT_SYNC_SCOPE.wallpapers,
+    onlineWallpaperUrl: typeof value?.onlineWallpaperUrl === 'boolean'
+      ? value.onlineWallpaperUrl
+      : DEFAULT_SYNC_SCOPE.onlineWallpaperUrl,
+    userIcons: typeof value?.userIcons === 'boolean'
+      ? value.userIcons
+      : DEFAULT_SYNC_SCOPE.userIcons,
+  }
 }
 
 export interface WebDavSyncConfigV1 {
@@ -50,6 +78,7 @@ export interface PendingApplyV1 {
     | 'ui'
     | 'optional'
   snapshot: SyncSnapshotV1
+  scope: SyncScopePreferences
   wallpapers?: Partial<Record<'dark' | 'light', PendingWallpaperApplyV1>>
 }
 
@@ -103,7 +132,7 @@ export const webDavSyncStateStorage = storage.defineItem<LocalSyncStateV1>(
       paused: false,
       deviceId: '',
       deviceName: '',
-      historyLimit: 10,
+      resourceOmissions: [],
       scope: { ...DEFAULT_SYNC_SCOPE },
       encrypted: false,
     },
@@ -115,8 +144,8 @@ export async function getOrCreateSyncState(): Promise<LocalSyncStateV1> {
   const state: LocalSyncStateV1 = {
     ...current,
     deviceId: current.deviceId || crypto.randomUUID(),
-    historyLimit: Math.min(20, Math.max(2, current.historyLimit || 10)),
-    scope: { ...DEFAULT_SYNC_SCOPE, ...current.scope },
+    resourceOmissions: current.resourceOmissions ?? [],
+    scope: normalizeScope(current.scope),
   }
   if (canonicalState(current) !== canonicalState(state)) await webDavSyncStateStorage.setValue(state)
   return state
@@ -163,7 +192,7 @@ export async function clearWebDavConnection(): Promise<void> {
     paused: false,
     deviceId: crypto.randomUUID(),
     deviceName: '',
-    historyLimit: 10,
+    resourceOmissions: [],
     scope: { ...DEFAULT_SYNC_SCOPE },
     encrypted: false,
   })
@@ -207,8 +236,10 @@ export function clearStoredEncryptionKey(vaultId: string, generationId: string):
   return idbDelete('webdavSync', encryptionKeyId(vaultId, generationId))
 }
 
-export function getBaseline(): Promise<SyncSnapshotV1 | undefined> {
-  return idbGet('webdavSync', BASELINE_KEY) as Promise<SyncSnapshotV1 | undefined>
+export async function getBaseline(): Promise<SyncSnapshotV1 | undefined> {
+  const snapshot = await idbGet('webdavSync', BASELINE_KEY) as SyncSnapshotV1 | undefined
+  if (!snapshot) return undefined
+  return { ...snapshot, scope: normalizeScope(snapshot.scope) }
 }
 
 export function setBaseline(snapshot: SyncSnapshotV1): Promise<void> {

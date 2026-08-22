@@ -64,7 +64,7 @@ Except as otherwise described in this Policy, the extension developer does **not
 - the contents of your bookmarks, browsing history, or search terms;
 - the contents of your local images, videos, or files;
 - copies of page titles, page URLs, site hostnames, or favicon data from your tabs, except where your browser sends the relevant request directly to a third-party service;
-- your extension settings, Quick Links, wallpaper files, or search history, **except that content you explicitly select is sent directly to your chosen WebDAV provider when you enable WebDAV sync; it is not sent to the developer's servers**.
+- your extension settings, Quick Links, or wallpaper files, **except that content you explicitly select is sent directly to your chosen WebDAV provider when you enable WebDAV sync; it is not sent to the developer's servers**.
 
 If the browser vendor still retains sync data left by an older version, or if you enable third-party online features, relevant data may instead be received and processed by the **browser vendor or the third-party service provider**.
 
@@ -138,11 +138,11 @@ Risk notes:
 ### 6.6 User-Selected WebDAV Sync (Experimental)
 
 - Default: **off**. The extension connects only after you provide a server address, username, and password and confirm setup.
-- Purpose: two-way synchronization between your devices of selected settings, Quick Links, custom search engines, UI preferences, and optionally search history, hidden sites, and current static image wallpapers.
+- Purpose: two-way synchronization between your devices of selected settings, Quick Links, custom search engines, UI preferences, and optionally hidden sites, online wallpaper addresses, user-selected icons, and current static image wallpapers.
 - Never uploaded: WebDAV passwords, independent sync encryption passwords, browser permissions, browser bookmarks, video wallpapers, Bing/online wallpaper caches, favicon caches, object URLs, or retired browser-sync data.
 - Provider-visible data: even with client-side encryption, a WebDAV provider can generally see your account, connection IP, request time, directory existence, file counts, and transfer sizes.
-- Encryption boundary: client-side encryption is off by default. When enabled, selected content is encrypted before upload using your independent password. The developer cannot recover a forgotten password.
-- HTTP risk: HTTPS is required by default. LAN HTTP needs explicit acknowledgement, and external HTTP additionally requires typed confirmation. HTTP can expose credentials and unencrypted content to others on the network, network operators, or intermediaries. Client content encryption does not protect the WebDAV login or all network metadata.
+- Encryption boundary: client-side encryption is off by default. If enabled when the vault is created, selected content is encrypted before upload using your independent password. The encryption mode and password cannot be changed after creation, and the developer cannot recover a forgotten password.
+- HTTP risk: HTTPS is required by default. Only LAN addresses may use HTTP after explicit acknowledgement; public HTTP is unsupported. LAN HTTP can still expose credentials and unencrypted content to others on the same network. Client content encryption does not protect the WebDAV login or all network metadata.
 - Third-party responsibility: the server is controlled by you or your provider. The developer cannot guarantee its security, availability, data location, logs, backups, deletion propagation, or legal compliance. Prefer HTTPS, an app-specific password, and a provider you trust.
 
 ## 7. Purposes of Processing
@@ -197,7 +197,7 @@ The current version no longer provides browser account sync. Data left by older 
 
 ### 9.3 WebDAV synchronization data
 
-WebDAV history keeps 10 normal versions by default and can be adjusted from 2 to 20. Deletion tombstones are retained for up to 180 days. Current static image wallpapers are deduplicated by content hash and only currently used resources are retained. Turning sync off keeps remote data by default. If you choose deletion, the extension only attempts to remove its extension-specific directory with a valid ownership marker; on failure, local connection information is retained so you can retry. Provider backups, trash, logs, or replicas may remain under the provider's own policy, and the extension cannot guarantee immediate or complete erasure.
+WebDAV history keeps at most 10 normal versions and removes data whose server modification time is over 180 days when it is not the current or previous version. Deletion tombstones are retained for up to 180 days. Current static image wallpapers are deduplicated by content hash and only currently used resources are retained. Turning sync off keeps remote data by default. If you choose deletion, the extension only attempts to remove its extension-specific directory with a valid ownership marker; on failure, local connection information is retained so you can retry. Provider backups, trash, logs, or replicas may remain under the provider's own policy, and the extension cannot guarantee immediate or complete erasure.
 
 ### 9.4 Third-party logs and caches
 

@@ -9,7 +9,7 @@ const state = shallowRef<LocalSyncStateV1>({
   paused: false,
   deviceId: '',
   deviceName: '',
-  historyLimit: 10,
+  resourceOmissions: [],
   scope: { ...DEFAULT_SYNC_SCOPE },
   encrypted: false,
 })

@@ -4,8 +4,6 @@ import { browser } from 'wxt/browser'
 import {
   captureBrowserSyncSnapshot,
   captureBrowserSyncSnapshotResult,
-  clearAllStagedWallpaperSyncCandidates,
-  getStagedWallpaperSyncCandidate,
   getUnavailableSelectedWallpaperVariants,
   getLocalWallpaperBlob,
   prepareAndApplyBrowserSnapshot,
@@ -32,7 +30,6 @@ import {
 import { mergeSyncSnapshots } from './merge.ts'
 import {
   DEFAULT_SYNC_SCOPE,
-  clearStoredEncryptionKey,
   clearStoredConflict,
   getBaseline,
   getOrCreateSyncState,
@@ -136,6 +133,9 @@ export async function readRevisions(
     if (revision.revisionId !== commit.revisionId) {
       throw new WebDavError('corrupted', 'Commit and revision identifiers do not match')
     }
+    if (!jsonEquals(revision.snapshot.scope, commit.scope)) {
+      throw new WebDavError('corrupted', 'Commit and revision scope do not match')
+    }
     if (revision.settingsSchemaVersion > CURRENT_CONFIG_VERSION) {
       throw new WebDavError('format-too-new', 'Remote settings format is newer than this extension')
     }
@@ -217,21 +217,22 @@ export async function finalizeSnapshot(input: {
         revisionId: input.revisionId,
         startedAt: new Date().toISOString(),
       },
+      scope: { ...input.snapshot.scope },
     })
     await prepareAndApplyBrowserSnapshot(
       input.operationId,
       input.revisionId,
       input.snapshot,
-      input.state.scope,
+      input.snapshot.scope,
       input.wallpapers,
     )
-    const captured = await captureBrowserSyncSnapshot(input.state.scope)
+    const captured = await captureBrowserSyncSnapshot(input.snapshot.scope)
     const applied = preserveExcludedScope(
       captured,
       input.snapshot,
       input.preserveLocalWallpapers
-        ? { ...input.state.scope, wallpapers: false }
-        : input.state.scope,
+        ? { ...input.snapshot.scope, wallpapers: false }
+        : input.snapshot.scope,
     )
     if (!jsonEquals(applied, input.snapshot)) {
       throw new WebDavError('corrupted', 'Applied local snapshot did not pass verification')
@@ -247,6 +248,7 @@ export async function finalizeSnapshot(input: {
     paused: false,
     pauseReason: undefined,
     pending: undefined,
+    scope: { ...input.snapshot.scope },
   })
 }
 
@@ -294,7 +296,12 @@ export async function publishAndFinalize(input: {
       input.encryptionKey,
     )
     preservingLocalWallpapers = true
-    await patchSyncState({ wallpaperStatus: 'storage-full' })
+    await patchSyncState({
+      resourceOmissions: [
+        { kind: 'wallpaper', variant: 'light', reason: 'storage-full' },
+        { kind: 'wallpaper', variant: 'dark', reason: 'storage-full' },
+      ],
+    })
   }
   pending = await setPendingPhase(pending, 'assets-uploaded', revisionId)
   let revision = await createRevision({
@@ -364,7 +371,12 @@ export async function publishAndFinalize(input: {
         await input.repository.deleteAsset(asset).catch(() => undefined)
       }
     }
-    await patchSyncState({ wallpaperStatus: 'storage-full' })
+    await patchSyncState({
+      resourceOmissions: [
+        { kind: 'wallpaper', variant: 'light', reason: 'storage-full' },
+        { kind: 'wallpaper', variant: 'dark', reason: 'storage-full' },
+      ],
+    })
   }
   pending = await setPendingPhase(pending, 'committed', revisionId)
 
@@ -404,7 +416,6 @@ export async function publishAndFinalize(input: {
     wallpapers,
     preserveLocalWallpapers: preservingLocalWallpapers,
   })
-  await clearAllStagedWallpaperSyncCandidates()
   await writeDevicePresence(
     input.repository,
     input.metadata,
@@ -414,12 +425,7 @@ export async function publishAndFinalize(input: {
     true,
   )
   if (!input.corruptedRevisionToIgnore) {
-    await cleanupHistory(
-      input.repository,
-      input.metadata,
-      input.state.historyLimit,
-      input.encryptionKey,
-    )
+    await cleanupHistory(input.repository, input.metadata, input.encryptionKey)
   }
 }
 
@@ -466,12 +472,11 @@ export async function encryptRevision(
 export async function cleanupHistory(
   repository: WebDavVaultRepository,
   metadata: VaultMetadataV1,
-  limit: number,
   encryptionKey?: CryptoKey,
 ): Promise<void> {
   try {
     const revisions = await readRevisions(repository, metadata, encryptionKey)
-    await repository.pruneHistory(metadata, revisions, limit)
+    await repository.pruneHistory(metadata, revisions)
   } catch {
     // 清理失败不改变已验证的同步结果；下一次自然触发会重新尝试。
   }
@@ -504,14 +509,12 @@ export async function resolveRevisionAssets(
         asset.sha256 === reference.sha256,
     )
     if (known) {
-      await readWallpaperAsset(repository, metadata, known, encryptionKey)
       result.push(known)
       continue
     }
     const blob =
       providedWallpapers[variant] ??
-      (await getLocalWallpaperBlob(variant, reference.sha256)) ??
-      (await getStagedWallpaperSyncCandidate(variant, reference.sha256))
+      (await getLocalWallpaperBlob(variant, reference.sha256))
     if (!blob) throw new WebDavError('corrupted', 'Selected local wallpaper is unavailable')
     let uploaded: AssetReferenceV1
     if (metadata.encrypted) {
@@ -620,6 +623,36 @@ export async function readWallpaperAsset(
   return new Blob([plaintext], { type: asset.mimeType })
 }
 
+const SCOPE_KEYS = [
+  'settings', 'quickLinks', 'customSearchEngines', 'uiPreferences',
+  'blockedTopSites', 'wallpapers', 'onlineWallpaperUrl', 'userIcons',
+] as const
+
+function mergeScope(
+  base: LocalSyncStateV1['scope'],
+  local: LocalSyncStateV1['scope'],
+  remote: LocalSyncStateV1['scope'],
+): LocalSyncStateV1['scope'] {
+  return Object.fromEntries(SCOPE_KEYS.map((key) => [
+    key,
+    local[key] === remote[key]
+      ? local[key]
+      : local[key] === base[key]
+        ? remote[key]
+        : local[key],
+  ])) as unknown as LocalSyncStateV1['scope']
+}
+
+function remoteScope(
+  base: LocalSyncStateV1['scope'],
+  revisions: readonly SyncRevisionV1[],
+): LocalSyncStateV1['scope'] {
+  return findRevisionHeads(revisions).reduce(
+    (scope, revision) => mergeScope(base, scope, revision.snapshot.scope),
+    base,
+  )
+}
+
 async function runSynchronizationOnce(): Promise<void> {
   const [config, initialState, password] = await Promise.all([
     webDavSyncConfigStorage.getValue(),
@@ -633,21 +666,10 @@ async function runSynchronizationOnce(): Promise<void> {
     return
   }
 
-  await resumePendingBrowserApply(initialState.scope)
+  await resumePendingBrowserApply()
   const baselineAtStart = await getBaseline()
   const lastDeviceRecord = initialState.deviceRecordAt ?? initialState.lastSuccessAt
   const reinitialize = Boolean(lastDeviceRecord && mustReinitializeDevice(lastDeviceRecord))
-  const capture = await captureBrowserSyncSnapshotResult(
-    initialState.scope,
-    reinitialize ? undefined : baselineAtStart,
-  )
-  const capturedLocal = capture.snapshot
-  if (initialState.scope.wallpapers) {
-    await patchSyncState({ wallpaperStatus: capture.wallpaperStatus })
-  }
-  const local = baselineAtStart && !reinitialize
-    ? preserveExcludedScope(capturedLocal, baselineAtStart, initialState.scope)
-    : capturedLocal
   const pending: PendingSyncOperation = initialState.pending ?? {
     operationId: crypto.randomUUID(),
     phase: 'captured',
@@ -671,9 +693,6 @@ async function runSynchronizationOnce(): Promise<void> {
     throw new WebDavError('foreign-vault', 'Configured WebDAV vault identity changed')
   }
   if (metadata.generationId !== initialState.generationId) {
-    if (metadata.reset?.previousGenerationId === initialState.generationId) {
-      throw new WebDavError('generation-reset', 'Another device reset the WebDAV vault')
-    }
     if (metadata.encrypted) {
       throw new WebDavError('encryption-locked', 'WebDAV vault uses a new encrypted generation')
     }
@@ -697,6 +716,8 @@ async function runSynchronizationOnce(): Promise<void> {
     if (initialState.baseRevisionId || (await getBaseline())) {
       throw new WebDavError('corrupted', 'WebDAV vault has no committed revision')
     }
+    const capture = await captureBrowserSyncSnapshotResult(initialState.scope)
+    await patchSyncState({ resourceOmissions: capture.resourceOmissions })
     await publishAndFinalize({
       repository,
       metadata,
@@ -705,7 +726,7 @@ async function runSynchronizationOnce(): Promise<void> {
       pending,
       parents: [],
       reason: 'initial',
-      snapshot: local,
+      snapshot: capture.snapshot,
       tombstones: [],
       knownAssets: [],
       encryptionKey,
@@ -718,8 +739,25 @@ async function runSynchronizationOnce(): Promise<void> {
     await patchSyncState({ paused: true, pauseReason: 'conflict' })
     return
   }
+  const comparisonBase = reinitialize ? firstConnectionBase() : baseline!
+  const scope = mergeScope(
+    comparisonBase.scope,
+    initialState.scope,
+    remoteScope(comparisonBase.scope, revisions),
+  )
+  const state = jsonEquals(scope, initialState.scope)
+    ? initialState
+    : await patchSyncState({ scope })
+  const capture = await captureBrowserSyncSnapshotResult(
+    scope,
+    reinitialize ? undefined : baseline,
+  )
+  await patchSyncState({ resourceOmissions: capture.resourceOmissions })
+  const local = baseline && !reinitialize
+    ? preserveExcludedScope(capture.snapshot, baseline, scope)
+    : capture.snapshot
   const decision = reinitialize
-    ? decideInitialization({ base: firstConnectionBase(), local, revisions })
+    ? decideInitialization({ base: comparisonBase, local, revisions })
     : decideSynchronization({
         baseRevisionId: initialState.baseRevisionId!,
         baseline: baseline!,
@@ -753,25 +791,24 @@ async function runSynchronizationOnce(): Promise<void> {
       operationId: pending.operationId,
       revisionId: decision.revisionId,
       snapshot: decision.snapshot,
-      state: initialState,
+      state,
       apply: !jsonEquals(local, decision.snapshot),
     })
     await writeDevicePresence(
       repository,
       metadata,
-      initialState,
+      state,
       decision.revisionId,
       encryptionKey,
       false,
     )
-    await cleanupHistory(repository, metadata, initialState.historyLimit, encryptionKey)
     return
   }
   if (decision.action === 'apply-remote') {
     const wallpapers = await prepareIncomingWallpapers(
       repository,
       metadata,
-      initialState,
+      state,
       decision.remote.snapshot,
       decision.remote.assets,
       encryptionKey,
@@ -780,19 +817,18 @@ async function runSynchronizationOnce(): Promise<void> {
       operationId: pending.operationId,
       revisionId: decision.revisionId,
       snapshot: decision.remote.snapshot,
-      state: initialState,
+      state,
       apply: true,
       wallpapers,
     })
     await writeDevicePresence(
       repository,
       metadata,
-      initialState,
+      state,
       decision.revisionId,
       encryptionKey,
       false,
     )
-    await cleanupHistory(repository, metadata, initialState.historyLimit, encryptionKey)
     return
   }
 
@@ -800,7 +836,7 @@ async function runSynchronizationOnce(): Promise<void> {
   const tombstones = mergeTombstones(
     decision.tombstones,
     deriveSnapshotTombstones(
-      reinitialize ? firstConnectionBase() : baseline!,
+      comparisonBase,
       decision.snapshot,
       revisionId,
     ),
@@ -809,7 +845,7 @@ async function runSynchronizationOnce(): Promise<void> {
     repository,
     metadata,
     vaultEtag: inspection.etag,
-    state: initialState,
+    state,
     pending: { ...pending, revisionId },
     parents: decision.parents,
     reason: decision.reason,
@@ -826,7 +862,6 @@ function pauseReasonFor(error: WebDavError): SyncPauseReason | undefined {
   if (error.category === 'format-too-new') return 'format-too-new'
   if (error.category === 'encryption-locked') return 'encryption-password'
   if (error.category === 'not-found') return 'remote-deleted'
-  if (error.category === 'generation-reset') return 'remote-reset'
   if (error.category === 'storage-full') return 'storage-full'
   return undefined
 }
@@ -915,210 +950,11 @@ export async function unlockBrowserEncryption(password: string): Promise<LocalSy
   })
 }
 
-export async function migrateBrowserVaultEncryption(input: {
-  newPassword: string
-  oldPassword?: string
-}): Promise<LocalSyncStateV1> {
-  const [config, state, webDavPassword] = await Promise.all([
-    webDavSyncConfigStorage.getValue(),
-    getOrCreateSyncState(),
-    getWebDavPassword(),
-  ])
-  if (!config || !state.configured || !webDavPassword) {
-    throw new WebDavError('authentication', 'WebDAV connection is not configured')
-  }
-  const repository = new WebDavVaultRepository(createClient(config, webDavPassword), config.directory)
-  const inspection = await repository.inspect()
-  if (
-    inspection.state !== 'ready' ||
-    inspection.metadata.vaultId !== state.vaultId ||
-    inspection.metadata.generationId !== state.generationId
-  ) {
-    throw new WebDavError('foreign-vault', 'Configured WebDAV vault identity changed')
-  }
-  const current = inspection.metadata
-  if (current.capabilities.mode !== 'conditional') {
-    throw new WebDavError('unsupported', 'Encryption migration requires reliable conditional writes')
-  }
-
-  let oldKey: CryptoKey | undefined
-  if (current.encrypted) {
-    if (!current.encryption || !input.oldPassword) {
-      throw new WebDavError('encryption-locked', 'Current encryption password is required')
-    }
-    try {
-      oldKey = await unlockVaultEncryption(
-        input.oldPassword,
-        current.vaultId,
-        current.generationId,
-        current.encryption,
-      )
-    } catch {
-      throw new WebDavError('encryption-locked', 'Current encryption password is incorrect')
-    }
-  }
-
-  const sourceRevisions = await readRevisions(repository, current, oldKey)
-  const heads = findRevisionHeads(sourceRevisions)
-  if (heads.length !== 1) {
-    throw new WebDavError('conflict', 'Resolve all synchronization conflicts before encryption')
-  }
-  const historyLimit = Math.min(20, Math.max(2, state.historyLimit))
-  const retained = [...sourceRevisions]
-    .sort(
-      (left, right) =>
-        Date.parse(right.createdAt) - Date.parse(left.createdAt) ||
-        right.revisionId.localeCompare(left.revisionId),
-    )
-    .slice(0, historyLimit)
-  if (!retained.some((revision) => revision.revisionId === heads[0]!.revisionId)) {
-    retained.push(heads[0]!)
-  }
-
-  const generationId = crypto.randomUUID()
-  const encrypted = await createVaultEncryption(
-    input.newPassword,
-    current.vaultId,
-    generationId,
-  )
-  const next: VaultMetadataV1 = {
-    ...current,
-    generationId,
-    encrypted: true,
-    encryption: encrypted.metadata,
-    currentRevisionId: heads[0]!.revisionId,
-    reset: undefined,
-  }
-  await repository.prepareGeneration(next)
-  const migratedAssets = await migrateCurrentWallpaperAssets(
-    repository,
-    current,
-    next,
-    heads[0]!,
-    oldKey,
-    encrypted.key,
-  )
-
-  const published: SyncRevisionV1[] = []
-  for (const source of retained) {
-    const assets = source.assets
-      .map((asset) => migratedAssets.get(asset.sha256))
-      .filter((asset): asset is AssetReferenceV1 => Boolean(asset))
-    const revision: SyncRevisionV1 = {
-      ...source,
-      generationId,
-      assets: [...new Map(assets.map((asset) => [asset.id, asset])).values()],
-    }
-    await repository.publishRevision(
-      next,
-      revision,
-      await encryptRevision(next, revision, encrypted.key),
-    )
-    published.push(revision)
-  }
-
-  const verified = await readRevisions(repository, next, encrypted.key)
-  if (
-    verified.length !== published.length ||
-    published.some((revision) => {
-      const remote = verified.find((item) => item.revisionId === revision.revisionId)
-      return !remote || canonicalJson(remote) !== canonicalJson(revision)
-    })
-  ) {
-    throw new WebDavError('corrupted', 'Encrypted generation failed full verification')
-  }
-
-  await setStoredEncryptionKey(next.vaultId, next.generationId, encrypted.key)
-  try {
-    await repository.activateGeneration(current, inspection.etag, next)
-  } catch (error) {
-    await clearStoredEncryptionKey(next.vaultId, next.generationId)
-    throw error
-  }
-  const migratedState = await patchSyncState({
-    encrypted: true,
-    generationId,
-    lastError: undefined,
-    lastSuccessAt: new Date().toISOString(),
-    paused: false,
-    pauseReason: undefined,
-    pending: undefined,
-  })
-  await writeDevicePresence(
-    repository,
-    next,
-    migratedState,
-    heads[0]!.revisionId,
-    encrypted.key,
-    true,
-  )
-  try {
-    await repository.deleteObsoleteGeneration(next, current.generationId)
-    await clearStoredEncryptionKey(current.vaultId, current.generationId)
-  } catch (error) {
-    const webDavError = error instanceof WebDavError ? error : new WebDavError('server', 'Cleanup failed')
-    await patchSyncState({
-      lastError: {
-        category: webDavError.category,
-        operationId: crypto.randomUUID(),
-        occurredAt: new Date().toISOString(),
-        phase: 'unknown',
-        status: webDavError.status,
-        pathKind: 'vault',
-      },
-    })
-  }
-  return migratedState
-}
-
-async function migrateCurrentWallpaperAssets(
-  repository: WebDavVaultRepository,
-  current: VaultMetadataV1,
-  next: VaultMetadataV1,
-  head: SyncRevisionV1,
-  oldKey: CryptoKey | undefined,
-  newKey: CryptoKey,
-): Promise<Map<string, AssetReferenceV1>> {
-  const migrated = new Map<string, AssetReferenceV1>()
-  for (const variant of ['light', 'dark'] as const) {
-    const reference = head.snapshot.optional?.wallpapers?.[variant]
-    if (!reference || migrated.has(reference.sha256)) continue
-    const source = head.assets.find((asset) => asset.id === reference.assetId)
-    let blob = await getLocalWallpaperBlob(variant, reference.sha256)
-    if (!blob && source) blob = await readWallpaperAsset(repository, current, source, oldKey)
-    if (!blob) {
-      throw new WebDavError('corrupted', 'Current wallpaper is unavailable for encryption')
-    }
-    const storageId = crypto.randomUUID()
-    const storedPayload = await encryptSyncBytes(
-      newKey,
-      await blob.arrayBuffer(),
-      createEncryptionAad({
-        vaultId: next.vaultId,
-        generationId: next.generationId,
-        objectType: 'asset',
-        objectId: storageId,
-      }),
-    )
-    const asset = await repository.publishEncryptedAsset(
-      next,
-      wallpaperRole(variant),
-      blob,
-      storageId,
-      storedPayload,
-    )
-    await readWallpaperAsset(repository, next, asset, newKey)
-    migrated.set(reference.sha256, asset)
-  }
-  return migrated
-}
-
 export interface BrowserWebDavSetupInput {
   connection: WebDavConnection
   directory?: string
   deviceName?: string
   encryptionPassword?: string
-  historyLimit?: number
   rememberPassword: boolean
   scope?: Partial<LocalSyncStateV1['scope']>
 }
@@ -1130,6 +966,7 @@ export interface BrowserWebDavSetupPreview {
   generationId?: string
   headRevisionIds: string[]
   localSnapshotHash: string
+  resourceOmissions: LocalSyncStateV1['resourceOmissions']
   state: 'empty' | 'existing' | 'remote-conflict'
   vaultId?: string
 }
@@ -1139,6 +976,7 @@ interface SetupInspection {
   encryptionKey?: CryptoKey
   inspection: Awaited<ReturnType<WebDavVaultRepository['inspect']>>
   local: SyncSnapshotV1
+  resourceOmissions: LocalSyncStateV1['resourceOmissions']
   metadata?: VaultMetadataV1
   repository: WebDavVaultRepository
   revisions: SyncRevisionV1[]
@@ -1153,16 +991,23 @@ async function inspectBrowserWebDavSetup(
 ): Promise<SetupInspection> {
   const client = new WebDavClient(input.connection)
   const repository = new WebDavVaultRepository(client, input.directory)
-  const [capabilities, inspection, local] = await Promise.all([
+  const [capabilities, inspection] = await Promise.all([
     probeWebDavCapabilities(client),
     repository.inspect(),
-    captureBrowserSyncSnapshot(setupScope(input)),
   ])
   if (inspection.state !== 'ready') {
     if (inspection.state === 'foreign') {
       throw new WebDavError('foreign-vault', 'WebDAV directory contains unrelated data')
     }
-    return { capabilities, inspection, local, repository, revisions: [] }
+    const capture = await captureBrowserSyncSnapshotResult(setupScope(input))
+    return {
+      capabilities,
+      inspection,
+      local: capture.snapshot,
+      resourceOmissions: capture.resourceOmissions,
+      repository,
+      revisions: [],
+    }
   }
   const metadata = inspection.metadata
   let encryptionKey: CryptoKey | undefined
@@ -1182,18 +1027,25 @@ async function inspectBrowserWebDavSetup(
     }
   }
   const revisions = await readRevisions(repository, metadata, encryptionKey)
-  return { capabilities, encryptionKey, inspection, local, metadata, repository, revisions }
+  const scope = revisions.length
+    ? remoteScope(firstConnectionBase().scope, revisions)
+    : setupScope(input)
+  const capture = await captureBrowserSyncSnapshotResult(scope)
+  return {
+    capabilities,
+    encryptionKey,
+    inspection,
+    local: capture.snapshot,
+    resourceOmissions: capture.resourceOmissions,
+    metadata,
+    repository,
+    revisions,
+  }
 }
 
 function firstConnectionBase(): SyncSnapshotV1 {
   return {
-    settings: {},
-    quickLinks: { items: [], rootOrder: [], groups: [], groupOrder: [] },
-    customSearchEngines: { items: [], order: [] },
-    ui: {
-      language: '__no_shared_baseline__',
-      colorMode: '__no_shared_baseline__' as SyncSnapshotV1['ui']['colorMode'],
-    },
+    scope: { ...DEFAULT_SYNC_SCOPE },
   }
 }
 
@@ -1210,6 +1062,7 @@ export async function previewBrowserWebDavSetup(
       generationId: scanned.metadata?.generationId,
       headRevisionIds: [],
       localSnapshotHash,
+      resourceOmissions: scanned.resourceOmissions,
       state: 'empty',
       vaultId: scanned.metadata?.vaultId,
     }
@@ -1227,6 +1080,7 @@ export async function previewBrowserWebDavSetup(
     generationId: scanned.metadata.generationId,
     headRevisionIds: heads.map((revision) => revision.revisionId),
     localSnapshotHash,
+    resourceOmissions: scanned.resourceOmissions,
     state: heads.length === 1 ? 'existing' : 'remote-conflict',
     vaultId: scanned.metadata.vaultId,
   }
@@ -1295,7 +1149,9 @@ export async function connectBrowserWebDav(
   }
 
   const deviceName = input.deviceName?.trim().slice(0, 80) || (await createPrivateDeviceName())
-  const scope = setupScope(input)
+  const scope = heads.length
+    ? remoteScope(firstConnectionBase().scope, scanned.revisions)
+    : setupScope(input)
   await webDavSyncConfigStorage.setValue({
     version: 1,
     connection: {
@@ -1317,11 +1173,11 @@ export async function connectBrowserWebDav(
     deviceName,
     encrypted: metadata.encrypted,
     generationId: metadata.generationId,
-    historyLimit: Math.min(20, Math.max(2, input.historyLimit ?? 10)),
     lastError: undefined,
     paused: false,
     pauseReason: undefined,
     pending: undefined,
+    resourceOmissions: scanned.resourceOmissions,
     scope,
     vaultId: metadata.vaultId,
   })
