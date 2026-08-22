@@ -22,9 +22,7 @@ const syncState = useWebDavSyncState()
 const availability = computed(() =>
   getSyncAvailability(props.catalogKey, {
     scope: syncState.value.scope,
-    pendingPermissions: props.pendingPermission
-      ? new Set([props.pendingPermission])
-      : undefined,
+    pendingPermissions: props.pendingPermission ? new Set([props.pendingPermission]) : undefined,
     wallpapers:
       props.wallpaper && props.wallpaperVariant
         ? { [props.wallpaperVariant]: props.wallpaper }

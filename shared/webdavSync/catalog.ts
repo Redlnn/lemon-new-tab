@@ -118,10 +118,22 @@ export function getSyncAvailability(
   key: SyncCatalogKey,
   context: AvailabilityContext,
 ): SyncAvailability {
-  if (key === 'settings') return context.scope.settings ? included() : excludedByUser('sync.availability.settingsScopeDisabled')
-  if (key === 'quickLinks') return context.scope.quickLinks ? included() : excludedByUser('sync.availability.quickLinksScopeDisabled')
-  if (key === 'customSearchEngines') return context.scope.customSearchEngines ? included() : excludedByUser('sync.availability.searchEnginesScopeDisabled')
-  if (key === 'ui.language' || key === 'ui.colorMode') return context.scope.uiPreferences ? included() : excludedByUser('sync.availability.uiScopeDisabled')
+  if (key === 'settings')
+    return context.scope.settings
+      ? included()
+      : excludedByUser('sync.availability.settingsScopeDisabled')
+  if (key === 'quickLinks')
+    return context.scope.quickLinks
+      ? included()
+      : excludedByUser('sync.availability.quickLinksScopeDisabled')
+  if (key === 'customSearchEngines')
+    return context.scope.customSearchEngines
+      ? included()
+      : excludedByUser('sync.availability.searchEnginesScopeDisabled')
+  if (key === 'ui.language' || key === 'ui.colorMode')
+    return context.scope.uiPreferences
+      ? included()
+      : excludedByUser('sync.availability.uiScopeDisabled')
   if (key === 'searchHistory') return excludedByDesign('sync.availability.searchHistoryLocal')
   if (key === 'blockedTopSites') {
     return context.scope.blockedTopSites
@@ -134,7 +146,8 @@ export function getSyncAvailability(
       : excludedByUser('sync.availability.onlineWallpaperUrlScopeDisabled')
   }
   if (key === 'userIcons') {
-    return context.scope.userIcons && (context.scope.quickLinks || context.scope.customSearchEngines)
+    return context.scope.userIcons &&
+      (context.scope.quickLinks || context.scope.customSearchEngines)
       ? included()
       : excludedByUser('sync.availability.userIconsScopeDisabled')
   }

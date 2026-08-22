@@ -1,9 +1,4 @@
-import type {
-  JsonObject,
-  JsonValue,
-  SyncConflict,
-  SyncSnapshotV1,
-} from './types.ts'
+import type { JsonObject, JsonValue, SyncConflict, SyncSnapshotV1 } from './types.ts'
 
 export type ConflictTranslator = (key: string, options?: Record<string, unknown>) => string
 
@@ -218,7 +213,10 @@ function displayTitle(
   t: ConflictTranslator,
 ): string {
   const { path } = conflict
-  if (path.startsWith('settings.')) return t(SETTING_TITLE_KEYS[path.slice('settings.'.length)] ?? 'webdavSync.conflicts.fields.settings')
+  if (path.startsWith('settings.'))
+    return t(
+      SETTING_TITLE_KEYS[path.slice('settings.'.length)] ?? 'webdavSync.conflicts.fields.settings',
+    )
   if (path === 'optional.onlineWallpaperUrl') return t('webdavSync.scope.onlineWallpaperUrl')
   if (path.startsWith('scope.')) return t(`webdavSync.scope.${path.slice('scope.'.length)}`)
   if (path === 'scope') return t('webdavSync.conflicts.fields.scope')
@@ -232,9 +230,11 @@ function displayTitle(
   if (path === 'quickLinks.groupOrder') return t('webdavSync.conflicts.fields.groupOrder')
   if (path === 'quickLinks') return t('webdavSync.conflicts.categories.quick-links')
   if (path.startsWith('customSearchEngines.items.')) return searchEngineTitle(conflict, context, t)
-  if (path === 'customSearchEngines.order') return t('webdavSync.conflicts.fields.searchEngineOrder')
+  if (path === 'customSearchEngines.order')
+    return t('webdavSync.conflicts.fields.searchEngineOrder')
   if (path === 'customSearchEngines') return t('webdavSync.conflicts.categories.search-engines')
-  if (path === 'optional.blockedTopSites') return t('webdavSync.conflicts.categories.blocked-top-sites')
+  if (path === 'optional.blockedTopSites')
+    return t('webdavSync.conflicts.categories.blocked-top-sites')
   if (path.startsWith('optional.wallpapers')) return t('webdavSync.conflicts.fields.wallpaper')
   return t(`webdavSync.conflicts.categories.${conflict.category}`)
 }
@@ -248,11 +248,12 @@ function quickLinkTitle(
   const item = id ? context.quickLinks[id] : undefined
   const label = item?.title || stringField(conflict, 'title')
   if (!field) return withName(t('webdavSync.conflicts.fields.quickLink'), label)
-  const fieldLabel = field === 'url'
-    ? t('webdavSync.conflicts.fields.linkUrl')
-    : field.startsWith('favicon')
-      ? t('webdavSync.conflicts.fields.linkIcon')
-      : t('webdavSync.conflicts.fields.linkTitle')
+  const fieldLabel =
+    field === 'url'
+      ? t('webdavSync.conflicts.fields.linkUrl')
+      : field.startsWith('favicon')
+        ? t('webdavSync.conflicts.fields.linkIcon')
+        : t('webdavSync.conflicts.fields.linkTitle')
   return withName(fieldLabel, label)
 }
 
@@ -277,11 +278,12 @@ function searchEngineTitle(
   const engine = id ? context.customSearchEngines[id] : undefined
   const name = engine?.name || stringField(conflict, 'name')
   if (!field) return withName(t('webdavSync.conflicts.fields.customSearchEngine'), name)
-  const fieldLabel = field === 'url'
-    ? t('webdavSync.conflicts.fields.searchEngineUrl')
-    : field.startsWith('icon')
-      ? t('webdavSync.conflicts.fields.searchEngineIcon')
-      : t('webdavSync.conflicts.fields.searchEngineName')
+  const fieldLabel =
+    field === 'url'
+      ? t('webdavSync.conflicts.fields.searchEngineUrl')
+      : field.startsWith('icon')
+        ? t('webdavSync.conflicts.fields.searchEngineIcon')
+        : t('webdavSync.conflicts.fields.searchEngineName')
   return withName(fieldLabel, name)
 }
 
@@ -294,12 +296,15 @@ function displayValue(
   if (value === undefined) return t('webdavSync.conflicts.deleted')
   if (isOrderPath(conflict.path)) return t('webdavSync.conflicts.values.orderChanged')
   if (isIconPath(conflict.path)) {
-    return t(value ? 'webdavSync.conflicts.values.customIcon' : 'webdavSync.conflicts.values.noCustomIcon')
+    return t(
+      value ? 'webdavSync.conflicts.values.customIcon' : 'webdavSync.conflicts.values.noCustomIcon',
+    )
   }
   if (conflict.path === 'optional.onlineWallpaperUrl' || conflict.path.endsWith('.url')) {
     return typeof value === 'string' ? displayUrl(value) : t('webdavSync.conflicts.values.changed')
   }
-  if (conflict.path.startsWith('quickLinks.location.')) return displayQuickLinkLocation(value, context, t)
+  if (conflict.path.startsWith('quickLinks.location.'))
+    return displayQuickLinkLocation(value, context, t)
   if (conflict.path === 'quickLinks') return displayQuickLinks(value, t)
   if (conflict.path.startsWith('quickLinks.items.')) return displayQuickLink(value, t)
   if (conflict.path.startsWith('quickLinks.groups.')) return displayQuickLinkGroup(value, t)
@@ -309,13 +314,16 @@ function displayValue(
   if (conflict.path.startsWith('optional.wallpapers')) return displayWallpapers(value, t)
   if (conflict.path === 'ui') return displayUi(value, t)
   if (conflict.path === 'scope') return displayScope(value, t)
-  if (conflict.path === 'settings') return t('webdavSync.conflicts.values.settingCount', { count: leafCount(value) })
+  if (conflict.path === 'settings')
+    return t('webdavSync.conflicts.values.settingCount', { count: leafCount(value) })
   if (conflict.path === 'ui.language') return displayLanguage(value)
   if (conflict.path === 'ui.colorMode') return displayColorMode(value, t)
   if (conflict.path === 'settings.background.bgType') return displayBackgroundType(value, t)
-  if (typeof value === 'boolean') return t(value ? 'webdavSync.conflicts.values.enabled' : 'webdavSync.conflicts.values.disabled')
+  if (typeof value === 'boolean')
+    return t(value ? 'webdavSync.conflicts.values.enabled' : 'webdavSync.conflicts.values.disabled')
   if (typeof value === 'string' || typeof value === 'number') return shorten(String(value))
-  if (Array.isArray(value)) return t('webdavSync.conflicts.values.itemCount', { count: value.length })
+  if (Array.isArray(value))
+    return t('webdavSync.conflicts.values.itemCount', { count: value.length })
   return t('webdavSync.conflicts.values.changed')
 }
 
@@ -328,14 +336,16 @@ function displayQuickLinks(value: JsonValue, t: ConflictTranslator): string {
 
 function displayQuickLink(value: JsonValue, t: ConflictTranslator): string {
   if (!isObject(value)) return displayPrimitive(value, t)
-  const title = typeof value.title === 'string' ? value.title : t('webdavSync.conflicts.values.untitled')
+  const title =
+    typeof value.title === 'string' ? value.title : t('webdavSync.conflicts.values.untitled')
   const url = typeof value.url === 'string' ? ` · ${displayUrl(value.url)}` : ''
   return `${shorten(title)}${url}`
 }
 
 function displayQuickLinkGroup(value: JsonValue, t: ConflictTranslator): string {
   if (!isObject(value)) return displayPrimitive(value, t)
-  const name = typeof value.name === 'string' ? shorten(value.name) : t('webdavSync.conflicts.values.untitled')
+  const name =
+    typeof value.name === 'string' ? shorten(value.name) : t('webdavSync.conflicts.values.untitled')
   const count = Array.isArray(value.itemIds) ? value.itemIds.length : 0
   return t('webdavSync.conflicts.values.groupSummary', { count, name })
 }
@@ -348,7 +358,8 @@ function displaySearchEngines(value: JsonValue, t: ConflictTranslator): string {
 
 function displaySearchEngine(value: JsonValue, t: ConflictTranslator): string {
   if (!isObject(value)) return displayPrimitive(value, t)
-  const name = typeof value.name === 'string' ? value.name : t('webdavSync.conflicts.values.untitled')
+  const name =
+    typeof value.name === 'string' ? value.name : t('webdavSync.conflicts.values.untitled')
   const url = typeof value.url === 'string' ? ` · ${displayUrl(value.url)}` : ''
   return `${shorten(name)}${url}`
 }
@@ -361,7 +372,9 @@ function displayQuickLinkLocation(
   if (value === 'root') return t('webdavSync.conflicts.values.rootGroup')
   if (typeof value === 'string') {
     return t('webdavSync.conflicts.values.group', {
-      name: shorten(context.quickLinkGroups[value] ?? t('webdavSync.conflicts.values.unknownGroup')),
+      name: shorten(
+        context.quickLinkGroups[value] ?? t('webdavSync.conflicts.values.unknownGroup'),
+      ),
     })
   }
   return t('webdavSync.conflicts.values.changed')
@@ -394,7 +407,8 @@ function displayScope(value: JsonValue, t: ConflictTranslator): string {
 }
 
 function displayPrimitive(value: JsonValue, t: ConflictTranslator): string {
-  if (typeof value === 'boolean') return t(value ? 'webdavSync.conflicts.values.enabled' : 'webdavSync.conflicts.values.disabled')
+  if (typeof value === 'boolean')
+    return t(value ? 'webdavSync.conflicts.values.enabled' : 'webdavSync.conflicts.values.disabled')
   if (typeof value === 'string' || typeof value === 'number') return shorten(String(value))
   return t('webdavSync.conflicts.values.changed')
 }
@@ -433,7 +447,14 @@ function stringField(
 }
 
 function isOrderPath(path: string): boolean {
-  return path.endsWith('.itemIds') || path.endsWith('.order') || path === 'quickLinks.rootOrder' || path === 'quickLinks.groupOrder' || path.endsWith('.builtInEngineOrder') || path.endsWith('.hiddenBuiltInEngines')
+  return (
+    path.endsWith('.itemIds') ||
+    path.endsWith('.order') ||
+    path === 'quickLinks.rootOrder' ||
+    path === 'quickLinks.groupOrder' ||
+    path.endsWith('.builtInEngineOrder') ||
+    path.endsWith('.hiddenBuiltInEngines')
+  )
 }
 
 function isIconPath(path: string): boolean {

@@ -22,8 +22,7 @@ const MAX_STORED_REVISION_BYTES = MAX_REVISION_BYTES + 64 * 1024
 
 export type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string }
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const HASH_PATTERN = /^[0-9a-f]{64}$/i
 const REVISION_REASONS = new Set<SyncRevisionReason>([
   'initial',
@@ -103,8 +102,7 @@ function isQuickLinks(value: unknown, images: Readonly<Record<string, string>>):
         typeof item.url === 'string' &&
         typeof item.title === 'string' &&
         (item.faviconHash === undefined ||
-          (typeof item.faviconHash === 'string' &&
-            Object.hasOwn(images, item.faviconHash))) &&
+          (typeof item.faviconHash === 'string' && Object.hasOwn(images, item.faviconHash))) &&
         item.favicon === undefined,
     )
   ) {
@@ -135,14 +133,8 @@ function isQuickLinks(value: unknown, images: Readonly<Record<string, string>>):
   if (!hasExactOrder(value.groupOrder, groupIds)) return false
 
   if (!isUniqueIdList(value.rootOrder, itemIds)) return false
-  const referencedItems = [
-    ...value.rootOrder,
-    ...typedGroups.flatMap((group) => group.itemIds),
-  ]
-  return (
-    referencedItems.length === itemIds.size &&
-    new Set(referencedItems).size === itemIds.size
-  )
+  const referencedItems = [...value.rootOrder, ...typedGroups.flatMap((group) => group.itemIds)]
+  return referencedItems.length === itemIds.size && new Set(referencedItems).size === itemIds.size
 }
 
 function isCustomSearchEngines(value: unknown, images: Readonly<Record<string, string>>): boolean {
@@ -163,11 +155,17 @@ function isCustomSearchEngines(value: unknown, images: Readonly<Record<string, s
     return false
   }
   const typedItems = items as Array<{ id: string }>
-  return hasUniqueIds(typedItems) && hasExactOrder(value.order, new Set(typedItems.map(({ id }) => id)))
+  return (
+    hasUniqueIds(typedItems) && hasExactOrder(value.order, new Set(typedItems.map(({ id }) => id)))
+  )
 }
 
 function isBlockedTopSites(value: unknown): boolean {
-  if (!isRecord(value) || !Array.isArray(value.urls) || !value.urls.every((url) => typeof url === 'string')) {
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value.urls) ||
+    !value.urls.every((url) => typeof url === 'string')
+  ) {
     return false
   }
   if (new Set(value.urls).size !== value.urls.length) return false
@@ -207,11 +205,18 @@ function isWallpapers(value: unknown): boolean {
 export function isSyncScope(value: unknown): value is SyncScopePreferences {
   if (!isRecord(value)) return false
   const keys: Array<keyof SyncScopePreferences> = [
-    'settings', 'quickLinks', 'customSearchEngines', 'uiPreferences',
-    'blockedTopSites', 'wallpapers', 'onlineWallpaperUrl', 'userIcons',
+    'settings',
+    'quickLinks',
+    'customSearchEngines',
+    'uiPreferences',
+    'blockedTopSites',
+    'wallpapers',
+    'onlineWallpaperUrl',
+    'userIcons',
   ]
-  return keys.every((key) => typeof value[key] === 'boolean')
-    && keys.some((key) => value[key] === true)
+  return (
+    keys.every((key) => typeof value[key] === 'boolean') && keys.some((key) => value[key] === true)
+  )
 }
 
 export function parseLocalSyncState(value: unknown): LocalSyncStateV1 {
@@ -244,20 +249,24 @@ function isInlineImages(value: unknown): value is Record<string, string> {
 }
 
 function isSyncSnapshot(value: unknown): boolean {
-  if (!isRecord(value) || !isSyncScope(value.scope) || !isInlineImages(value.inlineImages)) return false
+  if (!isRecord(value) || !isSyncScope(value.scope) || !isInlineImages(value.inlineImages))
+    return false
   const images = (value.inlineImages ?? {}) as Record<string, string>
   if (value.settings !== undefined && !isRecord(value.settings)) return false
-  if (value.ui !== undefined && (
-    !isRecord(value.ui) ||
-    typeof value.ui.language !== 'string' ||
-    value.ui.language.length === 0 ||
-    !['auto', 'dark', 'light'].includes(String(value.ui.colorMode))
-  )) return false
+  if (
+    value.ui !== undefined &&
+    (!isRecord(value.ui) ||
+      typeof value.ui.language !== 'string' ||
+      value.ui.language.length === 0 ||
+      !['auto', 'dark', 'light'].includes(String(value.ui.colorMode)))
+  )
+    return false
   if (value.quickLinks !== undefined && !isQuickLinks(value.quickLinks, images)) return false
   if (
     value.customSearchEngines !== undefined &&
     !isCustomSearchEngines(value.customSearchEngines, images)
-  ) return false
+  )
+    return false
   if (value.optional === undefined) return true
   if (!isRecord(value.optional)) return false
   return (
@@ -312,7 +321,8 @@ function invalid<T>(error: string): ValidationResult<T> {
 export function validateCommitRecord(value: unknown): ValidationResult<CommitRecordV1> {
   if (!isRecord(value)) return invalid('Commit record must be an object')
   if (value.formatVersion !== 1) return invalid('Unsupported commit format')
-  if (!hasJsonSizeAtMost(value, MAX_METADATA_BYTES)) return invalid('Commit record is too large or invalid')
+  if (!hasJsonSizeAtMost(value, MAX_METADATA_BYTES))
+    return invalid('Commit record is too large or invalid')
   if (!isUuid(value.vaultId) || !isUuid(value.generationId) || !isUuid(value.revisionId)) {
     return invalid('Commit record contains an invalid ID')
   }
@@ -333,7 +343,8 @@ export function validateCommitRecord(value: unknown): ValidationResult<CommitRec
 export function validateSyncRevision(value: unknown): ValidationResult<SyncRevisionV1> {
   if (!isRecord(value)) return invalid('Revision must be an object')
   if (value.formatVersion !== 1) return invalid('Unsupported revision format')
-  if (!hasJsonSizeAtMost(value, MAX_REVISION_BYTES)) return invalid('Revision is too large or invalid')
+  if (!hasJsonSizeAtMost(value, MAX_REVISION_BYTES))
+    return invalid('Revision is too large or invalid')
   if (
     !isUuid(value.vaultId) ||
     !isUuid(value.generationId) ||
@@ -358,14 +369,21 @@ export function validateSyncRevision(value: unknown): ValidationResult<SyncRevis
   ) {
     return invalid('Revision parents are invalid')
   }
-  if (!isRecord(value.device) || !isUuid(value.device.id) || typeof value.device.name !== 'string') {
+  if (
+    !isRecord(value.device) ||
+    !isUuid(value.device.id) ||
+    typeof value.device.name !== 'string'
+  ) {
     return invalid('Revision device is invalid')
   }
   if (value.device.name.length < 1 || value.device.name.length > 80) {
     return invalid('Revision device name is invalid')
   }
   if (!isDate(value.createdAt)) return invalid('Revision time is invalid')
-  if (typeof value.reason !== 'string' || !REVISION_REASONS.has(value.reason as SyncRevisionReason)) {
+  if (
+    typeof value.reason !== 'string' ||
+    !REVISION_REASONS.has(value.reason as SyncRevisionReason)
+  ) {
     return invalid('Revision reason is invalid')
   }
   if (!isSyncSnapshot(value.snapshot)) return invalid('Revision snapshot is invalid')
@@ -373,7 +391,8 @@ export function validateSyncRevision(value: unknown): ValidationResult<SyncRevis
     return invalid('Revision tombstones are invalid')
   }
   const tombstoneKeys = value.tombstones.map(
-    (tombstone) => `${(tombstone as TombstoneV1).entityType}\u0000${(tombstone as TombstoneV1).entityId}`,
+    (tombstone) =>
+      `${(tombstone as TombstoneV1).entityType}\u0000${(tombstone as TombstoneV1).entityId}`,
   )
   if (new Set(tombstoneKeys).size !== tombstoneKeys.length) {
     return invalid('Revision contains duplicate tombstones')

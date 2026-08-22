@@ -8,8 +8,9 @@ import { useSettingsStore } from '@/shared/settings'
 import { OPEN_SEARCH_ENGINE_PREFERENCE } from '@newtab/shared/keys'
 import { BUILT_IN_SEARCH_ENGINE_KEYS, searchSuggestAPIs } from '@newtab/shared/search'
 
-import SettingsSection from './SettingsSection.vue'
 import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
+
+import SettingsSection from './SettingsSection.vue'
 
 const { t } = useTranslation('settings')
 

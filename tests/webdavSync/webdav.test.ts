@@ -48,7 +48,9 @@ class FakeWebDavServer {
   readonly parseMultiStatus: WebDavMultiStatusParser = (text) => JSON.parse(text) as WebDavEntry[]
 
   readonly fetch: typeof fetch = async (input, init = {}) => {
-    const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input : input.url)
+    const url = new URL(
+      typeof input === 'string' ? input : input instanceof URL ? input : input.url,
+    )
     const method = init.method ?? 'GET'
     const path = decodeURIComponent(url.pathname).replace(/\/$/, '') || '/'
     const headers = new Headers(init.headers)
@@ -61,16 +63,19 @@ class FakeWebDavServer {
       return new Response(null, { status: 302, headers: { Location: this.redirectTo } })
     }
     if (this.forcedStatus) return new Response(null, { status: this.forcedStatus })
-    if (!headers.get('Authorization')?.startsWith('Basic ')) return new Response(null, { status: 401 })
+    if (!headers.get('Authorization')?.startsWith('Basic '))
+      return new Response(null, { status: 401 })
 
     if (method === 'MKCOL') {
       if (this.resources.has(path)) return new Response(null, { status: 405 })
-      if (!this.resources.get(this.parent(path))?.collection) return new Response(null, { status: 409 })
+      if (!this.resources.get(this.parent(path))?.collection)
+        return new Response(null, { status: 409 })
       this.resources.set(path, this.resource(new Uint8Array(), true))
       return new Response(null, { status: 201 })
     }
     if (method === 'PUT') {
-      if (!this.resources.get(this.parent(path))?.collection) return new Response(null, { status: 409 })
+      if (!this.resources.get(this.parent(path))?.collection)
+        return new Response(null, { status: 409 })
       const existing = this.resources.get(path)
       const bytes = await this.readBody(init.body)
       const resource = this.resource(bytes, false)
@@ -243,7 +248,8 @@ test('a deleted configured vault stays a not-found condition instead of an ident
     (error: unknown) => error instanceof WebDavError && error.category === 'foreign-vault',
   )
   assert.equal(
-    requireConfiguredVaultInspection({ state: 'ready', metadata: metadata() }, metadata()).metadata.vaultId,
+    requireConfiguredVaultInspection({ state: 'ready', metadata: metadata() }, metadata()).metadata
+      .vaultId,
     metadata().vaultId,
   )
 })
@@ -316,11 +322,20 @@ test('vault publication makes a revision visible only after payload verification
   assert.deepEqual(commits, [commit])
   assert.deepEqual(await repository.readRevision(commit), value)
 
-  const revisionPut = server.events.findIndex((event) => event.includes('PUT /dav/LemonNewTab/generations/') && event.includes('/revisions/'))
-  const revisionGet = server.events.findIndex((event) => event.includes('GET /dav/LemonNewTab/generations/') && event.includes('/revisions/'))
-  const commitPut = server.events.findIndex((event) => event.includes('PUT /dav/LemonNewTab/generations/') && event.includes('/commits/'))
+  const revisionPut = server.events.findIndex(
+    (event) => event.includes('PUT /dav/LemonNewTab/generations/') && event.includes('/revisions/'),
+  )
+  const revisionGet = server.events.findIndex(
+    (event) => event.includes('GET /dav/LemonNewTab/generations/') && event.includes('/revisions/'),
+  )
+  const commitPut = server.events.findIndex(
+    (event) => event.includes('PUT /dav/LemonNewTab/generations/') && event.includes('/commits/'),
+  )
   assert.ok(revisionPut >= 0 && revisionGet > revisionPut && commitPut > revisionGet)
-  assert.equal(server.events.filter((event) => event === 'PUT /dav/LemonNewTab/vault.json').length, 1)
+  assert.equal(
+    server.events.filter((event) => event === 'PUT /dav/LemonNewTab/vault.json').length,
+    1,
+  )
   assert.equal(server.conditionalHeadersSeen, false)
 })
 
@@ -331,16 +346,8 @@ test('concurrent revisions remain visible and a multi-parent revision converges 
   await repository.initialize(vault)
   const root = await revision(vault)
   await repository.publishRevision(vault, root)
-  const left = await revision(
-    vault,
-    '66666666-6666-4666-8666-666666666661',
-    [root.revisionId],
-  )
-  const right = await revision(
-    vault,
-    '66666666-6666-4666-8666-666666666662',
-    [root.revisionId],
-  )
+  const left = await revision(vault, '66666666-6666-4666-8666-666666666661', [root.revisionId])
+  const right = await revision(vault, '66666666-6666-4666-8666-666666666662', [root.revisionId])
   await Promise.all([
     repository.publishRevision(vault, left),
     repository.publishRevision(vault, right),
@@ -349,20 +356,24 @@ test('concurrent revisions remain visible and a multi-parent revision converges 
     (await repository.listCommits(vault)).map((commit) => repository.readRevision(commit)),
   )
   assert.deepEqual(
-    findRevisionHeads(branched).map((value) => value.revisionId).sort(),
+    findRevisionHeads(branched)
+      .map((value) => value.revisionId)
+      .sort(),
     [left.revisionId, right.revisionId].sort(),
   )
 
-  const merged = await revision(
-    vault,
-    '66666666-6666-4666-8666-666666666663',
-    [left.revisionId, right.revisionId],
-  )
+  const merged = await revision(vault, '66666666-6666-4666-8666-666666666663', [
+    left.revisionId,
+    right.revisionId,
+  ])
   await repository.publishRevision(vault, merged)
   const converged = await Promise.all(
     (await repository.listCommits(vault)).map((commit) => repository.readRevision(commit)),
   )
-  assert.deepEqual(findRevisionHeads(converged).map((value) => value.revisionId), [merged.revisionId])
+  assert.deepEqual(
+    findRevisionHeads(converged).map((value) => value.revisionId),
+    [merged.revisionId],
+  )
 })
 
 test('a lost commit response is recognized without rewriting the published revision', async () => {
@@ -377,9 +388,7 @@ test('a lost commit response is recognized without rewriting the published revis
     repository.publishRevision(vault, value),
     (error: unknown) => error instanceof WebDavError && error.category === 'server',
   )
-  const writesBeforeRecovery = server.events.filter(
-    (event) => event === `PUT ${commitPath}`,
-  ).length
+  const writesBeforeRecovery = server.events.filter((event) => event === `PUT ${commitPath}`).length
   assert.equal(await repository.hasPublishedRevision(vault, value), true)
   assert.equal(
     server.events.filter((event) => event === `PUT ${commitPath}`).length,

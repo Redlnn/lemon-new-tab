@@ -9,8 +9,8 @@ import {
   getOrCreateSyncState,
   webDavSyncConfigStorage,
 } from '@/shared/webdavSync/localState'
-import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
 import { hasExactWebDavPermission } from '@/shared/webdavSync/permissions'
+import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
 import { serializeWebDavError, WebDavError } from '@/shared/webdavSync/webdav'
 
 const SYNC_DATA_KEYS = new Set([
@@ -31,10 +31,7 @@ export default defineBackground(() => {
       configured = Boolean(config)
       if (!config || maintenance) return false
       const state = await getOrCreateSyncState()
-      return Boolean(
-        state.configured &&
-        (config.rememberPassword || trigger === 'manual'),
-      )
+      return Boolean(state.configured && (config.rememberPassword || trigger === 'manual'))
     },
     synchronize: async () => {
       const { synchronizeBrowser } = await import('@/shared/webdavSync/browserEngine')
@@ -133,18 +130,16 @@ export default defineBackground(() => {
       return inspectBrowserSyncCorruption()
     }
     if (message.type === 'webdav-sync:download-corruption') {
-      const { downloadBrowserCorruptedPayload } = await import(
-        '@/shared/webdavSync/browserManagement'
-      )
+      const { downloadBrowserCorruptedPayload } =
+        await import('@/shared/webdavSync/browserManagement')
       return downloadBrowserCorruptedPayload({
         revisionId: message.revisionId,
         actualPayloadHash: message.actualPayloadHash,
       })
     }
     if (message.type === 'webdav-sync:delete-corruption') {
-      const { deleteBrowserCorruptedRevision } = await import(
-        '@/shared/webdavSync/browserManagement'
-      )
+      const { deleteBrowserCorruptedRevision } =
+        await import('@/shared/webdavSync/browserManagement')
       return runMaintenance(() =>
         deleteBrowserCorruptedRevision({
           revisionId: message.revisionId,

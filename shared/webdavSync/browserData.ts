@@ -1,18 +1,15 @@
+import { getQuickLinksStorageValue, quickLinksStorage } from '@/shared/quickLinks'
 import type { CURRENT_CONFIG_SCHEMA } from '@/shared/settings'
 import { normalizeCurrentSettings, settingsStorage } from '@/shared/settings'
-import { getQuickLinksStorageValue, quickLinksStorage } from '@/shared/quickLinks'
+import { idbDelete, idbGet, idbSet } from '@/shared/storage/idb'
 import { getUiPreferences, patchUiPreferences } from '@/shared/uiPreferences'
-import {
-  idbDelete,
-  idbGet,
-  idbSet,
-} from '@/shared/storage/idb'
 
 import { customSearchEngineStorage } from '@newtab/shared/customSearchEngine/customSearchEngineStorage'
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 
-import { captureSyncSnapshot, deduplicateInlineImages } from './capture.ts'
+import { materializeQuickLinks, mergeSyncSettings } from './apply.ts'
 import { sha256Hex } from './canonical.ts'
+import { captureSyncSnapshot, deduplicateInlineImages } from './capture.ts'
 import { MAX_SYNC_WALLPAPER_BYTES } from './catalog.ts'
 import {
   clearPendingApply,
@@ -21,7 +18,6 @@ import {
   type PendingApplyV1,
   type PendingWallpaperApplyV1,
 } from './localState.ts'
-import { materializeQuickLinks, mergeSyncSettings } from './apply.ts'
 import type {
   LocalResourceOmission,
   SyncScopePreferences,
@@ -51,14 +47,13 @@ export async function captureBrowserSyncSnapshotResult(
   scope: SyncScopePreferences,
   baseline?: SyncSnapshotV1,
 ): Promise<BrowserSyncCaptureResult> {
-  const [settings, quickLinks, searchEngines, ui, blockedTopSites] =
-    await Promise.all([
-      settingsStorage.getValue(),
-      getQuickLinksStorageValue(),
-      customSearchEngineStorage.getValue(),
-      getUiPreferences(),
-      scope.blockedTopSites ? blockedTopSitesStorage.getValue() : undefined,
-    ])
+  const [settings, quickLinks, searchEngines, ui, blockedTopSites] = await Promise.all([
+    settingsStorage.getValue(),
+    getQuickLinksStorageValue(),
+    customSearchEngineStorage.getValue(),
+    getUiPreferences(),
+    scope.blockedTopSites ? blockedTopSitesStorage.getValue() : undefined,
+  ])
 
   const snapshot = captureSyncSnapshot({
     settings,
@@ -77,8 +72,10 @@ export async function captureBrowserSyncSnapshotResult(
       captureWallpaper(settings.background.local, 'wallpaper'),
       captureWallpaper(settings.background.localDark, 'wallpaperDark'),
     ])
-    const lightValue = light.value ?? (light.preserveBaseline ? baseline?.optional?.wallpapers?.light : undefined)
-    const darkValue = dark.value ?? (dark.preserveBaseline ? baseline?.optional?.wallpapers?.dark : undefined)
+    const lightValue =
+      light.value ?? (light.preserveBaseline ? baseline?.optional?.wallpapers?.light : undefined)
+    const darkValue =
+      dark.value ?? (dark.preserveBaseline ? baseline?.optional?.wallpapers?.dark : undefined)
     if (lightValue || darkValue) {
       snapshot.optional ??= {}
       snapshot.optional.wallpapers = {
@@ -86,8 +83,10 @@ export async function captureBrowserSyncSnapshotResult(
         ...(darkValue ? { dark: structuredClone(darkValue) } : {}),
       }
     }
-    if (light.reason) resourceOmissions.push({ kind: 'wallpaper', variant: 'light', reason: light.reason })
-    if (dark.reason) resourceOmissions.push({ kind: 'wallpaper', variant: 'dark', reason: dark.reason })
+    if (light.reason)
+      resourceOmissions.push({ kind: 'wallpaper', variant: 'light', reason: light.reason })
+    if (dark.reason)
+      resourceOmissions.push({ kind: 'wallpaper', variant: 'dark', reason: dark.reason })
   }
   return { snapshot, resourceOmissions }
 }
@@ -157,14 +156,12 @@ async function selectedWallpaperIsUnavailable(
   }
 }
 
-async function writeSettings(
-  snapshot: SyncSnapshotV1,
-  scope: SyncScopePreferences,
-): Promise<void> {
+async function writeSettings(snapshot: SyncSnapshotV1, scope: SyncScopePreferences): Promise<void> {
   const current = await settingsStorage.getValue()
-  const merged = scope.settings && snapshot.settings
-    ? mergeSyncSettings<CURRENT_CONFIG_SCHEMA>(current, snapshot.settings)
-    : structuredClone(current)
+  const merged =
+    scope.settings && snapshot.settings
+      ? mergeSyncSettings<CURRENT_CONFIG_SCHEMA>(current, snapshot.settings)
+      : structuredClone(current)
   if (snapshot.scope.onlineWallpaperUrl && snapshot.optional?.onlineWallpaperUrl !== undefined) {
     merged.background.online.url = snapshot.optional.onlineWallpaperUrl
   }
@@ -197,10 +194,7 @@ async function writeQuickLinks(
   )
 }
 
-async function writeOptional(
-  snapshot: SyncSnapshotV1,
-  scope: SyncScopePreferences,
-): Promise<void> {
+async function writeOptional(snapshot: SyncSnapshotV1, scope: SyncScopePreferences): Promise<void> {
   const tasks: Promise<unknown>[] = []
   if (scope.blockedTopSites && snapshot.optional?.blockedTopSites) {
     tasks.push(blockedTopSitesStorage.setValue(snapshot.optional.blockedTopSites.urls))
@@ -208,10 +202,7 @@ async function writeOptional(
   await Promise.all(tasks)
 }
 
-async function continueApply(
-  pending: PendingApplyV1,
-  scope: SyncScopePreferences,
-): Promise<void> {
+async function continueApply(pending: PendingApplyV1, scope: SyncScopePreferences): Promise<void> {
   if (pending.phase === 'validated') {
     for (const [variant, wallpaper] of Object.entries(pending.wallpapers ?? {}) as Array<
       ['dark' | 'light', PendingWallpaperApplyV1]
@@ -366,8 +357,7 @@ export async function getSelectedBrowserWallpaper(
   variant: 'dark' | 'light',
 ): Promise<Blob | undefined> {
   const settings = await settingsStorage.getValue()
-  const selection =
-    variant === 'light' ? settings.background.local : settings.background.localDark
+  const selection = variant === 'light' ? settings.background.local : settings.background.localDark
   if (!selection.id || selection.mediaType === 'video') return undefined
   const blob = await idbGet(variant === 'light' ? 'wallpaper' : 'wallpaperDark', selection.id)
   return blob instanceof Blob && blob.type.toLowerCase().startsWith('image/') ? blob : undefined

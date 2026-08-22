@@ -1,12 +1,7 @@
 import { storage } from '#imports'
 import { browser } from 'wxt/browser'
 
-import {
-  idbClear,
-  idbDelete,
-  idbGet,
-  idbSet,
-} from '@/shared/storage/idb'
+import { idbClear, idbDelete, idbGet, idbSet } from '@/shared/storage/idb'
 
 import type {
   LocalSyncStateV1,
@@ -30,33 +25,37 @@ export const DEFAULT_SYNC_SCOPE: Readonly<SyncScopePreferences> = {
 function normalizeScope(value: Partial<SyncScopePreferences> | undefined): SyncScopePreferences {
   const scope: SyncScopePreferences = {
     settings: typeof value?.settings === 'boolean' ? value.settings : DEFAULT_SYNC_SCOPE.settings,
-    quickLinks: typeof value?.quickLinks === 'boolean' ? value.quickLinks : DEFAULT_SYNC_SCOPE.quickLinks,
-    customSearchEngines: typeof value?.customSearchEngines === 'boolean'
-      ? value.customSearchEngines
-      : DEFAULT_SYNC_SCOPE.customSearchEngines,
-    uiPreferences: typeof value?.uiPreferences === 'boolean'
-      ? value.uiPreferences
-      : DEFAULT_SYNC_SCOPE.uiPreferences,
-    blockedTopSites: typeof value?.blockedTopSites === 'boolean'
-      ? value.blockedTopSites
-      : DEFAULT_SYNC_SCOPE.blockedTopSites,
-    wallpapers: typeof value?.wallpapers === 'boolean'
-      ? value.wallpapers
-      : DEFAULT_SYNC_SCOPE.wallpapers,
-    onlineWallpaperUrl: typeof value?.onlineWallpaperUrl === 'boolean'
-      ? value.onlineWallpaperUrl
-      : DEFAULT_SYNC_SCOPE.onlineWallpaperUrl,
-    userIcons: typeof value?.userIcons === 'boolean'
-      ? value.userIcons
-      : DEFAULT_SYNC_SCOPE.userIcons,
+    quickLinks:
+      typeof value?.quickLinks === 'boolean' ? value.quickLinks : DEFAULT_SYNC_SCOPE.quickLinks,
+    customSearchEngines:
+      typeof value?.customSearchEngines === 'boolean'
+        ? value.customSearchEngines
+        : DEFAULT_SYNC_SCOPE.customSearchEngines,
+    uiPreferences:
+      typeof value?.uiPreferences === 'boolean'
+        ? value.uiPreferences
+        : DEFAULT_SYNC_SCOPE.uiPreferences,
+    blockedTopSites:
+      typeof value?.blockedTopSites === 'boolean'
+        ? value.blockedTopSites
+        : DEFAULT_SYNC_SCOPE.blockedTopSites,
+    wallpapers:
+      typeof value?.wallpapers === 'boolean' ? value.wallpapers : DEFAULT_SYNC_SCOPE.wallpapers,
+    onlineWallpaperUrl:
+      typeof value?.onlineWallpaperUrl === 'boolean'
+        ? value.onlineWallpaperUrl
+        : DEFAULT_SYNC_SCOPE.onlineWallpaperUrl,
+    userIcons:
+      typeof value?.userIcons === 'boolean' ? value.userIcons : DEFAULT_SYNC_SCOPE.userIcons,
   }
   return Object.values(scope).some(Boolean) ? scope : { ...DEFAULT_SYNC_SCOPE }
 }
 
 export function normalizeLocalSyncState(value: unknown): LocalSyncStateV1 {
-  const current = value && typeof value === 'object' && !Array.isArray(value)
-    ? value as Partial<LocalSyncStateV1>
-    : {}
+  const current =
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Partial<LocalSyncStateV1>)
+      : {}
   return {
     ...current,
     configured: current.configured === true,
@@ -171,9 +170,7 @@ export async function getOrCreateSyncState(): Promise<LocalSyncStateV1> {
   return state
 }
 
-export async function patchSyncState(
-  patch: Partial<LocalSyncStateV1>,
-): Promise<LocalSyncStateV1> {
+export async function patchSyncState(patch: Partial<LocalSyncStateV1>): Promise<LocalSyncStateV1> {
   const current = await getOrCreateSyncState()
   const next = { ...current, ...patch }
   await webDavSyncStateStorage.setValue(next)
@@ -257,7 +254,7 @@ export function clearStoredEncryptionKey(vaultId: string, generationId: string):
 }
 
 export async function getBaseline(): Promise<SyncSnapshotV1 | undefined> {
-  const snapshot = await idbGet('webdavSync', BASELINE_KEY) as SyncSnapshotV1 | undefined
+  const snapshot = (await idbGet('webdavSync', BASELINE_KEY)) as SyncSnapshotV1 | undefined
   if (!snapshot) return undefined
   return { ...snapshot, scope: normalizeScope(snapshot.scope) }
 }

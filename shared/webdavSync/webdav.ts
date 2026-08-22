@@ -8,12 +8,7 @@ import {
   MIN_COMPLETE_HISTORY_VERSIONS,
   ORPHAN_RESOURCE_GRACE_MS,
 } from './lifecycle.ts'
-import type {
-  AssetReferenceV1,
-  CommitRecordV1,
-  SyncRevisionV1,
-  VaultMetadataV1,
-} from './types.ts'
+import type { AssetReferenceV1, CommitRecordV1, SyncRevisionV1, VaultMetadataV1 } from './types.ts'
 import {
   MAX_METADATA_BYTES,
   MAX_REVISION_BYTES,
@@ -27,8 +22,7 @@ const MAX_REDIRECTS = 3
 const METADATA_TIMEOUT_MS = 30_000
 const ASSET_TIMEOUT_MS = 120_000
 const PRODUCT_ID = 'lemon-new-tab'
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308])
 const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder('utf-8', { fatal: true })
@@ -145,7 +139,10 @@ export function requireConfiguredVaultInspection(
 
 function isPrivateIpv4(hostname: string): boolean {
   const values = hostname.split('.').map(Number)
-  if (values.length !== 4 || values.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) {
+  if (
+    values.length !== 4 ||
+    values.some((value) => !Number.isInteger(value) || value < 0 || value > 255)
+  ) {
     return false
   }
   const [a, b] = values as [number, number, number, number]
@@ -160,7 +157,15 @@ function isPrivateIpv4(hostname: string): boolean {
 
 function isPrivateIpv6(hostname: string): boolean {
   const normalized = hostname.replace(/^\[|\]$/g, '').toLowerCase()
-  return normalized === '::1' || normalized.startsWith('fc') || normalized.startsWith('fd') || normalized.startsWith('fe8') || normalized.startsWith('fe9') || normalized.startsWith('fea') || normalized.startsWith('feb')
+  return (
+    normalized === '::1' ||
+    normalized.startsWith('fc') ||
+    normalized.startsWith('fd') ||
+    normalized.startsWith('fe8') ||
+    normalized.startsWith('fe9') ||
+    normalized.startsWith('fea') ||
+    normalized.startsWith('feb')
+  )
 }
 
 export function classifyWebDavAddress(value: string): {
@@ -228,13 +233,17 @@ function toRelativePath(path: string): string {
 }
 
 function statusError(status: number): WebDavError {
-  if (status === 401) return new WebDavError('authentication', 'WebDAV authentication failed', status)
+  if (status === 401)
+    return new WebDavError('authentication', 'WebDAV authentication failed', status)
   if (status === 403) return new WebDavError('forbidden', 'WebDAV access was denied', status)
   if (status === 404) return new WebDavError('not-found', 'WebDAV resource was not found', status)
   if (status === 409) return new WebDavError('conflict', 'WebDAV directory state changed', status)
-  if (status === 412) return new WebDavError('precondition', 'WebDAV request precondition failed', status)
-  if (status === 423) return new WebDavError('locked', 'WebDAV resource is temporarily locked', status)
-  if (status === 429) return new WebDavError('rate-limited', 'WebDAV rate limit was reached', status)
+  if (status === 412)
+    return new WebDavError('precondition', 'WebDAV request precondition failed', status)
+  if (status === 423)
+    return new WebDavError('locked', 'WebDAV resource is temporarily locked', status)
+  if (status === 429)
+    return new WebDavError('rate-limited', 'WebDAV rate limit was reached', status)
   if (status === 507) return new WebDavError('storage-full', 'WebDAV storage is full', status)
   if (status >= 500) return new WebDavError('server', 'WebDAV server failed', status)
   return new WebDavError('invalid-response', 'WebDAV returned an unexpected status', status)
@@ -363,7 +372,9 @@ export class WebDavClient {
     body: string | Uint8Array,
     options: WebDavPutOptions = {},
   ): Promise<void> {
-    const headers = new Headers({ 'Content-Type': options.contentType ?? 'application/octet-stream' })
+    const headers = new Headers({
+      'Content-Type': options.contentType ?? 'application/octet-stream',
+    })
     const response = await this.request('PUT', path, {
       body,
       headers,
@@ -393,7 +404,8 @@ export class WebDavClient {
 
   async list(path: string): Promise<WebDavEntry[]> {
     const headers = new Headers({ Depth: '1', 'Content-Type': 'application/xml; charset=utf-8' })
-    const body = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:getcontentlength/><d:getlastmodified/></d:prop></d:propfind>'
+    const body =
+      '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:getcontentlength/><d:getlastmodified/></d:prop></d:propfind>'
     const response = await this.request('PROPFIND', path, {
       body,
       headers,
@@ -469,7 +481,9 @@ export class WebDavClient {
 }
 
 function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
-  return left.byteLength === right.byteLength && left.every((value, index) => value === right[index])
+  return (
+    left.byteLength === right.byteLength && left.every((value, index) => value === right[index])
+  )
 }
 
 export async function probeWebDavAccess(client: WebDavClient): Promise<void> {
@@ -564,7 +578,8 @@ export class WebDavVaultRepository {
     try {
       entries = await this.client.list(this.directory)
     } catch (error) {
-      if (error instanceof WebDavError && error.category === 'not-found') return { state: 'missing' }
+      if (error instanceof WebDavError && error.category === 'not-found')
+        return { state: 'missing' }
       throw error
     }
 
@@ -624,10 +639,7 @@ export class WebDavVaultRepository {
     if ((await hashCanonicalJson(revision.snapshot)) !== revision.snapshotHash) {
       throw new WebDavError('corrupted', 'Revision snapshot hash is invalid')
     }
-    if (
-      revision.vaultId !== metadata.vaultId ||
-      revision.generationId !== metadata.generationId
-    ) {
+    if (revision.vaultId !== metadata.vaultId || revision.generationId !== metadata.generationId) {
       throw new WebDavError('corrupted', 'Revision does not belong to the active vault generation')
     }
     if (storedPayload.byteLength > MAX_REVISION_BYTES + 64 * 1024) {
@@ -688,10 +700,7 @@ export class WebDavVaultRepository {
     role: AssetReferenceV1['role'],
     blob: Blob,
   ): Promise<AssetReferenceV1> {
-    if (
-      blob.size > 20 * 1024 * 1024 ||
-      !blob.type.toLowerCase().startsWith('image/')
-    ) {
+    if (blob.size > 20 * 1024 * 1024 || !blob.type.toLowerCase().startsWith('image/')) {
       throw new WebDavError('response-too-large', 'Wallpaper asset is unsupported or too large')
     }
     const bytes = new Uint8Array(await blob.arrayBuffer())
@@ -768,7 +777,10 @@ export class WebDavVaultRepository {
       }
       throw error
     }
-    if (bytes.byteLength !== commit.payloadSize || (await sha256Hex(bytes)) !== commit.payloadHash) {
+    if (
+      bytes.byteLength !== commit.payloadSize ||
+      (await sha256Hex(bytes)) !== commit.payloadHash
+    ) {
       throw new WebDavError('corrupted', 'Committed revision payload failed integrity validation')
     }
     return bytes
@@ -893,11 +905,10 @@ export class WebDavVaultRepository {
     }
 
     const root = `${this.directory}/generations/${metadata.generationId}`
-    const commitEntries = (await this.client.list(`${root}/commits`))
-      .filter((entry) => !entry.isCollection && entry.name.endsWith('.json'))
-    const commitEntryById = new Map(
-      commitEntries.map((entry) => [entry.name.slice(0, -5), entry]),
+    const commitEntries = (await this.client.list(`${root}/commits`)).filter(
+      (entry) => !entry.isCollection && entry.name.endsWith('.json'),
     )
+    const commitEntryById = new Map(commitEntries.map((entry) => [entry.name.slice(0, -5), entry]))
     const before = await this.listCommits(metadata)
     const expectedIds = new Set(revisions.map((revision) => revision.revisionId))
     if (
@@ -1004,8 +1015,14 @@ export class WebDavVaultRepository {
   ): Promise<void> {
     await this.client.put(path, bytes, { timeoutMs })
     const stored = await this.client.get(path, bytes.byteLength, ASSET_TIMEOUT_MS)
-    if (stored.bytes.byteLength !== bytes.byteLength || (await sha256Hex(stored.bytes)) !== expectedHash) {
-      throw new WebDavError('corrupted', 'Immutable WebDAV object does not match the pending upload')
+    if (
+      stored.bytes.byteLength !== bytes.byteLength ||
+      (await sha256Hex(stored.bytes)) !== expectedHash
+    ) {
+      throw new WebDavError(
+        'corrupted',
+        'Immutable WebDAV object does not match the pending upload',
+      )
     }
   }
 }

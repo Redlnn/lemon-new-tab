@@ -1,3 +1,4 @@
+import { sha256Hex } from './canonical.ts'
 import {
   MAX_SYNC_INLINE_IMAGE_BYTES,
   MAX_SYNC_INLINE_IMAGES_BYTES,
@@ -6,7 +7,6 @@ import {
   toSyncQuickLinks,
   type CaptureContext,
 } from './catalog.ts'
-import { sha256Hex } from './canonical.ts'
 import { pickSyncSettings } from './settingsWhitelist.ts'
 import type {
   LocalResourceOmission,
@@ -33,10 +33,7 @@ export function captureSyncSnapshot(context: CaptureContext): SyncSnapshotV1 {
   const snapshot: SyncSnapshotV1 = { scope: { ...context.scope } }
   if (context.scope.settings) snapshot.settings = sanitizeSettings(context.settings)
   if (context.scope.quickLinks) {
-    snapshot.quickLinks = toSyncQuickLinks(
-      context.quickLinks,
-      context.scope.userIcons,
-    )
+    snapshot.quickLinks = toSyncQuickLinks(context.quickLinks, context.scope.userIcons)
   }
   if (context.scope.customSearchEngines) {
     snapshot.customSearchEngines = toSyncCustomSearchEngines(
@@ -66,10 +63,11 @@ interface BaseImageCandidate {
   value: string
 }
 
-type ImageCandidate = BaseImageCandidate & (
-  | { kind: 'quick-link-icon'; owner: SyncQuickLinkV1 }
-  | { kind: 'search-engine-icon'; owner: SyncCustomSearchEngineV1 }
-)
+type ImageCandidate = BaseImageCandidate &
+  (
+    | { kind: 'quick-link-icon'; owner: SyncQuickLinkV1 }
+    | { kind: 'search-engine-icon'; owner: SyncCustomSearchEngineV1 }
+  )
 
 function baselineHash(
   baseline: SyncSnapshotV1 | undefined,

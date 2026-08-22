@@ -1,3 +1,4 @@
+import { preserveExcludedScope } from './apply.ts'
 import { captureBrowserSyncSnapshot } from './browserData.ts'
 import {
   cleanupHistory,
@@ -8,15 +9,10 @@ import {
   type BrowserSyncHistoryEntry,
   type BrowserSyncHistoryPreview,
 } from './browserEngine.ts'
-import { preserveExcludedScope } from './apply.ts'
 import { hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
 import { createEncryptionAad, decryptSyncBytes } from './crypto.ts'
 import { compareSyncSnapshots } from './differences.ts'
-import {
-  getBaseline,
-  getOrCreateSyncState,
-  patchSyncState,
-} from './localState.ts'
+import { getBaseline, getOrCreateSyncState, patchSyncState } from './localState.ts'
 import { findRevisionHeads } from './syncDecision.ts'
 import type {
   AssetReferenceV1,
@@ -163,10 +159,7 @@ export async function repairBrowserSyncCorruption(input: {
     throw new WebDavError('conflict', 'Valid revisions do not have one safe previous version')
   }
   const previous = validHeads[0]!
-  if (
-    previous.reason === 'repair' &&
-    opened.state.baseRevisionId === previous.revisionId
-  ) {
+  if (previous.reason === 'repair' && opened.state.baseRevisionId === previous.revisionId) {
     return patchSyncState({ paused: true, pauseReason: 'corrupted-remote' })
   }
   const captured = await captureBrowserSyncSnapshot(opened.state.scope)
@@ -222,11 +215,7 @@ export async function deleteBrowserCorruptedRevision(input: {
     throw new WebDavError('precondition', 'The verified repair revision is no longer current')
   }
   await opened.repository.deleteRevision(opened.metadata, damaged.revisionId)
-  await cleanupHistory(
-    opened.repository,
-    opened.metadata,
-    opened.encryptionKey,
-  )
+  await cleanupHistory(opened.repository, opened.metadata, opened.encryptionKey)
   return patchSyncState({
     paused: false,
     pauseReason: undefined,
@@ -359,7 +348,8 @@ export async function previewBrowserSyncHistory(
   revisionId: string,
 ): Promise<BrowserSyncHistoryPreview> {
   const opened = await openConfiguredVault()
-  if (opened.state.paused) throw new WebDavError('conflict', 'Resolve sync status before restoring history')
+  if (opened.state.paused)
+    throw new WebDavError('conflict', 'Resolve sync status before restoring history')
   const heads = findRevisionHeads(opened.revisions)
   if (heads.length !== 1) throw new WebDavError('conflict', 'Resolve remote branches first')
   const target = opened.revisions.find((revision) => revision.revisionId === revisionId)
@@ -391,7 +381,8 @@ export async function restoreBrowserSyncHistory(
   expected?: { currentSnapshotHash: string; headRevisionId: string },
 ): Promise<LocalSyncStateV1> {
   const opened = await openConfiguredVault()
-  if (opened.state.paused) throw new WebDavError('conflict', 'Resolve sync status before restoring history')
+  if (opened.state.paused)
+    throw new WebDavError('conflict', 'Resolve sync status before restoring history')
   const heads = findRevisionHeads(opened.revisions)
   if (heads.length !== 1) throw new WebDavError('conflict', 'Resolve remote branches first')
   const target = opened.revisions.find((revision) => revision.revisionId === revisionId)

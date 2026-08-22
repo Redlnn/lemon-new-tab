@@ -22,20 +22,42 @@ export function compareSyncSnapshots(
   limit = 200,
 ): SyncDifferenceResult {
   const result: SyncDifferenceResult = { differences: [], truncated: false }
-  const sections: Array<[
-    SyncConflict['category'],
-    string,
-    JsonValue | undefined,
-    JsonValue | undefined,
-  ]> = [
+  const sections: Array<
+    [SyncConflict['category'], string, JsonValue | undefined, JsonValue | undefined]
+  > = [
     ['scope', 'scope', current.scope as unknown as JsonValue, target.scope as unknown as JsonValue],
     ['settings', 'settings', current.settings, target.settings],
-    ['quick-links', 'quickLinks', current.quickLinks as unknown as JsonValue, target.quickLinks as unknown as JsonValue],
-    ['search-engines', 'customSearchEngines', current.customSearchEngines as unknown as JsonValue, target.customSearchEngines as unknown as JsonValue],
+    [
+      'quick-links',
+      'quickLinks',
+      current.quickLinks as unknown as JsonValue,
+      target.quickLinks as unknown as JsonValue,
+    ],
+    [
+      'search-engines',
+      'customSearchEngines',
+      current.customSearchEngines as unknown as JsonValue,
+      target.customSearchEngines as unknown as JsonValue,
+    ],
     ['ui', 'ui', current.ui as unknown as JsonValue, target.ui as unknown as JsonValue],
-    ['blocked-top-sites', 'optional.blockedTopSites', current.optional?.blockedTopSites as unknown as JsonValue | undefined, target.optional?.blockedTopSites as unknown as JsonValue | undefined],
-    ['wallpaper', 'optional.wallpapers', current.optional?.wallpapers as unknown as JsonValue | undefined, target.optional?.wallpapers as unknown as JsonValue | undefined],
-    ['settings', 'optional.onlineWallpaperUrl', current.optional?.onlineWallpaperUrl, target.optional?.onlineWallpaperUrl],
+    [
+      'blocked-top-sites',
+      'optional.blockedTopSites',
+      current.optional?.blockedTopSites as unknown as JsonValue | undefined,
+      target.optional?.blockedTopSites as unknown as JsonValue | undefined,
+    ],
+    [
+      'wallpaper',
+      'optional.wallpapers',
+      current.optional?.wallpapers as unknown as JsonValue | undefined,
+      target.optional?.wallpapers as unknown as JsonValue | undefined,
+    ],
+    [
+      'settings',
+      'optional.onlineWallpaperUrl',
+      current.optional?.onlineWallpaperUrl,
+      target.optional?.onlineWallpaperUrl,
+    ],
   ]
 
   for (const [category, path, left, right] of sections) {
@@ -130,7 +152,7 @@ function isObject(value: MaybeJson): value is JsonObject {
 }
 
 function isEntityArray(value: MaybeJson): value is Array<JsonObject & { id: string }> {
-  return Array.isArray(value) && value.every(
-    (item) => isObject(item) && typeof item.id === 'string',
+  return (
+    Array.isArray(value) && value.every((item) => isObject(item) && typeof item.id === 'string')
   )
 }

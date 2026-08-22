@@ -1,12 +1,6 @@
 import { browser } from 'wxt/browser'
 
 import type {
-  LocalSyncStateV1,
-  SyncConflict,
-  SyncConflictResolution,
-} from './types.ts'
-import type { SyncConflictDisplayContext } from './conflictPresentation.ts'
-import type {
   BrowserWebDavSetupInput,
   BrowserWebDavSetupPreview,
   BrowserSyncHistoryEntry,
@@ -14,11 +8,10 @@ import type {
   BrowserSyncDeviceEntry,
 } from './browserEngine.ts'
 import type { BrowserCorruptionInspection } from './browserManagement.ts'
+import type { SyncConflictDisplayContext } from './conflictPresentation.ts'
+import type { LocalSyncStateV1, SyncConflict, SyncConflictResolution } from './types.ts'
 import { parseLocalSyncState } from './validation.ts'
-import {
-  deserializeWebDavError,
-  type SerializedWebDavError,
-} from './webdav.ts'
+import { deserializeWebDavError, type SerializedWebDavError } from './webdav.ts'
 
 export interface BrowserSyncConflictDetails {
   conflicts: SyncConflict[]
@@ -101,7 +94,9 @@ export function getSyncState(): Promise<LocalSyncStateV1> {
 }
 
 export function inspectSyncCorruption(): Promise<BrowserCorruptionInspection> {
-  return browser.runtime.sendMessage({ type: 'webdav-sync:inspect-corruption' } satisfies WebDavSyncMessage)
+  return browser.runtime.sendMessage({
+    type: 'webdav-sync:inspect-corruption',
+  } satisfies WebDavSyncMessage)
 }
 
 export function downloadSyncCorruption(
@@ -152,21 +147,27 @@ export function disconnectSyncConnection(
 export function previewSyncConnection(
   input: BrowserWebDavSetupInput,
 ): Promise<BrowserWebDavSetupPreview> {
-  return browser.runtime.sendMessage({
-    type: 'webdav-sync:preview-connection',
-    input,
-  } satisfies WebDavSyncMessage).then(
-    (result: {
-      ok: true
-      value: BrowserWebDavSetupPreview
-    } | {
-      ok: false
-      error: SerializedWebDavError
-    }) => {
-      if (!result.ok) throw deserializeWebDavError(result.error)
-      return result.value
-    },
-  )
+  return browser.runtime
+    .sendMessage({
+      type: 'webdav-sync:preview-connection',
+      input,
+    } satisfies WebDavSyncMessage)
+    .then(
+      (
+        result:
+          | {
+              ok: true
+              value: BrowserWebDavSetupPreview
+            }
+          | {
+              ok: false
+              error: SerializedWebDavError
+            },
+      ) => {
+        if (!result.ok) throw deserializeWebDavError(result.error)
+        return result.value
+      },
+    )
 }
 
 export function connectSyncConnection(
@@ -184,15 +185,21 @@ export function connectSyncConnection(
 }
 
 export function getSyncConflict(): Promise<BrowserSyncConflictDetails | null> {
-  return browser.runtime.sendMessage({ type: 'webdav-sync:get-conflict' } satisfies WebDavSyncMessage)
+  return browser.runtime.sendMessage({
+    type: 'webdav-sync:get-conflict',
+  } satisfies WebDavSyncMessage)
 }
 
 export function getSyncHistory(): Promise<BrowserSyncHistoryEntry[]> {
-  return browser.runtime.sendMessage({ type: 'webdav-sync:list-history' } satisfies WebDavSyncMessage)
+  return browser.runtime.sendMessage({
+    type: 'webdav-sync:list-history',
+  } satisfies WebDavSyncMessage)
 }
 
 export function getSyncDevices(): Promise<BrowserSyncDeviceEntry[]> {
-  return browser.runtime.sendMessage({ type: 'webdav-sync:list-devices' } satisfies WebDavSyncMessage)
+  return browser.runtime.sendMessage({
+    type: 'webdav-sync:list-devices',
+  } satisfies WebDavSyncMessage)
 }
 
 export function previewSyncHistory(revisionId: string): Promise<BrowserSyncHistoryPreview> {
@@ -244,7 +251,9 @@ export async function prepareSyncBeforeNewTabStartup(): Promise<void> {
   const stored = await browser.storage.local.get('webdavSyncState')
   const state = stored.webdavSyncState as LocalSyncStateV1 | undefined
   if (state?.pending?.phase === 'applying-local') {
-    await browser.runtime.sendMessage({ type: 'webdav-sync:resume-apply' } satisfies WebDavSyncMessage)
+    await browser.runtime.sendMessage({
+      type: 'webdav-sync:resume-apply',
+    } satisfies WebDavSyncMessage)
   }
   void browser.runtime
     .sendMessage({ type: 'webdav-sync:natural' } satisfies WebDavSyncMessage)
@@ -291,7 +300,9 @@ export function isWebDavSyncMessage(value: unknown): value is WebDavSyncMessage 
     }
     return (
       typeof message.actualPayloadHash === 'string' &&
-      (message.choice === undefined || message.choice === 'local' || message.choice === 'previous') &&
+      (message.choice === undefined ||
+        message.choice === 'local' ||
+        message.choice === 'previous') &&
       typeof message.downloaded === 'boolean' &&
       typeof message.revisionId === 'string'
     )

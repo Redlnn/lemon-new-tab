@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import {
-  type CheckboxValueType,
-  ElCheckbox,
-  ElLoading,
-  ElRadio,
-  ElRadioGroup,
-} from 'element-plus'
+import { type CheckboxValueType, ElCheckbox, ElLoading, ElRadio, ElRadioGroup } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
-import { browser } from 'wxt/browser'
 import DeleteForeverOutlined from '~icons/ic/outline-delete-forever'
 import DownloadRound from '~icons/ic/round-download'
 import FileUploadRound from '~icons/ic/round-file-upload'
+
+import { browser } from 'wxt/browser'
 
 import { downloadBlob } from '@/shared/download'
 import { clearFaviconCache } from '@/shared/media'
@@ -18,16 +13,16 @@ import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import { clearExtensionData, reloadNewtabTabs } from '@/shared/settings/legacySettingsRecovery'
 import { idbClearMany } from '@/shared/storage/idb'
 import {
+  disconnectSyncConnection,
+  getSyncState,
+  sendSyncDataChanged,
+} from '@/shared/webdavSync/bridge'
+import {
   applyPreparedBrowserImport,
   createBrowserJsonBackup,
   mergePreparedBrowserImport,
   prepareBrowserImport,
 } from '@/shared/webdavSync/browserBackup'
-import {
-  disconnectSyncConnection,
-  getSyncState,
-  sendSyncDataChanged,
-} from '@/shared/webdavSync/bridge'
 
 import {
   PermissionContext,
@@ -36,8 +31,9 @@ import {
 } from '@newtab/composables/usePermission'
 import { wallpaperUrlCache } from '@newtab/shared/wallpaper'
 
-import SettingsSection from './SettingsSection.vue'
 import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
+
+import SettingsSection from './SettingsSection.vue'
 
 const { t, i18next } = useTranslation('settings')
 
@@ -47,8 +43,7 @@ const faviconPermissionPending = ref(false)
 
 async function refreshFaviconPermission() {
   faviconPermissionPending.value =
-    settings.faviconCacheEnabled &&
-    !(await browser.permissions.contains({ origins: ['*://*/*'] }))
+    settings.faviconCacheEnabled && !(await browser.permissions.contains({ origins: ['*://*/*'] }))
 }
 
 onMounted(refreshFaviconPermission)
@@ -120,9 +115,7 @@ async function confirmClearExtensionData() {
                     },
                   },
                   () => [
-                    h(ElRadio, { value: 'keep' }, () =>
-                      t('other.purge.confirm.data.keepRemote'),
-                    ),
+                    h(ElRadio, { value: 'keep' }, () => t('other.purge.confirm.data.keepRemote')),
                     h(ElRadio, { value: 'delete' }, () =>
                       t('other.purge.confirm.data.deleteRemote'),
                     ),
@@ -269,7 +262,8 @@ async function exportBackup() {
   try {
     const { json, omissions } = await createBrowserJsonBackup()
     downloadBlob(new Blob([json], { type: 'application/json' }), 'lemon-new-tab-backup.json')
-    if (omissions.length) ElMessage.warning(t('other.importExport.omittedIcons', { count: omissions.length }))
+    if (omissions.length)
+      ElMessage.warning(t('other.importExport.omittedIcons', { count: omissions.length }))
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : t('other.importExport.unknownError'))
   } finally {
@@ -311,15 +305,20 @@ async function chooseImportMode(configured: boolean) {
 async function disconnectBeforeReplacement() {
   const disposition = ref<'delete' | 'keep'>('keep')
   await ElMessageBox.confirm(
-    () => h(ElRadioGroup, {
-      modelValue: disposition.value,
-      'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
-        if (value === 'delete' || value === 'keep') disposition.value = value
-      },
-    }, () => [
-      h(ElRadio, { value: 'keep' }, () => t('other.importExport.syncMode.keepRemote')),
-      h(ElRadio, { value: 'delete' }, () => t('other.importExport.syncMode.deleteRemote')),
-    ]),
+    () =>
+      h(
+        ElRadioGroup,
+        {
+          modelValue: disposition.value,
+          'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
+            if (value === 'delete' || value === 'keep') disposition.value = value
+          },
+        },
+        () => [
+          h(ElRadio, { value: 'keep' }, () => t('other.importExport.syncMode.keepRemote')),
+          h(ElRadio, { value: 'delete' }, () => t('other.importExport.syncMode.deleteRemote')),
+        ],
+      ),
     t('other.importExport.syncMode.disconnectTitle'),
     { type: 'warning' },
   )
@@ -328,7 +327,8 @@ async function disconnectBeforeReplacement() {
       t('other.importExport.syncMode.deletePrompt', { text: 'DELETE WEBDAV DATA' }),
       t('other.importExport.syncMode.disconnectTitle'),
     )
-    if (value !== 'DELETE WEBDAV DATA') throw new Error(t('other.importExport.syncMode.confirmMismatch'))
+    if (value !== 'DELETE WEBDAV DATA')
+      throw new Error(t('other.importExport.syncMode.confirmMismatch'))
   }
   await disconnectSyncConnection(
     disposition.value === 'delete',

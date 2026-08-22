@@ -42,7 +42,8 @@ export function resolveSyncConflicts(input: {
   const merged = mergeSyncSnapshots(input.base, input.local, input.remote)
   if (merged.conflicts.length === 0) return merged.snapshot
   const choices = new Map(input.resolutions.map((item) => [item.conflictId, item]))
-  if (choices.size !== input.resolutions.length) throw new TypeError('Conflict resolution is duplicated')
+  if (choices.size !== input.resolutions.length)
+    throw new TypeError('Conflict resolution is duplicated')
   const snapshot = structuredClone(merged.snapshot)
   for (const conflict of merged.conflicts) {
     const resolution = choices.get(conflict.id)
@@ -115,7 +116,7 @@ function entityId(conflict: SyncConflict): string {
     ? 'quickLinks.items.'
     : conflict.path.startsWith('quickLinks.groups.')
       ? 'quickLinks.groups.'
-    : 'customSearchEngines.items.'
+      : 'customSearchEngines.items.'
   return conflict.path.slice(prefix.length)
 }
 
@@ -154,7 +155,8 @@ function keepBothEntities(
   conflict: SyncConflict,
   duplicateId: string,
 ): void {
-  if (!duplicateId || duplicateId.length > 128) throw new TypeError('Duplicate entity ID is invalid')
+  if (!duplicateId || duplicateId.length > 128)
+    throw new TypeError('Duplicate entity ID is invalid')
   const originalId = entityId(conflict)
   const destination = entityTarget(target, conflict)
   if (destination.items.some((item) => item.id === duplicateId)) {
@@ -162,7 +164,8 @@ function keepBothEntities(
   }
   const localValue = Object.hasOwn(conflict, 'local') ? conflict.local : undefined
   const remoteValue = Object.hasOwn(conflict, 'remote') ? conflict.remote : undefined
-  const modified = conflict.kind === 'simultaneous-create' ? remoteValue : (localValue ?? remoteValue)
+  const modified =
+    conflict.kind === 'simultaneous-create' ? remoteValue : (localValue ?? remoteValue)
   if (!modified || typeof modified !== 'object' || Array.isArray(modified)) {
     throw new TypeError('Conflict has no entity to duplicate')
   }
@@ -227,12 +230,7 @@ function insertEntityOrder(
     return
   }
   if (conflict.path.startsWith('quickLinks.groups.')) {
-    insertAfterSource(
-      fallbackOrder,
-      quickLinks(source).groupOrder,
-      sourceId,
-      insertedId,
-    )
+    insertAfterSource(fallbackOrder, quickLinks(source).groupOrder, sourceId, insertedId)
     return
   }
   const sourceOrder = searchEngines(source).order
@@ -276,7 +274,7 @@ function applyPathValue(
   }
   if (path === 'quickLinks.rootOrder' || path === 'quickLinks.groupOrder') {
     const key = path.endsWith('rootOrder') ? 'rootOrder' : 'groupOrder'
-    quickLinks(snapshot)[key] = present && Array.isArray(value) ? [...value] as string[] : []
+    quickLinks(snapshot)[key] = present && Array.isArray(value) ? ([...value] as string[]) : []
     return
   }
   if (path.startsWith('customSearchEngines.items.')) {
@@ -289,11 +287,22 @@ function applyPathValue(
     return
   }
   if (path === 'customSearchEngines.order') {
-    searchEngines(snapshot).order = present && Array.isArray(value) ? [...value] as string[] : []
+    searchEngines(snapshot).order = present && Array.isArray(value) ? ([...value] as string[]) : []
     return
   }
   const [root, ...keys] = path.split('.')
-  if (!root || !['settings', 'ui', 'optional', 'scope', 'quickLinks', 'customSearchEngines', 'inlineImages'].includes(root)) {
+  if (
+    !root ||
+    ![
+      'settings',
+      'ui',
+      'optional',
+      'scope',
+      'quickLinks',
+      'customSearchEngines',
+      'inlineImages',
+    ].includes(root)
+  ) {
     throw new TypeError(`Unsupported conflict path: ${path}`)
   }
   applyObjectPath(snapshot as unknown as JsonObject, [root, ...keys], value, present)
@@ -326,7 +335,7 @@ function applyQuickLinkGroupPath(
   const group = quickLinks(snapshot).groups.find((candidate) => candidate.id === id)
   if (!group) throw new TypeError(`Quick Link group is missing: ${id}`)
   if (key === 'itemIds') {
-    group.itemIds = present && Array.isArray(value) ? [...value] as string[] : []
+    group.itemIds = present && Array.isArray(value) ? ([...value] as string[]) : []
   } else {
     applyObjectPath(group as unknown as JsonObject, key.split('.'), value, present)
   }

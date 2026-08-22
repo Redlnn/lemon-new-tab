@@ -1,4 +1,5 @@
 import { useTranslation } from 'i18next-vue'
+
 import { browser } from 'wxt/browser'
 
 import { version } from '@/package.json'

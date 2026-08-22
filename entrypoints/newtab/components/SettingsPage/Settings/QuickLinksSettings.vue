@@ -7,10 +7,10 @@ import { useSettingsStore } from '@/shared/settings'
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 import { isHasTouchDevice } from '@newtab/shared/touch'
 
+import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
 import { useQuickLinksGroupingChange } from '../composables/useQuickLinksGroupingChange'
 
 import SettingsSection from './SettingsSection.vue'
-import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
 
 const { t } = useTranslation('settings')
 

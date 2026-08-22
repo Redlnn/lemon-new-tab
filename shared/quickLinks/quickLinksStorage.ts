@@ -51,7 +51,9 @@ export function ensureQuickLinksStableIds(data: QuickLinksData): {
     ...group,
     items: group.items.map(normalizeItem),
   }))
-  const items = groups?.length ? groups.flatMap((group) => group.items) : data.items.map(normalizeItem)
+  const items = groups?.length
+    ? groups.flatMap((group) => group.items)
+    : data.items.map(normalizeItem)
   const value = { items, groups: groups ?? [] }
 
   if (groups?.length && data.items.some((item, index) => item.id !== items[index]?.id)) {

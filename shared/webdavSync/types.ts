@@ -191,11 +191,7 @@ export type SyncPauseReason =
   | 'remote-deleted'
   | 'storage-full'
 
-export type PendingSyncPhase =
-  | 'captured'
-  | 'assets-uploaded'
-  | 'committed'
-  | 'applying-local'
+export type PendingSyncPhase = 'captured' | 'assets-uploaded' | 'committed' | 'applying-local'
 
 export interface PendingSyncOperation {
   operationId: string
@@ -241,11 +237,7 @@ export type SyncAvailability =
   | { state: 'too-large'; reasonKey: string }
   | { state: 'failed'; reasonKey: string }
 
-export type SyncConflictKind =
-  | 'delete-vs-modify'
-  | 'field'
-  | 'order'
-  | 'simultaneous-create'
+export type SyncConflictKind = 'delete-vs-modify' | 'field' | 'order' | 'simultaneous-create'
 
 export interface SyncConflict {
   id: string

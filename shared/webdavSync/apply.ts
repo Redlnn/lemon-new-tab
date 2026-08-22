@@ -15,11 +15,18 @@ export function mergeSyncSettings<T>(current: T, incoming: JsonObject): T {
   return applySyncSettings(current, incoming)
 }
 
-function appendMissing(order: readonly string[], fallback: readonly string[], excluded: ReadonlySet<string>) {
+function appendMissing(
+  order: readonly string[],
+  fallback: readonly string[],
+  excluded: ReadonlySet<string>,
+) {
   return [...order, ...fallback.filter((id) => !excluded.has(id))]
 }
 
-function mergeEntities<T extends { id: string }>(current: readonly T[], incoming: readonly T[]): T[] {
+function mergeEntities<T extends { id: string }>(
+  current: readonly T[],
+  incoming: readonly T[],
+): T[] {
   const incomingIds = new Set(incoming.map((item) => item.id))
   return [
     ...structuredClone(incoming),
@@ -83,20 +90,26 @@ export function mergeImportedSnapshot(
 ): SyncSnapshotV1 {
   const blockedTopSites = incoming.optional?.blockedTopSites
     ? {
-        urls: [...new Set([
-          ...incoming.optional.blockedTopSites.urls,
-          ...(current.optional?.blockedTopSites?.urls ?? []),
-        ])],
+        urls: [
+          ...new Set([
+            ...incoming.optional.blockedTopSites.urls,
+            ...(current.optional?.blockedTopSites?.urls ?? []),
+          ]),
+        ],
       }
     : structuredClone(current.optional?.blockedTopSites)
   const wallpapers = incoming.optional?.wallpapers
-    ? { ...structuredClone(current.optional?.wallpapers), ...structuredClone(incoming.optional.wallpapers) }
+    ? {
+        ...structuredClone(current.optional?.wallpapers),
+        ...structuredClone(incoming.optional.wallpapers),
+      }
     : structuredClone(current.optional?.wallpapers)
-  const onlineWallpaperUrl = incoming.optional?.onlineWallpaperUrl
-    ?? current.optional?.onlineWallpaperUrl
-  const optional = blockedTopSites || wallpapers || onlineWallpaperUrl !== undefined
-    ? { blockedTopSites, wallpapers, onlineWallpaperUrl }
-    : undefined
+  const onlineWallpaperUrl =
+    incoming.optional?.onlineWallpaperUrl ?? current.optional?.onlineWallpaperUrl
+  const optional =
+    blockedTopSites || wallpapers || onlineWallpaperUrl !== undefined
+      ? { blockedTopSites, wallpapers, onlineWallpaperUrl }
+      : undefined
   const result: SyncSnapshotV1 = {
     scope: { ...current.scope },
     settings: incoming.settings
@@ -132,7 +145,8 @@ function toLocalQuickLink(
     return result
   }
   const preserveAnyIcon = !includeIcons
-  const preserveLocalOnlyIcon = current?.faviconSource !== 'user-selected' && current?.url === incoming.url
+  const preserveLocalOnlyIcon =
+    current?.faviconSource !== 'user-selected' && current?.url === incoming.url
   if (current?.favicon && (preserveAnyIcon || preserveLocalOnlyIcon)) {
     result.favicon = current.favicon
     result.faviconSource = current.faviconSource
@@ -149,7 +163,7 @@ export function materializeQuickLinks(
   const currentItems = current.groups?.length
     ? current.groups.flatMap((group) => group.items)
     : current.items
-  const currentById = new Map(currentItems.flatMap((item) => item.id ? [[item.id, item]] : []))
+  const currentById = new Map(currentItems.flatMap((item) => (item.id ? [[item.id, item]] : [])))
   const incomingById = new Map(
     snapshot.items.map((item) => [
       item.id,
@@ -181,10 +195,7 @@ function copyCategory<K extends keyof SyncSnapshotV1>(
   else target[key] = structuredClone(value) as SyncSnapshotV1[K]
 }
 
-function preserveEntityIcons(
-  result: SyncSnapshotV1,
-  baseline: SyncSnapshotV1,
-): void {
+function preserveEntityIcons(result: SyncSnapshotV1, baseline: SyncSnapshotV1): void {
   const baselineLinks = new Map(baseline.quickLinks?.items.map((item) => [item.id, item]))
   for (const item of result.quickLinks?.items ?? []) {
     item.faviconHash = baselineLinks.get(item.id)?.faviconHash
@@ -200,14 +211,14 @@ function preserveEntityIcons(
 }
 
 function pruneInlineImages(snapshot: SyncSnapshotV1, baseline?: SyncSnapshotV1): void {
-  const used = new Set([
-    ...(snapshot.quickLinks?.items.map((item) => item.faviconHash) ?? []),
-    ...(snapshot.customSearchEngines?.items.map((item) => item.iconHash) ?? []),
-  ].filter((hash): hash is string => Boolean(hash)))
-  const available = { ...baseline?.inlineImages, ...snapshot.inlineImages }
-  const images = Object.fromEntries(
-    Object.entries(available).filter(([hash]) => used.has(hash)),
+  const used = new Set(
+    [
+      ...(snapshot.quickLinks?.items.map((item) => item.faviconHash) ?? []),
+      ...(snapshot.customSearchEngines?.items.map((item) => item.iconHash) ?? []),
+    ].filter((hash): hash is string => Boolean(hash)),
   )
+  const available = { ...baseline?.inlineImages, ...snapshot.inlineImages }
+  const images = Object.fromEntries(Object.entries(available).filter(([hash]) => used.has(hash)))
   if (Object.keys(images).length) snapshot.inlineImages = images
   else delete snapshot.inlineImages
 }

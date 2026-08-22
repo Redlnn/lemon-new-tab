@@ -1,20 +1,13 @@
-import { migrateSettingsToCurrent, type MigratableSettings } from '@/shared/settings'
 import { ensureQuickLinksStableIds, type QuickLinksData } from '@/shared/quickLinks'
+import { migrateSettingsToCurrent, type MigratableSettings } from '@/shared/settings'
 import { getUiPreferences } from '@/shared/uiPreferences'
 
 import { customSearchEngineStorage } from '@newtab/shared/customSearchEngine/customSearchEngineStorage'
 
-import {
-  parseJsonBackup,
-  serializeJsonBackup,
-  type ParsedLocalBackup,
-} from './backupFormat.ts'
-import {
-  captureBrowserSyncSnapshotResult,
-  prepareAndApplyBrowserSnapshot,
-} from './browserData.ts'
-import { captureSyncSnapshot, deduplicateInlineImages } from './capture.ts'
 import { mergeImportedSnapshot } from './apply.ts'
+import { parseJsonBackup, serializeJsonBackup, type ParsedLocalBackup } from './backupFormat.ts'
+import { captureBrowserSyncSnapshotResult, prepareAndApplyBrowserSnapshot } from './browserData.ts'
+import { captureSyncSnapshot, deduplicateInlineImages } from './capture.ts'
 import { DEFAULT_SYNC_SCOPE } from './localState.ts'
 import type { SyncScopePreferences, SyncSnapshotV1 } from './types.ts'
 

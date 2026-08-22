@@ -21,7 +21,15 @@ import { useWebDavSyncState } from '../composables/useWebDavSyncState'
 
 import SettingsSection from './SettingsSection.vue'
 
-type DialogMode = 'conflict' | 'devices' | 'disconnect' | 'encryption' | 'history' | 'remote-deleted' | 'repair' | null
+type DialogMode =
+  | 'conflict'
+  | 'devices'
+  | 'disconnect'
+  | 'encryption'
+  | 'history'
+  | 'remote-deleted'
+  | 'repair'
+  | null
 
 const SetupDialog = defineAsyncComponent(() => import('../components/WebDavSetupDialog.vue'))
 const ManagementDialogs = defineAsyncComponent(

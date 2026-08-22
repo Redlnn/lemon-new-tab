@@ -40,7 +40,14 @@ export type SyncDecision =
       conflicts: SyncConflict[]
       stage: 'local-remote' | 'remote-branches'
     }
-  | { action: 'publish'; parents: string[]; snapshot: SyncSnapshotV1; reason: 'local-change' | 'merge'; tombstones: TombstoneV1[]; assets: AssetReferenceV1[] }
+  | {
+      action: 'publish'
+      parents: string[]
+      snapshot: SyncSnapshotV1
+      reason: 'local-change' | 'merge'
+      tombstones: TombstoneV1[]
+      assets: AssetReferenceV1[]
+    }
   | { action: 'up-to-date'; revisionId: string; snapshot: SyncSnapshotV1 }
   | { action: 'unknown-ancestor'; remoteRevisionIds: string[] }
 
@@ -134,13 +141,12 @@ export function decideSynchronization(input: {
   local: SyncSnapshotV1
   revisions: readonly SyncRevisionV1[]
 }): SyncDecision {
-  const builtRemote = buildRemoteState(
-    input.baseRevisionId,
-    input.baseline,
-    input.revisions,
-  )
+  const builtRemote = buildRemoteState(input.baseRevisionId, input.baseline, input.revisions)
   if (!builtRemote) {
-    return { action: 'unknown-ancestor', remoteRevisionIds: findRevisionHeads(input.revisions).map((item) => item.revisionId) }
+    return {
+      action: 'unknown-ancestor',
+      remoteRevisionIds: findRevisionHeads(input.revisions).map((item) => item.revisionId),
+    }
   }
   if (builtRemote.kind === 'conflict') {
     return {

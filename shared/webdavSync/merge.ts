@@ -425,35 +425,48 @@ export function mergeSyncSnapshots(
       )
     : MISSING
   const ui = mergeJson(
-    'ui', 'ui', base.ui ?? MISSING, local.ui ?? MISSING, remote.ui ?? MISSING, conflicts,
+    'ui',
+    'ui',
+    base.ui ?? MISSING,
+    local.ui ?? MISSING,
+    remote.ui ?? MISSING,
+    conflicts,
   )
   const scope = mergeJson(
-    'scope', 'scope', canonicalize(base.scope), canonicalize(local.scope),
-    canonicalize(remote.scope), conflicts,
+    'scope',
+    'scope',
+    canonicalize(base.scope),
+    canonicalize(local.scope),
+    canonicalize(remote.scope),
+    conflicts,
   ) as unknown as SyncSnapshotV1['scope']
-  const quickLinks = base.quickLinks && local.quickLinks && remote.quickLinks
-    ? mergeQuickLinks(base.quickLinks, local.quickLinks, remote.quickLinks, conflicts)
-    : mergeJson(
-        'quick-links', 'quickLinks', base.quickLinks ? canonicalize(base.quickLinks) : MISSING,
-        local.quickLinks ? canonicalize(local.quickLinks) : MISSING,
-        remote.quickLinks ? canonicalize(remote.quickLinks) : MISSING, conflicts,
-      )
-  const searchEngines = base.customSearchEngines
-    && local.customSearchEngines
-    && remote.customSearchEngines
-    ? mergeSearchEngines(
-        base.customSearchEngines,
-        local.customSearchEngines,
-        remote.customSearchEngines,
-        conflicts,
-      )
-    : mergeJson(
-        'search-engines', 'customSearchEngines',
-        base.customSearchEngines ? canonicalize(base.customSearchEngines) : MISSING,
-        local.customSearchEngines ? canonicalize(local.customSearchEngines) : MISSING,
-        remote.customSearchEngines ? canonicalize(remote.customSearchEngines) : MISSING,
-        conflicts,
-      )
+  const quickLinks =
+    base.quickLinks && local.quickLinks && remote.quickLinks
+      ? mergeQuickLinks(base.quickLinks, local.quickLinks, remote.quickLinks, conflicts)
+      : mergeJson(
+          'quick-links',
+          'quickLinks',
+          base.quickLinks ? canonicalize(base.quickLinks) : MISSING,
+          local.quickLinks ? canonicalize(local.quickLinks) : MISSING,
+          remote.quickLinks ? canonicalize(remote.quickLinks) : MISSING,
+          conflicts,
+        )
+  const searchEngines =
+    base.customSearchEngines && local.customSearchEngines && remote.customSearchEngines
+      ? mergeSearchEngines(
+          base.customSearchEngines,
+          local.customSearchEngines,
+          remote.customSearchEngines,
+          conflicts,
+        )
+      : mergeJson(
+          'search-engines',
+          'customSearchEngines',
+          base.customSearchEngines ? canonicalize(base.customSearchEngines) : MISSING,
+          local.customSearchEngines ? canonicalize(local.customSearchEngines) : MISSING,
+          remote.customSearchEngines ? canonicalize(remote.customSearchEngines) : MISSING,
+          conflicts,
+        )
   const snapshot: SyncSnapshotV1 = {
     scope,
     optional: mergeOptional(base.optional, local.optional, remote.optional, conflicts),
@@ -464,10 +477,12 @@ export function mergeSyncSnapshots(
     snapshot.customSearchEngines = searchEngines as SyncSnapshotV1['customSearchEngines']
   }
   if (ui !== MISSING) snapshot.ui = ui as SyncSnapshotV1['ui']
-  const usedImages = new Set([
-    ...(snapshot.quickLinks?.items.map((item) => item.faviconHash) ?? []),
-    ...(snapshot.customSearchEngines?.items.map((item) => item.iconHash) ?? []),
-  ].filter((hash): hash is string => Boolean(hash)))
+  const usedImages = new Set(
+    [
+      ...(snapshot.quickLinks?.items.map((item) => item.faviconHash) ?? []),
+      ...(snapshot.customSearchEngines?.items.map((item) => item.iconHash) ?? []),
+    ].filter((hash): hash is string => Boolean(hash)),
+  )
   const images = { ...base.inlineImages, ...local.inlineImages, ...remote.inlineImages }
   snapshot.inlineImages = Object.fromEntries(
     Object.entries(images).filter(([hash]) => usedImages.has(hash)),

@@ -1,9 +1,5 @@
 import { openConfiguredVault } from './browserEngine.ts'
-import {
-  clearWebDavConnection,
-  getOrCreateSyncState,
-  patchSyncState,
-} from './localState.ts'
+import { clearWebDavConnection, getOrCreateSyncState, patchSyncState } from './localState.ts'
 import type { LocalSyncStateV1 } from './types.ts'
 import { WebDavError } from './webdav.ts'
 

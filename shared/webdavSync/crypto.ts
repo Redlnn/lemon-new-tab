@@ -48,13 +48,9 @@ export async function deriveEncryptionKey(
   ) {
     throw new Error('PBKDF2 iteration count is unsafe')
   }
-  const material = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(password),
-    'PBKDF2',
-    false,
-    ['deriveKey'],
-  )
+  const material = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, [
+    'deriveKey',
+  ])
   return crypto.subtle.deriveKey(
     { name: 'PBKDF2', hash: 'SHA-256', salt, iterations },
     material,

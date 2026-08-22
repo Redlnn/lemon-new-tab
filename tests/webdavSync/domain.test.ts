@@ -2,6 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  createSyncConflictDisplayContext,
+  presentSyncConflict,
+} from '../../shared/webdavSync/conflictPresentation.ts'
+import {
   canonicalJson,
   compareSyncSnapshots,
   captureSyncSnapshot,
@@ -36,10 +40,6 @@ import {
   validateSyncRevision,
   unlockVaultEncryption,
 } from '../../shared/webdavSync/index.ts'
-import {
-  createSyncConflictDisplayContext,
-  presentSyncConflict,
-} from '../../shared/webdavSync/conflictPresentation.ts'
 import type {
   SyncConflict,
   SyncRevisionV1,
@@ -47,9 +47,7 @@ import type {
   SyncSnapshotV1,
 } from '../../shared/webdavSync/types.ts'
 
-function syncScope(
-  overrides: Partial<SyncScopePreferences> = {},
-): SyncScopePreferences {
+function syncScope(overrides: Partial<SyncScopePreferences> = {}): SyncScopePreferences {
   return {
     settings: true,
     quickLinks: true,
@@ -106,7 +104,10 @@ function branchRevision(
 
 test('canonical JSON sorts object keys but preserves array order', () => {
   assert.equal(canonicalJson({ z: 1, a: { y: 2, x: [3, 1] } }), '{"a":{"x":[3,1],"y":2},"z":1}')
-  assert.equal(canonicalJson(JSON.parse('{"__proto__":{"polluted":true}}')), '{"__proto__":{"polluted":true}}')
+  assert.equal(
+    canonicalJson(JSON.parse('{"__proto__":{"polluted":true}}')),
+    '{"__proto__":{"polluted":true}}',
+  )
   assert.equal(Reflect.has(Object.prototype, 'polluted'), false)
 })
 
@@ -176,24 +177,32 @@ test('conflict presentation hides entity IDs and reuses settings labels', () => 
   assert.match(quickLink.local, /Lemon Docs.*docs\.example\.com\/start/)
   assert.doesNotMatch(quickLink.local, /internal-link-id|internal-icon-hash|token/)
 
-  const linkUrl = presentSyncConflict({
-    ...quickLinkConflict,
-    path: 'quickLinks.items.internal-link-id.url',
-    local: 'https://docs.example.com/start?token=secret',
-    remote: 'https://remote.example.com/start?token=other',
-  }, context, t)
+  const linkUrl = presentSyncConflict(
+    {
+      ...quickLinkConflict,
+      path: 'quickLinks.items.internal-link-id.url',
+      local: 'https://docs.example.com/start?token=secret',
+      remote: 'https://remote.example.com/start?token=other',
+    },
+    context,
+    t,
+  )
   assert.doesNotMatch(linkUrl.local, /token|secret/)
 
-  presentSyncConflict({
-    id: 'setting-conflict',
-    category: 'settings',
-    kind: 'field',
-    path: 'settings.theme.primaryColor',
-    base: '#f5b800',
-    local: '#1677ff',
-    remote: '#722ed1',
-    canKeepBoth: false,
-  }, context, t)
+  presentSyncConflict(
+    {
+      id: 'setting-conflict',
+      category: 'settings',
+      kind: 'field',
+      path: 'settings.theme.primaryColor',
+      base: '#f5b800',
+      local: '#1677ff',
+      remote: '#722ed1',
+      canKeepBoth: false,
+    },
+    context,
+    t,
+  )
   assert.ok(translated.includes('theme.primaryColor'))
 })
 
@@ -313,9 +322,7 @@ test('oversized user icons are omitted without removing an existing baseline ico
 
   const omissions = await deduplicateQuickLinkIcons(next, base)
 
-  assert.deepEqual(omissions, [
-    { kind: 'quick-link-icon', id: 'link-a', reason: 'item-too-large' },
-  ])
+  assert.deepEqual(omissions, [{ kind: 'quick-link-icon', id: 'link-a', reason: 'item-too-large' }])
   assert.equal(next.quickLinks!.items[0]!.faviconHash, previousHash)
   assert.equal(next.inlineImages?.[previousHash], base.inlineImages?.[previousHash])
 })
@@ -335,8 +342,10 @@ test('aggregate user icon limit skips whole icons before the snapshot exceeds 8 
   }
 
   const omissions = await deduplicateQuickLinkIcons(value)
-  const total = Object.values(value.inlineImages ?? {})
-    .reduce((sum, item) => sum + new TextEncoder().encode(item).byteLength, 0)
+  const total = Object.values(value.inlineImages ?? {}).reduce(
+    (sum, item) => sum + new TextEncoder().encode(item).byteLength,
+    0,
+  )
 
   assert.ok(omissions.some((item) => item.reason === 'aggregate-too-large'))
   assert.ok(total <= MAX_SYNC_INLINE_IMAGES_BYTES)
@@ -504,7 +513,11 @@ test('core-only storage fallback preserves the confirmed wallpaper state', () =>
 
 test('merge import preserves current entities that are absent from the backup', () => {
   const current = snapshot()
-  current.quickLinks!.items.push({ id: 'current-only', title: 'Current', url: 'https://current.example/' })
+  current.quickLinks!.items.push({
+    id: 'current-only',
+    title: 'Current',
+    url: 'https://current.example/',
+  })
   current.quickLinks!.rootOrder.push('current-only')
   current.customSearchEngines = {
     items: [{ id: 'current-engine', name: 'Current', url: 'https://current.example/?q=%s' }],
@@ -512,7 +525,11 @@ test('merge import preserves current entities that are absent from the backup', 
   }
   const imported = snapshot()
   imported.quickLinks!.items[0]!.title = 'Imported A'
-  imported.quickLinks!.items.push({ id: 'imported-only', title: 'Imported', url: 'https://imported.example/' })
+  imported.quickLinks!.items.push({
+    id: 'imported-only',
+    title: 'Imported',
+    url: 'https://imported.example/',
+  })
   imported.quickLinks!.rootOrder.push('imported-only')
   imported.customSearchEngines = {
     items: [{ id: 'imported-engine', name: 'Imported', url: 'https://imported.example/?q=%s' }],
@@ -690,10 +707,10 @@ test('Quick Link merge preserves one location per item across multiple groups', 
   remote.quickLinks.groups[1]!.name = 'Remote B'
   const result = mergeSyncSnapshots(base, local, remote)
   assert.equal(result.conflicts.length, 0)
-  assert.deepEqual(result.snapshot.quickLinks.groups.map((group) => group.itemIds), [
-    ['link-a'],
-    ['link-b'],
-  ])
+  assert.deepEqual(
+    result.snapshot.quickLinks.groups.map((group) => group.itemIds),
+    [['link-a'], ['link-b']],
+  )
 })
 
 test('conflict choices apply only after every unresolved value has a decision', () => {
@@ -703,9 +720,7 @@ test('conflict choices apply only after every unresolved value has a decision', 
   local.settings.clock = { size: 60 }
   remote.settings.clock = { size: 70 }
   const conflict = mergeSyncSnapshots(base, local, remote).conflicts[0]!
-  assert.throws(() =>
-    resolveSyncConflicts({ base, local, remote, resolutions: [] }),
-  )
+  assert.throws(() => resolveSyncConflicts({ base, local, remote, resolutions: [] }))
   const resolved = resolveSyncConflicts({
     base,
     local,
@@ -852,14 +867,15 @@ test('tombstones expire after 180 days and stale devices reinitialize', () => {
   const decision = decideInitialization({
     base,
     local,
-    revisions: [
-      branchRevision('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', [], remote),
-    ],
+    revisions: [branchRevision('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', [], remote)],
   })
   assert.equal(decision.action, 'publish')
   if (decision.action === 'publish') {
     assert.equal((decision.snapshot.settings.clock as { size: number }).size, 60)
-    assert.equal((decision.snapshot.settings.search as { placeholder: string }).placeholder, 'Remote')
+    assert.equal(
+      (decision.snapshot.settings.search as { placeholder: string }).placeholder,
+      'Remote',
+    )
   }
 })
 
@@ -980,7 +996,11 @@ test('client encryption binds ciphertext to its vault object and rejects wrong p
     objectType: 'revision',
     objectId: '33333333-3333-4333-8333-333333333333',
   })
-  const encrypted = await encryptSyncBytes(created.key, new TextEncoder().encode('private data'), aad)
+  const encrypted = await encryptSyncBytes(
+    created.key,
+    new TextEncoder().encode('private data'),
+    aad,
+  )
   assert.equal(
     new TextDecoder().decode(await decryptSyncBytes(created.key, encrypted, aad)),
     'private data',

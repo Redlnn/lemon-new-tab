@@ -4,8 +4,9 @@ import { useTranslation } from 'i18next-vue'
 import { DrawerDirection, SortMode } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 
-import SettingsSection from './SettingsSection.vue'
 import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
+
+import SettingsSection from './SettingsSection.vue'
 
 const { t } = useTranslation('settings')
 const { t: tt } = useTranslation()

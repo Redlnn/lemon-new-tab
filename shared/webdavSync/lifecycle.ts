@@ -32,7 +32,10 @@ export function pruneExpiredTombstones(
 
 export function mustReinitializeDevice(lastSeenAt: string, now = new Date()): boolean {
   const lastSeenTime = Date.parse(lastSeenAt)
-  return !Number.isFinite(lastSeenTime) || now.getTime() - lastSeenTime > TOMBSTONE_RETENTION_DAYS * DAY_MS
+  return (
+    !Number.isFinite(lastSeenTime) ||
+    now.getTime() - lastSeenTime > TOMBSTONE_RETENTION_DAYS * DAY_MS
+  )
 }
 
 export function deriveSnapshotTombstones(
