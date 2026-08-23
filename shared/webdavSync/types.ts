@@ -142,6 +142,8 @@ export interface SyncRevisionV1 {
   }
   createdAt: string
   reason: SyncRevisionReason
+  /** 仅 repair 版本记录其已取代的损坏版本，用于让其他设备安全收敛。 */
+  repairedRevisionId?: string
   snapshot: SyncSnapshotV1
   tombstones: TombstoneV1[]
   assets: AssetReferenceV1[]

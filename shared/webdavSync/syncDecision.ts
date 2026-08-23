@@ -62,6 +62,28 @@ export function findRevisionHeads(revisions: readonly SyncRevisionV1[]): SyncRev
     .sort((left, right) => left.revisionId.localeCompare(right.revisionId))
 }
 
+/** 当前唯一分支是否继承了针对指定损坏版本的已验证修复。 */
+export function hasConfirmedCorruptionRepair(
+  revisions: readonly SyncRevisionV1[],
+  corruptedRevisionId: string,
+): boolean {
+  const heads = findRevisionHeads(revisions)
+  if (heads.length !== 1) return false
+  const byId = new Map(revisions.map((revision) => [revision.revisionId, revision]))
+  const pending = [heads[0]!.revisionId]
+  const visited = new Set<string>()
+  while (pending.length) {
+    const revisionId = pending.pop()!
+    if (visited.has(revisionId)) continue
+    visited.add(revisionId)
+    const revision = byId.get(revisionId)
+    if (!revision) continue
+    if (revision.repairedRevisionId === corruptedRevisionId) return true
+    pending.push(...revision.parentRevisionIds)
+  }
+  return false
+}
+
 function descendsFrom(
   revisionId: string,
   baseRevisionId: string,

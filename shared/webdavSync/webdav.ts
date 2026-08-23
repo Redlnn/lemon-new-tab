@@ -574,24 +574,23 @@ export class WebDavVaultRepository {
   }
 
   async inspect(): Promise<WebDavVaultInspection> {
-    let entries: WebDavEntry[]
-    try {
-      entries = await this.client.list(this.directory)
-    } catch (error) {
-      if (error instanceof WebDavError && error.category === 'not-found')
-        return { state: 'missing' }
-      throw error
-    }
-
     try {
       const { bytes } = await this.client.get(`${this.directory}/vault.json`)
       return { state: 'ready', metadata: validateVaultMetadata(parseJson(bytes, 'Vault marker')) }
     } catch (error) {
       if (!(error instanceof WebDavError) || error.category !== 'not-found') throw error
-      const collectionUrl = this.client.resolve(this.directory).toString().replace(/\/$/, '')
-      const hasChildren = entries.some((entry) => entry.url.replace(/\/$/, '') !== collectionUrl)
-      return { state: hasChildren ? 'foreign' : 'empty' }
     }
+
+    let entries: WebDavEntry[]
+    try {
+      entries = await this.client.list(this.directory)
+    } catch (error) {
+      if (error instanceof WebDavError && error.category === 'not-found') return { state: 'missing' }
+      throw error
+    }
+    const collectionUrl = this.client.resolve(this.directory).toString().replace(/\/$/, '')
+    const hasChildren = entries.some((entry) => entry.url.replace(/\/$/, '') !== collectionUrl)
+    return { state: hasChildren ? 'foreign' : 'empty' }
   }
 
   async initialize(metadata: VaultMetadataV1): Promise<void> {

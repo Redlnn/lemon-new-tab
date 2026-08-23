@@ -2,7 +2,9 @@ import { preserveExcludedScope } from './apply.ts'
 import { captureBrowserSyncSnapshot } from './browserData.ts'
 import {
   cleanupHistory,
+  finalizeSnapshot,
   openConfiguredVault,
+  prepareIncomingWallpapers,
   publishAndFinalize,
   readRevisions,
   type BrowserSyncDeviceEntry,
@@ -13,7 +15,7 @@ import { hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
 import { createEncryptionAad, decryptSyncBytes } from './crypto.ts'
 import { compareSyncSnapshots } from './differences.ts'
 import { getBaseline, getOrCreateSyncState, patchSyncState } from './localState.ts'
-import { findRevisionHeads } from './syncDecision.ts'
+import { findRevisionHeads, hasConfirmedCorruptionRepair } from './syncDecision.ts'
 import type {
   AssetReferenceV1,
   LocalSyncStateV1,
@@ -159,7 +161,10 @@ export async function repairBrowserSyncCorruption(input: {
     throw new WebDavError('conflict', 'Valid revisions do not have one safe previous version')
   }
   const previous = validHeads[0]!
-  if (previous.reason === 'repair' && opened.state.baseRevisionId === previous.revisionId) {
+  const repairAlreadyConfirmed =
+    hasConfirmedCorruptionRepair(scan.valid, commit.revisionId) ||
+    (previous.reason === 'repair' && opened.state.baseRevisionId === previous.revisionId)
+  if (repairAlreadyConfirmed && opened.state.baseRevisionId === previous.revisionId) {
     return patchSyncState({ paused: true, pauseReason: 'corrupted-remote' })
   }
   const captured = await captureBrowserSyncSnapshot(opened.state.scope)
@@ -167,6 +172,25 @@ export async function repairBrowserSyncCorruption(input: {
   const choice = jsonEquals(local, previous.snapshot) ? 'previous' : input.choice
   if (choice !== 'local' && choice !== 'previous') {
     throw new WebDavError('conflict', 'Choose local data or the previous cloud version')
+  }
+  if (repairAlreadyConfirmed && choice === 'previous') {
+    const wallpapers = await prepareIncomingWallpapers(
+      opened.repository,
+      opened.metadata,
+      opened.state,
+      previous.snapshot,
+      previous.assets,
+      opened.encryptionKey,
+    )
+    await finalizeSnapshot({
+      operationId: crypto.randomUUID(),
+      revisionId: previous.revisionId,
+      snapshot: previous.snapshot,
+      state: opened.state,
+      apply: true,
+      wallpapers,
+    })
+    return patchSyncState({ paused: true, pauseReason: 'corrupted-remote' })
   }
   const snapshot = choice === 'local' ? local : previous.snapshot
   const pending: PendingSyncOperation = {
@@ -180,7 +204,8 @@ export async function repairBrowserSyncCorruption(input: {
     state: opened.state,
     pending,
     parents: [previous.revisionId],
-    reason: 'repair',
+    reason: repairAlreadyConfirmed ? 'local-change' : 'repair',
+    repairedRevisionId: repairAlreadyConfirmed ? undefined : commit.revisionId,
     snapshot,
     tombstones: previous.tombstones,
     knownAssets: scan.valid.flatMap((revision) => revision.assets),
@@ -211,7 +236,10 @@ export async function deleteBrowserCorruptedRevision(input: {
   if ((await sha256Hex(raw)) !== input.actualPayloadHash) {
     throw new WebDavError('precondition', 'Damaged revision changed before deletion')
   }
-  if (current.reason !== 'repair') {
+  const repairConfirmed =
+    hasConfirmedCorruptionRepair(scan.valid, damaged.revisionId) ||
+    (current.reason === 'repair' && current.revisionId === opened.state.baseRevisionId)
+  if (!repairConfirmed) {
     throw new WebDavError('precondition', 'The verified repair revision is no longer current')
   }
   await opened.repository.deleteRevision(opened.metadata, damaged.revisionId)

@@ -386,6 +386,12 @@ export function validateSyncRevision(value: unknown): ValidationResult<SyncRevis
   ) {
     return invalid('Revision reason is invalid')
   }
+  if (
+    value.repairedRevisionId !== undefined &&
+    (!isUuid(value.repairedRevisionId) || value.reason !== 'repair')
+  ) {
+    return invalid('Repaired revision reference is invalid')
+  }
   if (!isSyncSnapshot(value.snapshot)) return invalid('Revision snapshot is invalid')
   if (!Array.isArray(value.tombstones) || !value.tombstones.every(isTombstone)) {
     return invalid('Revision tombstones are invalid')

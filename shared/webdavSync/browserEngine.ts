@@ -98,6 +98,27 @@ export async function readRevisions(
   providedCommits?: Awaited<ReturnType<WebDavVaultRepository['listCommits']>>,
 ): Promise<SyncRevisionV1[]> {
   const commits = providedCommits ?? (await repository.listCommits(metadata))
+  try {
+    return await readRevisionPayloads(repository, metadata, encryptionKey, commits)
+  } catch (error) {
+    if (!(error instanceof WebDavError) || error.category !== 'corrupted') {
+      throw error
+    }
+    const refreshedCommits = await repository.listCommits(metadata)
+    const refreshedIds = new Set(refreshedCommits.map((commit) => commit.revisionId))
+    if (commits.some((commit) => !refreshedIds.has(commit.revisionId))) {
+      throw new WebDavError('precondition', 'Committed revisions changed during remote history cleanup')
+    }
+    throw error
+  }
+}
+
+async function readRevisionPayloads(
+  repository: WebDavVaultRepository,
+  metadata: VaultMetadataV1,
+  encryptionKey: CryptoKey | undefined,
+  commits: Awaited<ReturnType<WebDavVaultRepository['listCommits']>>,
+): Promise<SyncRevisionV1[]> {
   const revisions: SyncRevisionV1[] = []
   for (const commit of commits) {
     if (commit.encrypted !== metadata.encrypted) {
@@ -168,6 +189,7 @@ export async function createRevision(input: {
   revisionId: string
   parents: string[]
   reason: SyncRevisionReason
+  repairedRevisionId?: string
   snapshot: SyncSnapshotV1
   tombstones: TombstoneV1[]
   assets: AssetReferenceV1[]
@@ -188,6 +210,7 @@ export async function createRevision(input: {
     },
     createdAt: new Date().toISOString(),
     reason: input.reason,
+    ...(input.repairedRevisionId ? { repairedRevisionId: input.repairedRevisionId } : {}),
     snapshot: input.snapshot,
     tombstones: input.tombstones,
     assets: input.assets,
@@ -264,6 +287,7 @@ export async function publishAndFinalize(input: {
   pending: PendingSyncOperation
   parents: string[]
   reason: SyncRevisionReason
+  repairedRevisionId?: string
   snapshot: SyncSnapshotV1
   tombstones: TombstoneV1[]
   knownAssets: AssetReferenceV1[]
@@ -315,6 +339,7 @@ export async function publishAndFinalize(input: {
     revisionId,
     parents: input.parents,
     reason: input.reason,
+    repairedRevisionId: input.repairedRevisionId,
     snapshot,
     tombstones: input.tombstones,
     assets,
@@ -362,6 +387,7 @@ export async function publishAndFinalize(input: {
         revisionId,
         parents: input.parents,
         reason: input.reason,
+        repairedRevisionId: input.repairedRevisionId,
         snapshot,
         tombstones: input.tombstones,
         assets,
@@ -1558,7 +1584,6 @@ export interface BrowserSyncDeviceEntry {
 
 export async function openConfiguredVault(readAllRevisions = true): Promise<{
   encryptionKey?: CryptoKey
-  inspection: Extract<Awaited<ReturnType<WebDavVaultRepository['inspect']>>, { state: 'ready' }>
   metadata: VaultMetadataV1
   repository: WebDavVaultRepository
   revisions: SyncRevisionV1[]
@@ -1585,5 +1610,5 @@ export async function openConfiguredVault(readAllRevisions = true): Promise<{
     ? await getStoredEncryptionKey(metadata.vaultId, metadata.generationId)
     : undefined
   const revisions = readAllRevisions ? await readRevisions(repository, metadata, encryptionKey) : []
-  return { encryptionKey, inspection, metadata, repository, revisions, state }
+  return { encryptionKey, metadata, repository, revisions, state }
 }

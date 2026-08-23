@@ -12,6 +12,7 @@ import {
   decryptSyncBytes,
   deserializeWebDavError,
   encryptSyncBytes,
+  hasConfirmedCorruptionRepair,
   findRevisionHeads,
   hashCanonicalJson,
   parseWebDavMultiStatus,
@@ -252,6 +253,31 @@ test('a deleted configured vault stays a not-found condition instead of an ident
       .vaultId,
     metadata().vaultId,
   )
+})
+
+test('vault inspection reads the ownership marker before listing a ready directory', async () => {
+  const server = new FakeWebDavServer()
+  const vault = metadata()
+  const repository = new WebDavVaultRepository(client(server))
+  await repository.initialize(vault)
+  server.events.length = 0
+
+  assert.deepEqual(await repository.inspect(), { state: 'ready', metadata: vault })
+  assert.deepEqual(server.events, ['GET /dav/LemonNewTab/vault.json'])
+})
+
+test('a repair remains confirmed after a later revision extends its head', async () => {
+  const vault = metadata()
+  const previous = await revision(vault, '66666666-6666-4666-8666-666666666661')
+  const damagedRevisionId = '66666666-6666-4666-8666-666666666662'
+  const repair = {
+    ...(await revision(vault, '66666666-6666-4666-8666-666666666663', [previous.revisionId])),
+    reason: 'repair' as const,
+    repairedRevisionId: damagedRevisionId,
+  }
+  const later = await revision(vault, '66666666-6666-4666-8666-666666666664', [repair.revisionId])
+
+  assert.equal(hasConfirmedCorruptionRepair([previous, repair, later], damagedRevisionId), true)
 })
 
 test('WebDAV client preserves the global fetch receiver in a service worker', async () => {
