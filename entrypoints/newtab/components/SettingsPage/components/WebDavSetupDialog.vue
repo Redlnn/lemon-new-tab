@@ -3,6 +3,7 @@ import { useTranslation } from 'i18next-vue'
 import CheckCircleRound from '~icons/ic/round-check-circle'
 import CloudDoneRound from '~icons/ic/round-cloud-done'
 import LockRound from '~icons/ic/round-lock'
+import RoundWarningIcon from '~icons/ic/round-warning'
 
 import { useSettingsStore } from '@/shared/settings'
 import { idbGet } from '@/shared/storage/idb'
@@ -45,7 +46,6 @@ const steps = computed(() => [
   t('webdavSync.setup.steps.test'),
   t('webdavSync.setup.steps.scan'),
   t('webdavSync.setup.steps.scope'),
-  t('webdavSync.setup.steps.wallpaper'),
   t('webdavSync.setup.steps.compare'),
   t('webdavSync.setup.steps.confirm'),
 ])
@@ -79,7 +79,7 @@ const canContinue = computed(() => {
     )
   }
   if (step.value === 1) return Boolean(preview.value)
-  if (step.value === 6 && effectiveEncryption.value) {
+  if (step.value === 5 && effectiveEncryption.value) {
     return form.encryptionPassword.length >= 8
   }
   return true
@@ -92,10 +92,13 @@ const oversizedWallpaperCount = computed(
       (size) => size > MAX_SYNC_WALLPAPER_BYTES,
     ).length,
 )
+const hasPreviewConflicts = computed(() => Boolean(preview.value?.conflicts.length))
 const comparisonTitle = computed(() =>
   preview.value?.state === 'empty'
     ? t('webdavSync.setup.compare.initialTitle')
-    : t('webdavSync.setup.compare.existingTitle'),
+    : hasPreviewConflicts.value
+      ? t('webdavSync.setup.compare.firstConnectionTitle')
+      : t('webdavSync.setup.compare.existingTitle'),
 )
 
 function formatBytes(value: number) {
@@ -202,7 +205,7 @@ async function finish() {
 }
 
 async function nextStep() {
-  if (step.value === 4) {
+  if (step.value === 3) {
     testing.value = true
     try {
       preview.value = await previewSyncConnection(createInput())
@@ -241,310 +244,337 @@ watch(
   <el-dialog
     v-model="model"
     :title="t('webdavSync.setup.title')"
-    width="760px"
-    class="webdav-setup-dialog"
+    class="base-dialog webdav-setup-dialog"
     :close-on-click-modal="false"
     destroy-on-close
+    append-to-body
   >
-    <el-steps :active="step" finish-status="success" simple class="setup-steps">
-      <el-step v-for="label in steps" :key="label" :title="label" />
-    </el-steps>
+    <div class="base-dialog-container">
+      <el-steps :active="step" finish-status="success" class="setup-steps" align-center>
+        <el-step v-for="label in steps" :key="label" :title="label" />
+      </el-steps>
 
-    <div class="setup-content">
-      <template v-if="step === 0">
-        <header>
-          <h3>{{ t('webdavSync.setup.connection.title') }}</h3>
-          <p>{{ t('webdavSync.setup.connection.description') }}</p>
-        </header>
-        <el-form label-position="top">
-          <el-form-item :label="t('webdavSync.setup.connection.url')">
-            <el-input v-model="form.url" placeholder="https://example.com/dav/" />
-          </el-form-item>
-          <div class="setup-columns">
-            <el-form-item :label="t('webdavSync.setup.connection.username')">
-              <el-input v-model="form.username" autocomplete="username" />
-            </el-form-item>
-            <el-form-item :label="t('webdavSync.setup.connection.password')">
-              <el-input
-                v-model="form.password"
-                type="password"
-                show-password
-                autocomplete="current-password"
-              />
-            </el-form-item>
-          </div>
-          <el-form-item :label="t('webdavSync.setup.connection.deviceName')">
-            <el-input
-              v-model="form.deviceName"
-              :placeholder="t('webdavSync.setup.connection.deviceNamePlaceholder')"
-              maxlength="80"
-            />
-          </el-form-item>
-          <el-alert
-            v-if="addressAssessment?.transport === 'local-http'"
-            type="warning"
-            :closable="false"
-            show-icon
-          >
-            {{ t('webdavSync.setup.http.localWarning') }}
-            <el-checkbox v-model="localHttpAccepted">{{
-              t('webdavSync.setup.http.accept')
-            }}</el-checkbox>
-          </el-alert>
-          <el-alert v-else-if="publicHttpUnsupported" type="error" :closable="false" show-icon>
-            {{ t('webdavSync.setup.http.publicUnsupported') }}
-          </el-alert>
-          <el-collapse class="setup-advanced">
-            <el-collapse-item name="advanced" :title="t('webdavSync.setup.advanced')">
-              <el-form-item :label="t('webdavSync.setup.connection.directory')">
-                <el-input v-model="form.directory" />
-              </el-form-item>
-              <el-checkbox v-model="form.rememberPassword">{{
-                t('webdavSync.setup.connection.remember')
-              }}</el-checkbox>
-              <p class="setup-note">
+      <el-scrollbar>
+        <div class="setup-content">
+          <template v-if="step === 0">
+            <header>
+              <h3>{{ t('webdavSync.setup.connection.title') }}</h3>
+            </header>
+            <el-form label-position="top">
+              <div class="setup-columns">
+                <el-form-item :label="t('webdavSync.setup.connection.url')">
+                  <el-input v-model="form.url" placeholder="https://example.com/dav/" />
+                </el-form-item>
+                <el-form-item :label="t('webdavSync.setup.connection.deviceName')">
+                  <el-input
+                    v-model="form.deviceName"
+                    :placeholder="t('webdavSync.setup.connection.deviceNamePlaceholder')"
+                    maxlength="80"
+                  />
+                </el-form-item>
+              </div>
+              <div class="setup-columns">
+                <el-form-item :label="t('webdavSync.setup.connection.username')">
+                  <el-input v-model="form.username" autocomplete="username" />
+                </el-form-item>
+                <el-form-item :label="t('webdavSync.setup.connection.password')">
+                  <el-input
+                    v-model="form.password"
+                    type="password"
+                    show-password
+                    autocomplete="current-password"
+                  />
+                </el-form-item>
+              </div>
+              <el-collapse class="setup-advanced">
+                <el-collapse-item name="advanced" :title="t('webdavSync.setup.advanced')">
+                  <el-form-item :label="t('webdavSync.setup.connection.directory')">
+                    <el-input v-model="form.directory" />
+                  </el-form-item>
+                  <el-checkbox v-model="form.rememberPassword">
+                    {{ t('webdavSync.setup.connection.remember') }}
+                  </el-checkbox>
+                  <p class="setup-note">
+                    {{
+                      form.rememberPassword
+                        ? t('webdavSync.setup.connection.rememberNote')
+                        : t('webdavSync.setup.connection.sessionNote')
+                    }}
+                  </p>
+                  <el-checkbox v-model="form.encrypted">
+                    {{ t('webdavSync.setup.encryption.enable') }}
+                  </el-checkbox>
+                  <el-form-item
+                    v-if="form.encrypted"
+                    :label="t('webdavSync.setup.encryption.password')"
+                  >
+                    <el-input
+                      v-model="form.encryptionPassword"
+                      type="password"
+                      show-password
+                      autocomplete="new-password"
+                    />
+                  </el-form-item>
+                </el-collapse-item>
+              </el-collapse>
+              <el-alert
+                v-if="addressAssessment?.transport === 'local-http'"
+                type="warning"
+                :closable="false"
+                show-icon
+              >
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    margin: 8px 0;
+                    font-size: 14px;
+                  "
+                >
+                  {{ t('webdavSync.setup.http.localWarning') }}
+                  <el-checkbox
+                    v-model="localHttpAccepted"
+                    style="height: auto; white-space: normal"
+                  >
+                    {{ t('webdavSync.setup.http.accept') }}
+                  </el-checkbox>
+                </div>
+              </el-alert>
+              <el-alert v-else-if="publicHttpUnsupported" type="error" :closable="false" show-icon>
+                {{ t('webdavSync.setup.http.publicUnsupported') }}
+              </el-alert>
+            </el-form>
+          </template>
+
+          <template v-else-if="step === 1">
+            <header>
+              <h3>{{ t('webdavSync.setup.test.title') }}</h3>
+              <p>
                 {{
-                  form.rememberPassword
-                    ? t('webdavSync.setup.connection.rememberNote')
-                    : t('webdavSync.setup.connection.sessionNote')
+                  t('webdavSync.setup.test.description', {
+                    origin: addressAssessment?.permissionOrigin,
+                  })
                 }}
               </p>
-              <el-checkbox v-model="form.encrypted">{{
-                t('webdavSync.setup.encryption.enable')
-              }}</el-checkbox>
-              <el-form-item
-                v-if="form.encrypted"
-                :label="t('webdavSync.setup.encryption.password')"
-              >
-                <el-input
-                  v-model="form.encryptionPassword"
-                  type="password"
-                  show-password
-                  autocomplete="new-password"
-                />
-              </el-form-item>
-            </el-collapse-item>
-          </el-collapse>
-        </el-form>
-      </template>
+            </header>
+            <section class="setup-result-card">
+              <component :is="preview ? CheckCircleRound : CloudDoneRound" />
+              <div>
+                <strong>
+                  {{
+                    preview
+                      ? t('webdavSync.setup.test.success')
+                      : t('webdavSync.setup.test.notTested')
+                  }}
+                </strong>
+                <p>
+                  {{
+                    preview
+                      ? t('webdavSync.setup.test.scanned')
+                      : t('webdavSync.setup.test.permissionNote')
+                  }}
+                </p>
+              </div>
+              <el-button type="primary" :loading="testing" @click="testConnection">
+                {{ preview ? t('webdavSync.setup.test.retry') : t('webdavSync.setup.test.action') }}
+              </el-button>
+            </section>
+            <el-alert
+              v-if="testError"
+              type="error"
+              :closable="false"
+              show-icon
+              :title="testError"
+              style="margin-top: 10px"
+            />
+          </template>
 
-      <template v-else-if="step === 1">
-        <header>
-          <h3>{{ t('webdavSync.setup.test.title') }}</h3>
-          <p>
-            {{
-              t('webdavSync.setup.test.description', {
-                origin: addressAssessment?.permissionOrigin,
-              })
-            }}
-          </p>
-        </header>
-        <section class="setup-result-card" :class="{ success: preview }">
-          <component :is="preview ? CheckCircleRound : CloudDoneRound" />
-          <div>
-            <strong>{{
-              preview ? t('webdavSync.setup.test.success') : t('webdavSync.setup.test.notTested')
-            }}</strong>
-            <p>
-              {{
-                preview
-                  ? t('webdavSync.setup.test.scanned')
-                  : t('webdavSync.setup.test.permissionNote')
-              }}
-            </p>
-          </div>
-          <el-button type="primary" :loading="testing" @click="testConnection">{{
-            preview ? t('webdavSync.setup.test.retry') : t('webdavSync.setup.test.action')
-          }}</el-button>
-        </section>
-        <el-alert v-if="testError" type="error" :closable="false" show-icon :title="testError" />
-      </template>
+          <template v-else-if="step === 2">
+            <header>
+              <h3>{{ t('webdavSync.setup.scan.title') }}</h3>
+            </header>
+            <el-result
+              :icon="preview?.state === 'empty' ? 'success' : 'warning'"
+              :title="t(`webdavSync.setup.scan.${preview?.state ?? 'empty'}`)"
+              :sub-title="
+                t(
+                  preview?.state === 'empty'
+                    ? 'webdavSync.setup.scan.emptyNote'
+                    : preview?.state === 'remote-conflict'
+                      ? 'webdavSync.setup.scan.remoteConflictNote'
+                      : 'webdavSync.setup.scan.existingNote',
+                )
+              "
+            />
+          </template>
 
-      <template v-else-if="step === 2">
-        <header>
-          <h3>{{ t('webdavSync.setup.scan.title') }}</h3>
-          <p>{{ t('webdavSync.setup.scan.description') }}</p>
-        </header>
-        <el-result
-          :icon="preview?.state === 'empty' ? 'success' : 'warning'"
-          :title="t(`webdavSync.setup.scan.${preview?.state ?? 'empty'}`)"
-          :sub-title="
-            t(
-              preview?.state === 'empty'
-                ? 'webdavSync.setup.scan.emptyNote'
-                : preview?.state === 'remote-conflict'
-                  ? 'webdavSync.setup.scan.remoteConflictNote'
-                  : 'webdavSync.setup.scan.existingNote',
-            )
-          "
-        />
-      </template>
-
-      <template v-else-if="step === 3">
-        <header>
-          <h3>{{ t('webdavSync.setup.scope.title') }}</h3>
-          <p>{{ t('webdavSync.setup.scope.description') }}</p>
-        </header>
-        <div class="setup-scope-list">
-          <label
-            ><span
-              ><strong>{{ t('webdavSync.scope.settings') }}</strong></span
-            ><el-switch v-model="scope.settings"
-          /></label>
-          <label
-            ><span
-              ><strong>{{ t('webdavSync.scope.quickLinks') }}</strong></span
-            ><el-switch v-model="scope.quickLinks"
-          /></label>
-          <label
-            ><span
-              ><strong>{{ t('webdavSync.scope.customSearchEngines') }}</strong></span
-            ><el-switch v-model="scope.customSearchEngines"
-          /></label>
-          <label
-            ><span
-              ><strong>{{ t('webdavSync.scope.uiPreferences') }}</strong></span
-            ><el-switch v-model="scope.uiPreferences"
-          /></label>
-          <label
-            ><span
-              ><strong>{{ t('webdavSync.scope.blockedTopSites') }}</strong
-              ><small>{{ t('webdavSync.setup.scope.blockedTopSitesNote') }}</small></span
-            ><el-switch v-model="scope.blockedTopSites"
-          /></label>
-        </div>
-        <el-collapse class="setup-advanced">
-          <el-collapse-item name="scope" :title="t('webdavSync.scope.advanced')">
+          <template v-else-if="step === 3">
+            <header>
+              <h3>{{ t('webdavSync.setup.scope.title') }}</h3>
+              <p>{{ t('webdavSync.setup.scope.description') }}</p>
+            </header>
             <div class="setup-scope-list">
-              <label
-                ><span
-                  ><strong>{{ t('webdavSync.scope.onlineWallpaperUrl') }}</strong
-                  ><small>{{ t('webdavSync.scope.onlineWallpaperUrlNote') }}</small></span
-                ><el-switch v-model="scope.onlineWallpaperUrl"
-              /></label>
-              <label
-                ><span
-                  ><strong>{{ t('webdavSync.scope.userIcons') }}</strong
-                  ><small>{{ t('webdavSync.scope.userIconsNote') }}</small></span
-                ><el-switch v-model="scope.userIcons"
-              /></label>
+              <label>
+                <span>
+                  <strong>{{ t('webdavSync.scope.settings') }}</strong>
+                </span>
+                <el-switch v-model="scope.settings" />
+              </label>
+              <label>
+                <span>
+                  <strong>{{ t('quickLinks.title') }}</strong>
+                </span>
+                <el-switch v-model="scope.quickLinks" />
+              </label>
+              <label>
+                <span>
+                  <strong>{{ t('webdavSync.scope.customSearchEngines') }}</strong>
+                </span>
+                <el-switch v-model="scope.customSearchEngines" />
+              </label>
+              <label>
+                <span>
+                  <strong>{{ t('webdavSync.scope.uiPreferences') }}</strong>
+                </span>
+                <el-switch v-model="scope.uiPreferences" />
+              </label>
+              <label>
+                <span>
+                  <strong>{{ t('webdavSync.scope.blockedTopSites') }}</strong>
+                </span>
+                <el-switch v-model="scope.blockedTopSites" />
+              </label>
+              <label>
+                <span>
+                  <strong>{{ t('webdavSync.scope.onlineWallpaperUrl') }}</strong>
+                  <small>{{ t('webdavSync.scope.onlineWallpaperUrlNote') }}</small>
+                </span>
+                <el-switch v-model="scope.onlineWallpaperUrl" />
+              </label>
+              <label>
+                <span>
+                  <strong>{{ t('webdavSync.scope.userIcons') }}</strong>
+                  <small>{{ t('webdavSync.scope.userIconsNote') }} </small>
+                </span>
+                <el-switch v-model="scope.userIcons" />
+              </label>
+              <label v-if="wallpaperInfo.count > 0">
+                <span>
+                  <strong>{{ t('webdavSync.scope.wallpapers') }}</strong>
+                  <small>
+                    {{
+                      t('webdavSync.setup.wallpaper.summary', {
+                        count: wallpaperInfo.count,
+                        size: formattedWallpaperSize,
+                      })
+                    }}
+                  </small>
+                </span>
+                <el-switch v-model="scope.wallpapers" />
+              </label>
+              <el-alert
+                v-if="oversizedWallpaperCount"
+                type="warning"
+                :closable="false"
+                show-icon
+                :title="
+                  t('webdavSync.setup.wallpaper.oversized', { count: oversizedWallpaperCount })
+                "
+                style="grid-column: 1 / -1; margin-top: 10px"
+              />
             </div>
-          </el-collapse-item>
-        </el-collapse>
-      </template>
+          </template>
 
-      <template v-else-if="step === 4">
-        <header>
-          <h3>{{ t('webdavSync.setup.wallpaper.title') }}</h3>
-          <p>{{ t('webdavSync.setup.wallpaper.description') }}</p>
-        </header>
-        <el-empty
-          v-if="wallpaperInfo.count === 0"
-          :description="t('webdavSync.setup.wallpaper.empty')"
-        />
-        <section v-else class="wallpaper-choice">
-          <div>
-            <strong>{{
-              t('webdavSync.setup.wallpaper.summary', {
-                count: wallpaperInfo.count,
-                size: formattedWallpaperSize,
-              })
-            }}</strong>
-            <p>{{ t('webdavSync.setup.wallpaper.limit') }}</p>
-          </div>
-          <el-checkbox v-model="scope.wallpapers">{{
-            t('webdavSync.setup.wallpaper.enable')
-          }}</el-checkbox>
-        </section>
-        <el-alert
-          v-if="oversizedWallpaperCount"
-          type="warning"
-          :closable="false"
-          show-icon
-          :title="t('webdavSync.setup.wallpaper.oversized', { count: oversizedWallpaperCount })"
-        />
-      </template>
+          <template v-else-if="step === 4">
+            <header>
+              <h3>{{ comparisonTitle }}</h3>
+            </header>
+            <div class="comparison-summary">
+              <template v-if="hasPreviewConflicts">
+                <component :is="RoundWarningIcon" />
+                <div>
+                  <strong>
+                    {{
+                      t('webdavSync.setup.compare.conflicts', {
+                        count: preview?.conflicts.length ?? 0,
+                      })
+                    }}
+                  </strong>
+                </div>
+              </template>
+              <template v-else>
+                <component :is="CheckCircleRound" />
+                <div>
+                  <strong>{{ t('webdavSync.setup.compare.safe') }}</strong>
+                </div>
+              </template>
+              <el-tag v-if="preview?.state !== 'empty'" type="warning">
+                {{ t('webdavSync.setup.compare.existing') }}
+              </el-tag>
+            </div>
+            <el-alert
+              v-if="hasPreviewConflicts"
+              type="warning"
+              :closable="false"
+              show-icon
+              :title="t('webdavSync.setup.compare.firstConnectionNote')"
+              style="margin-top: 10px"
+            />
+            <el-alert
+              v-if="preview?.resourceOmissions.length"
+              type="warning"
+              :closable="false"
+              show-icon
+              :title="
+                t('webdavSync.setup.scope.omittedResources', {
+                  count: preview.resourceOmissions.length,
+                })
+              "
+              style="margin-top: 10px"
+            />
+          </template>
 
-      <template v-else-if="step === 5">
-        <header>
-          <h3>{{ comparisonTitle }}</h3>
-          <p>{{ t('webdavSync.setup.compare.description') }}</p>
-        </header>
-        <div class="comparison-summary">
-          <check-circle-round />
-          <div>
-            <strong>{{ t('webdavSync.setup.compare.safe') }}</strong
-            ><span>{{
-              t('webdavSync.setup.compare.conflicts', { count: preview?.conflicts.length ?? 0 })
-            }}</span>
-          </div>
-          <el-tag :type="preview?.conflicts.length ? 'warning' : 'success'">{{
-            preview?.state === 'empty'
-              ? t('webdavSync.setup.compare.initial')
-              : t('webdavSync.setup.compare.existing')
-          }}</el-tag>
+          <template v-else>
+            <header>
+              <h3>{{ t('webdavSync.setup.confirm.title') }}</h3>
+              <p>{{ t('webdavSync.setup.confirm.description') }}</p>
+            </header>
+            <div class="final-list">
+              <p>
+                <check-circle-round />
+                <span>
+                  <strong>{{ t('webdavSync.setup.connection.url') }}</strong>
+                  <small>{{ form.url }} · {{ form.directory }}/</small>
+                </span>
+              </p>
+              <p>
+                <check-circle-round />
+                <span>
+                  <strong>{{ t('webdavSync.setup.connection.deviceName') }}</strong>
+                  <small>{{ form.deviceName || t('webdavSync.setup.confirm.autoDevice') }}</small>
+                </span>
+              </p>
+              <p>
+                <lock-round />
+                <span>
+                  <strong>{{ t('webdavSync.management.encryption') }}</strong>
+                  <small>
+                    {{
+                      effectiveEncryption
+                        ? t('webdavSync.setup.confirm.encrypted')
+                        : t('webdavSync.setup.confirm.plaintext')
+                    }}
+                  </small>
+                </span>
+              </p>
+            </div>
+          </template>
         </div>
-        <el-alert
-          v-if="preview?.conflicts.length"
-          type="warning"
-          :closable="false"
-          show-icon
-          :title="t('webdavSync.setup.compare.pauseNote')"
-        />
-        <el-alert
-          v-if="preview?.resourceOmissions.length"
-          type="warning"
-          :closable="false"
-          show-icon
-          :title="
-            t('webdavSync.setup.scope.omittedResources', {
-              count: preview.resourceOmissions.length,
-            })
-          "
-        />
-      </template>
+      </el-scrollbar>
 
-      <template v-else>
-        <header>
-          <h3>{{ t('webdavSync.setup.confirm.title') }}</h3>
-          <p>{{ t('webdavSync.setup.confirm.description') }}</p>
-        </header>
-        <div class="final-list">
-          <p>
-            <check-circle-round /><span
-              ><strong>{{ t('webdavSync.setup.connection.url') }}</strong
-              ><small>{{ form.url }} · {{ form.directory }}/</small></span
-            >
-          </p>
-          <p>
-            <check-circle-round /><span
-              ><strong>{{ t('webdavSync.setup.connection.deviceName') }}</strong
-              ><small>{{
-                form.deviceName || t('webdavSync.setup.confirm.autoDevice')
-              }}</small></span
-            >
-          </p>
-          <p>
-            <lock-round /><span
-              ><strong>{{ t('webdavSync.management.encryption') }}</strong
-              ><small>{{
-                effectiveEncryption
-                  ? t('webdavSync.setup.confirm.encrypted')
-                  : t('webdavSync.setup.confirm.plaintext')
-              }}</small></span
-            >
-          </p>
-        </div>
-        <el-alert type="info" :closable="false" show-icon>{{
-          t('webdavSync.setup.confirm.disconnectNote')
-        }}</el-alert>
-      </template>
-    </div>
-
-    <template #footer>
       <div class="setup-footer">
         <el-button v-if="step > 0" @click="step--">{{ t('webdavSync.setup.back') }}</el-button>
-        <span></span>
         <el-button @click="model = false">{{ t('newtab:common.cancel') }}</el-button>
         <el-button
           v-if="step < steps.length - 1"
@@ -552,165 +582,207 @@ watch(
           :loading="testing"
           :disabled="!canContinue"
           @click="nextStep"
-          >{{ t('webdavSync.setup.next') }}</el-button
         >
+          {{ t('webdavSync.setup.next') }}
+        </el-button>
         <el-button
           v-else
           type="primary"
           :loading="connecting"
           :disabled="!canContinue"
           @click="finish"
-          >{{ t('webdavSync.setup.finish') }}</el-button
         >
+          {{ t('webdavSync.setup.finish') }}
+        </el-button>
       </div>
-    </template>
+    </div>
   </el-dialog>
 </template>
 
-<style scoped lang="scss">
-.setup-steps {
-  margin-bottom: 18px;
-  overflow-x: auto;
-}
-
-.setup-content {
-  min-height: 340px;
-}
-
-header {
-  margin-bottom: 16px;
-
-  h3,
-  p {
-    margin: 0;
+<style lang="scss">
+.webdav-setup-dialog {
+  &.base-dialog {
+    --el-dialog-width: min(650px, 93%);
+    height: fit-content;
+    max-height: 90dvh;
   }
 
-  p {
-    margin-top: 5px;
-    color: var(--el-text-color-secondary);
-  }
-}
-
-.setup-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.setup-advanced {
-  margin-top: 8px;
-  border-bottom: 0;
-}
-
-.setup-note {
-  margin: 3px 0 10px 24px;
-  font-size: var(--el-font-size-extra-small);
-  color: var(--el-text-color-secondary);
-}
-
-.setup-result-card,
-.comparison-summary,
-.wallpaper-choice {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: center;
-  padding: 18px;
-  background: var(--settings-option-background, var(--el-fill-color-light));
-  border: 1px solid var(--el-border-color);
-  border-radius: var(--le-radius-inner, 12px);
-
-  > svg {
-    width: 30px;
-    height: 30px;
-    color: var(--el-color-primary);
-  }
-
-  p,
-  span {
-    margin: 4px 0 0;
-    color: var(--el-text-color-secondary);
-  }
-}
-
-.setup-result-card.success {
-  border-color: var(--el-color-success-light-5);
-}
-
-.setup-scope-list {
-  display: grid;
-  gap: 8px;
-
-  label {
+  .base-dialog-container {
     display: flex;
-    gap: 12px;
-    align-items: center;
-    justify-content: space-between;
-    padding: 11px 12px;
-    background: var(--settings-option-background, var(--el-fill-color-light));
-    border-radius: var(--le-radius-inner, 10px);
+    flex-direction: column;
   }
 
-  span {
-    display: grid;
-    gap: 3px;
+  .setup-steps {
+    margin-bottom: 18px;
   }
 
-  small {
-    color: var(--el-text-color-secondary);
-  }
-}
+  .el-scrollbar {
+    flex: 0 1 auto;
+    padding-right: 15px;
 
-.final-list {
-  display: grid;
-  gap: 8px;
-
-  p {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    padding: 10px;
-    margin: 0;
-    background: var(--settings-option-background, var(--el-fill-color-light));
-    border-radius: var(--le-radius-inner, 10px);
+    .el-scrollbar__wrap {
+      min-height: 250px;
+      max-height: min(500px, calc(100dvh - 250px));
+    }
   }
 
-  svg {
-    width: 22px;
-    height: 22px;
-    color: var(--el-color-success);
+  header {
+    margin-bottom: 16px;
+
+    h3,
+    p {
+      margin: 0;
+    }
+
+    p {
+      margin-top: 5px;
+      color: var(--el-text-color-secondary);
+    }
   }
 
-  span {
-    display: grid;
-  }
-
-  small {
-    color: var(--el-text-color-secondary);
-  }
-}
-
-.setup-footer {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  gap: 8px;
-}
-
-@media (width <= 599px) {
   .setup-columns {
-    grid-template-columns: 1fr;
-    gap: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .setup-advanced {
+    --el-collapse-header-bg-color: transparent;
+    --el-collapse-content-bg-color: transparent;
+    --el-collapse-header-height: 22px;
+    --el-collapse-header-font-size: var(--el-font-size-base);
+    --el-collapse-header-text-color: var(--el-text-color-regular);
+    margin-bottom: 18px;
+    border: none;
+
+    .el-collapse-item__header {
+      margin-bottom: 8px;
+    }
+
+    .el-collapse-item__title {
+      flex-grow: 0;
+    }
+
+    .el-collapse-item__content {
+      padding-bottom: 0;
+    }
+
+    .el-collapse-item__wrap {
+      border: none;
+    }
+  }
+
+  .setup-note {
+    margin: -10px 0 0 24px;
+    font-size: var(--el-font-size-extra-small);
+    color: var(--el-text-color-secondary);
   }
 
   .setup-result-card,
   .comparison-summary,
   .wallpaper-choice {
-    grid-template-columns: auto minmax(0, 1fr);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 18px;
+    background: var(--settings-option-background, var(--el-fill-color-light));
+    border: 1px solid var(--el-border-color);
+    border-radius: var(--le-radius-inner, 12px);
 
-    > .el-button,
-    > .el-checkbox,
-    > .el-tag {
-      grid-column: 1 / -1;
+    > svg {
+      width: 30px;
+      height: 30px;
+      color: var(--el-color-primary);
+    }
+
+    p {
+      margin: 4px 0 0;
+      color: var(--el-text-color-secondary);
+    }
+  }
+
+  .setup-scope-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+
+    label {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 12px;
+      background: var(--settings-option-background, var(--el-fill-color-light));
+      border-radius: var(--le-radius-inner, 10px);
+    }
+
+    span {
+      display: grid;
+      gap: 3px;
+    }
+
+    small {
+      color: var(--el-text-color-secondary);
+    }
+  }
+
+  .final-list {
+    display: grid;
+    gap: 8px;
+
+    p {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      margin: 0;
+      background: var(--settings-option-background, var(--el-fill-color-light));
+      border-radius: var(--le-radius-inner, 10px);
+    }
+
+    svg {
+      width: 22px;
+      height: 22px;
+      color: var(--el-color-success);
+    }
+
+    span {
+      display: grid;
+    }
+
+    small {
+      color: var(--el-text-color-secondary);
+    }
+  }
+
+  .setup-footer {
+    flex-shrink: 0;
+    margin-top: 18px;
+    margin-bottom: 24px;
+    text-align: right;
+  }
+
+  @media (width <= 599px) {
+    .setup-columns {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .setup-result-card,
+    .comparison-summary,
+    .wallpaper-choice {
+      grid-template-columns: auto minmax(0, 1fr);
+
+      > .el-button,
+      > .el-checkbox,
+      > .el-tag {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .setup-scope-list {
+      grid-template-columns: 1fr;
     }
   }
 }

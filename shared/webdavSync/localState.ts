@@ -117,6 +117,7 @@ export interface StoredSyncConflictV1 {
   local: SyncSnapshotV1
   remote: SyncSnapshotV1
   remoteRevisionIds: string[]
+  remoteBranchConflicts?: SyncConflict[]
   remainingRemoteRevisionIds: string[]
   stage: 'local-remote' | 'remote-branches'
   remoteVersions?: Array<{

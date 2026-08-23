@@ -9,6 +9,8 @@ import {
   canonicalJson,
   compareSyncSnapshots,
   captureSyncSnapshot,
+  collectRemoteBranchConflicts,
+  createSyncConflictDetails,
   createTombstone,
   createEncryptionAad,
   createVaultEncryption,
@@ -33,6 +35,7 @@ import {
   pruneExpiredTombstones,
   quickLinkIconHashesAreValid,
   resolveSyncConflicts,
+  resolveRemoteBranchConflicts,
   sanitizeSettings,
   serializeJsonBackup,
   SyncCoordinator,
@@ -204,6 +207,82 @@ test('conflict presentation hides entity IDs and reuses settings labels', () => 
     t,
   )
   assert.ok(translated.includes('theme.primaryColor'))
+})
+
+test('conflict presentation keeps newly added settings granular and labels their missing baseline', () => {
+  const base = snapshot()
+  const local = structuredClone(base)
+  const remote = structuredClone(base)
+  local.settings.theme = { primaryColor: '#1677ff' }
+  remote.settings.theme = { primaryColor: '#722ed1' }
+
+  const conflict = mergeSyncSnapshots(base, local, remote).conflicts.find(
+    (item) => item.path === 'settings.theme.primaryColor',
+  )
+  assert.ok(conflict)
+
+  const display = presentSyncConflict(conflict, createSyncConflictDisplayContext([]), (key) => key)
+  assert.equal(display.section, 'theme.title')
+  assert.equal(display.title, 'theme.primaryColor')
+  assert.equal(display.base, 'webdavSync.conflicts.values.noBaseline')
+  assert.equal(display.local, '#1677ff')
+  assert.equal(display.remote, '#722ed1')
+})
+
+test('conflict details refresh legacy parent conflicts and automatically merge empty wallpapers', () => {
+  const base = snapshot()
+  const local = structuredClone(base)
+  const remote = structuredClone(base)
+  local.settings.theme = { primaryColor: '#1677ff' }
+  remote.settings.theme = { primaryColor: '#722ed1' }
+  local.optional = { wallpapers: {} }
+  remote.optional = { wallpapers: {} }
+
+  const details = createSyncConflictDetails({
+    base,
+    local,
+    remote,
+    conflicts: [
+      {
+        id: 'settings:settings.theme:field',
+        category: 'settings',
+        kind: 'field',
+        path: 'settings.theme',
+        local: local.settings.theme,
+        remote: remote.settings.theme,
+        canKeepBoth: false,
+      },
+      {
+        id: 'wallpaper:optional.wallpapers:field',
+        category: 'wallpaper',
+        kind: 'field',
+        path: 'optional.wallpapers',
+        local: {},
+        remote: {},
+        canKeepBoth: false,
+      },
+    ],
+    remoteRevisionIds: ['remote-revision'],
+  })
+
+  assert.deepEqual(
+    details.conflicts.map((conflict) => conflict.path),
+    ['settings.theme.primaryColor'],
+  )
+})
+
+test('conflict details identify an initial connection without shared data', () => {
+  const local = snapshot()
+  const remote = structuredClone(local)
+  const details = createSyncConflictDetails({
+    base: { scope: syncScope() },
+    local,
+    remote,
+    conflicts: [],
+    remoteRevisionIds: ['remote-revision'],
+  })
+
+  assert.equal(details.hasEmptyBase, true)
 })
 
 test('settings capture removes device-only and cache fields', () => {
@@ -509,6 +588,57 @@ test('core-only storage fallback preserves the confirmed wallpaper state', () =>
   assert.deepEqual(fallback.optional?.wallpapers, base.optional.wallpapers)
   assert.deepEqual(fallback.settings?.clock, { size: 60 })
   assert.equal(preserveBaselineWallpapers(changed).optional, undefined)
+})
+
+test('wallpaper conflicts are resolved once per color variant', () => {
+  const base = snapshot()
+  const local = snapshot()
+  const remote = snapshot()
+  base.optional = {
+    wallpapers: {
+      light: {
+        assetId: `sha256-${'a'.repeat(64)}`,
+        size: 1,
+        mimeType: 'image/png',
+        sha256: 'a'.repeat(64),
+      },
+    },
+  }
+  local.optional = {
+    wallpapers: {
+      light: {
+        assetId: `sha256-${'b'.repeat(64)}`,
+        size: 2,
+        mimeType: 'image/webp',
+        sha256: 'b'.repeat(64),
+      },
+    },
+  }
+  remote.optional = {
+    wallpapers: {
+      light: {
+        assetId: `sha256-${'c'.repeat(64)}`,
+        size: 3,
+        mimeType: 'image/jpeg',
+        sha256: 'c'.repeat(64),
+      },
+    },
+  }
+
+  const merged = mergeSyncSnapshots(base, local, remote)
+  assert.deepEqual(merged.conflicts.map((conflict) => conflict.path), ['optional.wallpapers.light'])
+  assert.equal(
+    presentSyncConflict(merged.conflicts[0]!, createSyncConflictDisplayContext([]), (key) => key)
+      .title,
+    'webdavSync.conflicts.fields.wallpaperLight',
+  )
+  const resolved = resolveSyncConflicts({
+    base,
+    local,
+    remote,
+    resolutions: [{ choice: 'remote', conflictId: merged.conflicts[0]!.id }],
+  })
+  assert.equal(resolved.optional?.wallpapers?.light?.assetId, `sha256-${'c'.repeat(64)}`)
 })
 
 test('merge import preserves current entities that are absent from the backup', () => {
@@ -821,6 +951,102 @@ test('sync decision stops on conflicting branches or an unknown ancestor', () =>
     ],
   })
   assert.equal(unknown.action, 'unknown-ancestor')
+})
+
+test('sync decision applies another device\'s resolved conflict without asking again', () => {
+  const baseRevisionId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+  const firstBranchId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+  const secondBranchId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+  const mergeRevisionId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
+  const base = snapshot()
+  const first = structuredClone(base)
+  const second = structuredClone(base)
+  const resolved = structuredClone(base)
+  ;(first.settings.clock as { size: number }).size = 60
+  ;(second.settings.clock as { size: number }).size = 70
+  ;(resolved.settings.clock as { size: number }).size = 60
+
+  const decision = decideSynchronization({
+    baseRevisionId,
+    baseline: base,
+    local: base,
+    revisions: [
+      branchRevision(firstBranchId, [baseRevisionId], first),
+      branchRevision(secondBranchId, [baseRevisionId], second),
+      branchRevision(mergeRevisionId, [firstBranchId, secondBranchId], resolved),
+    ],
+  })
+
+  assert.equal(decision.action, 'apply-remote')
+  if (decision.action !== 'apply-remote') return
+  assert.equal(decision.revisionId, mergeRevisionId)
+  assert.deepEqual(decision.remote.snapshot, resolved)
+})
+
+test('multi-device conflicts let users choose local or a device value in one resolution', () => {
+  const baseRevisionId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+  const base = snapshot()
+  const local = structuredClone(base)
+  const first = structuredClone(base)
+  const second = structuredClone(base)
+  const third = structuredClone(base)
+  ;(local.settings.clock as { size: number }).size = 55
+  ;(first.settings.clock as { size: number }).size = 60
+  ;(second.settings.clock as { size: number }).size = 70
+  ;(third.settings.clock as { size: number }).size = 80
+  const revisions = [
+    branchRevision('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', [baseRevisionId], first),
+    branchRevision('cccccccc-cccc-4ccc-8ccc-cccccccccccc', [baseRevisionId], second),
+    branchRevision('dddddddd-dddd-4ddd-8ddd-dddddddddddd', [baseRevisionId], third),
+  ]
+  revisions.forEach((revision, index) => (revision.device.name = `Device ${index + 1}`))
+
+  const localConflict = mergeSyncSnapshots(base, local, first).conflicts
+  assert.equal(localConflict.length, 1)
+  const directLocal = resolveSyncConflicts({
+    base,
+    local,
+    remote: first,
+    resolutions: [{ choice: 'local', conflictId: localConflict[0]!.id }],
+  })
+  assert.equal((directLocal.settings.clock as { size: number }).size, 55)
+
+  const conflicts = collectRemoteBranchConflicts(base, revisions, {
+    deviceName: 'Local',
+    snapshot: local,
+  })
+  assert.equal(conflicts.length, 1)
+  assert.deepEqual(
+    conflicts[0]!.candidates?.map((candidate) => candidate.deviceName),
+    ['Device 1', 'Device 2', 'Device 3', 'Local'],
+  )
+  const remoteResolved = resolveRemoteBranchConflicts({
+    baseline: base,
+    revisions,
+    local: { deviceName: 'Local', snapshot: local },
+    resolutions: [
+      {
+        choice: 'candidate',
+        candidateId: revisions[1]!.revisionId,
+        conflictId: conflicts[0]!.id,
+      },
+    ],
+  })
+  assert.equal((remoteResolved.settings.clock as { size: number }).size, 70)
+  assert.equal((local.settings.clock as { size: number }).size, 55)
+  const localResolved = resolveRemoteBranchConflicts({
+    baseline: base,
+    revisions,
+    local: { deviceName: 'Local', snapshot: local },
+    resolutions: [
+      {
+        choice: 'candidate',
+        candidateId: 'local',
+        conflictId: conflicts[0]!.id,
+      },
+    ],
+  })
+  assert.equal((localResolved.settings.clock as { size: number }).size, 55)
 })
 
 test('initialization keeps the device snapshot separate from conflicting remote branches', () => {

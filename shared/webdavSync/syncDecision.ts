@@ -1,9 +1,11 @@
 import { jsonEquals } from './canonical.ts'
+import { resolveSyncConflicts } from './conflicts.ts'
 import { mergeSyncSnapshots } from './merge.ts'
 import { normalizeRemoteSyncSettings } from './settingsWhitelist.ts'
 import type {
   AssetReferenceV1,
   SyncConflict,
+  SyncConflictResolution,
   SyncRevisionV1,
   SyncSnapshotV1,
   TombstoneV1,
@@ -133,6 +135,133 @@ export function mergeRemoteRevisionHeads(
       assets: [...assets.values()],
     },
   }
+}
+
+export const LOCAL_CONFLICT_CANDIDATE_ID = 'local'
+
+interface MultiDeviceConflictInput {
+  deviceName: string
+  snapshot: SyncSnapshotV1
+}
+
+export function collectRemoteBranchConflicts(
+  baseline: SyncSnapshotV1,
+  revisions: readonly SyncRevisionV1[],
+  local: MultiDeviceConflictInput,
+): SyncConflict[] {
+  const heads = findRevisionHeads(revisions)
+  const conflicts = new Map<string, SyncConflict>()
+  for (const [index, local] of heads.entries()) {
+    for (const remote of heads.slice(index + 1)) {
+      for (const conflict of mergeSyncSnapshots(baseline, local.snapshot, remote.snapshot).conflicts) {
+        const current = conflicts.get(conflict.id) ?? {
+          ...conflict,
+          candidates: [],
+        }
+        addRevisionConflictCandidate(current, local, conflict, 'local')
+        addRevisionConflictCandidate(current, remote, conflict, 'remote')
+        conflicts.set(conflict.id, current)
+      }
+    }
+  }
+
+  for (const remote of heads) {
+    for (const conflict of mergeSyncSnapshots(baseline, local.snapshot, remote.snapshot).conflicts) {
+      const current = conflicts.get(conflict.id) ?? { ...conflict, candidates: [] }
+      addLocalConflictCandidate(current, local, conflict)
+      addRevisionConflictCandidate(current, remote, conflict, 'remote')
+      conflicts.set(conflict.id, current)
+    }
+  }
+  for (const conflict of conflicts.values()) {
+    if (!conflict.candidates?.some((candidate) => candidate.source === 'local')) {
+      addLocalConflictCandidate(conflict, local)
+    }
+  }
+  return [...conflicts.values()]
+}
+
+export function resolveRemoteBranchConflicts(input: {
+  baseline: SyncSnapshotV1
+  revisions: readonly SyncRevisionV1[]
+  local: MultiDeviceConflictInput
+  resolutions: readonly SyncConflictResolution[]
+}): SyncSnapshotV1 {
+  const selections = new Map(
+    input.resolutions.map((resolution) => [resolution.conflictId, resolution]),
+  )
+  const conflicts = collectRemoteBranchConflicts(input.baseline, input.revisions, input.local)
+  if (selections.size !== input.resolutions.length || selections.size !== conflicts.length)
+    throw new TypeError('Multi-device conflict resolution is invalid')
+  for (const conflict of conflicts) {
+    const selection = selections.get(conflict.id)
+    if (
+      !selection ||
+      selection.choice !== 'candidate' ||
+      !conflict.candidates?.some((candidate) => candidate.id === selection.candidateId)
+    ) {
+      throw new TypeError(`Multi-device conflict resolution is missing: ${conflict.id}`)
+    }
+  }
+  let snapshot = input.local.snapshot
+  for (const revision of findRevisionHeads(input.revisions)) {
+    const merge = mergeSyncSnapshots(input.baseline, snapshot, revision.snapshot)
+    if (merge.conflicts.length === 0) {
+      snapshot = merge.snapshot
+      continue
+    }
+    snapshot = resolveSyncConflicts({
+      base: input.baseline,
+      local: snapshot,
+      remote: revision.snapshot,
+      resolutions: merge.conflicts.map((conflict) => {
+        const selection = selections.get(conflict.id)
+        if (!selection || selection.choice !== 'candidate')
+          throw new TypeError(`Multi-device conflict resolution is missing: ${conflict.id}`)
+        return {
+          conflictId: conflict.id,
+          choice: selection.candidateId === revision.revisionId ? 'remote' : 'local',
+        }
+      }),
+    })
+  }
+  return snapshot
+}
+
+function addRevisionConflictCandidate(
+  conflict: SyncConflict,
+  revision: SyncRevisionV1,
+  sourceConflict: SyncConflict,
+  side: 'local' | 'remote',
+): void {
+  const candidates = conflict.candidates ?? (conflict.candidates = [])
+  if (candidates.some((candidate) => candidate.id === revision.revisionId)) return
+  const value = sourceConflict[side]
+  candidates.push({
+    id: revision.revisionId,
+    deviceName: revision.device.name,
+    source: 'remote',
+    ...(Object.hasOwn(sourceConflict, side) ? { value } : {}),
+  })
+}
+
+function addLocalConflictCandidate(
+  conflict: SyncConflict,
+  local: MultiDeviceConflictInput,
+  sourceConflict?: SyncConflict,
+): void {
+  const candidates = conflict.candidates ?? (conflict.candidates = [])
+  if (candidates.some((candidate) => candidate.source === 'local')) return
+  candidates.push({
+    id: LOCAL_CONFLICT_CANDIDATE_ID,
+    deviceName: local.deviceName,
+    source: 'local',
+    ...(sourceConflict && Object.hasOwn(sourceConflict, 'local')
+      ? { value: sourceConflict.local }
+      : Object.hasOwn(conflict, 'base')
+        ? { value: conflict.base }
+        : {}),
+  })
 }
 
 export function decideSynchronization(input: {

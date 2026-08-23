@@ -34,7 +34,7 @@ export function resolveSyncConflicts(input: {
         !item ||
         typeof item.conflictId !== 'string' ||
         !['both', 'local', 'remote'].includes(item.choice) ||
-        (item.duplicateId !== undefined && typeof item.duplicateId !== 'string'),
+        (item.choice === 'both' && typeof item.duplicateId !== 'string'),
     )
   ) {
     throw new TypeError('Conflict resolution is invalid')
@@ -48,8 +48,10 @@ export function resolveSyncConflicts(input: {
   for (const conflict of merged.conflicts) {
     const resolution = choices.get(conflict.id)
     if (!resolution) throw new TypeError(`Conflict resolution is missing: ${conflict.id}`)
+    if (resolution.choice === 'candidate')
+      throw new TypeError(`Conflict requires a multi-device resolver: ${conflict.id}`)
     if (resolution.choice === 'both') {
-      if (!conflict.canKeepBoth || !resolution.duplicateId) {
+      if (!conflict.canKeepBoth) {
         throw new TypeError(`Conflict cannot keep both values: ${conflict.id}`)
       }
       keepBothEntities(snapshot, input.local, input.remote, conflict, resolution.duplicateId)

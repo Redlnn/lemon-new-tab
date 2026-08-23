@@ -392,6 +392,10 @@ html.colorful.dialog-transparent .settings__dialog {
     margin-top: 0;
   }
 
+  &:has(.settings__item-note) > .settings__item--horizontal {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
   > .settings__item--horizontal {
     display: grid;
     grid-template-columns: minmax(0, 1fr) max-content;
@@ -555,6 +559,10 @@ html.colorful.dialog-transparent .settings__dialog {
   flex-basis: 100%;
   grid-column: 1 / -1;
   width: 100%;
+}
+
+.settings__item--horizontal .settings__item-note {
+  align-self: baseline;
 }
 
 .settings__group {

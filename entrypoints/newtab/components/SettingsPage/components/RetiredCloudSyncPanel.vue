@@ -60,9 +60,9 @@ onMounted(() => void refresh())
       <template #title>
         <span class="sync-compact-title">
           <strong>{{ t('webdavSync.legacy.title') }}</strong>
-          <el-tag v-if="hasData" size="small" type="warning">{{
-            t('webdavSync.legacy.found')
-          }}</el-tag>
+          <el-tag v-if="hasData" size="small" type="warning">
+            {{ t('webdavSync.legacy.found') }}
+          </el-tag>
         </span>
       </template>
       <p>{{ t('webdavSync.legacy.description') }}</p>

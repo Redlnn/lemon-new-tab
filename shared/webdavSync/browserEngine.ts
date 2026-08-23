@@ -45,10 +45,12 @@ import {
 } from './localState.ts'
 import { mergeSyncSnapshots } from './merge.ts'
 import {
+  collectRemoteBranchConflicts,
   decideSynchronization,
   decideInitialization,
   findRevisionHeads,
   mergeRemoteRevisionHeads,
+  resolveRemoteBranchConflicts,
 } from './syncDecision.ts'
 import type {
   LocalSyncStateV1,
@@ -633,13 +635,36 @@ function remoteScope(
 }
 
 async function runSynchronizationOnce(): Promise<void> {
-  const [config, initialState, password] = await Promise.all([
+  const [config, storedState, password] = await Promise.all([
     webDavSyncConfigStorage.getValue(),
     getOrCreateSyncState(),
     getWebDavPassword(),
   ])
+  let initialState = storedState
   if (!config || !initialState.configured) return
-  if (initialState.paused) return
+  if (initialState.paused) {
+    if (initialState.pauseReason === 'conflict') {
+      // 冲突可能已由其他设备合并；继续三方比较后才决定自动应用或再次暂停。
+      initialState = await patchSyncState({ paused: false, pauseReason: undefined })
+    } else {
+      if (initialState.pauseReason !== 'remote-deleted') return
+      if (!password) {
+        await patchSyncState({ paused: true, pauseReason: 'authentication' })
+        return
+      }
+      const repository = new WebDavVaultRepository(createClient(config, password), config.directory)
+      const inspection = await repository.inspect()
+      if (
+        inspection.state !== 'ready' ||
+        inspection.metadata.vaultId !== initialState.vaultId ||
+        inspection.metadata.generationId !== initialState.generationId ||
+        inspection.metadata.encrypted !== initialState.encrypted
+      ) {
+        return
+      }
+      initialState = await patchSyncState({ paused: false, pauseReason: undefined, lastError: undefined })
+    }
+  }
   if (!password) {
     await patchSyncState({ paused: true, pauseReason: 'authentication' })
     return
@@ -780,6 +805,14 @@ async function runSynchronizationOnce(): Promise<void> {
       local: decision.local,
       remote: decision.remote,
       remoteRevisionIds: decision.remoteRevisionIds,
+      ...(decision.stage === 'remote-branches'
+        ? {
+            remoteBranchConflicts: collectRemoteBranchConflicts(decision.base, revisions, {
+              deviceName: initialState.deviceName,
+              snapshot: decision.deviceLocal,
+            }),
+          }
+        : {}),
       remainingRemoteRevisionIds: decision.remainingRemoteRevisionIds,
       remoteVersions: describeConflictRevisions(revisions, decision.remoteRevisionIds),
       stage: decision.stage,
@@ -1206,6 +1239,10 @@ export async function connectBrowserWebDav(
         local: combined.local,
         remote: combined.remote,
         remoteRevisionIds: combined.headRevisionIds,
+        remoteBranchConflicts: collectRemoteBranchConflicts(base, scanned.revisions, {
+          deviceName: state.deviceName,
+          snapshot: scanned.local,
+        }),
         remainingRemoteRevisionIds: combined.remainingRemoteRevisionIds,
         remoteVersions: describeConflictRevisions(scanned.revisions, combined.headRevisionIds),
         stage: 'remote-branches',
@@ -1403,13 +1440,21 @@ export async function resolveBrowserSyncConflict(
   if (!jsonEquals(headIds, [...stored.remoteRevisionIds].sort())) {
     throw new WebDavError('precondition', 'Remote data changed while resolving the conflict')
   }
-  let snapshot = resolveSyncConflicts({
-    base: stored.base,
-    local: stored.local,
-    remote: stored.remote,
-    resolutions,
-  })
-  if (stored.stage === 'remote-branches') {
+  let snapshot =
+    stored.stage === 'remote-branches' && stored.remoteBranchConflicts
+      ? resolveRemoteBranchConflicts({
+          baseline: stored.base,
+          revisions: heads,
+          local: { deviceName: state.deviceName, snapshot: stored.deviceLocal },
+          resolutions,
+        })
+      : resolveSyncConflicts({
+          base: stored.base,
+          local: stored.local,
+          remote: stored.remote,
+          resolutions,
+        })
+  if (stored.stage === 'remote-branches' && !stored.remoteBranchConflicts) {
     const byId = new Map(heads.map((revision) => [revision.revisionId, revision]))
     for (const [index, revisionId] of stored.remainingRemoteRevisionIds.entries()) {
       const revision = byId.get(revisionId)

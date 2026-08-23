@@ -40,27 +40,29 @@ function handleMenuSelect(key: string) {
         </el-icon>
         <span v-else>{{ t('title') }}</span>
       </div>
-      <el-menu-item
-        v-for="item in MENU_ITEMS"
-        :key="item.key"
-        :index="item.key"
-        class="settings-menu-item noselect"
-        tabindex="0"
-        :aria-current="activeKey === item.key ? 'page' : undefined"
-        @keydown.enter="$event.currentTarget.click()"
-        @keydown.space.prevent="$event.currentTarget.click()"
-      >
-        <el-icon>
-          <component :is="item.icon" />
-        </el-icon>
-        <template #title>
-          <span class="menu-title">{{ t(item.titleKey) }}</span>
-        </template>
-        <!-- 移动端右箭头 -->
-        <el-icon v-if="isMobile" class="menu-chevron">
-          <component :is="ChevronRightRound" />
-        </el-icon>
-      </el-menu-item>
+      <el-scrollbar style="height: calc(100% - 83px)">
+        <el-menu-item
+          v-for="item in MENU_ITEMS"
+          :key="item.key"
+          :index="item.key"
+          class="settings-menu-item noselect"
+          tabindex="0"
+          :aria-current="activeKey === item.key ? 'page' : undefined"
+          @keydown.enter="$event.currentTarget.click()"
+          @keydown.space.prevent="$event.currentTarget.click()"
+        >
+          <el-icon>
+            <component :is="item.icon" />
+          </el-icon>
+          <template #title>
+            <span class="menu-title">{{ t(item.titleKey) }}</span>
+          </template>
+          <!-- 移动端右箭头 -->
+          <el-icon v-if="isMobile" class="menu-chevron">
+            <component :is="ChevronRightRound" />
+          </el-icon>
+        </el-menu-item>
+      </el-scrollbar>
     </el-menu>
   </aside>
 </template>

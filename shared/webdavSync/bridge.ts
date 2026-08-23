@@ -15,6 +15,7 @@ import { deserializeWebDavError, type SerializedWebDavError } from './webdav.ts'
 
 export interface BrowserSyncConflictDetails {
   conflicts: SyncConflict[]
+  hasEmptyBase: boolean
   remoteRevisionIds: string[]
   remoteVersions: Array<{
     revisionId: string

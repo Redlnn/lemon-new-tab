@@ -66,14 +66,18 @@ function mergeJson(
   if (maybeEquals(local, base)) return remote
   if (maybeEquals(remote, base)) return local
 
-  if (isObject(base) && isObject(local) && isObject(remote)) {
+  if ((isObject(base) || base === MISSING) && isObject(local) && isObject(remote)) {
     const result: JsonObject = {}
-    const keys = new Set([...Object.keys(base), ...Object.keys(local), ...Object.keys(remote)])
+    const keys = new Set([
+      ...(isObject(base) ? Object.keys(base) : []),
+      ...Object.keys(local),
+      ...Object.keys(remote),
+    ])
     for (const key of [...keys].sort()) {
       const merged = mergeJson(
         category,
         path ? `${path}.${key}` : key,
-        key in base ? base[key]! : MISSING,
+        isObject(base) && key in base ? base[key]! : MISSING,
         key in local ? local[key]! : MISSING,
         key in remote ? remote[key]! : MISSING,
         conflicts,
@@ -83,6 +87,21 @@ function mergeJson(
     return result
   }
 
+  addConflict(conflicts, category, 'field', path, base, local, remote)
+  return local
+}
+
+function mergeAtomic(
+  category: SyncConflict['category'],
+  path: string,
+  base: MaybeJson,
+  local: MaybeJson,
+  remote: MaybeJson,
+  conflicts: SyncConflict[],
+): MaybeJson {
+  if (maybeEquals(local, remote)) return local
+  if (maybeEquals(local, base)) return remote
+  if (maybeEquals(remote, base)) return local
   addConflict(conflicts, category, 'field', path, base, local, remote)
   return local
 }
@@ -371,14 +390,26 @@ function mergeOptional(
   }
 
   if (local?.wallpapers && remote?.wallpapers) {
-    result.wallpapers = mergeJson(
+    const wallpapers: NonNullable<SyncSnapshotV1['optional']>['wallpapers'] = {}
+    const light = mergeAtomic(
       'wallpaper',
-      'optional.wallpapers',
-      canonicalize(base?.wallpapers ?? {}) as JsonObject,
-      canonicalize(local.wallpapers) as JsonObject,
-      canonicalize(remote.wallpapers) as JsonObject,
+      'optional.wallpapers.light',
+      base?.wallpapers?.light ? canonicalize(base.wallpapers.light) : MISSING,
+      local.wallpapers.light ? canonicalize(local.wallpapers.light) : MISSING,
+      remote.wallpapers.light ? canonicalize(remote.wallpapers.light) : MISSING,
       conflicts,
-    ) as NonNullable<SyncSnapshotV1['optional']>['wallpapers']
+    )
+    const dark = mergeAtomic(
+      'wallpaper',
+      'optional.wallpapers.dark',
+      base?.wallpapers?.dark ? canonicalize(base.wallpapers.dark) : MISSING,
+      local.wallpapers.dark ? canonicalize(local.wallpapers.dark) : MISSING,
+      remote.wallpapers.dark ? canonicalize(remote.wallpapers.dark) : MISSING,
+      conflicts,
+    )
+    if (light !== MISSING) wallpapers.light = light as unknown as NonNullable<typeof wallpapers.light>
+    if (dark !== MISSING) wallpapers.dark = dark as unknown as NonNullable<typeof wallpapers.dark>
+    if (wallpapers.light || wallpapers.dark) result.wallpapers = wallpapers
   } else {
     result.wallpapers = local?.wallpapers ?? remote?.wallpapers
   }

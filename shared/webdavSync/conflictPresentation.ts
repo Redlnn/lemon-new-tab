@@ -12,6 +12,7 @@ export interface SyncConflictPresentation {
   base: string
   local: string
   remote: string
+  section: string
   title: string
 }
 
@@ -158,6 +159,21 @@ const SETTING_TITLE_KEYS: Record<string, string> = {
   faviconCacheEnabled: 'other.faviconCache.label',
 }
 
+const SETTING_SECTION_KEYS: Record<string, string> = {
+  background: 'background.title',
+  bookmark: 'bookmark.title',
+  clock: 'clock.title',
+  dock: 'dock.title',
+  faviconCacheEnabled: 'other.title',
+  hideMajorChangelog: 'other.title',
+  layout: 'layout.title',
+  perf: 'perf.title',
+  quickLinks: 'quickLinks.title',
+  search: 'search.title',
+  theme: 'theme.title',
+  yiyan: 'yiyan.title',
+}
+
 const EMPTY_CONTEXT: SyncConflictDisplayContext = {
   customSearchEngines: {},
   quickLinkGroups: {},
@@ -188,11 +204,20 @@ export function presentSyncConflict(
   t: ConflictTranslator,
 ): SyncConflictPresentation {
   return {
+    section: displaySection(conflict, t),
     title: displayTitle(conflict, context, t),
-    base: displayValue(conflict.base, conflict, context, t),
-    local: displayValue(conflict.local, conflict, context, t),
-    remote: displayValue(conflict.remote, conflict, context, t),
+    base: displayValue(conflict.base, conflict, context, t, 'base'),
+    local: displayValue(conflict.local, conflict, context, t, 'local'),
+    remote: displayValue(conflict.remote, conflict, context, t, 'remote'),
   }
+}
+
+function displaySection(conflict: Pick<SyncConflict, 'category' | 'path'>, t: ConflictTranslator) {
+  if (conflict.path.startsWith('settings.')) {
+    const parent = conflict.path.slice('settings.'.length).split('.', 1)[0]!
+    return t(SETTING_SECTION_KEYS[parent] ?? 'webdavSync.conflicts.categories.settings')
+  }
+  return t(`webdavSync.conflicts.categories.${conflict.category}`)
 }
 
 export function displaySyncDifference(
@@ -235,6 +260,8 @@ function displayTitle(
   if (path === 'customSearchEngines') return t('webdavSync.conflicts.categories.search-engines')
   if (path === 'optional.blockedTopSites')
     return t('webdavSync.conflicts.categories.blocked-top-sites')
+  if (path === 'optional.wallpapers.light') return t('webdavSync.conflicts.fields.wallpaperLight')
+  if (path === 'optional.wallpapers.dark') return t('webdavSync.conflicts.fields.wallpaperDark')
   if (path.startsWith('optional.wallpapers')) return t('webdavSync.conflicts.fields.wallpaper')
   return t(`webdavSync.conflicts.categories.${conflict.category}`)
 }
@@ -292,8 +319,10 @@ function displayValue(
   conflict: Pick<SyncConflict, 'category' | 'path'>,
   context: SyncConflictDisplayContext,
   t: ConflictTranslator,
+  side?: 'base' | 'local' | 'remote',
 ): string {
-  if (value === undefined) return t('webdavSync.conflicts.deleted')
+  if (value === undefined)
+    return t(side === 'base' ? 'webdavSync.conflicts.values.noBaseline' : 'webdavSync.conflicts.deleted')
   if (isOrderPath(conflict.path)) return t('webdavSync.conflicts.values.orderChanged')
   if (isIconPath(conflict.path)) {
     return t(

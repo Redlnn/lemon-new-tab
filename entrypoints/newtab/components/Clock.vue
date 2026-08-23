@@ -172,9 +172,9 @@ const dateStyle = computed(() => {
       </div>
       <div class="clock__new-container" v-if="settings.clock.newStyle">
         <span>{{ formattedTime.second }}</span>
-        <span style="grid-area: meridiem">{{
-          isChinese ? formattedDate.meridiemZH : formattedTime.meridiem
-        }}</span>
+        <span style="grid-area: meridiem">
+          {{ isChinese ? formattedDate.meridiemZH : formattedTime.meridiem }}
+        </span>
       </div>
     </div>
     <div v-if="settings.clock.showDate" class="clock__date" :style="dateStyle">

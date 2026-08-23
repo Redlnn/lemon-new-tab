@@ -239,6 +239,13 @@ export type SyncAvailability =
 
 export type SyncConflictKind = 'delete-vs-modify' | 'field' | 'order' | 'simultaneous-create'
 
+export interface SyncConflictCandidate {
+  id: string
+  deviceName: string
+  source: 'local' | 'remote'
+  value?: JsonValue
+}
+
 export interface SyncConflict {
   id: string
   category:
@@ -255,6 +262,7 @@ export interface SyncConflict {
   local?: JsonValue
   remote?: JsonValue
   canKeepBoth: boolean
+  candidates?: SyncConflictCandidate[]
 }
 
 export interface ThreeWayMergeResult {
@@ -263,8 +271,7 @@ export interface ThreeWayMergeResult {
   conflicts: SyncConflict[]
 }
 
-export interface SyncConflictResolution {
-  choice: 'both' | 'local' | 'remote'
-  conflictId: string
-  duplicateId?: string
-}
+export type SyncConflictResolution =
+  | { choice: 'local' | 'remote'; conflictId: string }
+  | { choice: 'both'; conflictId: string; duplicateId: string }
+  | { choice: 'candidate'; candidateId: string; conflictId: string }

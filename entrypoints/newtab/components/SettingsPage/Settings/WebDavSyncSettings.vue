@@ -45,13 +45,15 @@ const setupVisible = ref(false)
 const dialogMode = ref<DialogMode>(null)
 const updatingScope = ref<keyof SyncScopePreferences | null>(null)
 
-const primaryScopeKeys = [
+const scopeKeys = [
   'settings',
   'quickLinks',
   'customSearchEngines',
   'uiPreferences',
   'blockedTopSites',
   'wallpapers',
+  'onlineWallpaperUrl',
+  'userIcons',
 ] as const satisfies readonly (keyof SyncScopePreferences)[]
 
 watch(sharedState, (value) => {
@@ -115,7 +117,8 @@ const lastError = computed(() => {
 async function refresh() {
   loading.value = true
   try {
-    state.value = await getSyncState()
+    state.value =
+      state.value.pauseReason === 'remote-deleted' ? await syncNow() : await getSyncState()
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : String(error))
   } finally {
@@ -159,6 +162,12 @@ function openPauseAction() {
   else dialogMode.value = 'disconnect'
 }
 
+function closeDialogs() {
+  setupVisible.value = false
+  dialogMode.value = null
+}
+
+onDeactivated(closeDialogs)
 onMounted(() => void refresh())
 </script>
 
@@ -168,9 +177,6 @@ onMounted(() => void refresh())
       <template #title>
         <span class="sync-experimental-title">
           {{ t('webdavSync.experimental.title') }}
-          <el-tag size="small" type="warning" effect="plain">{{
-            t('webdavSync.experimental.tag')
-          }}</el-tag>
         </span>
       </template>
       {{ t('webdavSync.experimental.description') }}
@@ -180,28 +186,12 @@ onMounted(() => void refresh())
       <section class="sync-empty-state settings-section--wide">
         <cloud-off-round />
         <div>
-          <h3>{{ t('webdavSync.empty.title') }}</h3>
-          <p>{{ t('webdavSync.empty.description') }}</p>
+          <h4>{{ t('webdavSync.empty.title') }}</h4>
         </div>
         <el-button type="primary" @click="setupVisible = true">
           {{ t('webdavSync.empty.action') }}
         </el-button>
       </section>
-
-      <SettingsSection
-        :title="t('webdavSync.scope.title')"
-        :summary="t('webdavSync.scope.unconfiguredSummary')"
-        wide
-      >
-        <div class="sync-inclusion-list">
-          <p>
-            <el-icon><CloudDoneRound /></el-icon>{{ t('webdavSync.scope.summary') }}
-          </p>
-          <p>
-            <el-icon><CloudOffRound /></el-icon>{{ t('webdavSync.scope.localOnlySummary') }}
-          </p>
-        </div>
-      </SettingsSection>
     </template>
 
     <template v-else>
@@ -209,14 +199,16 @@ onMounted(() => void refresh())
         <component :is="statusIcon" class="sync-status-card__icon" />
         <div class="sync-status-card__body">
           <div class="sync-status-card__heading">
-            <h3>{{ t(status.key) }}</h3>
-            <el-tag :type="status.type" effect="light">{{
-              state.encrypted ? t('webdavSync.encrypted') : t('webdavSync.plaintext')
-            }}</el-tag>
+            <div>{{ t(status.key) }}</div>
           </div>
           <p>{{ t('webdavSync.lastSuccess', { time: lastSuccess }) }}</p>
           <p v-if="state.deviceName">
             {{ t('webdavSync.deviceName', { name: state.deviceName }) }}
+          </p>
+          <p>
+            <el-tag :type="status.type" effect="light">
+              {{ state.encrypted ? t('webdavSync.encrypted') : t('webdavSync.plaintext') }}
+            </el-tag>
           </p>
           <p v-if="lastError" class="sync-last-error">{{ lastError }}</p>
         </div>
@@ -249,10 +241,9 @@ onMounted(() => void refresh())
         mobile-open
       >
         <div
-          v-for="key in primaryScopeKeys"
+          v-for="key in scopeKeys"
           :key="key"
-          class="settings__item settings__item--horizontal"
-          :class="{ 'settings-control-wide settings__item--with-note': key === 'wallpapers' }"
+          class="settings__item settings__item--horizontal settings__item--with-note"
         >
           <div class="settings__label">{{ t(`webdavSync.scope.${key}`) }}</div>
           <el-switch
@@ -263,35 +254,13 @@ onMounted(() => void refresh())
           <p v-if="key === 'wallpapers'" class="settings__item-note">
             {{ t('webdavSync.scope.wallpapersNote') }}
           </p>
+          <p v-if="key === 'onlineWallpaperUrl'" class="settings__item-note">
+            {{ t('webdavSync.scope.onlineWallpaperUrlNote') }}
+          </p>
+          <p v-if="key === 'userIcons'" class="settings__item-note">
+            {{ t('webdavSync.scope.userIconsNote') }}
+          </p>
         </div>
-        <el-collapse class="sync-advanced-scope settings-control-wide">
-          <el-collapse-item name="advanced" :title="t('webdavSync.scope.advanced')">
-            <div class="sync-advanced-grid">
-              <label>
-                <span
-                  ><strong>{{ t('webdavSync.scope.onlineWallpaperUrl') }}</strong
-                  ><small>{{ t('webdavSync.scope.onlineWallpaperUrlNote') }}</small></span
-                >
-                <el-switch
-                  :model-value="state.scope.onlineWallpaperUrl"
-                  :loading="updatingScope === 'onlineWallpaperUrl'"
-                  @change="changeScope('onlineWallpaperUrl', $event)"
-                />
-              </label>
-              <label>
-                <span
-                  ><strong>{{ t('webdavSync.scope.userIcons') }}</strong
-                  ><small>{{ t('webdavSync.scope.userIconsNote') }}</small></span
-                >
-                <el-switch
-                  :model-value="state.scope.userIcons"
-                  :loading="updatingScope === 'userIcons'"
-                  @change="changeScope('userIcons', $event)"
-                />
-              </label>
-            </div>
-          </el-collapse-item>
-        </el-collapse>
       </SettingsSection>
 
       <SettingsSection
@@ -300,26 +269,26 @@ onMounted(() => void refresh())
         content-class="settings-control-grid"
       >
         <div class="settings__item sync-button-grid settings-control-wide">
-          <el-button :icon="HistoryRound" @click="dialogMode = 'history'">{{
-            t('webdavSync.management.history')
-          }}</el-button>
-          <el-button :icon="DevicesRound" @click="dialogMode = 'devices'">{{
-            t('webdavSync.management.devices')
-          }}</el-button>
-          <el-button :icon="LockRound" @click="dialogMode = 'encryption'">{{
-            t('webdavSync.management.encryption')
-          }}</el-button>
-          <el-button :icon="SettingsBackupRestoreRound" @click="dialogMode = 'repair'">{{
-            t('webdavSync.management.repair')
-          }}</el-button>
+          <el-button :icon="HistoryRound" @click="dialogMode = 'history'">
+            {{ t('webdavSync.management.history') }}
+          </el-button>
+          <el-button :icon="DevicesRound" @click="dialogMode = 'devices'">
+            {{ t('webdavSync.management.devices') }}
+          </el-button>
+          <el-button :icon="LockRound" @click="dialogMode = 'encryption'">
+            {{ t('webdavSync.management.encryption') }}
+          </el-button>
+          <el-button :icon="SettingsBackupRestoreRound" @click="dialogMode = 'repair'">
+            {{ t('webdavSync.management.repair') }}
+          </el-button>
         </div>
       </SettingsSection>
 
       <el-collapse class="sync-compact-collapse sync-danger-collapse">
         <el-collapse-item name="connection">
-          <template #title
-            ><strong>{{ t('webdavSync.connectionActions.title') }}</strong></template
-          >
+          <template #title>
+            <strong>{{ t('webdavSync.connectionActions.title') }}</strong>
+          </template>
           <p>{{ t('webdavSync.connectionActions.description') }}</p>
           <el-button type="danger" plain @click="dialogMode = 'disconnect'">
             {{ t('webdavSync.connectionActions.open') }}
@@ -350,8 +319,9 @@ onMounted(() => void refresh())
 .sync-status-card__heading,
 .sync-compact-title {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  align-items: center;
+  font-weight: bold;
 }
 
 .sync-empty-state,
@@ -371,7 +341,7 @@ onMounted(() => void refresh())
     color: var(--el-color-primary);
   }
 
-  h3,
+  h4,
   p {
     margin: 0;
   }

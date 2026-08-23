@@ -88,7 +88,7 @@ async function showWebDavSyncNotification(t: (key: string) => string): Promise<v
   if (shown[key]) return
   await browser.storage.session.set({ [key]: true }).catch(() => undefined)
   ElNotification.warning({
-    title: t('settings:webdavSync.experimental.title'),
+    title: t('settings:webdavSync.title'),
     message: t(
       category === 'conflict'
         ? 'settings:webdavSync.status.conflict'

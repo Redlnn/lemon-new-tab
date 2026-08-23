@@ -61,10 +61,10 @@ const { t } = useTranslation('settings')
 const loading = ref(false)
 const conflicts = shallowRef<SyncConflict[]>([])
 const conflictDisplayContext = shallowRef(createSyncConflictDisplayContext([]))
+const resolutions = reactive<Record<string, string>>({})
 const remoteVersions = ref<Array<{ revisionId: string; deviceName: string; modifiedAt: string }>>(
   [],
 )
-const resolutions = reactive<Record<string, SyncConflictResolution['choice']>>({})
 const history = ref<BrowserSyncHistoryEntry[]>([])
 const historyPreview = shallowRef<BrowserSyncHistoryPreview>()
 const devices = ref<BrowserSyncDeviceEntry[]>([])
@@ -78,6 +78,20 @@ const allConflictsResolved = computed<boolean>(
   () =>
     conflicts.value.length > 0 && conflicts.value.every((item) => Boolean(resolutions[item.id])),
 )
+const canBatchResolve = computed(() => conflicts.value.every((item) => !item.candidates?.length))
+const conflictSources = computed(() => {
+  const devices = [...new Map(remoteVersions.value.map((item) => [item.revisionId, item])).values()]
+  return [
+    { label: t('webdavSync.conflicts.sourceLocal'), name: props.state.deviceName },
+    ...devices.map((device, index) => ({
+      label:
+        devices.length === 1
+          ? t('webdavSync.conflicts.sourceRemote')
+          : t('webdavSync.conflicts.sourceDevice', { device: String.fromCharCode(65 + index) }),
+      name: device.deviceName,
+    })),
+  ]
+})
 
 function dialogVisible(name: Exclude<DialogMode, null>) {
   return computed<boolean>({
@@ -108,10 +122,40 @@ function displayDifference(difference: {
   return displaySyncDifference(difference, conflictDisplayContext.value, t)
 }
 
+function displayCandidate(
+  conflict: SyncConflict,
+  candidate: NonNullable<SyncConflict['candidates']>[number],
+) {
+  return displayDifference({
+    category: conflict.category,
+    path: conflict.path,
+    value: candidate.value,
+  }).value
+}
+
+function localCandidate(conflict: SyncConflict) {
+  return conflict.candidates?.find((candidate) => candidate.source === 'local')
+}
+
+function remoteCandidates(conflict: SyncConflict) {
+  return conflict.candidates?.filter((candidate) => candidate.source === 'remote') ?? []
+}
+
+function preferAllConflicts(choice: 'local' | 'remote') {
+  for (const conflict of conflicts.value) resolutions[conflict.id] = choice
+}
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
     new Date(value),
   )
+}
+
+function applyConflictDetails(details: NonNullable<Awaited<ReturnType<typeof getSyncConflict>>>) {
+  conflicts.value = details.conflicts
+  conflictDisplayContext.value = details.context
+  remoteVersions.value = details.remoteVersions
+  for (const key of Object.keys(resolutions)) delete resolutions[key]
 }
 
 function showError(error: unknown) {
@@ -122,10 +166,15 @@ async function loadConflicts() {
   loading.value = true
   try {
     const details = await getSyncConflict()
-    conflicts.value = details?.conflicts ?? []
-    conflictDisplayContext.value = details?.context ?? createSyncConflictDisplayContext([])
-    remoteVersions.value = details?.remoteVersions ?? []
-    for (const key of Object.keys(resolutions)) delete resolutions[key]
+    if (details && details.conflicts.length === 0) {
+      await resolveSyncConflict([])
+      ElMessage.success(t('webdavSync.conflicts.resolved'))
+      conflictVisible.value = false
+      emit('updated')
+      return
+    }
+    if (details) applyConflictDetails(details)
+    else conflicts.value = []
   } catch (error) {
     showError(error)
   } finally {
@@ -137,12 +186,20 @@ async function submitConflicts() {
   if (!allConflictsResolved.value) return
   loading.value = true
   try {
-    const values = conflicts.value.map((item) => ({
-      conflictId: item.id,
-      choice: resolutions[item.id]!,
-      ...(resolutions[item.id] === 'both' ? { duplicateId: crypto.randomUUID() } : {}),
-    }))
+    const values: SyncConflictResolution[] = conflicts.value.map((item) => {
+      const choice = resolutions[item.id]!
+      if (item.candidates?.length)
+        return { choice: 'candidate', candidateId: choice, conflictId: item.id }
+      if (choice === 'both')
+        return { choice, conflictId: item.id, duplicateId: crypto.randomUUID() }
+      return { choice: choice as 'local' | 'remote', conflictId: item.id }
+    })
     await resolveSyncConflict(values)
+    const details = await getSyncConflict()
+    if (details?.conflicts.length) {
+      applyConflictDetails(details)
+      return
+    }
     ElMessage.success(t('webdavSync.conflicts.resolved'))
     conflictVisible.value = false
     emit('updated')
@@ -351,50 +408,86 @@ watch(
     width="820px"
     :close-on-click-modal="false"
     destroy-on-close
+    append-to-body
   >
     <el-alert
       type="warning"
       :closable="false"
       show-icon
-      :title="t('webdavSync.conflicts.paused')"
-      >{{ t('webdavSync.conflicts.description') }}</el-alert
+      :title="t('webdavSync.conflicts.noticeTitle')"
     >
-    <div v-if="remoteVersions.length" class="conflict-versions">
-      <span>{{ t('webdavSync.conflicts.remoteVersions') }}</span>
-      <el-tag
-        v-for="version in remoteVersions"
-        :key="version.revisionId"
-        size="small"
-        effect="plain"
-      >
-        {{ version.deviceName }} · {{ formatDate(version.modifiedAt) }}
+      {{ t('webdavSync.conflicts.notice') }}
+    </el-alert>
+    <div class="conflict-sources">
+      <span>{{ t('webdavSync.conflicts.sources') }}:</span>
+      <el-tag v-for="source in conflictSources" :key="source.label" effect="plain">
+        {{ source.label }}：{{ source.name }}
       </el-tag>
     </div>
+    <el-space v-if="canBatchResolve" class="conflict-batch-actions">
+      <div style="color: var(--el-text-color-secondary)">
+        {{ t('webdavSync.conflicts.batch.prefer') }}:
+      </div>
+      <el-button size="small" @click="preferAllConflicts('local')">
+        {{ t('webdavSync.conflicts.local') }}
+      </el-button>
+      <el-button size="small" @click="preferAllConflicts('remote')">
+        {{ t('webdavSync.conflicts.remote') }}
+      </el-button>
+    </el-space>
     <div v-loading="loading" class="conflict-list">
       <article v-for="conflict in conflicts" :key="conflict.id" class="conflict-item">
         <header>
-          <el-tag size="small" effect="plain">{{
-            t(`webdavSync.conflicts.categories.${conflict.category}`)
-          }}</el-tag
-          ><strong>{{ displayConflict(conflict).title }}</strong>
+          <el-tag size="small" effect="plain">
+            {{ displayConflict(conflict).section }}
+          </el-tag>
+          <strong>{{ displayConflict(conflict).title }}</strong>
         </header>
-        <div class="conflict-base">
-          <span>{{ t('webdavSync.conflicts.base') }}</span
-          ><span class="conflict-value">{{ displayConflict(conflict).base }}</span>
-        </div>
         <el-radio-group v-model="resolutions[conflict.id]" class="conflict-options">
-          <el-radio value="local" border
-            ><computer-round /> {{ t('webdavSync.conflicts.local', { device: state.deviceName })
-            }}<small>{{ displayConflict(conflict).local }}</small></el-radio
-          >
-          <el-radio value="remote" border
-            ><storage-round /> {{ t('webdavSync.conflicts.remote')
-            }}<small>{{ displayConflict(conflict).remote }}</small></el-radio
-          >
-          <el-radio v-if="conflict.canKeepBoth" value="both" border
-            ><call-merge-round /> {{ t('webdavSync.conflicts.both')
-            }}<small>{{ t('webdavSync.conflicts.bothNote') }}</small></el-radio
-          >
+          <template v-if="conflict.candidates?.length">
+            <el-radio v-if="localCandidate(conflict)" :value="localCandidate(conflict)!.id" border>
+              <el-space>
+                <computer-round />
+                <span>{{ t('webdavSync.conflicts.local') }}</span>
+              </el-space>
+              <small>{{ displayCandidate(conflict, localCandidate(conflict)!) }}</small>
+            </el-radio>
+            <el-radio
+              v-for="candidate in remoteCandidates(conflict)"
+              :key="candidate.id"
+              :value="candidate.id"
+              border
+            >
+              <el-space>
+                <storage-round />
+                <span>
+                  {{ t('webdavSync.conflicts.useDevice', { device: candidate.deviceName }) }}
+                </span>
+              </el-space>
+              <small>{{ displayCandidate(conflict, candidate) }}</small>
+            </el-radio>
+          </template>
+          <template v-else>
+            <el-radio value="local" border>
+              <el-space>
+                <computer-round />
+                <span>{{ t('webdavSync.conflicts.local') }}</span>
+              </el-space>
+              <small>{{ displayConflict(conflict).local }}</small>
+            </el-radio>
+            <el-radio value="remote" border>
+              <el-space>
+                <storage-round />
+                <span>{{ t('webdavSync.conflicts.remote') }}</span>
+              </el-space>
+              <small>{{ displayConflict(conflict).remote }}</small>
+            </el-radio>
+            <el-radio v-if="conflict.canKeepBoth" value="both" border>
+              <call-merge-round />
+              {{ t('webdavSync.conflicts.both') }}
+              <small>{{ t('webdavSync.conflicts.bothNote') }}</small>
+            </el-radio>
+          </template>
         </el-radio-group>
       </article>
       <el-empty
@@ -402,16 +495,17 @@ watch(
         :description="t('webdavSync.conflicts.empty')"
       />
     </div>
-    <template #footer
-      ><el-button @click="conflictVisible = false">{{ t('webdavSync.later') }}</el-button
-      ><el-button
+    <template #footer>
+      <el-button @click="conflictVisible = false">{{ t('webdavSync.later') }}</el-button>
+      <el-button
         type="primary"
         :loading="loading"
         :disabled="!allConflictsResolved"
         @click="submitConflicts"
-        >{{ t('webdavSync.conflicts.finish') }}</el-button
-      ></template
-    >
+      >
+        {{ t('webdavSync.conflicts.finish') }}
+      </el-button>
+    </template>
   </el-dialog>
 
   <el-dialog
@@ -435,24 +529,24 @@ watch(
             :key="`${difference.category}:${difference.path}`"
           >
             <header>
-              <el-tag size="small" effect="plain">{{
-                t(`webdavSync.conflicts.categories.${difference.category}`)
-              }}</el-tag
-              ><strong>{{
-                displayDifference({ ...difference, value: difference.current }).title
-              }}</strong>
+              <el-tag size="small" effect="plain">
+                {{ t(`webdavSync.conflicts.categories.${difference.category}`) }}
+              </el-tag>
+              <strong>
+                {{ displayDifference({ ...difference, value: difference.current }).title }}
+              </strong>
             </header>
             <div>
-              <span>{{ t('webdavSync.history.current') }}</span
-              ><span class="conflict-value">{{
-                displayDifference({ ...difference, value: difference.current }).value
-              }}</span>
+              <span>{{ t('webdavSync.history.current') }}</span>
+              <span class="conflict-value">
+                {{ displayDifference({ ...difference, value: difference.current }).value }}
+              </span>
             </div>
             <div>
-              <span>{{ t('webdavSync.history.target') }}</span
-              ><span class="conflict-value">{{
-                displayDifference({ ...difference, value: difference.target }).value
-              }}</span>
+              <span>{{ t('webdavSync.history.target') }}</span>
+              <span class="conflict-value">
+                {{ displayDifference({ ...difference, value: difference.target }).value }}
+              </span>
             </div>
           </article>
           <el-empty
@@ -460,33 +554,34 @@ watch(
             :description="t('webdavSync.history.noDifferences')"
           />
         </div>
-        <el-alert v-if="historyPreview.truncated" type="info" :closable="false">{{
-          t('webdavSync.history.truncated')
-        }}</el-alert>
+        <el-alert v-if="historyPreview.truncated" type="info" :closable="false">
+          {{ t('webdavSync.history.truncated') }}
+        </el-alert>
         <div class="dialog-actions">
-          <el-button @click="historyPreview = undefined">{{
-            t('webdavSync.history.back')
-          }}</el-button
-          ><el-button type="primary" @click="restore(historyPreview)">{{
-            t('webdavSync.history.restore')
-          }}</el-button>
+          <el-button @click="historyPreview = undefined">
+            {{ t('webdavSync.history.back') }}
+          </el-button>
+          <el-button type="primary" @click="restore(historyPreview)">
+            {{ t('webdavSync.history.restore') }}
+          </el-button>
         </div>
       </template>
       <div v-else class="history-list">
         <article v-for="revision in history" :key="revision.revisionId">
           <history-round />
           <div>
-            <strong
-              >{{ formatDate(revision.createdAt) }} ·
-              {{ t(`webdavSync.history.reasons.${revision.reason}`) }}</strong
-            ><span>{{ revision.deviceName }}</span
-            ><small v-if="Object.values(revision.wallpaperAvailable).includes(false)">{{
-              t('webdavSync.history.wallpaperMissing')
-            }}</small>
+            <strong>
+              {{ formatDate(revision.createdAt) }} ·
+              {{ t(`webdavSync.history.reasons.${revision.reason}`) }}
+            </strong>
+            <span>{{ revision.deviceName }}</span>
+            <small v-if="Object.values(revision.wallpaperAvailable).includes(false)">
+              {{ t('webdavSync.history.wallpaperMissing') }}
+            </small>
           </div>
-          <el-button size="small" @click="previewHistory(revision)">{{
-            t('webdavSync.history.preview')
-          }}</el-button>
+          <el-button size="small" @click="previewHistory(revision)">
+            {{ t('webdavSync.history.preview') }}
+          </el-button>
         </article>
         <el-empty v-if="!loading && history.length === 0" />
       </div>
@@ -503,16 +598,16 @@ watch(
       <article v-for="device in devices" :key="device.deviceId">
         <devices-round />
         <div>
-          <strong>{{ device.name }}</strong
-          ><span>{{
-            t('webdavSync.devices.firstSeen', { time: formatDate(device.firstSeenAt) })
-          }}</span>
+          <strong>{{ device.name }}</strong>
+          <span>
+            {{ t('webdavSync.devices.firstSeen', { time: formatDate(device.firstSeenAt) }) }}
+          </span>
         </div>
         <div>
-          <span>{{ formatDate(device.lastSeenAt) }}</span
-          ><el-tag v-if="device.stale" type="warning" size="small">{{
-            t('webdavSync.devices.stale')
-          }}</el-tag>
+          <span>{{ formatDate(device.lastSeenAt) }}</span>
+          <el-tag v-if="device.stale" type="warning" size="small">
+            {{ t('webdavSync.devices.stale') }}
+          </el-tag>
         </div>
       </article>
     </div>
@@ -521,8 +616,9 @@ watch(
       :closable="false"
       show-icon
       :title="t('webdavSync.devices.unknownTitle')"
-      >{{ t('webdavSync.devices.unknownDescription') }}</el-alert
     >
+      {{ t('webdavSync.devices.unknownDescription') }}
+    </el-alert>
   </el-dialog>
 
   <el-dialog
@@ -534,33 +630,38 @@ watch(
     <div class="dialog-heading">
       <security-round />
       <div>
-        <strong>{{
-          state.encrypted ? t('webdavSync.encryption.enabled') : t('webdavSync.encryption.disabled')
-        }}</strong
-        ><span>{{ t('webdavSync.encryption.description') }}</span>
+        <strong>
+          {{
+            state.encrypted
+              ? t('webdavSync.encryption.enabled')
+              : t('webdavSync.encryption.disabled')
+          }}
+        </strong>
+        <span>{{ t('webdavSync.encryption.description') }}</span>
       </div>
     </div>
     <template v-if="state.pauseReason === 'encryption-password'">
-      <el-form-item :label="t('webdavSync.encryption.password')"
-        ><el-input v-model="currentEncryptionPassword" type="password" show-password
-      /></el-form-item>
+      <el-form-item :label="t('webdavSync.encryption.password')">
+        <el-input v-model="currentEncryptionPassword" type="password" show-password />
+      </el-form-item>
       <el-alert type="info" :closable="false">{{ t('webdavSync.encryption.keyNote') }}</el-alert>
     </template>
-    <el-alert v-else type="info" :closable="false">{{
-      t('webdavSync.encryption.fixedMode')
-    }}</el-alert>
-    <template #footer
-      ><el-button @click="encryptionVisible = false">{{ t('newtab:common.cancel') }}</el-button
-      ><el-button
+    <el-alert v-else type="info" :closable="false">
+      {{ t('webdavSync.encryption.fixedMode') }}
+    </el-alert>
+    <template #footer>
+      <el-button @click="encryptionVisible = false">{{ t('newtab:common.cancel') }}</el-button>
+      <el-button
         v-if="state.pauseReason === 'encryption-password'"
         type="primary"
         :icon="LockRound"
         :loading="loading"
         :disabled="!currentEncryptionPassword"
         @click="unlock"
-        >{{ t('webdavSync.encryption.unlock') }}</el-button
-      ></template
-    >
+      >
+        {{ t('webdavSync.encryption.unlock') }}
+      </el-button>
+    </template>
   </el-dialog>
 
   <el-dialog
@@ -574,11 +675,11 @@ watch(
       :title="t('webdavSync.remoteDeleted.title')"
       :sub-title="t('webdavSync.remoteDeleted.description')"
     >
-      <template #extra
-        ><el-button type="primary" :loading="loading" @click="clearDeletedConnection">{{
-          t('webdavSync.remoteDeleted.action')
-        }}</el-button></template
-      >
+      <template #extra>
+        <el-button type="primary" :loading="loading" @click="clearDeletedConnection">
+          {{ t('webdavSync.remoteDeleted.action') }}
+        </el-button>
+      </template>
     </el-result>
   </el-dialog>
 
@@ -589,38 +690,38 @@ watch(
     destroy-on-close
   >
     <template v-if="state.pauseReason === 'corrupted-remote'">
-      <el-alert
-        type="error"
-        :closable="false"
-        show-icon
-        :title="t('webdavSync.repair.corrupted')"
-        >{{ t('webdavSync.repair.corruptedDescription') }}</el-alert
-      >
+      <el-alert type="error" :closable="false" show-icon :title="t('webdavSync.repair.corrupted')">
+        {{ t('webdavSync.repair.corruptedDescription') }}
+      </el-alert>
       <div v-if="corruption" class="repair-details">
         <p>{{ t('webdavSync.repair.revision', { id: corruption.corruptedRevisionId }) }}</p>
         <p>{{ t('webdavSync.repair.size', { size: corruption.payloadSize }) }}</p>
       </div>
-      <el-button :icon="DownloadRound" :loading="loading" @click="downloadCorruption">{{
-        corruptedDownloaded ? t('webdavSync.repair.downloaded') : t('webdavSync.repair.download')
-      }}</el-button>
+      <el-button :icon="DownloadRound" :loading="loading" @click="downloadCorruption">
+        {{
+          corruptedDownloaded ? t('webdavSync.repair.downloaded') : t('webdavSync.repair.download')
+        }}
+      </el-button>
       <el-radio-group
         v-if="corruption && !corruption.localMatchesPrevious"
         v-model="repairChoice"
         class="repair-options"
-        ><el-radio value="previous">{{ t('webdavSync.repair.previous') }}</el-radio
-        ><el-radio value="local">{{ t('webdavSync.repair.local') }}</el-radio></el-radio-group
       >
-      <el-alert v-else-if="corruption?.localMatchesPrevious" type="info" :closable="false">{{
-        t('webdavSync.repair.same')
-      }}</el-alert>
+        <el-radio value="previous">{{ t('webdavSync.repair.previous') }}</el-radio>
+        <el-radio value="local">{{ t('webdavSync.repair.local') }}</el-radio>
+      </el-radio-group>
+      <el-alert v-else-if="corruption?.localMatchesPrevious" type="info" :closable="false">
+        {{ t('webdavSync.repair.same') }}
+      </el-alert>
       <div class="dialog-actions">
         <el-button
           type="primary"
           :disabled="!corruptedDownloaded"
           :loading="loading"
           @click="repairCorruption"
-          >{{ t('webdavSync.repair.action') }}</el-button
         >
+          {{ t('webdavSync.repair.action') }}
+        </el-button>
       </div>
     </template>
     <template v-else-if="state.pauseReason === 'storage-full' || state.resourceOmissions.length">
@@ -629,8 +730,9 @@ watch(
         :closable="false"
         show-icon
         :title="t('webdavSync.repair.wallpaperTitle')"
-        >{{ t('webdavSync.repair.wallpaperDescription') }}</el-alert
       >
+        {{ t('webdavSync.repair.wallpaperDescription') }}
+      </el-alert>
       <ul>
         <li v-for="item in state.resourceOmissions" :key="JSON.stringify(item)">
           {{ t(`webdavSync.omissions.${item.reason}`) }}
@@ -658,13 +760,13 @@ watch(
           <strong>{{ t('webdavSync.disconnect.keepTitle') }}</strong>
           <p>{{ t('webdavSync.disconnect.keepDescription') }}</p>
         </div>
-        <el-button type="primary" @click="disconnect(false)">{{
-          t('webdavSync.disconnect.keepAction')
-        }}</el-button>
+        <el-button type="primary" @click="disconnect(false)">
+          {{ t('webdavSync.disconnect.keepAction') }}
+        </el-button>
       </section>
-      <el-collapse class="compact-danger"
-        ><el-collapse-item name="delete" :title="t('webdavSync.disconnect.deleteTitle')"
-          ><el-alert
+      <el-collapse class="compact-danger">
+        <el-collapse-item name="delete" :title="t('webdavSync.disconnect.deleteTitle')">
+          <el-alert
             type="error"
             :closable="false"
             show-icon
@@ -674,18 +776,23 @@ watch(
                 versions: history.length,
               })
             "
-            >{{ t('webdavSync.disconnect.deleteDescription') }}</el-alert
           >
-          <p>{{ t('webdavSync.disconnect.typePrompt', { text: 'DELETE WEBDAV DATA' }) }}</p>
-          <el-input v-model="deleteConfirmation" autocomplete="off" /><el-button
+            {{ t('webdavSync.disconnect.deleteDescription') }}
+          </el-alert>
+          <p>
+            {{ t('webdavSync.disconnect.typePrompt', { text: 'DELETE WEBDAV DATA' }) }}
+          </p>
+          <el-input v-model="deleteConfirmation" autocomplete="off" />
+          <el-button
             type="danger"
             :icon="DeleteForeverRound"
             :disabled="deleteConfirmation !== 'DELETE WEBDAV DATA'"
             @click="disconnect(true)"
-            >{{ t('webdavSync.disconnect.deleteAction') }}</el-button
-          ></el-collapse-item
-        ></el-collapse
-      >
+          >
+            {{ t('webdavSync.disconnect.deleteAction') }}
+          </el-button>
+        </el-collapse-item>
+      </el-collapse>
     </div>
   </el-dialog>
 </template>
@@ -722,16 +829,17 @@ watch(
   }
 }
 
-.conflict-versions {
+.conflict-sources {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
   margin-top: 12px;
+  color: var(--el-text-color-secondary);
+}
 
-  > span {
-    color: var(--el-text-color-secondary);
-  }
+.conflict-batch-actions {
+  margin-top: 12px;
 }
 
 .conflict-item,
@@ -755,21 +863,11 @@ watch(
   }
 }
 
-.conflict-value {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.conflict-base {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 8px;
-  margin: 10px 0;
-}
-
 .conflict-options {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 7px;
+  margin-top: 10px;
 
   :deep(.el-radio) {
     width: 100%;
@@ -783,6 +881,12 @@ watch(
     margin-top: 3px;
     color: var(--el-text-color-secondary);
     overflow-wrap: anywhere;
+  }
+}
+
+@media (width <= 599px) {
+  .conflict-options {
+    grid-template-columns: 1fr;
   }
 }
 

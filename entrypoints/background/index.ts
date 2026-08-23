@@ -2,7 +2,7 @@ import { defineBackground } from '#imports'
 import { browser } from 'wxt/browser'
 
 import { isWebDavSyncMessage } from '@/shared/webdavSync/bridge'
-import { createSyncConflictDisplayContext } from '@/shared/webdavSync/conflictPresentation'
+import { createSyncConflictDetails } from '@/shared/webdavSync/conflictDetails'
 import { SyncCoordinator } from '@/shared/webdavSync/coordinator'
 import {
   getStoredConflict,
@@ -105,13 +105,7 @@ export default defineBackground(() => {
     }
     if (message.type === 'webdav-sync:get-conflict') {
       const stored = await getStoredConflict()
-      if (!stored) return null
-      return {
-        conflicts: stored.conflicts,
-        remoteRevisionIds: stored.remoteRevisionIds,
-        remoteVersions: stored.remoteVersions ?? [],
-        context: createSyncConflictDisplayContext([stored.base, stored.local, stored.remote]),
-      }
+      return stored ? createSyncConflictDetails(stored) : null
     }
     if (message.type === 'webdav-sync:list-history') {
       const { listBrowserSyncHistory } = await import('@/shared/webdavSync/browserManagement')
