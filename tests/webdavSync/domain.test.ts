@@ -17,7 +17,7 @@ import {
   decryptSyncBytes,
   deriveEncryptionKey,
   decideInitialization,
-  deduplicateQuickLinkIcons,
+  deduplicateInlineImages,
   decideSynchronization,
   getSyncAvailability,
   encryptSyncBytes,
@@ -33,7 +33,7 @@ import {
   preserveBaselineWallpapers,
   mustReinitializeDevice,
   pruneExpiredTombstones,
-  quickLinkIconHashesAreValid,
+  inlineImageHashesAreValid,
   resolveSyncConflicts,
   resolveRemoteBranchConflicts,
   sanitizeSettings,
@@ -378,28 +378,28 @@ test('snapshot stores duplicate user-selected Quick Link icons once by SHA-256',
   value.quickLinks!.rootOrder.push('link-b')
   for (const item of value.quickLinks!.items) item.favicon = 'data:image/png;base64,same'
 
-  await deduplicateQuickLinkIcons(value)
+  await deduplicateInlineImages(value)
 
   const hashes = value.quickLinks!.items.map((item) => item.faviconHash)
   assert.equal(new Set(hashes).size, 1)
   assert.equal(Object.keys(value.inlineImages ?? {}).length, 1)
   assert.ok(value.quickLinks!.items.every((item) => item.favicon === undefined))
-  assert.equal(await quickLinkIconHashesAreValid(value), true)
+  assert.equal(await inlineImageHashesAreValid(value), true)
   value.inlineImages![hashes[0]!] = 'tampered'
-  assert.equal(await quickLinkIconHashesAreValid(value), false)
+  assert.equal(await inlineImageHashesAreValid(value), false)
 })
 
 test('oversized user icons are omitted without removing an existing baseline icon', async () => {
   const base = snapshot()
   base.quickLinks!.items[0]!.favicon = 'data:image/png;base64,previous'
-  await deduplicateQuickLinkIcons(base)
+  await deduplicateInlineImages(base)
   const previousHash = base.quickLinks!.items[0]!.faviconHash!
   const next = structuredClone(base)
   next.quickLinks!.items[0]!.favicon = `data:image/png;base64,${'x'.repeat(MAX_SYNC_INLINE_IMAGE_BYTES)}`
   delete next.quickLinks!.items[0]!.faviconHash
   delete next.inlineImages
 
-  const omissions = await deduplicateQuickLinkIcons(next, base)
+  const omissions = await deduplicateInlineImages(next, base)
 
   assert.deepEqual(omissions, [{ kind: 'quick-link-icon', id: 'link-a', reason: 'item-too-large' }])
   assert.equal(next.quickLinks!.items[0]!.faviconHash, previousHash)
@@ -420,7 +420,7 @@ test('aggregate user icon limit skips whole icons before the snapshot exceeds 8 
     groupOrder: [],
   }
 
-  const omissions = await deduplicateQuickLinkIcons(value)
+  const omissions = await deduplicateInlineImages(value)
   const total = Object.values(value.inlineImages ?? {}).reduce(
     (sum, item) => sum + new TextEncoder().encode(item).byteLength,
     0,
@@ -626,7 +626,10 @@ test('wallpaper conflicts are resolved once per color variant', () => {
   }
 
   const merged = mergeSyncSnapshots(base, local, remote)
-  assert.deepEqual(merged.conflicts.map((conflict) => conflict.path), ['optional.wallpapers.light'])
+  assert.deepEqual(
+    merged.conflicts.map((conflict) => conflict.path),
+    ['optional.wallpapers.light'],
+  )
   assert.equal(
     presentSyncConflict(merged.conflicts[0]!, createSyncConflictDisplayContext([]), (key) => key)
       .title,
@@ -953,7 +956,7 @@ test('sync decision stops on conflicting branches or an unknown ancestor', () =>
   assert.equal(unknown.action, 'unknown-ancestor')
 })
 
-test('sync decision applies another device\'s resolved conflict without asking again', () => {
+test("sync decision applies another device's resolved conflict without asking again", () => {
   const baseRevisionId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
   const firstBranchId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
   const secondBranchId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'

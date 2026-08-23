@@ -485,28 +485,18 @@
   "title": "Settings",
   "webdavSync": {
     "conflicts": {
-      "base": "Shared baseline",
       "batch": {
-        "local": "Keep local",
-        "prefer": "Select Multiple",
-        "remote": "Use cloud data"
+        "prefer": "Select Multiple"
       },
       "both": "Keep both",
       "bothNote": "The changed copy receives a new stable ID.",
       "categories": {
         "blocked-top-sites": "Hidden sites",
-        "quick-links": "Quick Links",
-        "scope": "Sync scope",
         "search-engines": "Search engines",
         "settings": "Settings",
-        "ui": "UI preferences",
-        "wallpaper": "Wallpaper",
-        "wallpaperDark": "Dark wallpaper",
-        "wallpaperLight": "Light wallpaper"
+        "ui": "UI preferences"
       },
-      "current": "Keep current content",
       "deleted": "Deleted or missing",
-      "description": "Safe changes were merged automatically.",
       "empty": "No unresolved conflicts were found",
       "fields": {
         "colorMode": "Color mode",
@@ -520,25 +510,19 @@
         "linkUrl": "Link address",
         "quickLink": "Quick Link",
         "quickLinkGroup": "Quick Links group",
-        "scope": "Sync scope",
         "searchEngineIcon": "Search engine icon",
         "searchEngineName": "Search engine name",
         "searchEngineOrder": "Search engine order",
         "searchEngineUrl": "Search engine address",
-        "settings": "Settings",
-        "wallpaper": "Wallpaper"
+        "wallpaper": "Wallpaper",
+        "wallpaperDark": "Dark wallpaper",
+        "wallpaperLight": "Light wallpaper"
       },
       "finish": "Create merge version",
-      "initial": {
-        "description": "This device and the remote both have data, but no shared sync version exists yet. Choose each item or preselect a preference; the merge version will become the shared baseline for future syncs.",
-        "title": "First connection: choose which data to keep"
-      },
       "local": "Keep local data",
       "notice": "Some content was changed differently on your devices. Choose the content to keep.",
       "noticeTitle": "Confirm synced content",
-      "paused": "Sync remains paused until every conflict is resolved",
       "remote": "Use cloud data",
-      "remoteVersions": "Remote changes",
       "resolved": "Conflicts resolved and a new merge version was created",
       "sourceDevice": "Device {{device}}",
       "sourceLocal": "Local",
@@ -594,7 +578,6 @@
       "typePrompt": "Type “{{text}}” to continue"
     },
     "empty": {
-      "action": "Set up WebDAV sync",
       "title": "WebDAV sync is not configured"
     },
     "encrypted": "Client-side encrypted",
@@ -654,9 +637,7 @@
     },
     "management": {
       "devices": "Devices",
-      "encryption": "Client encryption",
       "history": "History",
-      "repair": "Inspect and repair",
       "summary": "History, devices, encryption, and recovery",
       "title": "Sync management"
     },
@@ -667,7 +648,6 @@
     "omissions": {
       "aggregate-too-large": "The total selected icon data exceeds 8 MB",
       "item-too-large": "A selected icon exceeds 2 MB",
-      "storage-full": "WebDAV storage is full",
       "too-large": "A wallpaper exceeds 20 MB",
       "unavailable": "The selected local image is unavailable",
       "unsupported": "Animated images and videos are not synced"
@@ -703,15 +683,12 @@
     "scope": {
       "blockedTopSites": "Hidden frequently visited sites",
       "customSearchEngines": "Custom search engines",
-      "localOnlySummary": "Passwords, permissions, tokens, videos, bookmarks, caches, and search history always stay on this device",
       "onlineWallpaperUrl": "Online wallpaper address",
       "onlineWallpaperUrlNote": "The address may contain a access token.",
-      "quickLinks": "Quick Links",
       "settings": "Baisc Settings",
       "summary": "Choose each category. Changes are recorded for the whole vault and mirrored to other devices.",
       "title": "Sync scope",
       "uiPreferences": "Language and Dark Mode",
-      "unconfiguredSummary": "Choose the categories to sync during setup",
       "userIcons": "Custom Link Icons",
       "userIconsNote": "Such as custom Quick Access and custom search engine icons. Each icon is limited to 2 MB and all icons to 8 MB.",
       "wallpapers": "Local image wallpapers",
@@ -722,20 +699,17 @@
       "back": "Back",
       "compare": {
         "conflicts": "{{count}} conflicts need to be resolved",
-        "description": "Times help identify devices; they are never used to pick a winner.",
         "existing": "Remote data exists",
         "existingTitle": "Compare this device and remote",
         "firstConnectionNote": "This device and the remote both have data, but no shared sync version exists yet. After enabling sync, resolve items individually or choose a bulk preference in Settings; confirmation creates the shared baseline.",
         "firstConnectionTitle": "First connection: choose which data to keep",
         "initial": "New sync vault",
         "initialTitle": "Review the initial upload",
-        "pauseNote": "After enabling sync, please go to Settings to resolve the conflicts. Sync will remain paused until all conflicts are resolved.",
         "safe": "No conflicts between local and remote data. Sync can be safely enabled."
       },
       "confirm": {
         "autoDevice": "An anonymous name without exact OS version will be generated",
         "description": "The sync vault is only created or changed after this confirmation.",
-        "disconnectNote": "Turning off sync keeps remote data by default. Permanent deletion requires typed confirmation.",
         "encrypted": "Enabled; a forgotten password cannot be recovered",
         "plaintext": "Off (default)",
         "title": "Final confirmation"
@@ -782,7 +756,6 @@
         "title": "Remote scan result"
       },
       "scope": {
-        "blockedTopSitesNote": "May reflect browsing behavior; off by default.",
         "description": "This selection will also apply to other devices.",
         "omittedResources": "{{count}} oversized or unsupported selected images will be skipped",
         "title": "Choose sync scope"
@@ -793,8 +766,7 @@
         "connection": "Connect",
         "scan": "Scan",
         "scope": "Scope",
-        "test": "Test",
-        "wallpaper": "Wallpaper"
+        "test": "Test"
       },
       "test": {
         "action": "Test connection",

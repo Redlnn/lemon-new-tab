@@ -485,28 +485,18 @@
   "title": "設定",
   "webdavSync": {
     "conflicts": {
-      "base": "共同基準",
       "batch": {
-        "local": "保留本機",
-        "prefer": "批量選擇",
-        "remote": "使用雲端資料"
+        "prefer": "批量選擇"
       },
       "both": "保留兩份",
       "bothNote": "修改項目會取得新的穩定 ID。",
       "categories": {
         "blocked-top-sites": "隱藏網站",
-        "quick-links": "快速連結",
-        "scope": "同步範圍",
         "search-engines": "搜尋引擎",
         "settings": "設定",
-        "ui": "介面偏好",
-        "wallpaper": "桌布",
-        "wallpaperDark": "深色桌布",
-        "wallpaperLight": "淺色桌布"
+        "ui": "介面偏好"
       },
-      "current": "保留目前內容",
       "deleted": "已刪除或不存在",
-      "description": "安全部分已自動合併。",
       "empty": "找不到待處理衝突",
       "fields": {
         "colorMode": "色彩模式",
@@ -520,25 +510,19 @@
         "linkUrl": "連結網址",
         "quickLink": "快速連結",
         "quickLinkGroup": "快速連結分組",
-        "scope": "同步範圍",
         "searchEngineIcon": "搜尋引擎圖示",
         "searchEngineName": "搜尋引擎名稱",
         "searchEngineOrder": "搜尋引擎排序",
         "searchEngineUrl": "搜尋引擎網址",
-        "settings": "設定",
-        "wallpaper": "桌布"
+        "wallpaper": "桌布",
+        "wallpaperDark": "深色桌布",
+        "wallpaperLight": "淺色桌布"
       },
       "finish": "建立合併版本",
-      "initial": {
-        "description": "本機與雲端都有資料，但還沒有共同同步版本。可逐項選擇，或先批量預選；建立合併版本後，它會成為後續同步的共同基線。",
-        "title": "首次接入，請選擇要保留的資料"
-      },
       "local": "保留本機資料",
       "notice": "部分內容在不同裝置上有不同修改，請選擇要保留的內容。",
       "noticeTitle": "請確認同步內容",
-      "paused": "同步會持續暫停，直到處理所有衝突",
       "remote": "使用雲端資料",
-      "remoteVersions": "雲端修改裝置與時間",
       "resolved": "衝突已解決並建立新的合併版本",
       "sourceDevice": "裝置 {{device}}",
       "sourceLocal": "本機",
@@ -594,7 +578,6 @@
       "typePrompt": "請輸入「{{text}}」繼續"
     },
     "empty": {
-      "action": "設定 WebDAV 同步",
       "title": "尚未設定 WebDAV 同步"
     },
     "encrypted": "已使用用戶端加密",
@@ -654,9 +637,7 @@
     },
     "management": {
       "devices": "裝置",
-      "encryption": "用戶端加密",
       "history": "歷史",
-      "repair": "檢查與修復",
       "summary": "歷史、裝置、加密與異常復原",
       "title": "同步管理"
     },
@@ -667,7 +648,6 @@
     "omissions": {
       "aggregate-too-large": "所選圖示總大小超過 8 MB",
       "item-too-large": "單個所選圖示超過 2 MB",
-      "storage-full": "WebDAV 空間不足",
       "too-large": "單張桌布超過 20 MB",
       "unavailable": "無法讀取所選本機圖片",
       "unsupported": "不同步動畫圖片和影片"
@@ -703,15 +683,12 @@
     "scope": {
       "blockedTopSites": "隱藏的常用網站",
       "customSearchEngines": "自訂搜尋引擎",
-      "localOnlySummary": "密碼、權限、Token、影片、書籤、快取與搜尋記錄一律只保存在本機",
       "onlineWallpaperUrl": "線上桌布網址",
       "onlineWallpaperUrlNote": "網址可能包含存取 Token。",
-      "quickLinks": "快速連結",
       "settings": "基本設定",
       "summary": "可逐項選擇；範圍會記錄到整個同步庫，並同步到其他裝置。",
       "title": "同步範圍",
       "uiPreferences": "語言與深色模式",
-      "unconfiguredSummary": "設定時選擇要同步的項目",
       "userIcons": "自訂連結圖示",
       "userIconsNote": "例如自訂的快速存取與自訂搜尋引擎圖示。單個最多 2 MB，總計最多 8 MB。",
       "wallpapers": "本機圖片桌布",
@@ -722,20 +699,17 @@
       "back": "上一步",
       "compare": {
         "conflicts": "有 {{count}} 個衝突需要處理",
-        "description": "時間只用來辨識裝置，不會用於自動判斷哪一份勝出。",
         "existing": "遠端已有資料",
         "existingTitle": "比較本機與雲端",
         "firstConnectionNote": "本機與雲端都有資料，尚未有共同同步版本。開啟後可在設定中逐項處理，或批量優先選擇本機或雲端；確認後將建立共同基線。",
         "firstConnectionTitle": "首次接入：選擇要保留的資料",
         "initial": "新同步庫",
         "initialTitle": "確認初始上傳內容",
-        "pauseNote": "開啟同步後，請前往「設定」處理衝突。喺所有衝突解決之前，同步會保持暫停狀態。",
         "safe": "本機同遠端資料冇衝突，可以直接安全開啟同步。"
       },
       "confirm": {
         "autoDevice": "將產生不含精確系統版本的匿名裝置名稱",
         "description": "只有現在確認後才會建立或更新同步庫。",
-        "disconnectNote": "日後關閉同步預設保留雲端資料；永久刪除需要輸入指定確認文字。",
         "encrypted": "已開啟；忘記密碼無法復原",
         "plaintext": "關閉（預設）",
         "title": "最終確認"
@@ -782,7 +756,6 @@
         "title": "遠端掃描結果"
       },
       "scope": {
-        "blockedTopSitesNote": "可能反映瀏覽行為，預設關閉。",
         "description": "呢個選擇亦會套用到其他裝置。",
         "omittedResources": "{{count}} 個過大或不支援的所選圖片將被略過",
         "title": "選擇同步範圍"
@@ -793,8 +766,7 @@
         "connection": "連線",
         "scan": "掃描",
         "scope": "範圍",
-        "test": "測試",
-        "wallpaper": "桌布"
+        "test": "測試"
       },
       "test": {
         "action": "測試連線",

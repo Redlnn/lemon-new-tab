@@ -485,28 +485,18 @@
   "title": "设置",
   "webdavSync": {
     "conflicts": {
-      "base": "共同基线",
       "batch": {
-        "local": "保留本地",
-        "prefer": "批量选择",
-        "remote": "使用云端数据"
+        "prefer": "批量选择"
       },
       "both": "保留两份",
       "bothNote": "修改项会获得新的稳定 ID。",
       "categories": {
         "blocked-top-sites": "隐藏站点",
-        "quick-links": "快速导航",
-        "scope": "同步范围",
         "search-engines": "搜索引擎",
         "settings": "设置",
-        "ui": "界面偏好",
-        "wallpaper": "壁纸",
-        "wallpaperDark": "深色壁纸",
-        "wallpaperLight": "浅色壁纸"
+        "ui": "界面偏好"
       },
-      "current": "保留当前内容",
       "deleted": "已删除或不存在",
-      "description": "安全部分已经自动合并。",
       "empty": "没有找到待处理冲突",
       "fields": {
         "colorMode": "颜色模式",
@@ -520,25 +510,19 @@
         "linkUrl": "链接地址",
         "quickLink": "快速导航",
         "quickLinkGroup": "快速导航分组",
-        "scope": "同步范围",
         "searchEngineIcon": "搜索引擎图标",
         "searchEngineName": "搜索引擎名称",
         "searchEngineOrder": "搜索引擎排序",
         "searchEngineUrl": "搜索引擎地址",
-        "settings": "设置",
-        "wallpaper": "壁纸"
+        "wallpaper": "壁纸",
+        "wallpaperDark": "深色壁纸",
+        "wallpaperLight": "浅色壁纸"
       },
       "finish": "创建合并版本",
-      "initial": {
-        "description": "本机与云端都有数据，但还没有共同同步版本。可逐项选择，或先批量预选；创建合并版本后，它会成为后续同步的共同基线。",
-        "title": "首次接入，请选择要保留的数据"
-      },
       "local": "保留本地数据",
       "notice": "部分内容在不同设备上有不同修改，请选择要保留的内容。",
       "noticeTitle": "请确认同步内容",
-      "paused": "同步保持暂停，直到全部冲突得到处理",
       "remote": "使用云端数据",
-      "remoteVersions": "云端修改设备与时间",
       "resolved": "冲突已解决并创建新的合并版本",
       "sourceDevice": "设备 {{device}}",
       "sourceLocal": "本地",
@@ -594,7 +578,6 @@
       "typePrompt": "请输入“{{text}}”继续"
     },
     "empty": {
-      "action": "设置 WebDAV 同步",
       "title": "尚未配置 WebDAV 同步"
     },
     "encrypted": "客户端已加密",
@@ -654,9 +637,7 @@
     },
     "management": {
       "devices": "设备",
-      "encryption": "客户端加密",
       "history": "历史",
-      "repair": "检查与修复",
       "summary": "历史、设备、加密和异常恢复",
       "title": "同步管理"
     },
@@ -667,7 +648,6 @@
     "omissions": {
       "aggregate-too-large": "所选图标总大小超过 8 MB",
       "item-too-large": "单个所选图标超过 2 MB",
-      "storage-full": "WebDAV 空间不足",
       "too-large": "单张壁纸超过 20 MB",
       "unavailable": "无法读取所选本地图片",
       "unsupported": "不同步动画图片和视频"
@@ -703,15 +683,12 @@
     "scope": {
       "blockedTopSites": "隐藏的最常访问站点",
       "customSearchEngines": "自定义搜索引擎",
-      "localOnlySummary": "密码、权限、Token、视频、书签、缓存和搜索历史始终只保存在本机",
       "onlineWallpaperUrl": "在线壁纸地址",
       "onlineWallpaperUrlNote": "可能会包含访问 Token。",
-      "quickLinks": "快速导航",
       "settings": "基础设置",
       "summary": "可逐项选择；范围会记录到整个同步库，并同步到其他设备。",
       "title": "同步范围",
       "uiPreferences": "语言和深色模式",
-      "unconfiguredSummary": "配置时选择要同步的项目",
       "userIcons": "自定义的链接图标",
       "userIconsNote": "如自定义的快速访问与自定义搜索引擎图标，单个最多 2 MB，总计最多 8 MB。",
       "wallpapers": "本地图片壁纸",
@@ -722,20 +699,17 @@
       "back": "上一步",
       "compare": {
         "conflicts": "有 {{count}} 个冲突需要解决",
-        "description": "时间只帮助识别设备，不会用于自动判断哪一份获胜。",
         "existing": "远端已有数据",
         "existingTitle": "比较本机与云端",
         "firstConnectionNote": "本机与云端都有数据，尚未有共同同步版本。开启后可在设置中逐项处理，或批量优先选择本机或云端；确认后将建立共同基线。",
         "firstConnectionTitle": "首次接入：选择要保留的数据",
         "initial": "新同步库",
         "initialTitle": "确认初始上传内容",
-        "pauseNote": "开启同步后会请前往「设置」处理冲突，冲突解决前将保证暂停状态",
         "safe": "本地与远端无冲突，可直接安全开启同步"
       },
       "confirm": {
         "autoDevice": "将生成不含精确系统版本的匿名设备名",
         "description": "只有现在确认后才会创建或更新同步库。",
-        "disconnectNote": "以后关闭同步默认保留云端数据；永久删除需要输入指定确认文字。",
         "encrypted": "已开启；忘记密码无法找回",
         "plaintext": "关闭（默认）",
         "title": "最终确认"
@@ -782,7 +756,6 @@
         "title": "远端扫描结果"
       },
       "scope": {
-        "blockedTopSitesNote": "可能反映浏览行为，默认关闭。",
         "description": "该选择对其他设备也会生效。",
         "omittedResources": "{{count}} 个过大或不支持的所选图片将被跳过",
         "title": "选择同步范围"
@@ -793,8 +766,7 @@
         "connection": "连接",
         "scan": "扫描",
         "scope": "范围",
-        "test": "测试",
-        "wallpaper": "壁纸"
+        "test": "测试"
       },
       "test": {
         "action": "测试连接",

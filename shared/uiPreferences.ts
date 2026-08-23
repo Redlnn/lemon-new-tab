@@ -1,6 +1,6 @@
 import { storage } from '#imports'
 
-import type { ColorModePreference } from './webdavSync'
+import type { ColorModePreference } from './webdavSync/types.ts'
 
 export interface UiPreferencesV1 {
   version: 1

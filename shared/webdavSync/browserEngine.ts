@@ -13,7 +13,7 @@ import {
   type IncomingWallpaperResources,
 } from './browserData.ts'
 import { canonicalJson, hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
-import { quickLinkIconHashesAreValid } from './capture.ts'
+import { inlineImageHashesAreValid } from './capture.ts'
 import { resolveSyncConflicts } from './conflicts.ts'
 import {
   createEncryptionAad,
@@ -143,7 +143,7 @@ export async function readRevisions(
     if (revision.settingsSchemaVersion > CURRENT_CONFIG_VERSION) {
       throw new WebDavError('format-too-new', 'Remote settings format is newer than this extension')
     }
-    if (!(await quickLinkIconHashesAreValid(revision.snapshot))) {
+    if (!(await inlineImageHashesAreValid(revision.snapshot))) {
       throw new WebDavError('corrupted', 'Quick Link icon hash does not match its content')
     }
     revisions.push(revision)
@@ -430,13 +430,6 @@ export async function publishAndFinalize(input: {
   }
 }
 
-export function withoutWallpapers(snapshot: SyncSnapshotV1): SyncSnapshotV1 {
-  const result = structuredClone(snapshot)
-  if (result.optional?.wallpapers) delete result.optional.wallpapers
-  if (result.optional && Object.keys(result.optional).length === 0) delete result.optional
-  return result
-}
-
 export async function encryptRevision(
   metadata: VaultMetadataV1,
   revision: SyncRevisionV1,
@@ -662,7 +655,11 @@ async function runSynchronizationOnce(): Promise<void> {
       ) {
         return
       }
-      initialState = await patchSyncState({ paused: false, pauseReason: undefined, lastError: undefined })
+      initialState = await patchSyncState({
+        paused: false,
+        pauseReason: undefined,
+        lastError: undefined,
+      })
     }
   }
   if (!password) {

@@ -33,6 +33,7 @@ import type {
 import type { BrowserCorruptionInspection } from '@/shared/webdavSync/browserManagement'
 import {
   createSyncConflictDisplayContext,
+  displaySyncCategory,
   displaySyncDifference,
   presentSyncConflict,
 } from '@/shared/webdavSync/conflictPresentation'
@@ -120,6 +121,10 @@ function displayDifference(difference: {
   value?: JsonValue
 }) {
   return displaySyncDifference(difference, conflictDisplayContext.value, t)
+}
+
+function displayCategory(category: SyncConflict['category']) {
+  return displaySyncCategory(category, t)
 }
 
 function displayCandidate(
@@ -530,7 +535,7 @@ watch(
           >
             <header>
               <el-tag size="small" effect="plain">
-                {{ t(`webdavSync.conflicts.categories.${difference.category}`) }}
+                {{ displayCategory(difference.category) }}
               </el-tag>
               <strong>
                 {{ displayDifference({ ...difference, value: difference.current }).title }}
@@ -735,7 +740,11 @@ watch(
       </el-alert>
       <ul>
         <li v-for="item in state.resourceOmissions" :key="JSON.stringify(item)">
-          {{ t(`webdavSync.omissions.${item.reason}`) }}
+          {{
+            item.reason === 'storage-full'
+              ? t('webdavSync.status.storageFull')
+              : t(`webdavSync.omissions.${item.reason}`)
+          }}
         </li>
       </ul>
     </template>

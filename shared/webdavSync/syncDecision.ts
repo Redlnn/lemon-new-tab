@@ -153,7 +153,8 @@ export function collectRemoteBranchConflicts(
   const conflicts = new Map<string, SyncConflict>()
   for (const [index, local] of heads.entries()) {
     for (const remote of heads.slice(index + 1)) {
-      for (const conflict of mergeSyncSnapshots(baseline, local.snapshot, remote.snapshot).conflicts) {
+      for (const conflict of mergeSyncSnapshots(baseline, local.snapshot, remote.snapshot)
+        .conflicts) {
         const current = conflicts.get(conflict.id) ?? {
           ...conflict,
           candidates: [],
@@ -166,7 +167,8 @@ export function collectRemoteBranchConflicts(
   }
 
   for (const remote of heads) {
-    for (const conflict of mergeSyncSnapshots(baseline, local.snapshot, remote.snapshot).conflicts) {
+    for (const conflict of mergeSyncSnapshots(baseline, local.snapshot, remote.snapshot)
+      .conflicts) {
       const current = conflicts.get(conflict.id) ?? { ...conflict, candidates: [] }
       addLocalConflictCandidate(current, local, conflict)
       addRevisionConflictCandidate(current, remote, conflict, 'remote')

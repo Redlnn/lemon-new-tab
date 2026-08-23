@@ -407,7 +407,8 @@ function mergeOptional(
       remote.wallpapers.dark ? canonicalize(remote.wallpapers.dark) : MISSING,
       conflicts,
     )
-    if (light !== MISSING) wallpapers.light = light as unknown as NonNullable<typeof wallpapers.light>
+    if (light !== MISSING)
+      wallpapers.light = light as unknown as NonNullable<typeof wallpapers.light>
     if (dark !== MISSING) wallpapers.dark = dark as unknown as NonNullable<typeof wallpapers.dark>
     if (wallpapers.light || wallpapers.dark) result.wallpapers = wallpapers
   } else {

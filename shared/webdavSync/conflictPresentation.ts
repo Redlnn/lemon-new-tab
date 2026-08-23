@@ -217,7 +217,7 @@ function displaySection(conflict: Pick<SyncConflict, 'category' | 'path'>, t: Co
     const parent = conflict.path.slice('settings.'.length).split('.', 1)[0]!
     return t(SETTING_SECTION_KEYS[parent] ?? 'webdavSync.conflicts.categories.settings')
   }
-  return t(`webdavSync.conflicts.categories.${conflict.category}`)
+  return displaySyncCategory(conflict.category, t)
 }
 
 export function displaySyncDifference(
@@ -240,11 +240,12 @@ function displayTitle(
   const { path } = conflict
   if (path.startsWith('settings.'))
     return t(
-      SETTING_TITLE_KEYS[path.slice('settings.'.length)] ?? 'webdavSync.conflicts.fields.settings',
+      SETTING_TITLE_KEYS[path.slice('settings.'.length)] ??
+        'webdavSync.conflicts.categories.settings',
     )
   if (path === 'optional.onlineWallpaperUrl') return t('webdavSync.scope.onlineWallpaperUrl')
-  if (path.startsWith('scope.')) return t(`webdavSync.scope.${path.slice('scope.'.length)}`)
-  if (path === 'scope') return t('webdavSync.conflicts.fields.scope')
+  if (path.startsWith('scope.')) return displayScopeLabel(path.slice('scope.'.length), t)
+  if (path === 'scope') return t('webdavSync.scope.title')
   if (path === 'ui.language') return t('other.language')
   if (path === 'ui.colorMode') return t('webdavSync.conflicts.fields.colorMode')
   if (path === 'ui') return t('webdavSync.conflicts.categories.ui')
@@ -253,7 +254,7 @@ function displayTitle(
   if (path.startsWith('quickLinks.location.')) return t('webdavSync.conflicts.fields.linkGroup')
   if (path === 'quickLinks.rootOrder') return t('webdavSync.conflicts.fields.linkOrder')
   if (path === 'quickLinks.groupOrder') return t('webdavSync.conflicts.fields.groupOrder')
-  if (path === 'quickLinks') return t('webdavSync.conflicts.categories.quick-links')
+  if (path === 'quickLinks') return t('quickLinks.title')
   if (path.startsWith('customSearchEngines.items.')) return searchEngineTitle(conflict, context, t)
   if (path === 'customSearchEngines.order')
     return t('webdavSync.conflicts.fields.searchEngineOrder')
@@ -263,7 +264,21 @@ function displayTitle(
   if (path === 'optional.wallpapers.light') return t('webdavSync.conflicts.fields.wallpaperLight')
   if (path === 'optional.wallpapers.dark') return t('webdavSync.conflicts.fields.wallpaperDark')
   if (path.startsWith('optional.wallpapers')) return t('webdavSync.conflicts.fields.wallpaper')
-  return t(`webdavSync.conflicts.categories.${conflict.category}`)
+  return displaySyncCategory(conflict.category, t)
+}
+
+export function displaySyncCategory(
+  category: SyncConflict['category'],
+  t: ConflictTranslator,
+): string {
+  if (category === 'quick-links') return t('quickLinks.title')
+  if (category === 'scope') return t('webdavSync.scope.title')
+  if (category === 'wallpaper') return t('webdavSync.conflicts.fields.wallpaper')
+  return t(`webdavSync.conflicts.categories.${category}`)
+}
+
+function displayScopeLabel(key: string, t: ConflictTranslator): string {
+  return key === 'quickLinks' ? t('quickLinks.title') : t(`webdavSync.scope.${key}`)
 }
 
 function quickLinkTitle(
@@ -322,7 +337,9 @@ function displayValue(
   side?: 'base' | 'local' | 'remote',
 ): string {
   if (value === undefined)
-    return t(side === 'base' ? 'webdavSync.conflicts.values.noBaseline' : 'webdavSync.conflicts.deleted')
+    return t(
+      side === 'base' ? 'webdavSync.conflicts.values.noBaseline' : 'webdavSync.conflicts.deleted',
+    )
   if (isOrderPath(conflict.path)) return t('webdavSync.conflicts.values.orderChanged')
   if (isIconPath(conflict.path)) {
     return t(

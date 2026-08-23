@@ -147,24 +147,6 @@ export const SYNC_SETTING_PATHS = [
   'faviconCacheEnabled',
 ] as const
 
-export const LOCAL_ONLY_SETTING_PATHS = [
-  'sync.enabled',
-  'background.local.id',
-  'background.local.url',
-  'background.local.mediaType',
-  'background.localDark.id',
-  'background.localDark.url',
-  'background.localDark.mediaType',
-  'background.bing.id',
-  'background.bing.url',
-  'background.bing.updateDate',
-  'background.bing.cachedResolution',
-  'background.online.url',
-  'readChangeLog',
-  'pluginVersion',
-  'version',
-] as const
-
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)

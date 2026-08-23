@@ -250,10 +250,6 @@ export function setStoredEncryptionKey(
   return idbSet('webdavSync', encryptionKeyId(vaultId, generationId), key)
 }
 
-export function clearStoredEncryptionKey(vaultId: string, generationId: string): Promise<void> {
-  return idbDelete('webdavSync', encryptionKeyId(vaultId, generationId))
-}
-
 export async function getBaseline(): Promise<SyncSnapshotV1 | undefined> {
   const snapshot = (await idbGet('webdavSync', BASELINE_KEY)) as SyncSnapshotV1 | undefined
   if (!snapshot) return undefined

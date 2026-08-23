@@ -189,7 +189,7 @@ onMounted(() => void refresh())
           <h4>{{ t('webdavSync.empty.title') }}</h4>
         </div>
         <el-button type="primary" @click="setupVisible = true">
-          {{ t('webdavSync.empty.action') }}
+          {{ t('webdavSync.setup.title') }}
         </el-button>
       </section>
     </template>
@@ -245,7 +245,9 @@ onMounted(() => void refresh())
           :key="key"
           class="settings__item settings__item--horizontal settings__item--with-note"
         >
-          <div class="settings__label">{{ t(`webdavSync.scope.${key}`) }}</div>
+          <div class="settings__label">
+            {{ key === 'quickLinks' ? t('quickLinks.title') : t(`webdavSync.scope.${key}`) }}
+          </div>
           <el-switch
             :model-value="state.scope[key]"
             :loading="updatingScope === key"
@@ -276,10 +278,10 @@ onMounted(() => void refresh())
             {{ t('webdavSync.management.devices') }}
           </el-button>
           <el-button :icon="LockRound" @click="dialogMode = 'encryption'">
-            {{ t('webdavSync.management.encryption') }}
+            {{ t('webdavSync.encryption.title') }}
           </el-button>
           <el-button :icon="SettingsBackupRestoreRound" @click="dialogMode = 'repair'">
-            {{ t('webdavSync.management.repair') }}
+            {{ t('webdavSync.repair.title') }}
           </el-button>
         </div>
       </SettingsSection>

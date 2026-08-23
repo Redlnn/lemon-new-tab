@@ -135,6 +135,8 @@ function readableError(error: unknown) {
     if (error.category === 'encryption-locked') return t('webdavSync.setup.errors.encryption')
     if (error.category === 'foreign-vault') return t('webdavSync.setup.errors.foreign')
     if (error.category === 'format-too-new') return t('webdavSync.setup.errors.format')
+    if (error.category === 'storage-full') return t('webdavSync.errors.storage-full')
+    return t('webdavSync.errors.unknown')
   }
   const message = error instanceof Error ? error.message : String(error)
   if (/authentication|401|password/i.test(message))
@@ -558,7 +560,7 @@ watch(
               <p>
                 <lock-round />
                 <span>
-                  <strong>{{ t('webdavSync.management.encryption') }}</strong>
+                  <strong>{{ t('webdavSync.encryption.title') }}</strong>
                   <small>
                     {{
                       effectiveEncryption

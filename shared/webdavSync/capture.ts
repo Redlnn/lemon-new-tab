@@ -174,6 +174,3 @@ export async function inlineImageHashesAreValid(snapshot: SyncSnapshotV1): Promi
   ].filter((hash): hash is string => Boolean(hash))
   return references.every((hash) => Object.hasOwn(images, hash))
 }
-
-export const deduplicateQuickLinkIcons = deduplicateInlineImages
-export const quickLinkIconHashesAreValid = inlineImageHashesAreValid
