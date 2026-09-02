@@ -1,397 +1,397 @@
 {
   "a11y": {
-    "back": "Back to previous settings view"
+    "back": "Önceki ayarlar görünümüne dön"
   },
   "background": {
-    "alwaysFresh": "Always something new",
-    "bingFrom": "Image source: Bing",
-    "blur": "Blur intensity",
+    "alwaysFresh": "Her zaman yeni bir şey",
+    "bingFrom": "Görsel kaynağı: Bing",
+    "blur": "Bulanıklık yoğunluğu",
     "button": {
       "bathe": {
-        "moon": "Bathe in moonlight",
-        "sun": "Bathe in sunlight"
+        "moon": "Mehtapta yıkan",
+        "sun": "Güneşte yıkan"
       }
     },
     "cache": {
       "askEnable": {
-        "message": "Caching reduces repeated downloads and keeps cached wallpapers available offline. Enable wallpaper caching?",
-        "title": "Enable wallpaper caching?"
+        "message": "Önbellek, tekrarlanan indirmeleri azaltır ve önbelleğe alınmış duvar kağıtlarını çevrimdışı kullanıma hazır tutar. Duvar kağıdı önbelleği etkinleştirilsin mi?",
+        "title": "Duvar kağıdı önbelleği etkinleştirilsin mi?"
       },
-      "disabledTip": "Only available when the background type is \"Online URL\" (Bing wallpaper is always cached by default)",
-      "duration": "Cache expiration duration",
-      "label": "Online wallpaper cache",
-      "nextStartup": "Effective on next startup",
-      "noExpires": "Cache never expires"
+      "disabledTip": "Yalnızca arka plan türü \"Çevrimiçi URL\" olduğunda kullanılabilir (Bing duvar kağıdı varsayılan olarak her zaman önbelleğe alınır)",
+      "duration": "Önbellek geçerlilik süresi",
+      "label": "Çevrimiçi duvar kağıdı önbelleği",
+      "nextStartup": "Sonraki başlangıçta geçerli olur",
+      "noExpires": "Önbellek asla sona ermez"
     },
-    "change": "Change background",
-    "chooseImageOrVideo": "Choose an image or video to use as wallpaper",
-    "custom": "Custom",
-    "fasterBgAnim": "Faster background display on startup",
+    "change": "Arka planı değiştir",
+    "chooseImageOrVideo": "Duvar kağıdı olarak kullanılacak bir resim veya video seçin",
+    "custom": "Özel",
+    "fasterBgAnim": "Başlangıçta daha hızlı arka plan gösterimi",
     "mask": {
-      "color": "Mask color",
-      "enable": "Enable mask"
+      "color": "Maske rengi",
+      "enable": "Maskeyi etkinleştir"
     },
-    "myZoneMyRule": "Your space. Your rules.",
+    "myZoneMyRule": "Senin alanın. Senin kuralların.",
     "onlineTips": {
-      "a": "Submit after pressing the Enter key or when the input field loses focus.",
-      "b": "The wallpaper caching strategy depends on the browser, and wallpapers may not be accessible offline.",
-      "c": "There will be a blank screen before the wallpaper finishes loading, and the duration depends on your internet speed.",
-      "d": "Please ensure the wallpaper API you are using allows cross-origin requests; otherwise, it will fail to load."
+      "a": "Enter tuşuna basarak veya giriş alanı odağı kaybettiğinde gönderin.",
+      "b": "Duvar kağıdı önbellekleme stratejisi tarayıcıya bağlıdır ve duvar kağıtları çevrimdışı erişilebilir olmayabilir.",
+      "c": "Duvar kağıdı yüklenene kadar boş bir ekran olacaktır ve bu süre internet hızınıza bağlıdır.",
+      "d": "Kullandığınız duvar kağıdı API'sinin çapraz kaynak isteklerine izin verdiğinden emin olun; aksi takdirde yüklenemez."
     },
-    "parallax": "Wallpaper parallax effect",
-    "pauseWhenBlur": "Pause video background when loses focus",
+    "parallax": "Duvar kağıdı paralaks efekti",
+    "pauseWhenBlur": "Arka plan penceresi odağı kaybettiğinde videoyu duraklat",
     "permission": {
-      "allowAll": "Allow all sites",
-      "allowCurrent": "Only allow this API URL",
-      "deny": "Reject",
+      "allowAll": "Tüm sitelere izin ver",
+      "allowCurrent": "Yalnızca bu API URL'sine izin ver",
+      "deny": "Reddet",
       "request": {
-        "faviconCacheMessage": "To enable favicon caching, the extension needs the “Access all sites” permission.",
-        "message": "To access online wallpapers, the extension needs to request the appropriate permissions:",
-        "monetColorMessage": "To enable Dynamic Theme Colors (Monet Color Extraction), the extension needs the “Access all sites” permission.",
+        "faviconCacheMessage": "Favicon önbelleğini etkinleştirmek için uzantının \"Tüm sitelere erişim\" iznine ihtiyacı vardır.",
+        "message": "Çevrimiçi duvar kağıtlarına erişmek için uzantının uygun izinleri talep etmesi gerekir:",
+        "monetColorMessage": "Dinamik Tema Renklerini (Monet Renk Çıkarma) etkinleştirmek için uzantının \"Tüm sitelere erişim\" iznine ihtiyacı vardır.",
         "subA": {
-          "content": "Requires “Access this API URL”.",
-          "label": "Normal mode: "
+          "content": "\"Bu API URL'sine erişim\" gerektirir.",
+          "label": "Normal mod: "
         },
         "subB": {
-          "content": "Requires “Access all sites”.",
-          "label": "Dynamic theme colors / Cache:"
+          "content": "\"Tüm sitelere erişim\" gerektirir.",
+          "label": "Dinamik tema renkleri / Önbellek:"
         },
-        "title": "Permission Request",
-        "wallpaperCacheMessage": "To enable online wallpaper caching, the extension needs the “Access all sites” permission."
+        "title": "İzin Talebi",
+        "wallpaperCacheMessage": "Çevrimiçi duvar kağıdı önbelleğini etkinleştirmek için uzantının \"Tüm sitelere erişim\" iznine ihtiyacı vardır."
       }
     },
-    "preferenceTitle": "Wallpaper preferences",
-    "resolution": "Resolution",
-    "showDownloadBtn": "Show download button",
-    "showDownloadBtnNote": "Available only for Bing and online wallpapers.",
-    "sunMoonSaying": "When the sun’s out, bathe in sunlight. But when the moon’s out, bathe in moonlight!",
-    "tip": "If no background is set for dark mode, the light mode background or video will be used.",
-    "title": "Background",
-    "today": "Today",
+    "preferenceTitle": "Duvar kağıdı tercihleri",
+    "resolution": "Çözünürlük",
+    "showDownloadBtn": "İndirme düğmesini göster",
+    "showDownloadBtnNote": "Yalnızca Bing ve çevrimiçi duvar kağıtları için kullanılabilir.",
+    "sunMoonSaying": "Güneş varken güneşte yıkan. Ama ay varken mehtapta yıkan!",
+    "tip": "Karanlık mod için arka plan ayarlanmamışsa, aydınlık mod arka planı veya videosu kullanılır.",
+    "title": "Arka Plan",
+    "today": "Bugün",
     "type": {
-      "local": "Local file",
-      "online": "Online URL"
+      "local": "Yerel dosya",
+      "online": "Çevrimiçi URL"
     },
     "video": {
-      "blurTip": "Turn on to reduce performance usage when multiple new tabs or windows are open on the screen simultaneously.",
-      "warning": "Using a video as a background consumes a lot of GPU resources. It is recommended to avoid opening multiple new tabs at the same time. It is recommended to turn off animation, blur, and transparency effects appropriately to reduce performance consumption."
+      "blurTip": "Ekranda aynı anda birden fazla yeni sekme veya pencere açıkken performans kullanımını azaltmak için açın.",
+      "warning": "Video arka plan olarak kullanmak çok fazla GPU kaynağı tüketir. Aynı anda birden fazla yeni sekme açmaktan kaçınılması önerilir. Performans tüketimini azaltmak için animasyon, bulanıklık ve saydamlık efektlerinin uygun şekilde kapatılması önerilir."
     },
-    "vignette": "Enable vignetting",
+    "vignette": "Vinyet efektini etkinleştir",
     "warning": {
-      "bingResolutionCacheFailed": "Couldn’t cache the selected resolution. The existing cache will remain in use, and the download will be retried later.",
-      "cacheDisabled": "Online wallpaper caching has been disabled because the “Access all websites” permission was not granted.",
-      "fileIsNotImage": "The selected file is not an image!",
-      "monetColorDisabled": "Monet color extraction disabled",
-      "monetDisabled": "Dynamic Theme Colors (Monet Extraction) has been disabled because “Access all sites” permission was not granted.",
-      "notGranted": "Permission not granted, cannot access this host.",
-      "title": "Warning",
+      "bingResolutionCacheFailed": "Seçilen çözünürlük önbelleğe alınamadı. Mevcut önbellek kullanılmaya devam edecek ve indirme daha sonra tekrar denenicektir.",
+      "cacheDisabled": "Çevrimiçi duvar kağıdı önbelleği, \"Tüm web sitelerine erişim\" izni verilmediği için devre dışı bırakıldı.",
+      "fileIsNotImage": "Seçilen dosya bir resim değil!",
+      "monetColorDisabled": "Monet renk çıkarma devre dışı",
+      "monetDisabled": "Dinamik Tema Renkleri (Monet Çıkarma), \"Tüm sitelere erişim\" izni verilmediği için devre dışı bırakıldı.",
+      "notGranted": "İzin verilmedi, bu ana bilgisayara erişilemiyor.",
+      "title": "Uyarı",
       "tooLarge": {
-        "message": "The file is too large ({{size}}) and may affect performance or occupy significant storage. Do you want to continue?",
-        "title": "Large File Warning"
+        "message": "Dosya çok büyük ({{size}}) ve performansı etkileyebilir veya önemli miktarda depolama alanı kaplayabilir. Devam etmek istiyor musunuz?",
+        "title": "Büyük Dosya Uyarısı"
       },
-      "unknownSource": "Using images from unknown sources as backgrounds may expose your device to attacks. Do you want to continue?"
+      "unknownSource": "Bilinmeyen kaynaklardan alınan görselleri arka plan olarak kullanmak cihazınızı saldırılara maruz bırakabilir. Devam etmek istiyor musunuz?"
     },
-    "youLikeFine": "If you like it, that’s fine~"
+    "youLikeFine": "Beğendiyseniz, sorun yok~"
   },
   "bookmark": {
-    "defaultSort": "Default sorting",
+    "defaultSort": "Varsayılan sıralama",
     "direction": {
-      "ltr": "Left to right",
-      "rtl": "Right to left",
-      "title": "Open direction"
+      "ltr": "Soldan sağa",
+      "rtl": "Sağdan sola",
+      "title": "Açılış yönü"
     },
-    "rightClickToOpen": "Right click on background to open",
-    "showBtn": "Show bottom-right button",
-    "title": "Bookmarks bar"
+    "rightClickToOpen": "Açmak için arka plana sağ tıklayın",
+    "showBtn": "Sağ alt düğmesini göster",
+    "title": "Yer imleri çubuğu"
   },
   "clock": {
-    "blink": "Blinking colon",
-    "blinkingTip": "Turning this off can reduce sustained GPU usage.",
-    "colorful": "Colorful clock numbers",
-    "dateSize": "Date size",
-    "hour12": "12-hour clock",
+    "blink": "Yanıp sönen iki nokta üst üste",
+    "blinkingTip": "Bunu kapatmak sürekli GPU kullanımını azaltabilir.",
+    "colorful": "Renkli saat rakamları",
+    "dateSize": "Tarih boyutu",
+    "hour12": "12 saatlik saat",
     "invertColor": {
-      "dark": "Use dark text in dark mode",
-      "light": "Use dark text in light mode"
+      "dark": "Karanlık modda koyu metin kullan",
+      "light": "Aydınlık modda koyu metin kullan"
     },
     "meridiem": {
-      "followSize": "Large AM/PM Label",
-      "show": "Show AM/PM"
+      "followSize": "Büyük ÖÖ/ÖS Etiketi",
+      "show": "ÖÖ/ÖS göster"
     },
-    "newStyle": "New style",
-    "newStyleDesc": "When enabled, will simultaneously enable “Show AM/PM” and “Show seconds” and cannot be disabled",
-    "secondsTip": "This increases performance usage.",
-    "shadow": "Show shadow",
-    "showDate": "Show date",
-    "showLunar": "Show Chinese lunar calendar",
-    "showSeconds": "Show seconds",
+    "newStyle": "Yeni stil",
+    "newStyleDesc": "Etkinleştirildiğinde, \"ÖÖ/ÖS Göster\" ve \"Saniyeleri Göster\" seçeneklerini aynı anda etkinleştirir ve devre dışı bırakılamaz",
+    "secondsTip": "Bu, performans kullanımını artırır.",
+    "shadow": "Gölge göster",
+    "showDate": "Tarihi göster",
+    "showLunar": "Çin ay takvimini göster",
+    "showSeconds": "Saniyeleri göster",
     "size": {
-      "title": "Clock size"
+      "title": "Saat boyutu"
     },
-    "title": "Clock",
-    "transparency": "Clock transparency",
+    "title": "Saat",
+    "transparency": "Saat saydamlığı",
     "weight": {
-      "black": "Heaviest",
-      "bold": "Bold",
-      "dateTitle": "Date weight",
-      "extraBold": "Very Bold",
-      "heavy": "Extra Bold",
-      "medium": "Slightly Bold",
+      "black": "En kalın",
+      "bold": "Kalın",
+      "dateTitle": "Tarih kalınlığı",
+      "extraBold": "Çok Kalın",
+      "heavy": "Ekstra Kalın",
+      "medium": "Hafif Kalın",
       "normal": "Normal",
-      "title": "Clock weight"
+      "title": "Saat kalınlığı"
     }
   },
   "common": {
-    "copyLink": "Copy Link Address",
-    "hour": "Hour",
-    "openInNewTab": "Open in New Tab",
-    "openInNewWindow": "Open in New Window",
+    "copyLink": "Bağlantı Adresini Kopyala",
+    "hour": "Saat",
+    "openInNewTab": "Yeni Sekmede Aç",
+    "openInNewWindow": "Yeni Pencerede Aç",
     "sections": {
-      "animation": "Animations",
-      "appearance": "Appearance",
-      "behavior": "Interaction and behavior",
-      "danger": "Clear data",
-      "data": "Data and recovery",
-      "display": "Display and content",
-      "effects": "Transparency and blur",
-      "general": "General",
-      "layout": "Layout and spacing",
-      "position": "Page position",
-      "quickActions": "Quick controls",
-      "radius": "Corner radius",
-      "source": "Content source",
+      "animation": "Animasyonlar",
+      "appearance": "Görünüm",
+      "behavior": "Etkileşim ve davranış",
+      "danger": "Verileri temizle",
+      "data": "Veri ve kurtarma",
+      "display": "Görüntü ve içerik",
+      "effects": "Saydamlık ve bulanıklık",
+      "general": "Genel",
+      "layout": "Düzen ve boşluk",
+      "position": "Sayfa konumu",
+      "quickActions": "Hızlı kontroller",
+      "radius": "Köşe yarıçapı",
+      "source": "İçerik kaynağı",
       "summary": {
-        "animation": "Wallpaper and interface motion",
-        "appearance": "Color, shadow, and sizing",
-        "behavior": "Interactions and opening behavior",
-        "danger": "Irreversible actions—use with care",
-        "data": "Backups and caches",
-        "display": "Visible content and presentation",
-        "effects": "Control transparency and blur by component",
-        "general": "Frequently used options",
-        "layout": "Sizing, counts, and spacing",
-        "position": "Main content and action buttons",
-        "quickActions": "Enable or disable effects in bulk",
-        "radius": "Adjust component corners in one place",
-        "source": "Providers and custom content"
+        "animation": "Duvar kağıdı ve arayüz hareketi",
+        "appearance": "Renk, gölge ve boyutlandırma",
+        "behavior": "Etkileşimler ve açılış davranışı",
+        "danger": "Geri alınamaz işlemler—dikkatli kullanın",
+        "data": "Yedekler ve önbellekler",
+        "display": "Görünür içerik ve sunum",
+        "effects": "Bileşene göre saydamlık ve bulanıklığı kontrol edin",
+        "general": "Sık kullanılan seçenekler",
+        "layout": "Boyutlandırma, sayılar ve boşluk",
+        "position": "Ana içerik ve eylem düğmeleri",
+        "quickActions": "Efektleri toplu olarak etkinleştirin veya devre dışı bırakın",
+        "radius": "Bileşen köşelerini tek bir yerden ayarlayın",
+        "source": "Sağlayıcılar ve özel içerik"
       }
     },
-    "touchDeviceDisabledNote": "This option is disabled on touch-only devices."
+    "touchDeviceDisabledNote": "Bu seçenek yalnızca dokunmatik cihazlarda devre dışıdır."
   },
   "dock": {
-    "actionBtnNote": "When Dock is enabled, the button bar can only be placed at the top (choose left/right in Layout settings)",
-    "borderRadius": "Radius",
+    "actionBtnNote": "Dock etkinleştirildiğinde, düğme çubuğu yalnızca üste yerleştirilebilir (Düzen ayarlarında sol/sağ seçin)",
+    "borderRadius": "Köşe yarıçapı",
     "launchpad": {
-      "show": "Show Launchpad in Dock",
-      "title": "Launchpad"
+      "show": "Başlatıcı'yı Dock'ta Göster",
+      "title": "Başlatıcı"
     },
-    "limitCount": "Limit maximum count",
-    "maxCount": "Maximum count",
+    "limitCount": "Maksimum sayıyı sınırla",
+    "maxCount": "Maksimum sayı",
     "title": "Dock"
   },
   "layout": {
     "actionBtn": {
-      "borderRadius": "Action button radius",
-      "bottomLeft": "Bottom Left",
-      "bottomRight": "Bottom Right",
-      "dockNote": "Dock is on — button bar is fixed to the top",
-      "label": "Button bar position",
-      "topLeft": "Top Left",
-      "topRight": "Top Right"
+      "borderRadius": "Eylem düğmesi köşe yarıçapı",
+      "bottomLeft": "Sol Alt",
+      "bottomRight": "Sağ Alt",
+      "dockNote": "Dock açık — düğme çubuğu üste sabitlenmiştir",
+      "label": "Düğme çubuğu konumu",
+      "topLeft": "Sol Üst",
+      "topRight": "Sağ Üst"
     },
-    "dockBorderRadius": "Dock radius",
-    "globalBorderRadius": "Other component radius",
+    "dockBorderRadius": "Dock köşe yarıçapı",
+    "globalBorderRadius": "Diğer bileşen köşe yarıçapı",
     "mainPosition": {
-      "center": "Center",
-      "dvh": "From top (%)",
-      "dvhValue": "Distance from top (dvh)",
-      "label": "Main area position",
-      "px": "From top (px)",
-      "pxValue": "Distance from top (px)",
-      "quickLinksScrollNote": "Center positioning is unavailable while Quick Links scrolling is enabled."
+      "center": "Orta",
+      "dvh": "Üstten (%)",
+      "dvhValue": "Üstten uzaklık (dvh)",
+      "label": "Ana alan konumu",
+      "px": "Üstten (px)",
+      "pxValue": "Üstten uzaklık (px)",
+      "quickLinksScrollNote": "Hızlı Bağlantı kaydırması etkinleştirildiğinde orta konumlandırma kullanılamaz."
     },
-    "minimalModeOnDoubleClick": "Double-click blank background to toggle minimal mode",
-    "quickLinksIconBorderRadius": "Quick Links icon background radius",
-    "title": "Layout"
+    "minimalModeOnDoubleClick": "Boş arka plana çift tıklayarak minimalist modu aç/kapat",
+    "quickLinksIconBorderRadius": "Hızlı Bağlantı simge arka planı köşe yarıçapı",
+    "title": "Düzen"
   },
   "other": {
     "faviconCache": {
-      "description": "Cache favicons locally for faster loading; requires the \"Access all sites\" permission",
-      "label": "Favicon Cache",
-      "permissionDenied": "Permission \"Access all sites\" was not granted; favicon cache remains disabled"
+      "description": "Favicon'ları daha hızlı yükleme için yerel olarak önbelleğe alır; \"Tüm sitelere erişim\" izni gerektirir",
+      "label": "Favicon Önbelleği",
+      "permissionDenied": "\"Tüm sitelere erişim\" izni verilmedi; favicon önbelleği devre dışı kaldı"
     },
     "importExport": {
-      "backup": "Back up extension settings",
-      "export": "Export",
-      "import": "Import",
-      "importFailed": "Import failed: {{reason}}",
-      "importSuccess": "Import successful",
-      "invalidFileFormat": "Invalid file format",
-      "invalidJSON": "Invalid JSON format",
-      "noFileSelected": "No file selected",
-      "unknownError": "Unknown error",
-      "versionMismatch": "The configuration version in the file does not match the current extension configuration version.",
+      "backup": "Uzantı ayarlarını yedekle",
+      "export": "Dışa Aktar",
+      "import": "İçe Aktar",
+      "importFailed": "İçe aktarma başarısız: {{reason}}",
+      "importSuccess": "İçe aktarma başarılı",
+      "invalidFileFormat": "Geçersiz dosya biçimi",
+      "invalidJSON": "Geçersiz JSON biçimi",
+      "noFileSelected": "Dosya seçilmedi",
+      "unknownError": "Bilinmeyen hata",
+      "versionMismatch": "Dosyadaki yapılandırma sürümü, mevcut uzantı yapılandırma sürümüyle eşleşmiyor.",
       "warningDialog": {
-        "content": "Importing will overwrite your current data. Please be cautious when using this feature!",
-        "no": "No",
-        "title": "Are you sure you want to import from the file?",
-        "yes": "Yes"
+        "content": "İçe aktarma, mevcut verilerinizin üzerine yazacaktır. Bu özelliği kullanırken lütfen dikkatli olun!",
+        "no": "Hayır",
+        "title": "Dosyadan içe aktarmak istediğinizden emin misiniz?",
+        "yes": "Evet"
       }
     },
-    "language": "Language",
+    "language": "Dil",
     "purge": {
-      "btn": "Purge",
+      "btn": "Temizle",
       "confirm": {
         "data": {
-          "includeSync": "Also clear cloud sync data",
-          "message": "This operation will reset the extension settings, ignored most visited sites, pinned or favorited sites, selected background images or videos, etc.",
-          "purging": "Clearing extension data..",
-          "title": "Are you sure you want to purge all data of this extension?"
+          "includeSync": "Bulut senkronizasyon verilerini de temizle",
+          "message": "Bu işlem uzantı ayarlarını, göz ardı edilen en çok ziyaret edilen siteleri, sabitlenmiş veya favorilere eklenmiş siteleri, seçilen arka plan resimlerini veya videolarını vb. sıfırlayacaktır.",
+          "purging": "Uzantı verileri temizleniyor...",
+          "title": "Bu uzantının tüm verilerini temizlemek istediğinizden emin misiniz?"
         },
         "icon": {
-          "message": "This operation will delete all cached site icons.",
-          "purging": "Clearing favicon cache...",
-          "title": "Are you sure you want to purge the favicon cache?"
+          "message": "Bu işlem, önbelleğe alınmış tüm site simgelerini silecektir.",
+          "purging": "Favicon önbelleği temizleniyor...",
+          "title": "Favicon önbelleğini temizlemek istediğinizden emin misiniz?"
         },
         "wallpaper": {
-          "message": "This operation will delete the selected background images or videos.",
-          "purging": "Clearing wallpaper cache...",
-          "title": "Are you sure you want to purge all wallpaper cache?"
+          "message": "Bu işlem, seçilen arka plan resimlerini veya videolarını silecektir.",
+          "purging": "Duvar kağıdı önbelleği temizleniyor...",
+          "title": "Tüm duvar kağıdı önbelleğini temizlemek istediğinizden emin misiniz?"
         }
       },
-      "data": "Purge all data",
+      "data": "Tüm verileri temizle",
       "failed": {
-        "refresh": "Refresh page",
-        "title": "Unable to clear data"
+        "refresh": "Sayfayı yenile",
+        "title": "Veriler temizlenemiyor"
       },
-      "icon": "Purge favicon cache",
-      "wallpaper": "Purge wallpaper cache"
+      "icon": "Favicon önbelleğini temizle",
+      "wallpaper": "Duvar kağıdı önbelleğini temizle"
     },
-    "sync": "Cloud Sync (No Longer Supported)",
+    "sync": "Bulut Senkronizasyonu (Artık Desteklenmiyor)",
     "syncRetirement": {
-      "acknowledge": "OK",
-      "clearFailedMessage": "The old cloud data could not be deleted right now. It will not be uploaded or applied, and you will be reminded again after a future restart.",
-      "clearFailedTitle": "Unable to delete cloud data",
-      "clearCloudData": "Clean up cloud data",
-      "clearSuccess": "The old cloud data has been cleared",
-      "downloadCloudData": "Download cloud data",
-      "downloadFailed": "Cloud data could not be read or downloaded. Please try again later.",
-      "downloadNote": "You can download the current cloud data, but this file cannot be imported back into the extension.",
-      "downloadStarted": "The cloud data file has started downloading",
-      "importIgnored": "The old cloud sync option in the backup was ignored. Cloud sync remains off.",
-      "message": "Cloud Sync could sometimes replace current settings with older data. To protect your data, this feature has been removed and turned off automatically. Settings on this device are not affected.",
-      "noCloudData": "No cloud data was found to download",
-      "residualMessage": "Old cloud data was found. You can delete it without affecting the current settings on this device.",
-      "residualTitle": "Old cloud data found",
-      "title": "Cloud Sync is no longer supported"
+      "acknowledge": "Tamam",
+      "clearFailedMessage": "Eski bulut verileri şu anda silinemedi. Yüklenmeyecek veya uygulanmayacak ve gelecekteki bir yeniden başlatmanın ardından size tekrar hatırlatılacaktır.",
+      "clearFailedTitle": "Bulut verileri silinemiyor",
+      "clearCloudData": "Bulut verilerini temizle",
+      "clearSuccess": "Eski bulut verileri temizlendi",
+      "downloadCloudData": "Bulut verilerini indir",
+      "downloadFailed": "Bulut verileri okunamadı veya indirilemedi. Lütfen daha sonra tekrar deneyin.",
+      "downloadNote": "Mevcut bulut verilerini indirebilirsiniz, ancak bu dosya uzantıya geri aktarılamaz.",
+      "downloadStarted": "Bulut veri dosyası indirilmeye başladı",
+      "importIgnored": "Yedekteki eski bulut senkronizasyon seçeneği dikkate alınmadı. Bulut senkronizasyonu kapalı kalır.",
+      "message": "Bulut Senkronizasyonu bazen mevcut ayarları eski verilerle değiştirebiliyordu. Verilerinizi korumak için bu özellik kaldırıldı ve otomatik olarak kapatıldı. Bu cihazdaki ayarlar etkilenmedi.",
+      "noCloudData": "İndirilecek bulut verisi bulunamadı",
+      "residualMessage": "Eski bulut verileri bulundu. Mevcut cihazdaki ayarları etkilemeden silebilirsiniz.",
+      "residualTitle": "Eski bulut verileri bulundu",
+      "title": "Bulut Senkronizasyonu artık desteklenmiyor"
     },
-    "syncWarning": "This feature has been removed. Click the switch to learn how to handle old cloud data.",
-    "title": "Other"
+    "syncWarning": "Bu özellik kaldırıldı. Eski bulut verilerini nasıl işleyeceğinizi öğrenmek için anahtara tıklayın.",
+    "title": "Diğer"
   },
   "perf": {
     "actionBtns": {
-      "blur": "Action buttons blur",
-      "transparent": "Action buttons transparency"
+      "blur": "Eylem düğmeleri bulanıklığı",
+      "transparent": "Eylem düğmeleri saydamlığı"
     },
-    "bgSwitchAnim": "Wallpaper switch animation",
-    "bgSwitchAnimTip": "When disabled, there will be no fade-in/fade-out animation when switching wallpapers, which can slightly improve switching speed. Wallpaper animation on startup will also be disabled",
-    "blurIntensity": "Background blur",
+    "bgSwitchAnim": "Duvar kağıdı geçiş animasyonu",
+    "bgSwitchAnimTip": "Devre dışı bırakıldığında, duvar kağıtları arasında geçiş yaparken solma/kaybolma animasyonu olmaz, bu da geçiş hızını biraz artırabilir. Başlangıçtaki duvar kağıdı animasyonu da devre dışı kalır",
+    "blurIntensity": "Arka plan bulanıklığı",
     "bookmark": {
-      "blur": "Bookmarks sidebar blur",
-      "transparent": "Bookmarks sidebar transparency"
+      "blur": "Yer imleri yan çubuğu bulanıklığı",
+      "transparent": "Yer imleri yan çubuğu saydamlığı"
     },
     "dialog": {
-      "animation": "Dialog animation",
-      "blur": "Dialog blur",
-      "title": "Dialog",
-      "transparent": "Dialog transparency"
+      "animation": "İletişim kutusu animasyonu",
+      "blur": "İletişim kutusu bulanıklığı",
+      "title": "İletişim kutusu",
+      "transparent": "İletişim kutusu saydamlığı"
     },
     "dock": {
-      "scale": "Dock icon scale animation"
+      "scale": "Dock simgesi ölçeklendirme animasyonu"
     },
-    "effectsTitle": "Effect Settings",
+    "effectsTitle": "Efekt Ayarları",
     "focus": {
-      "blur": "Blur background on search focus",
-      "scale": "Scale background on search focus"
+      "blur": "Arama odağında arka planı bulanıklaştır",
+      "scale": "Arama odağında arka planı ölçeklendir"
     },
     "quickLinks": {
-      "blur": "Quick Links, Dock, and Launchpad blur",
-      "transparent": "Quick Links and Dock transparency"
+      "blur": "Hızlı Bağlantılar, Dock ve Başlatıcı bulanıklığı",
+      "transparent": "Hızlı Bağlantılar ve Dock saydamlığı"
     },
-    "resetTransparencyAndBlur": "Reset transparency and blur",
+    "resetTransparencyAndBlur": "Saydamlık ve bulanıklığı sıfırla",
     "searchBar": {
-      "blur": "Search bar blur",
-      "transparent": "Search bar transparency"
+      "blur": "Arama çubuğu bulanıklığı",
+      "transparent": "Arama çubuğu saydamlığı"
     },
-    "title": "Performance & Effects",
+    "title": "Performans ve Efektler",
     "toggleAll": {
-      "animation": "Animation",
-      "blur": "Blur",
-      "disable": "Disable All",
-      "enable": "Enable All",
-      "transparent": "Transparency"
+      "animation": "Animasyon",
+      "blur": "Bulanıklık",
+      "disable": "Tümünü Devre Dışı Bırak",
+      "enable": "Tümünü Etkinleştir",
+      "transparent": "Saydamlık"
     },
-    "transparency": "Background transparency",
-    "wallpaper": "Wallpaper",
+    "transparency": "Arka plan saydamlığı",
+    "wallpaper": "Duvar kağıdı",
     "yiyan": {
-      "blur": "Quote blur",
-      "ripple": "Quote ripple animation",
-      "transparent": "Quote transparency"
+      "blur": "Alıntı bulanıklığı",
+      "ripple": "Alıntı dalgalanma animasyonu",
+      "transparent": "Alıntı saydamlığı"
     }
   },
   "quickLinks": {
-    "border": "Show icon border",
-    "grouping": "Enable groups",
-    "groupingDisableConfirm": "Disabling groups will merge all Quick Links groups and remove duplicate URLs. Duplicate links in different groups cannot be preserved.",
-    "groupingTip": "Double-click a group name in Quick Links or Launchpad to rename it.",
-    "iconBorderRadius": "Icon background radius",
-    "iconCacheTip": "Consider enabling Settings → Other → Icon cache to attempt fetching higher-resolution icons.",
-    "iconRatio": "Icon ratio",
-    "iconSize": "Icon size",
-    "marginTop": "Area top margin",
-    "maxColumns": "Maximum columns",
-    "maxItemsTipForChrome": "Tip: You can only have up to 10 most visited links.",
-    "maxRows": "Maximum rows",
-    "paging": "Enable paging",
-    "pagingLoop": "Loop pages",
-    "pinnedIcon": "Show pinned icon",
-    "restoreDefault": "Recover hidden links",
-    "restoreDefaultTitle": "Are you sure you want to restore default Quick Links?",
-    "shadow": "Show icon shadow",
-    "showOnSearchFocus": "Show on search focus",
-    "showTitle": "Show link title",
+    "border": "Simge kenarlığını göster",
+    "grouping": "Grupları etkinleştir",
+    "groupingDisableConfirm": "Grupları devre dışı bırakmak, tüm Hızlı Bağlantı gruplarını birleştirir ve yinelenen URL'leri kaldırır. Farklı gruplardaki yinelenen bağlantılar korunamaz.",
+    "groupingTip": "Yeniden adlandırmak için Hızlı Bağlantılar veya Başlatıcı'da bir grup adına çift tıklayın.",
+    "iconBorderRadius": "Simge arka planı köşe yarıçapı",
+    "iconCacheTip": "Daha yüksek çözünürlüklü simgeleri almaya çalışmak için Ayarlar → Diğer → Simge önbelleği seçeneğini etkinleştirmeyi düşünün.",
+    "iconRatio": "Simge oranı",
+    "iconSize": "Simge boyutu",
+    "marginTop": "Alan üst boşluğu",
+    "maxColumns": "Maksimum sütun",
+    "maxItemsTipForChrome": "İpucu: En fazla 10 en çok ziyaret edilen bağlantınız olabilir.",
+    "maxRows": "Maksimum satır",
+    "paging": "Sayfalandırmayı etkinleştir",
+    "pagingLoop": "Sayfalar arasında döngü",
+    "pinnedIcon": "Sabitlenmiş simgeyi göster",
+    "restoreDefault": "Gizli bağlantıları kurtar",
+    "restoreDefaultTitle": "Varsayılan Hızlı Bağlantıları geri yüklemek istediğinizden emin misiniz?",
+    "shadow": "Simge gölgesini göster",
+    "showOnSearchFocus": "Arama odağında göster",
+    "showTitle": "Bağlantı başlığını göster",
     "spacing": {
-      "iconTitleGap": "Icon–Title Spacing",
-      "itemGapX": "Horizontal link spacing",
-      "itemGapY": "Vertical link spacing"
+      "iconTitleGap": "Simge–Başlık Aralığı",
+      "itemGapX": "Yatay bağlantı aralığı",
+      "itemGapY": "Dikey bağlantı aralığı"
     },
-    "tip": "Drag the settings window to preview changes in the Quick Links area.",
-    "title": "Quick Links",
-    "titleExtraWidth": "Title expand width",
-    "titleWhiteInLight": "Use white text in light mode",
-    "topSites": "Show most visited",
-    "useScroll": "Use scrolling",
-    "useScrollTouchTip": "Recommended on mobile devices for a better browsing experience."
+    "tip": "Hızlı Bağlantılar alanındaki değişiklikleri önizlemek için ayarlar penceresini sürükleyin.",
+    "title": "Hızlı Bağlantılar",
+    "titleExtraWidth": "Başlık genişletme genişliği",
+    "titleWhiteInLight": "Aydınlık modda beyaz metin kullan",
+    "topSites": "En çok ziyaret edilenleri göster",
+    "useScroll": "Kaydırmayı kullan",
+    "useScrollTouchTip": "Daha iyi bir gezinti deneyimi için mobil cihazlarda önerilir."
   },
   "search": {
-    "alwaysExpandSearchBar": "Always expand search bar",
-    "alwaysShowIcon": "Always show search engine icon",
-    "border": "Show search box border",
-    "borderRadius": "Search box radius",
-    "clickToChange": "Click to change",
-    "defaultSearchEngine": "Search engine",
-    "expandWidth": "Expanded width",
-    "launchAnim": "Search box expand animation on startup",
-    "leftAlignInput": "Left-align search input",
-    "placeholder": "Search placeholder",
-    "recordSearchHistory": "Record search history",
-    "restoreHiddenEngines": "Restore hidden built-in search engines",
-    "restoreHiddenEnginesTitle": "Restore all built-in search engines and their default order?",
-    "searchSuggestionProvider": "Search suggestion API",
-    "searchSuggestions": "Search suggestions",
-    "shadow": "Show search box shadow",
-    "tip": "Want to activate the search input when opening a new tab? Check the “Help and Feedback” in the button menu at the bottom right of the page.",
-    "title": "Search"
+    "alwaysExpandSearchBar": "Arama çubuğunu her zaman genişlet",
+    "alwaysShowIcon": "Arama motoru simgesini her zaman göster",
+    "border": "Arama kutusu kenarlığını göster",
+    "borderRadius": "Arama kutusu köşe yarıçapı",
+    "clickToChange": "Değiştirmek için tıklayın",
+    "defaultSearchEngine": "Arama motoru",
+    "expandWidth": "Genişletilmiş genişlik",
+    "launchAnim": "Başlangıçta arama kutusu genişletme animasyonu",
+    "leftAlignInput": "Arama girişini sola hizala",
+    "placeholder": "Arama yer tutucusu",
+    "recordSearchHistory": "Arama geçmişini kaydet",
+    "restoreHiddenEngines": "Gizli yerleşik arama motorlarını geri yükle",
+    "restoreHiddenEnginesTitle": "Tüm yerleşik arama motorlarını ve varsayılan sıralarını geri yüklemek istiyor musunuz?",
+    "searchSuggestionProvider": "Arama önerisi API'si",
+    "searchSuggestions": "Arama önerileri",
+    "shadow": "Arama kutusu gölgesini göster",
+    "tip": "Yeni bir sekme açarken arama girişini etkinleştirmek mi istiyorsunuz? Sayfanın sağ alt kısmındaki düğme menüsündeki \"Yardım ve Geri Bildirim\" bölümüne bakın.",
+    "title": "Arama"
   },
   "theme": {
     "color": {
@@ -405,69 +405,69 @@
         "togeari": "TOGENASHI TOGEARI"
       },
       "classic": {
-        "antBlue": "Ant Blue",
-        "bellflower": "Deep Bellflower",
-        "crimson": "Kokiake Crimson",
-        "ink": "Chinese ink",
+        "antBlue": "Karınca Mavisi",
+        "bellflower": "Koyu Çan Çiçeği",
+        "crimson": "Kokiake Kırmızısı",
+        "ink": "Çin mürekkebi",
         "lapisBlue": "Lapis Ruri",
-        "ochre": "Zhe Ochre",
-        "orangeRed": "Ouseki Amber",
-        "teal": "Nando Teal",
-        "yamabuki": "Yamabuki Gold",
-        "yellowGreen": "Moegi Green"
+        "ochre": "Zhe Aşı Boyası",
+        "orangeRed": "Ouseki Kehribarı",
+        "teal": "Nando Çamurcunu",
+        "yamabuki": "Yamabuki Altını",
+        "yellowGreen": "Moegi Yeşili"
       }
     },
     "colorful": {
-      "desc": "Apply the theme color to more elements",
-      "label": "Global Color Mode"
+      "desc": "Tema rengini daha fazla öğeye uygula",
+      "label": "Küresel Renk Modu"
     },
-    "idleHide": "Fade out page elements when inactive",
-    "keepClockVisibleOnIdle": "Keep clock and date visible when inactive",
+    "idleHide": "Sayfa öğeleri boştayken soldur",
+    "keepClockVisibleOnIdle": "Boştayken saat ve tarihi görünür tut",
     "mode": {
-      "alwaysOff": "Always Off",
-      "alwaysOn": "Always On",
-      "dark": "Dark Mode",
-      "light": "Light Mode",
-      "system": "Follow System"
+      "alwaysOff": "Her zaman Kapalı",
+      "alwaysOn": "Her zaman Açık",
+      "dark": "Karanlık Mod",
+      "light": "Aydınlık Mod",
+      "system": "Sistemi Takip Et"
     },
     "monet": {
       "askEnableCache": {
-        "message": "To use dynamic theme colors, online wallpaper cache must be enabled. Enabling cache will store images from this domains. Do you want to enable it?",
-        "title": "Enable wallpaper cache?"
+        "message": "Dinamik tema renklerini kullanmak için çevrimiçi duvar kağıdı önbelleğinin etkinleştirilmesi gerekir. Önbelleği etkinleştirmek, bu alan adlarındaki görselleri depolar. Etkinleştirmek istiyor musunuz?",
+        "title": "Duvar kağıdı önbelleği etkinleştirilsin mi?"
       },
-      "desc": "Inspired by Material Design 3, extracts theme colors from your wallpaper. Only supports image backgrounds. For the best visual effect, use it together with the “Global Color Mode” option.",
-      "label": "Dynamic Theme Colors (Monet Extraction)"
+      "desc": "Material Design 3'ten ilham alır, duvar kağıdınızdan tema renkleri çıkarır. Yalnızca resim arka planlarını destekler. En iyi görsel efekt için \"Küresel Renk Modu\" seçeneğiyle birlikte kullanın.",
+      "label": "Dinamik Tema Renkleri (Monet Çıkarma)"
     },
-    "primaryColor": "Primary color",
-    "title": "Theme"
+    "primaryColor": "Ana renk",
+    "title": "Tema"
   },
-  "title": "Settings",
+  "title": "Ayarlar",
   "yiyan": {
-    "alwaysShow": "Always show",
-    "borderRadius": "Quote background radius",
-    "customLinesLabel": "Custom content",
-    "customLinesNote": "Each line represents one quote. Use \"\\n\" within a line to indicate a line break.",
-    "customLinesPlaceholder": "One quote per line; use \\n within a line for line breaks",
-    "description": "Display a random Chinese quote below the search bar. Give it a try — you can always turn it off later!",
+    "alwaysShow": "Her zaman göster",
+    "borderRadius": "Alıntı arka planı köşe yarıçapı",
+    "customLinesLabel": "Özel içerik",
+    "customLinesNote": "Her satır bir alıntıyı temsil eder. Bir satır içinde satır sonu belirtmek için \"\\n\" kullanın.",
+    "customLinesPlaceholder": "Satır başına bir alıntı; satır içinde satır sonları için \\n kullanın",
+    "description": "Arama çubuğunun altında rastgele bir Çin alıntısı görüntüler. Bir deneyin — isterseniz daha sonra kapatabilirsiniz!",
     "invertColor": {
-      "dark": "Use dark text in dark mode",
-      "light": "Use dark text in light mode"
+      "dark": "Karanlık modda koyu metin kullan",
+      "light": "Aydınlık modda koyu metin kullan"
     },
-    "normalyShowTip": "When disabled, only show when the search box is focused.",
-    "provider": "Provider",
+    "normalyShowTip": "Devre dışı bırakıldığında, yalnızca arama kutusu odaklandığında göster.",
+    "provider": "Sağlayıcı",
     "providers": {
       "custom": {
-        "name": "Custom"
+        "name": "Özel"
       },
       "hitokoto": {
         "name": "Hitokoto.cn",
-        "note": "Please note that Hitokoto.cn has a very strict QPS (queries per second) limit. This extension uses caching, but multiple requests from different sites in a short period may still cause your IP to be temporarily banned."
+        "note": "Hitokoto.cn'nin çok katı bir QPS (saniyedeki sorgu sayısı) sınırı olduğunu lütfen unutmayın. Bu uzantı önbellek kullanır, ancak kısa sürede farklı sitelerden gelen birden fazla istek, IP adresinizin geçici olarak yasaklanmasına neden olabilir."
       },
       "jinrishici": {
-        "name": "Chinese Poetry"
+        "name": "Çin Şiiri"
       }
     },
-    "shadow": "Show text shadow",
-    "title": "Quote"
+    "shadow": "Metin gölgesini göster",
+    "title": "Alıntı"
   }
 }
