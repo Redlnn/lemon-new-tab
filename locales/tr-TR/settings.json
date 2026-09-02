@@ -1,0 +1,473 @@
+{
+  "a11y": {
+    "back": "Back to previous settings view"
+  },
+  "background": {
+    "alwaysFresh": "Always something new",
+    "bingFrom": "Image source: Bing",
+    "blur": "Blur intensity",
+    "button": {
+      "bathe": {
+        "moon": "Bathe in moonlight",
+        "sun": "Bathe in sunlight"
+      }
+    },
+    "cache": {
+      "askEnable": {
+        "message": "Caching reduces repeated downloads and keeps cached wallpapers available offline. Enable wallpaper caching?",
+        "title": "Enable wallpaper caching?"
+      },
+      "disabledTip": "Only available when the background type is \"Online URL\" (Bing wallpaper is always cached by default)",
+      "duration": "Cache expiration duration",
+      "label": "Online wallpaper cache",
+      "nextStartup": "Effective on next startup",
+      "noExpires": "Cache never expires"
+    },
+    "change": "Change background",
+    "chooseImageOrVideo": "Choose an image or video to use as wallpaper",
+    "custom": "Custom",
+    "fasterBgAnim": "Faster background display on startup",
+    "mask": {
+      "color": "Mask color",
+      "enable": "Enable mask"
+    },
+    "myZoneMyRule": "Your space. Your rules.",
+    "onlineTips": {
+      "a": "Submit after pressing the Enter key or when the input field loses focus.",
+      "b": "The wallpaper caching strategy depends on the browser, and wallpapers may not be accessible offline.",
+      "c": "There will be a blank screen before the wallpaper finishes loading, and the duration depends on your internet speed.",
+      "d": "Please ensure the wallpaper API you are using allows cross-origin requests; otherwise, it will fail to load."
+    },
+    "parallax": "Wallpaper parallax effect",
+    "pauseWhenBlur": "Pause video background when loses focus",
+    "permission": {
+      "allowAll": "Allow all sites",
+      "allowCurrent": "Only allow this API URL",
+      "deny": "Reject",
+      "request": {
+        "faviconCacheMessage": "To enable favicon caching, the extension needs the “Access all sites” permission.",
+        "message": "To access online wallpapers, the extension needs to request the appropriate permissions:",
+        "monetColorMessage": "To enable Dynamic Theme Colors (Monet Color Extraction), the extension needs the “Access all sites” permission.",
+        "subA": {
+          "content": "Requires “Access this API URL”.",
+          "label": "Normal mode: "
+        },
+        "subB": {
+          "content": "Requires “Access all sites”.",
+          "label": "Dynamic theme colors / Cache:"
+        },
+        "title": "Permission Request",
+        "wallpaperCacheMessage": "To enable online wallpaper caching, the extension needs the “Access all sites” permission."
+      }
+    },
+    "preferenceTitle": "Wallpaper preferences",
+    "resolution": "Resolution",
+    "showDownloadBtn": "Show download button",
+    "showDownloadBtnNote": "Available only for Bing and online wallpapers.",
+    "sunMoonSaying": "When the sun’s out, bathe in sunlight. But when the moon’s out, bathe in moonlight!",
+    "tip": "If no background is set for dark mode, the light mode background or video will be used.",
+    "title": "Background",
+    "today": "Today",
+    "type": {
+      "local": "Local file",
+      "online": "Online URL"
+    },
+    "video": {
+      "blurTip": "Turn on to reduce performance usage when multiple new tabs or windows are open on the screen simultaneously.",
+      "warning": "Using a video as a background consumes a lot of GPU resources. It is recommended to avoid opening multiple new tabs at the same time. It is recommended to turn off animation, blur, and transparency effects appropriately to reduce performance consumption."
+    },
+    "vignette": "Enable vignetting",
+    "warning": {
+      "bingResolutionCacheFailed": "Couldn’t cache the selected resolution. The existing cache will remain in use, and the download will be retried later.",
+      "cacheDisabled": "Online wallpaper caching has been disabled because the “Access all websites” permission was not granted.",
+      "fileIsNotImage": "The selected file is not an image!",
+      "monetColorDisabled": "Monet color extraction disabled",
+      "monetDisabled": "Dynamic Theme Colors (Monet Extraction) has been disabled because “Access all sites” permission was not granted.",
+      "notGranted": "Permission not granted, cannot access this host.",
+      "title": "Warning",
+      "tooLarge": {
+        "message": "The file is too large ({{size}}) and may affect performance or occupy significant storage. Do you want to continue?",
+        "title": "Large File Warning"
+      },
+      "unknownSource": "Using images from unknown sources as backgrounds may expose your device to attacks. Do you want to continue?"
+    },
+    "youLikeFine": "If you like it, that’s fine~"
+  },
+  "bookmark": {
+    "defaultSort": "Default sorting",
+    "direction": {
+      "ltr": "Left to right",
+      "rtl": "Right to left",
+      "title": "Open direction"
+    },
+    "rightClickToOpen": "Right click on background to open",
+    "showBtn": "Show bottom-right button",
+    "title": "Bookmarks bar"
+  },
+  "clock": {
+    "blink": "Blinking colon",
+    "blinkingTip": "Turning this off can reduce sustained GPU usage.",
+    "colorful": "Colorful clock numbers",
+    "dateSize": "Date size",
+    "hour12": "12-hour clock",
+    "invertColor": {
+      "dark": "Use dark text in dark mode",
+      "light": "Use dark text in light mode"
+    },
+    "meridiem": {
+      "followSize": "Large AM/PM Label",
+      "show": "Show AM/PM"
+    },
+    "newStyle": "New style",
+    "newStyleDesc": "When enabled, will simultaneously enable “Show AM/PM” and “Show seconds” and cannot be disabled",
+    "secondsTip": "This increases performance usage.",
+    "shadow": "Show shadow",
+    "showDate": "Show date",
+    "showLunar": "Show Chinese lunar calendar",
+    "showSeconds": "Show seconds",
+    "size": {
+      "title": "Clock size"
+    },
+    "title": "Clock",
+    "transparency": "Clock transparency",
+    "weight": {
+      "black": "Heaviest",
+      "bold": "Bold",
+      "dateTitle": "Date weight",
+      "extraBold": "Very Bold",
+      "heavy": "Extra Bold",
+      "medium": "Slightly Bold",
+      "normal": "Normal",
+      "title": "Clock weight"
+    }
+  },
+  "common": {
+    "copyLink": "Copy Link Address",
+    "hour": "Hour",
+    "openInNewTab": "Open in New Tab",
+    "openInNewWindow": "Open in New Window",
+    "sections": {
+      "animation": "Animations",
+      "appearance": "Appearance",
+      "behavior": "Interaction and behavior",
+      "danger": "Clear data",
+      "data": "Data and recovery",
+      "display": "Display and content",
+      "effects": "Transparency and blur",
+      "general": "General",
+      "layout": "Layout and spacing",
+      "position": "Page position",
+      "quickActions": "Quick controls",
+      "radius": "Corner radius",
+      "source": "Content source",
+      "summary": {
+        "animation": "Wallpaper and interface motion",
+        "appearance": "Color, shadow, and sizing",
+        "behavior": "Interactions and opening behavior",
+        "danger": "Irreversible actions—use with care",
+        "data": "Backups and caches",
+        "display": "Visible content and presentation",
+        "effects": "Control transparency and blur by component",
+        "general": "Frequently used options",
+        "layout": "Sizing, counts, and spacing",
+        "position": "Main content and action buttons",
+        "quickActions": "Enable or disable effects in bulk",
+        "radius": "Adjust component corners in one place",
+        "source": "Providers and custom content"
+      }
+    },
+    "touchDeviceDisabledNote": "This option is disabled on touch-only devices."
+  },
+  "dock": {
+    "actionBtnNote": "When Dock is enabled, the button bar can only be placed at the top (choose left/right in Layout settings)",
+    "borderRadius": "Radius",
+    "launchpad": {
+      "show": "Show Launchpad in Dock",
+      "title": "Launchpad"
+    },
+    "limitCount": "Limit maximum count",
+    "maxCount": "Maximum count",
+    "title": "Dock"
+  },
+  "layout": {
+    "actionBtn": {
+      "borderRadius": "Action button radius",
+      "bottomLeft": "Bottom Left",
+      "bottomRight": "Bottom Right",
+      "dockNote": "Dock is on — button bar is fixed to the top",
+      "label": "Button bar position",
+      "topLeft": "Top Left",
+      "topRight": "Top Right"
+    },
+    "dockBorderRadius": "Dock radius",
+    "globalBorderRadius": "Other component radius",
+    "mainPosition": {
+      "center": "Center",
+      "dvh": "From top (%)",
+      "dvhValue": "Distance from top (dvh)",
+      "label": "Main area position",
+      "px": "From top (px)",
+      "pxValue": "Distance from top (px)",
+      "quickLinksScrollNote": "Center positioning is unavailable while Quick Links scrolling is enabled."
+    },
+    "minimalModeOnDoubleClick": "Double-click blank background to toggle minimal mode",
+    "quickLinksIconBorderRadius": "Quick Links icon background radius",
+    "title": "Layout"
+  },
+  "other": {
+    "faviconCache": {
+      "description": "Cache favicons locally for faster loading; requires the \"Access all sites\" permission",
+      "label": "Favicon Cache",
+      "permissionDenied": "Permission \"Access all sites\" was not granted; favicon cache remains disabled"
+    },
+    "importExport": {
+      "backup": "Back up extension settings",
+      "export": "Export",
+      "import": "Import",
+      "importFailed": "Import failed: {{reason}}",
+      "importSuccess": "Import successful",
+      "invalidFileFormat": "Invalid file format",
+      "invalidJSON": "Invalid JSON format",
+      "noFileSelected": "No file selected",
+      "unknownError": "Unknown error",
+      "versionMismatch": "The configuration version in the file does not match the current extension configuration version.",
+      "warningDialog": {
+        "content": "Importing will overwrite your current data. Please be cautious when using this feature!",
+        "no": "No",
+        "title": "Are you sure you want to import from the file?",
+        "yes": "Yes"
+      }
+    },
+    "language": "Language",
+    "purge": {
+      "btn": "Purge",
+      "confirm": {
+        "data": {
+          "includeSync": "Also clear cloud sync data",
+          "message": "This operation will reset the extension settings, ignored most visited sites, pinned or favorited sites, selected background images or videos, etc.",
+          "purging": "Clearing extension data..",
+          "title": "Are you sure you want to purge all data of this extension?"
+        },
+        "icon": {
+          "message": "This operation will delete all cached site icons.",
+          "purging": "Clearing favicon cache...",
+          "title": "Are you sure you want to purge the favicon cache?"
+        },
+        "wallpaper": {
+          "message": "This operation will delete the selected background images or videos.",
+          "purging": "Clearing wallpaper cache...",
+          "title": "Are you sure you want to purge all wallpaper cache?"
+        }
+      },
+      "data": "Purge all data",
+      "failed": {
+        "refresh": "Refresh page",
+        "title": "Unable to clear data"
+      },
+      "icon": "Purge favicon cache",
+      "wallpaper": "Purge wallpaper cache"
+    },
+    "sync": "Cloud Sync (No Longer Supported)",
+    "syncRetirement": {
+      "acknowledge": "OK",
+      "clearFailedMessage": "The old cloud data could not be deleted right now. It will not be uploaded or applied, and you will be reminded again after a future restart.",
+      "clearFailedTitle": "Unable to delete cloud data",
+      "clearCloudData": "Clean up cloud data",
+      "clearSuccess": "The old cloud data has been cleared",
+      "downloadCloudData": "Download cloud data",
+      "downloadFailed": "Cloud data could not be read or downloaded. Please try again later.",
+      "downloadNote": "You can download the current cloud data, but this file cannot be imported back into the extension.",
+      "downloadStarted": "The cloud data file has started downloading",
+      "importIgnored": "The old cloud sync option in the backup was ignored. Cloud sync remains off.",
+      "message": "Cloud Sync could sometimes replace current settings with older data. To protect your data, this feature has been removed and turned off automatically. Settings on this device are not affected.",
+      "noCloudData": "No cloud data was found to download",
+      "residualMessage": "Old cloud data was found. You can delete it without affecting the current settings on this device.",
+      "residualTitle": "Old cloud data found",
+      "title": "Cloud Sync is no longer supported"
+    },
+    "syncWarning": "This feature has been removed. Click the switch to learn how to handle old cloud data.",
+    "title": "Other"
+  },
+  "perf": {
+    "actionBtns": {
+      "blur": "Action buttons blur",
+      "transparent": "Action buttons transparency"
+    },
+    "bgSwitchAnim": "Wallpaper switch animation",
+    "bgSwitchAnimTip": "When disabled, there will be no fade-in/fade-out animation when switching wallpapers, which can slightly improve switching speed. Wallpaper animation on startup will also be disabled",
+    "blurIntensity": "Background blur",
+    "bookmark": {
+      "blur": "Bookmarks sidebar blur",
+      "transparent": "Bookmarks sidebar transparency"
+    },
+    "dialog": {
+      "animation": "Dialog animation",
+      "blur": "Dialog blur",
+      "title": "Dialog",
+      "transparent": "Dialog transparency"
+    },
+    "dock": {
+      "scale": "Dock icon scale animation"
+    },
+    "effectsTitle": "Effect Settings",
+    "focus": {
+      "blur": "Blur background on search focus",
+      "scale": "Scale background on search focus"
+    },
+    "quickLinks": {
+      "blur": "Quick Links, Dock, and Launchpad blur",
+      "transparent": "Quick Links and Dock transparency"
+    },
+    "resetTransparencyAndBlur": "Reset transparency and blur",
+    "searchBar": {
+      "blur": "Search bar blur",
+      "transparent": "Search bar transparency"
+    },
+    "title": "Performance & Effects",
+    "toggleAll": {
+      "animation": "Animation",
+      "blur": "Blur",
+      "disable": "Disable All",
+      "enable": "Enable All",
+      "transparent": "Transparency"
+    },
+    "transparency": "Background transparency",
+    "wallpaper": "Wallpaper",
+    "yiyan": {
+      "blur": "Quote blur",
+      "ripple": "Quote ripple animation",
+      "transparent": "Quote transparency"
+    }
+  },
+  "quickLinks": {
+    "border": "Show icon border",
+    "grouping": "Enable groups",
+    "groupingDisableConfirm": "Disabling groups will merge all Quick Links groups and remove duplicate URLs. Duplicate links in different groups cannot be preserved.",
+    "groupingTip": "Double-click a group name in Quick Links or Launchpad to rename it.",
+    "iconBorderRadius": "Icon background radius",
+    "iconCacheTip": "Consider enabling Settings → Other → Icon cache to attempt fetching higher-resolution icons.",
+    "iconRatio": "Icon ratio",
+    "iconSize": "Icon size",
+    "marginTop": "Area top margin",
+    "maxColumns": "Maximum columns",
+    "maxItemsTipForChrome": "Tip: You can only have up to 10 most visited links.",
+    "maxRows": "Maximum rows",
+    "paging": "Enable paging",
+    "pagingLoop": "Loop pages",
+    "pinnedIcon": "Show pinned icon",
+    "restoreDefault": "Recover hidden links",
+    "restoreDefaultTitle": "Are you sure you want to restore default Quick Links?",
+    "shadow": "Show icon shadow",
+    "showOnSearchFocus": "Show on search focus",
+    "showTitle": "Show link title",
+    "spacing": {
+      "iconTitleGap": "Icon–Title Spacing",
+      "itemGapX": "Horizontal link spacing",
+      "itemGapY": "Vertical link spacing"
+    },
+    "tip": "Drag the settings window to preview changes in the Quick Links area.",
+    "title": "Quick Links",
+    "titleExtraWidth": "Title expand width",
+    "titleWhiteInLight": "Use white text in light mode",
+    "topSites": "Show most visited",
+    "useScroll": "Use scrolling",
+    "useScrollTouchTip": "Recommended on mobile devices for a better browsing experience."
+  },
+  "search": {
+    "alwaysExpandSearchBar": "Always expand search bar",
+    "alwaysShowIcon": "Always show search engine icon",
+    "border": "Show search box border",
+    "borderRadius": "Search box radius",
+    "clickToChange": "Click to change",
+    "defaultSearchEngine": "Search engine",
+    "expandWidth": "Expanded width",
+    "launchAnim": "Search box expand animation on startup",
+    "leftAlignInput": "Left-align search input",
+    "placeholder": "Search placeholder",
+    "recordSearchHistory": "Record search history",
+    "restoreHiddenEngines": "Restore hidden built-in search engines",
+    "restoreHiddenEnginesTitle": "Restore all built-in search engines and their default order?",
+    "searchSuggestionProvider": "Search suggestion API",
+    "searchSuggestions": "Search suggestions",
+    "shadow": "Show search box shadow",
+    "tip": "Want to activate the search input when opening a new tab? Check the “Help and Feedback” in the button menu at the bottom right of the page.",
+    "title": "Search"
+  },
+  "theme": {
+    "color": {
+      "acgn": {
+        "aveMujica": "Ave Mujica",
+        "bocchi": "Bocchi the Rock!",
+        "kessoku": "Kessoku Band",
+        "luo": "Luo Tianyi",
+        "miku": "Hatsune Miku",
+        "mygo": "MyGO!!!!!",
+        "togeari": "TOGENASHI TOGEARI"
+      },
+      "classic": {
+        "antBlue": "Ant Blue",
+        "bellflower": "Deep Bellflower",
+        "crimson": "Kokiake Crimson",
+        "ink": "Chinese ink",
+        "lapisBlue": "Lapis Ruri",
+        "ochre": "Zhe Ochre",
+        "orangeRed": "Ouseki Amber",
+        "teal": "Nando Teal",
+        "yamabuki": "Yamabuki Gold",
+        "yellowGreen": "Moegi Green"
+      }
+    },
+    "colorful": {
+      "desc": "Apply the theme color to more elements",
+      "label": "Global Color Mode"
+    },
+    "idleHide": "Fade out page elements when inactive",
+    "keepClockVisibleOnIdle": "Keep clock and date visible when inactive",
+    "mode": {
+      "alwaysOff": "Always Off",
+      "alwaysOn": "Always On",
+      "dark": "Dark Mode",
+      "light": "Light Mode",
+      "system": "Follow System"
+    },
+    "monet": {
+      "askEnableCache": {
+        "message": "To use dynamic theme colors, online wallpaper cache must be enabled. Enabling cache will store images from this domains. Do you want to enable it?",
+        "title": "Enable wallpaper cache?"
+      },
+      "desc": "Inspired by Material Design 3, extracts theme colors from your wallpaper. Only supports image backgrounds. For the best visual effect, use it together with the “Global Color Mode” option.",
+      "label": "Dynamic Theme Colors (Monet Extraction)"
+    },
+    "primaryColor": "Primary color",
+    "title": "Theme"
+  },
+  "title": "Settings",
+  "yiyan": {
+    "alwaysShow": "Always show",
+    "borderRadius": "Quote background radius",
+    "customLinesLabel": "Custom content",
+    "customLinesNote": "Each line represents one quote. Use \"\\n\" within a line to indicate a line break.",
+    "customLinesPlaceholder": "One quote per line; use \\n within a line for line breaks",
+    "description": "Display a random Chinese quote below the search bar. Give it a try — you can always turn it off later!",
+    "invertColor": {
+      "dark": "Use dark text in dark mode",
+      "light": "Use dark text in light mode"
+    },
+    "normalyShowTip": "When disabled, only show when the search box is focused.",
+    "provider": "Provider",
+    "providers": {
+      "custom": {
+        "name": "Custom"
+      },
+      "hitokoto": {
+        "name": "Hitokoto.cn",
+        "note": "Please note that Hitokoto.cn has a very strict QPS (queries per second) limit. This extension uses caching, but multiple requests from different sites in a short period may still cause your IP to be temporarily banned."
+      },
+      "jinrishici": {
+        "name": "Chinese Poetry"
+      }
+    },
+    "shadow": "Show text shadow",
+    "title": "Quote"
+  }
+}
