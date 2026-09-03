@@ -25,6 +25,7 @@ export default defineBackground(() => {
   let applyingRemote = false
   let configured = false
   let maintenance = false
+  let maintenanceTail: Promise<void> = Promise.resolve()
   const coordinator = new SyncCoordinator({
     isConfigured: async (trigger) => {
       const config = await webDavSyncConfigStorage.getValue()
@@ -38,15 +39,22 @@ export default defineBackground(() => {
       await synchronizeBrowser()
     },
   })
-  const runMaintenance = async <T>(task: () => Promise<T>): Promise<T> => {
-    maintenance = true
-    await coordinator.trigger('manual')
-    try {
-      return await task()
-    } finally {
-      maintenance = false
-      void coordinator.trigger('natural')
-    }
+  const runMaintenance = <T>(task: () => Promise<T>): Promise<T> => {
+    const run = maintenanceTail.then(async () => {
+      maintenance = true
+      await coordinator.trigger('manual')
+      try {
+        return await task()
+      } finally {
+        maintenance = false
+        void coordinator.trigger('natural')
+      }
+    })
+    maintenanceTail = run.then(
+      () => undefined,
+      () => undefined,
+    )
+    return run
   }
   const scheduleConfiguredDataChange = () => {
     if (configured) coordinator.dataChanged()
@@ -166,11 +174,11 @@ export default defineBackground(() => {
     }
     if (message.type === 'webdav-sync:update-preferences') {
       const { updateBrowserSyncPreferences } = await import('@/shared/webdavSync/browserLifecycle')
-      const state = await updateBrowserSyncPreferences({
-        scope: message.scope,
-      })
-      coordinator.dataChanged()
-      return state
+      return runMaintenance(() =>
+        updateBrowserSyncPreferences({
+          scope: message.scope,
+        }),
+      )
     }
     const trigger =
       message.type === 'webdav-sync:immediate'

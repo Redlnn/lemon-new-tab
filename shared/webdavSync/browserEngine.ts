@@ -801,7 +801,7 @@ async function runSynchronizationOnce(): Promise<void> {
     await patchSyncState({ paused: true, pauseReason: 'conflict' })
     return
   }
-  const comparisonBase = reinitialize ? firstConnectionBase() : baseline!
+  let comparisonBase = reinitialize ? firstConnectionBase() : baseline!
   const scope = mergeScope(
     comparisonBase.scope,
     initialState.scope,
@@ -816,7 +816,7 @@ async function runSynchronizationOnce(): Promise<void> {
     baseline && !reinitialize
       ? preserveExcludedScope(capture.snapshot, baseline, scope)
       : capture.snapshot
-  const decision = reinitialize
+  let decision = reinitialize
     ? decideInitialization({ base: comparisonBase, local, revisions })
     : decideSynchronization({
         baseRevisionId: initialState.baseRevisionId!,
@@ -825,12 +825,18 @@ async function runSynchronizationOnce(): Promise<void> {
         revisions,
       })
 
+  let recoveredFromPrunedHistory = false
+  if (decision.action === 'unknown-ancestor') {
+    comparisonBase = firstConnectionBase()
+    decision = decideInitialization({ base: comparisonBase, local, revisions })
+    recoveredFromPrunedHistory = true
+  }
   if (decision.action === 'unknown-ancestor') {
     await patchSyncState({ paused: true, pauseReason: 'conflict' })
     return
   }
   if (decision.action === 'conflict') {
-    if (reinitialize) await setBaseline(decision.base)
+    if (reinitialize || recoveredFromPrunedHistory) await setBaseline(decision.base)
     await setStoredConflict({
       version: 1,
       base: decision.base,
