@@ -100,6 +100,7 @@
       "rtl": "Sağdan sola",
       "title": "Açılış yönü"
     },
+    "rightClickDisabledNote": "Başlatıcı'yı açmak için sağ tıklama etkinleştirildi. Önce kapatın.",
     "rightClickToOpen": "Açmak için arka plana sağ tıklayın",
     "showBtn": "Sağ alt düğmesini göster",
     "title": "Yer imleri çubuğu"
@@ -182,6 +183,9 @@
     "actionBtnNote": "Dock etkinleştirildiğinde, düğme çubuğu yalnızca üste yerleştirilebilir (Düzen ayarlarında sol/sağ seçin)",
     "borderRadius": "Köşe yarıçapı",
     "launchpad": {
+      "iconSize": "Simge boyutu",
+      "rightClickDisabledNote": "Yer imlerini açmak için sağ tıklama etkinleştirildi. Önce kapatın.",
+      "rightClickToOpen": "Arka plana sağ tıklayarak aç",
       "show": "Başlatıcı'yı Dock'ta Göster",
       "title": "Başlatıcı"
     },
