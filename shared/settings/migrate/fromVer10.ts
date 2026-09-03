@@ -39,6 +39,7 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
     quickLinks: {
       ...shortcut,
       iconBorderRadius: defaultSettings.quickLinks.iconBorderRadius,
+      fallbackToTitleInitial: defaultSettings.quickLinks.fallbackToTitleInitial,
     },
     dock: {
       ...rest.dock,

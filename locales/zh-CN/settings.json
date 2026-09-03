@@ -345,6 +345,7 @@
   },
   "quickLinks": {
     "border": "显示图标边框",
+    "fallbackToTitleInitial": "图标不可用时显示标题首字符",
     "grouping": "启用分组",
     "groupingDisableConfirm": "关闭分组会合并所有快速导航分组，并移除重复 URL。不同分组中的重复链接将无法保留。",
     "groupingTip": "双击快速导航区或启动台中的分组名即可重命名。",

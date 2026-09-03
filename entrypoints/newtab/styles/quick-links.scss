@@ -407,6 +407,20 @@
               opacity: 0;
             }
 
+            &--title-initial {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: calc(var(--icon_size) * 0.3);
+              font-weight: 500;
+              color: var(--el-text-color-primary);
+              user-select: none;
+
+              .quick-links__container--white-in-light & {
+                color: var(--quick-links-light-title-color);
+              }
+            }
+
             svg {
               width: calc(var(--icon_size) * var(--icon_ratio));
               height: calc(var(--icon_size) * var(--icon_ratio));
