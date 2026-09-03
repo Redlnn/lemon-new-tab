@@ -19,6 +19,7 @@ export interface SettingsSchemaV11 extends Omit<
   | 'yiyan'
   | 'layout'
   | 'dock'
+  | 'bookmark'
   | 'perf'
   | 'background'
 > {
@@ -63,8 +64,15 @@ export interface SettingsSchemaV11 extends Omit<
     minimalModeOnDoubleClick: boolean
   }
 
-  dock: SettingsSchemaV10['dock'] & {
+  dock: Omit<SettingsSchemaV10['dock'], 'launchpad'> & {
     borderRadius: number
+    launchpad: SettingsSchemaV10['dock']['launchpad'] & {
+      rightClickToOpen: boolean
+    }
+  }
+
+  bookmark: SettingsSchemaV10['bookmark'] & {
+    rightClickToOpen: boolean
   }
 
   perf: Omit<

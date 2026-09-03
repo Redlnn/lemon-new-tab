@@ -43,6 +43,10 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
     dock: {
       ...rest.dock,
       borderRadius: defaultSettings.dock.borderRadius,
+      launchpad: {
+        ...rest.dock.launchpad,
+        rightClickToOpen: defaultSettings.dock.launchpad.rightClickToOpen,
+      },
     },
     yiyan: {
       ...rest.yiyan,
