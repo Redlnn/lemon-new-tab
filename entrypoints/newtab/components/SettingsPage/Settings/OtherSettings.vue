@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ElCheckbox, ElLoading } from 'element-plus'
+import { ElCheckbox, ElLoading, type CheckboxValueType } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import DeleteForeverOutlined from '~icons/ic/outline-delete-forever'
 import DownloadRound from '~icons/ic/round-download'
@@ -88,7 +88,8 @@ async function confirmClearExtensionData() {
             ElCheckbox,
             {
               modelValue: includeSync.value,
-              'onUpdate:modelValue': (value: boolean) => (includeSync.value = value === true),
+              'onUpdate:modelValue': (value: CheckboxValueType) =>
+                (includeSync.value = value === true),
             },
             () => t('other.purge.confirm.data.includeSync'),
           ),
