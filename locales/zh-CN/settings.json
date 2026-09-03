@@ -182,6 +182,7 @@
     "actionBtnNote": "开启 Dock 后，功能按钮只能放在顶部（可在「布局」中选择左/右）",
     "borderRadius": "圆角",
     "launchpad": {
+      "iconSize": "图标大小",
       "show": "在 Dock 中启用启动台",
       "title": "启动台"
     },

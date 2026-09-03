@@ -175,6 +175,7 @@ export const defaultSettings = {
       enabled: false,
       topSites: true,
       openInNewTab: false,
+      iconSize: 72,
     },
   },
 

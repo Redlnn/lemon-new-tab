@@ -63,8 +63,11 @@ export interface SettingsSchemaV11 extends Omit<
     minimalModeOnDoubleClick: boolean
   }
 
-  dock: SettingsSchemaV10['dock'] & {
+  dock: Omit<SettingsSchemaV10['dock'], 'launchpad'> & {
     borderRadius: number
+    launchpad: SettingsSchemaV10['dock']['launchpad'] & {
+      iconSize: number
+    }
   }
 
   perf: Omit<

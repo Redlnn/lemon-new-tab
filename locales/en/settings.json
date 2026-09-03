@@ -182,6 +182,7 @@
     "actionBtnNote": "When Dock is enabled, the button bar can only be placed at the top (choose left/right in Layout settings)",
     "borderRadius": "Radius",
     "launchpad": {
+      "iconSize": "Icon size",
       "show": "Show Launchpad in Dock",
       "title": "Launchpad"
     },
