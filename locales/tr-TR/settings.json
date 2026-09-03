@@ -1,0 +1,473 @@
+{
+  "a11y": {
+    "back": "Önceki ayarlar görünümüne dön"
+  },
+  "background": {
+    "alwaysFresh": "Her zaman yeni bir şey",
+    "bingFrom": "Görsel kaynağı: Bing",
+    "blur": "Bulanıklık yoğunluğu",
+    "button": {
+      "bathe": {
+        "moon": "Mehtapta yıkan",
+        "sun": "Güneşte yıkan"
+      }
+    },
+    "cache": {
+      "askEnable": {
+        "message": "Önbellek, tekrarlanan indirmeleri azaltır ve önbelleğe alınmış duvar kağıtlarını çevrimdışı kullanıma hazır tutar. Duvar kağıdı önbelleği etkinleştirilsin mi?",
+        "title": "Duvar kağıdı önbelleği etkinleştirilsin mi?"
+      },
+      "disabledTip": "Yalnızca arka plan türü \"Çevrimiçi URL\" olduğunda kullanılabilir (Bing duvar kağıdı varsayılan olarak her zaman önbelleğe alınır)",
+      "duration": "Önbellek geçerlilik süresi",
+      "label": "Çevrimiçi duvar kağıdı önbelleği",
+      "nextStartup": "Sonraki başlangıçta geçerli olur",
+      "noExpires": "Önbellek asla sona ermez"
+    },
+    "change": "Arka planı değiştir",
+    "chooseImageOrVideo": "Duvar kağıdı olarak kullanılacak bir resim veya video seçin",
+    "custom": "Özel",
+    "fasterBgAnim": "Başlangıçta daha hızlı arka plan gösterimi",
+    "mask": {
+      "color": "Maske rengi",
+      "enable": "Maskeyi etkinleştir"
+    },
+    "myZoneMyRule": "Senin alanın. Senin kuralların.",
+    "onlineTips": {
+      "a": "Enter tuşuna basarak veya giriş alanı odağı kaybettiğinde gönderin.",
+      "b": "Duvar kağıdı önbellekleme stratejisi tarayıcıya bağlıdır ve duvar kağıtları çevrimdışı erişilebilir olmayabilir.",
+      "c": "Duvar kağıdı yüklenene kadar boş bir ekran olacaktır ve bu süre internet hızınıza bağlıdır.",
+      "d": "Kullandığınız duvar kağıdı API'sinin çapraz kaynak isteklerine izin verdiğinden emin olun; aksi takdirde yüklenemez."
+    },
+    "parallax": "Duvar kağıdı paralaks efekti",
+    "pauseWhenBlur": "Arka plan penceresi odağı kaybettiğinde videoyu duraklat",
+    "permission": {
+      "allowAll": "Tüm sitelere izin ver",
+      "allowCurrent": "Yalnızca bu API URL'sine izin ver",
+      "deny": "Reddet",
+      "request": {
+        "faviconCacheMessage": "Favicon önbelleğini etkinleştirmek için uzantının \"Tüm sitelere erişim\" iznine ihtiyacı vardır.",
+        "message": "Çevrimiçi duvar kağıtlarına erişmek için uzantının uygun izinleri talep etmesi gerekir:",
+        "monetColorMessage": "Dinamik Tema Renklerini (Monet Renk Çıkarma) etkinleştirmek için uzantının \"Tüm sitelere erişim\" iznine ihtiyacı vardır.",
+        "subA": {
+          "content": "\"Bu API URL'sine erişim\" gerektirir.",
+          "label": "Normal mod: "
+        },
+        "subB": {
+          "content": "\"Tüm sitelere erişim\" gerektirir.",
+          "label": "Dinamik tema renkleri / Önbellek:"
+        },
+        "title": "İzin Talebi",
+        "wallpaperCacheMessage": "Çevrimiçi duvar kağıdı önbelleğini etkinleştirmek için uzantının \"Tüm sitelere erişim\" iznine ihtiyacı vardır."
+      }
+    },
+    "preferenceTitle": "Duvar kağıdı tercihleri",
+    "resolution": "Çözünürlük",
+    "showDownloadBtn": "İndirme düğmesini göster",
+    "showDownloadBtnNote": "Yalnızca Bing ve çevrimiçi duvar kağıtları için kullanılabilir.",
+    "sunMoonSaying": "Güneş varken güneşte yıkan. Ama ay varken mehtapta yıkan!",
+    "tip": "Karanlık mod için arka plan ayarlanmamışsa, aydınlık mod arka planı veya videosu kullanılır.",
+    "title": "Arka Plan",
+    "today": "Bugün",
+    "type": {
+      "local": "Yerel dosya",
+      "online": "Çevrimiçi URL"
+    },
+    "video": {
+      "blurTip": "Ekranda aynı anda birden fazla yeni sekme veya pencere açıkken performans kullanımını azaltmak için açın.",
+      "warning": "Video arka plan olarak kullanmak çok fazla GPU kaynağı tüketir. Aynı anda birden fazla yeni sekme açmaktan kaçınılması önerilir. Performans tüketimini azaltmak için animasyon, bulanıklık ve saydamlık efektlerinin uygun şekilde kapatılması önerilir."
+    },
+    "vignette": "Vinyet efektini etkinleştir",
+    "warning": {
+      "bingResolutionCacheFailed": "Seçilen çözünürlük önbelleğe alınamadı. Mevcut önbellek kullanılmaya devam edecek ve indirme daha sonra tekrar denenicektir.",
+      "cacheDisabled": "Çevrimiçi duvar kağıdı önbelleği, \"Tüm web sitelerine erişim\" izni verilmediği için devre dışı bırakıldı.",
+      "fileIsNotImage": "Seçilen dosya bir resim değil!",
+      "monetColorDisabled": "Monet renk çıkarma devre dışı",
+      "monetDisabled": "Dinamik Tema Renkleri (Monet Çıkarma), \"Tüm sitelere erişim\" izni verilmediği için devre dışı bırakıldı.",
+      "notGranted": "İzin verilmedi, bu ana bilgisayara erişilemiyor.",
+      "title": "Uyarı",
+      "tooLarge": {
+        "message": "Dosya çok büyük ({{size}}) ve performansı etkileyebilir veya önemli miktarda depolama alanı kaplayabilir. Devam etmek istiyor musunuz?",
+        "title": "Büyük Dosya Uyarısı"
+      },
+      "unknownSource": "Bilinmeyen kaynaklardan alınan görselleri arka plan olarak kullanmak cihazınızı saldırılara maruz bırakabilir. Devam etmek istiyor musunuz?"
+    },
+    "youLikeFine": "Beğendiyseniz, sorun yok~"
+  },
+  "bookmark": {
+    "defaultSort": "Varsayılan sıralama",
+    "direction": {
+      "ltr": "Soldan sağa",
+      "rtl": "Sağdan sola",
+      "title": "Açılış yönü"
+    },
+    "rightClickToOpen": "Açmak için arka plana sağ tıklayın",
+    "showBtn": "Sağ alt düğmesini göster",
+    "title": "Yer imleri çubuğu"
+  },
+  "clock": {
+    "blink": "Yanıp sönen iki nokta üst üste",
+    "blinkingTip": "Bunu kapatmak sürekli GPU kullanımını azaltabilir.",
+    "colorful": "Renkli saat rakamları",
+    "dateSize": "Tarih boyutu",
+    "hour12": "12 saatlik saat",
+    "invertColor": {
+      "dark": "Karanlık modda koyu metin kullan",
+      "light": "Aydınlık modda koyu metin kullan"
+    },
+    "meridiem": {
+      "followSize": "Büyük ÖÖ/ÖS Etiketi",
+      "show": "ÖÖ/ÖS göster"
+    },
+    "newStyle": "Yeni stil",
+    "newStyleDesc": "Etkinleştirildiğinde, \"ÖÖ/ÖS Göster\" ve \"Saniyeleri Göster\" seçeneklerini aynı anda etkinleştirir ve devre dışı bırakılamaz",
+    "secondsTip": "Bu, performans kullanımını artırır.",
+    "shadow": "Gölge göster",
+    "showDate": "Tarihi göster",
+    "showLunar": "Çin ay takvimini göster",
+    "showSeconds": "Saniyeleri göster",
+    "size": {
+      "title": "Saat boyutu"
+    },
+    "title": "Saat",
+    "transparency": "Saat saydamlığı",
+    "weight": {
+      "black": "En kalın",
+      "bold": "Kalın",
+      "dateTitle": "Tarih kalınlığı",
+      "extraBold": "Çok Kalın",
+      "heavy": "Ekstra Kalın",
+      "medium": "Hafif Kalın",
+      "normal": "Normal",
+      "title": "Saat kalınlığı"
+    }
+  },
+  "common": {
+    "copyLink": "Bağlantı Adresini Kopyala",
+    "hour": "Saat",
+    "openInNewTab": "Yeni Sekmede Aç",
+    "openInNewWindow": "Yeni Pencerede Aç",
+    "sections": {
+      "animation": "Animasyonlar",
+      "appearance": "Görünüm",
+      "behavior": "Etkileşim ve davranış",
+      "danger": "Verileri temizle",
+      "data": "Veri ve kurtarma",
+      "display": "Görüntü ve içerik",
+      "effects": "Saydamlık ve bulanıklık",
+      "general": "Genel",
+      "layout": "Düzen ve boşluk",
+      "position": "Sayfa konumu",
+      "quickActions": "Hızlı kontroller",
+      "radius": "Köşe yarıçapı",
+      "source": "İçerik kaynağı",
+      "summary": {
+        "animation": "Duvar kağıdı ve arayüz hareketi",
+        "appearance": "Renk, gölge ve boyutlandırma",
+        "behavior": "Etkileşimler ve açılış davranışı",
+        "danger": "Geri alınamaz işlemler—dikkatli kullanın",
+        "data": "Yedekler ve önbellekler",
+        "display": "Görünür içerik ve sunum",
+        "effects": "Bileşene göre saydamlık ve bulanıklığı kontrol edin",
+        "general": "Sık kullanılan seçenekler",
+        "layout": "Boyutlandırma, sayılar ve boşluk",
+        "position": "Ana içerik ve eylem düğmeleri",
+        "quickActions": "Efektleri toplu olarak etkinleştirin veya devre dışı bırakın",
+        "radius": "Bileşen köşelerini tek bir yerden ayarlayın",
+        "source": "Sağlayıcılar ve özel içerik"
+      }
+    },
+    "touchDeviceDisabledNote": "Bu seçenek yalnızca dokunmatik cihazlarda devre dışıdır."
+  },
+  "dock": {
+    "actionBtnNote": "Dock etkinleştirildiğinde, düğme çubuğu yalnızca üste yerleştirilebilir (Düzen ayarlarında sol/sağ seçin)",
+    "borderRadius": "Köşe yarıçapı",
+    "launchpad": {
+      "show": "Başlatıcı'yı Dock'ta Göster",
+      "title": "Başlatıcı"
+    },
+    "limitCount": "Maksimum sayıyı sınırla",
+    "maxCount": "Maksimum sayı",
+    "title": "Dock"
+  },
+  "layout": {
+    "actionBtn": {
+      "borderRadius": "Eylem düğmesi köşe yarıçapı",
+      "bottomLeft": "Sol Alt",
+      "bottomRight": "Sağ Alt",
+      "dockNote": "Dock açık — düğme çubuğu üste sabitlenmiştir",
+      "label": "Düğme çubuğu konumu",
+      "topLeft": "Sol Üst",
+      "topRight": "Sağ Üst"
+    },
+    "dockBorderRadius": "Dock köşe yarıçapı",
+    "globalBorderRadius": "Diğer bileşen köşe yarıçapı",
+    "mainPosition": {
+      "center": "Orta",
+      "dvh": "Üstten (%)",
+      "dvhValue": "Üstten uzaklık (dvh)",
+      "label": "Ana alan konumu",
+      "px": "Üstten (px)",
+      "pxValue": "Üstten uzaklık (px)",
+      "quickLinksScrollNote": "Hızlı Bağlantı kaydırması etkinleştirildiğinde orta konumlandırma kullanılamaz."
+    },
+    "minimalModeOnDoubleClick": "Boş arka plana çift tıklayarak minimalist modu aç/kapat",
+    "quickLinksIconBorderRadius": "Hızlı Bağlantı simge arka planı köşe yarıçapı",
+    "title": "Düzen"
+  },
+  "other": {
+    "faviconCache": {
+      "description": "Favicon'ları daha hızlı yükleme için yerel olarak önbelleğe alır; \"Tüm sitelere erişim\" izni gerektirir",
+      "label": "Favicon Önbelleği",
+      "permissionDenied": "\"Tüm sitelere erişim\" izni verilmedi; favicon önbelleği devre dışı kaldı"
+    },
+    "importExport": {
+      "backup": "Uzantı ayarlarını yedekle",
+      "export": "Dışa Aktar",
+      "import": "İçe Aktar",
+      "importFailed": "İçe aktarma başarısız: {{reason}}",
+      "importSuccess": "İçe aktarma başarılı",
+      "invalidFileFormat": "Geçersiz dosya biçimi",
+      "invalidJSON": "Geçersiz JSON biçimi",
+      "noFileSelected": "Dosya seçilmedi",
+      "unknownError": "Bilinmeyen hata",
+      "versionMismatch": "Dosyadaki yapılandırma sürümü, mevcut uzantı yapılandırma sürümüyle eşleşmiyor.",
+      "warningDialog": {
+        "content": "İçe aktarma, mevcut verilerinizin üzerine yazacaktır. Bu özelliği kullanırken lütfen dikkatli olun!",
+        "no": "Hayır",
+        "title": "Dosyadan içe aktarmak istediğinizden emin misiniz?",
+        "yes": "Evet"
+      }
+    },
+    "language": "Dil",
+    "purge": {
+      "btn": "Temizle",
+      "confirm": {
+        "data": {
+          "includeSync": "Bulut senkronizasyon verilerini de temizle",
+          "message": "Bu işlem uzantı ayarlarını, göz ardı edilen en çok ziyaret edilen siteleri, sabitlenmiş veya favorilere eklenmiş siteleri, seçilen arka plan resimlerini veya videolarını vb. sıfırlayacaktır.",
+          "purging": "Uzantı verileri temizleniyor...",
+          "title": "Bu uzantının tüm verilerini temizlemek istediğinizden emin misiniz?"
+        },
+        "icon": {
+          "message": "Bu işlem, önbelleğe alınmış tüm site simgelerini silecektir.",
+          "purging": "Favicon önbelleği temizleniyor...",
+          "title": "Favicon önbelleğini temizlemek istediğinizden emin misiniz?"
+        },
+        "wallpaper": {
+          "message": "Bu işlem, seçilen arka plan resimlerini veya videolarını silecektir.",
+          "purging": "Duvar kağıdı önbelleği temizleniyor...",
+          "title": "Tüm duvar kağıdı önbelleğini temizlemek istediğinizden emin misiniz?"
+        }
+      },
+      "data": "Tüm verileri temizle",
+      "failed": {
+        "refresh": "Sayfayı yenile",
+        "title": "Veriler temizlenemiyor"
+      },
+      "icon": "Favicon önbelleğini temizle",
+      "wallpaper": "Duvar kağıdı önbelleğini temizle"
+    },
+    "sync": "Bulut Senkronizasyonu (Artık Desteklenmiyor)",
+    "syncRetirement": {
+      "acknowledge": "Tamam",
+      "clearFailedMessage": "Eski bulut verileri şu anda silinemedi. Yüklenmeyecek veya uygulanmayacak ve gelecekteki bir yeniden başlatmanın ardından size tekrar hatırlatılacaktır.",
+      "clearFailedTitle": "Bulut verileri silinemiyor",
+      "clearCloudData": "Bulut verilerini temizle",
+      "clearSuccess": "Eski bulut verileri temizlendi",
+      "downloadCloudData": "Bulut verilerini indir",
+      "downloadFailed": "Bulut verileri okunamadı veya indirilemedi. Lütfen daha sonra tekrar deneyin.",
+      "downloadNote": "Mevcut bulut verilerini indirebilirsiniz, ancak bu dosya uzantıya geri aktarılamaz.",
+      "downloadStarted": "Bulut veri dosyası indirilmeye başladı",
+      "importIgnored": "Yedekteki eski bulut senkronizasyon seçeneği dikkate alınmadı. Bulut senkronizasyonu kapalı kalır.",
+      "message": "Bulut Senkronizasyonu bazen mevcut ayarları eski verilerle değiştirebiliyordu. Verilerinizi korumak için bu özellik kaldırıldı ve otomatik olarak kapatıldı. Bu cihazdaki ayarlar etkilenmedi.",
+      "noCloudData": "İndirilecek bulut verisi bulunamadı",
+      "residualMessage": "Eski bulut verileri bulundu. Mevcut cihazdaki ayarları etkilemeden silebilirsiniz.",
+      "residualTitle": "Eski bulut verileri bulundu",
+      "title": "Bulut Senkronizasyonu artık desteklenmiyor"
+    },
+    "syncWarning": "Bu özellik kaldırıldı. Eski bulut verilerini nasıl işleyeceğinizi öğrenmek için anahtara tıklayın.",
+    "title": "Diğer"
+  },
+  "perf": {
+    "actionBtns": {
+      "blur": "Eylem düğmeleri bulanıklığı",
+      "transparent": "Eylem düğmeleri saydamlığı"
+    },
+    "bgSwitchAnim": "Duvar kağıdı geçiş animasyonu",
+    "bgSwitchAnimTip": "Devre dışı bırakıldığında, duvar kağıtları arasında geçiş yaparken solma/kaybolma animasyonu olmaz, bu da geçiş hızını biraz artırabilir. Başlangıçtaki duvar kağıdı animasyonu da devre dışı kalır",
+    "blurIntensity": "Arka plan bulanıklığı",
+    "bookmark": {
+      "blur": "Yer imleri yan çubuğu bulanıklığı",
+      "transparent": "Yer imleri yan çubuğu saydamlığı"
+    },
+    "dialog": {
+      "animation": "İletişim kutusu animasyonu",
+      "blur": "İletişim kutusu bulanıklığı",
+      "title": "İletişim kutusu",
+      "transparent": "İletişim kutusu saydamlığı"
+    },
+    "dock": {
+      "scale": "Dock simgesi ölçeklendirme animasyonu"
+    },
+    "effectsTitle": "Efekt Ayarları",
+    "focus": {
+      "blur": "Arama odağında arka planı bulanıklaştır",
+      "scale": "Arama odağında arka planı ölçeklendir"
+    },
+    "quickLinks": {
+      "blur": "Hızlı Bağlantılar, Dock ve Başlatıcı bulanıklığı",
+      "transparent": "Hızlı Bağlantılar ve Dock saydamlığı"
+    },
+    "resetTransparencyAndBlur": "Saydamlık ve bulanıklığı sıfırla",
+    "searchBar": {
+      "blur": "Arama çubuğu bulanıklığı",
+      "transparent": "Arama çubuğu saydamlığı"
+    },
+    "title": "Performans ve Efektler",
+    "toggleAll": {
+      "animation": "Animasyon",
+      "blur": "Bulanıklık",
+      "disable": "Tümünü Devre Dışı Bırak",
+      "enable": "Tümünü Etkinleştir",
+      "transparent": "Saydamlık"
+    },
+    "transparency": "Arka plan saydamlığı",
+    "wallpaper": "Duvar kağıdı",
+    "yiyan": {
+      "blur": "Alıntı bulanıklığı",
+      "ripple": "Alıntı dalgalanma animasyonu",
+      "transparent": "Alıntı saydamlığı"
+    }
+  },
+  "quickLinks": {
+    "border": "Simge kenarlığını göster",
+    "grouping": "Grupları etkinleştir",
+    "groupingDisableConfirm": "Grupları devre dışı bırakmak, tüm Hızlı Bağlantı gruplarını birleştirir ve yinelenen URL'leri kaldırır. Farklı gruplardaki yinelenen bağlantılar korunamaz.",
+    "groupingTip": "Yeniden adlandırmak için Hızlı Bağlantılar veya Başlatıcı'da bir grup adına çift tıklayın.",
+    "iconBorderRadius": "Simge arka planı köşe yarıçapı",
+    "iconCacheTip": "Daha yüksek çözünürlüklü simgeleri almaya çalışmak için Ayarlar → Diğer → Simge önbelleği seçeneğini etkinleştirmeyi düşünün.",
+    "iconRatio": "Simge oranı",
+    "iconSize": "Simge boyutu",
+    "marginTop": "Alan üst boşluğu",
+    "maxColumns": "Maksimum sütun",
+    "maxItemsTipForChrome": "İpucu: En fazla 10 en çok ziyaret edilen bağlantınız olabilir.",
+    "maxRows": "Maksimum satır",
+    "paging": "Sayfalandırmayı etkinleştir",
+    "pagingLoop": "Sayfalar arasında döngü",
+    "pinnedIcon": "Sabitlenmiş simgeyi göster",
+    "restoreDefault": "Gizli bağlantıları kurtar",
+    "restoreDefaultTitle": "Varsayılan Hızlı Bağlantıları geri yüklemek istediğinizden emin misiniz?",
+    "shadow": "Simge gölgesini göster",
+    "showOnSearchFocus": "Arama odağında göster",
+    "showTitle": "Bağlantı başlığını göster",
+    "spacing": {
+      "iconTitleGap": "Simge–Başlık Aralığı",
+      "itemGapX": "Yatay bağlantı aralığı",
+      "itemGapY": "Dikey bağlantı aralığı"
+    },
+    "tip": "Hızlı Bağlantılar alanındaki değişiklikleri önizlemek için ayarlar penceresini sürükleyin.",
+    "title": "Hızlı Bağlantılar",
+    "titleExtraWidth": "Başlık genişletme genişliği",
+    "titleWhiteInLight": "Aydınlık modda beyaz metin kullan",
+    "topSites": "En çok ziyaret edilenleri göster",
+    "useScroll": "Kaydırmayı kullan",
+    "useScrollTouchTip": "Daha iyi bir gezinti deneyimi için mobil cihazlarda önerilir."
+  },
+  "search": {
+    "alwaysExpandSearchBar": "Arama çubuğunu her zaman genişlet",
+    "alwaysShowIcon": "Arama motoru simgesini her zaman göster",
+    "border": "Arama kutusu kenarlığını göster",
+    "borderRadius": "Arama kutusu köşe yarıçapı",
+    "clickToChange": "Değiştirmek için tıklayın",
+    "defaultSearchEngine": "Arama motoru",
+    "expandWidth": "Genişletilmiş genişlik",
+    "launchAnim": "Başlangıçta arama kutusu genişletme animasyonu",
+    "leftAlignInput": "Arama girişini sola hizala",
+    "placeholder": "Arama yer tutucusu",
+    "recordSearchHistory": "Arama geçmişini kaydet",
+    "restoreHiddenEngines": "Gizli yerleşik arama motorlarını geri yükle",
+    "restoreHiddenEnginesTitle": "Tüm yerleşik arama motorlarını ve varsayılan sıralarını geri yüklemek istiyor musunuz?",
+    "searchSuggestionProvider": "Arama önerisi API'si",
+    "searchSuggestions": "Arama önerileri",
+    "shadow": "Arama kutusu gölgesini göster",
+    "tip": "Yeni bir sekme açarken arama girişini etkinleştirmek mi istiyorsunuz? Sayfanın sağ alt kısmındaki düğme menüsündeki \"Yardım ve Geri Bildirim\" bölümüne bakın.",
+    "title": "Arama"
+  },
+  "theme": {
+    "color": {
+      "acgn": {
+        "aveMujica": "Ave Mujica",
+        "bocchi": "Bocchi the Rock!",
+        "kessoku": "Kessoku Band",
+        "luo": "Luo Tianyi",
+        "miku": "Hatsune Miku",
+        "mygo": "MyGO!!!!!",
+        "togeari": "TOGENASHI TOGEARI"
+      },
+      "classic": {
+        "antBlue": "Ant Design Mavisi",
+        "bellflower": "Koyu Çan Çiçeği",
+        "crimson": "Kokiake Kırmızısı",
+        "ink": "Çin mürekkebi",
+        "lapisBlue": "Lapis Ruri",
+        "ochre": "Zhe Aşı Boyası",
+        "orangeRed": "Ouseki Kehribarı",
+        "teal": "Nando Teal",
+        "yamabuki": "Yamabuki Altını",
+        "yellowGreen": "Moegi Yeşili"
+      }
+    },
+    "colorful": {
+      "desc": "Tema rengini daha fazla öğeye uygula",
+      "label": "Küresel Renk Modu"
+    },
+    "idleHide": "Sayfa öğeleri boştayken soldur",
+    "keepClockVisibleOnIdle": "Boştayken saat ve tarihi görünür tut",
+    "mode": {
+      "alwaysOff": "Her zaman Kapalı",
+      "alwaysOn": "Her zaman Açık",
+      "dark": "Karanlık Mod",
+      "light": "Aydınlık Mod",
+      "system": "Sistemi Takip Et"
+    },
+    "monet": {
+      "askEnableCache": {
+        "message": "Dinamik tema renklerini kullanmak için çevrimiçi duvar kağıdı önbelleğinin etkinleştirilmesi gerekir. Önbelleği etkinleştirmek, bu alan adlarındaki görselleri depolar. Etkinleştirmek istiyor musunuz?",
+        "title": "Duvar kağıdı önbelleği etkinleştirilsin mi?"
+      },
+      "desc": "Material Design 3'ten ilham alır, duvar kağıdınızdan tema renkleri çıkarır. Yalnızca resim arka planlarını destekler. En iyi görsel efekt için \"Küresel Renk Modu\" seçeneğiyle birlikte kullanın.",
+      "label": "Dinamik Tema Renkleri (Monet Çıkarma)"
+    },
+    "primaryColor": "Ana renk",
+    "title": "Tema"
+  },
+  "title": "Ayarlar",
+  "yiyan": {
+    "alwaysShow": "Her zaman göster",
+    "borderRadius": "Alıntı arka planı köşe yarıçapı",
+    "customLinesLabel": "Özel içerik",
+    "customLinesNote": "Her satır bir alıntıyı temsil eder. Bir satır içinde satır sonu belirtmek için \"\\n\" kullanın.",
+    "customLinesPlaceholder": "Satır başına bir alıntı; satır içinde satır sonları için \\n kullanın",
+    "description": "Arama çubuğunun altında rastgele bir Çin alıntısı görüntüler. Bir deneyin — isterseniz daha sonra kapatabilirsiniz!",
+    "invertColor": {
+      "dark": "Karanlık modda koyu metin kullan",
+      "light": "Aydınlık modda koyu metin kullan"
+    },
+    "normalyShowTip": "Devre dışı bırakıldığında, yalnızca arama kutusu odaklandığında göster.",
+    "provider": "Sağlayıcı",
+    "providers": {
+      "custom": {
+        "name": "Özel"
+      },
+      "hitokoto": {
+        "name": "Hitokoto.cn",
+        "note": "Hitokoto.cn'nin çok katı bir QPS (saniyedeki sorgu sayısı) sınırı olduğunu lütfen unutmayın. Bu uzantı önbellek kullanır, ancak kısa sürede farklı sitelerden gelen birden fazla istek, IP adresinizin geçici olarak yasaklanmasına neden olabilir."
+      },
+      "jinrishici": {
+        "name": "Çin Şiiri"
+      }
+    },
+    "shadow": "Metin gölgesini göster",
+    "title": "Alıntı"
+  }
+}
