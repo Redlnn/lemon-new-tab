@@ -247,6 +247,24 @@ export function preserveExcludedScope(
   return result
 }
 
+/** 生成应用远端快照后的校验目标，保留远端未携带的本机字段。 */
+export function expectedAppliedSnapshot(
+  beforeApply: SyncSnapshotV1,
+  target: SyncSnapshotV1,
+): SyncSnapshotV1 {
+  const result = preserveExcludedScope(beforeApply, target, target.scope)
+  if (target.scope.settings) {
+    const targetSettings = target.settings ?? {}
+    const settings = preserveUnknownSyncSettings(
+      mergeSyncSettings(beforeApply.settings ?? {}, targetSettings),
+      targetSettings,
+    )
+    if (Object.keys(settings).length) result.settings = settings
+    else delete result.settings
+  }
+  return result
+}
+
 export function preserveBaselineWallpapers(
   snapshot: SyncSnapshotV1,
   baseline?: SyncSnapshotV1,

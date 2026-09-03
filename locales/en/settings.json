@@ -556,7 +556,6 @@
       }
     },
     "connectionActions": {
-      "description": "Disconnecting keeps remote data by default. Permanent deletion requires typed confirmation.",
       "open": "Manage connection",
       "title": "Disconnect or delete"
     },

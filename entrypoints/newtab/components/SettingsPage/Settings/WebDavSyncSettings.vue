@@ -286,12 +286,11 @@ onMounted(() => void refresh())
         </div>
       </SettingsSection>
 
-      <el-collapse class="sync-compact-collapse sync-danger-collapse">
+      <el-collapse class="sync-compact-collapse settings-section--wide">
         <el-collapse-item name="connection">
           <template #title>
             <strong>{{ t('webdavSync.connectionActions.title') }}</strong>
           </template>
-          <p>{{ t('webdavSync.connectionActions.description') }}</p>
           <el-button type="danger" plain @click="dialogMode = 'disconnect'">
             {{ t('webdavSync.connectionActions.open') }}
           </el-button>
@@ -312,7 +311,7 @@ onMounted(() => void refresh())
   </div>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
 .webdav-sync-page {
   align-content: start;
 }
@@ -334,7 +333,6 @@ onMounted(() => void refresh())
   align-items: center;
   padding: 18px;
   background: var(--settings-option-background);
-  border: 1px solid var(--el-border-color-lighter);
   border-radius: var(--le-radius-inner, 12px);
 
   > svg {
@@ -369,7 +367,7 @@ onMounted(() => void refresh())
   flex-wrap: wrap;
   gap: 8px;
 
-  :deep(.el-button + .el-button) {
+  .el-button + .el-button {
     margin-inline-start: 0;
   }
 }
@@ -387,10 +385,27 @@ onMounted(() => void refresh())
   color: var(--el-text-color-regular);
 }
 
-.sync-advanced-scope,
 .sync-compact-collapse {
-  --el-collapse-header-height: 42px;
-  border: 0;
+  --el-collapse-header-height: initial;
+  --el-collapse-header-bg-color: transparent;
+  --el-collapse-content-bg-color: transparent;
+  padding: 18px;
+  background: var(--settings-group-active-background);
+  border: none;
+  border-radius: var(--le-radius-inner, 12px);
+
+  .el-collapse-item__header,
+  .el-collapse-item__wrap {
+    border: none;
+  }
+
+  .el-collapse-item__content {
+    padding: 0;
+  }
+
+  .el-button {
+    margin-top: 1em;
+  }
 }
 
 .sync-advanced-grid {
@@ -411,17 +426,6 @@ onMounted(() => void refresh())
   }
 
   small {
-    color: var(--el-text-color-secondary);
-  }
-}
-
-.sync-danger-collapse {
-  padding: 0 12px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: var(--le-radius-inner, 12px);
-
-  p {
-    margin-top: 0;
     color: var(--el-text-color-secondary);
   }
 }

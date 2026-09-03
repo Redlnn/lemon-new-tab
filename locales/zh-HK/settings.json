@@ -556,7 +556,6 @@
       }
     },
     "connectionActions": {
-      "description": "中斷連線預設保留雲端資料；永久刪除需要輸入確認文字。",
       "open": "管理連線",
       "title": "中斷或刪除"
     },

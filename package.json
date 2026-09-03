@@ -15,7 +15,6 @@
     "zip:edge": "wxt zip -b edge",
     "postinstall": "wxt prepare",
     "type-check": "vue-tsc --build",
-    "test:sync": "node --test tests/webdavSync/domain.test.ts tests/webdavSync/webdav.test.ts",
     "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
     "lint:eslint": "eslint . --fix",
     "lint:style": "stylelint **/*.{css,scss,sass,less,vue,html} --fix --ignore-path .gitignore",

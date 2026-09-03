@@ -585,7 +585,8 @@ export class WebDavVaultRepository {
     try {
       entries = await this.client.list(this.directory)
     } catch (error) {
-      if (error instanceof WebDavError && error.category === 'not-found') return { state: 'missing' }
+      if (error instanceof WebDavError && error.category === 'not-found')
+        return { state: 'missing' }
       throw error
     }
     const collectionUrl = this.client.resolve(this.directory).toString().replace(/\/$/, '')

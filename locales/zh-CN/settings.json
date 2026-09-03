@@ -556,7 +556,6 @@
       }
     },
     "connectionActions": {
-      "description": "断开默认保留云端数据；永久删除需要输入确认文字。",
       "open": "管理连接",
       "title": "断开或删除"
     },

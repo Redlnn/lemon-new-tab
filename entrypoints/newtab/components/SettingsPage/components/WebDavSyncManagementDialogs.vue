@@ -518,6 +518,7 @@ watch(
     :title="t('webdavSync.history.title')"
     width="720px"
     destroy-on-close
+    append-to-body
   >
     <div v-loading="loading">
       <template v-if="historyPreview">
@@ -598,6 +599,7 @@ watch(
     :title="t('webdavSync.devices.title')"
     width="650px"
     destroy-on-close
+    append-to-body
   >
     <div v-loading="loading" class="device-list">
       <article v-for="device in devices" :key="device.deviceId">
@@ -615,15 +617,15 @@ watch(
           </el-tag>
         </div>
       </article>
+      <el-alert
+        type="warning"
+        :closable="false"
+        show-icon
+        :title="t('webdavSync.devices.unknownTitle')"
+      >
+        {{ t('webdavSync.devices.unknownDescription') }}
+      </el-alert>
     </div>
-    <el-alert
-      type="warning"
-      :closable="false"
-      show-icon
-      :title="t('webdavSync.devices.unknownTitle')"
-    >
-      {{ t('webdavSync.devices.unknownDescription') }}
-    </el-alert>
   </el-dialog>
 
   <el-dialog
@@ -631,6 +633,7 @@ watch(
     :title="t('webdavSync.encryption.title')"
     width="600px"
     destroy-on-close
+    append-to-body
   >
     <div class="dialog-heading">
       <security-round />
@@ -674,6 +677,7 @@ watch(
     :title="t('webdavSync.remoteDeleted.title')"
     width="560px"
     destroy-on-close
+    append-to-body
   >
     <el-result
       icon="warning"
@@ -693,6 +697,7 @@ watch(
     :title="t('webdavSync.repair.title')"
     width="650px"
     destroy-on-close
+    append-to-body
   >
     <template v-if="state.pauseReason === 'corrupted-remote'">
       <el-alert type="error" :closable="false" show-icon :title="t('webdavSync.repair.corrupted')">
@@ -762,9 +767,10 @@ watch(
     width="620px"
     :close-on-click-modal="false"
     destroy-on-close
+    append-to-body
   >
     <div v-loading="loading" class="disconnect-actions">
-      <section>
+      <section class="disconnect-actions-section">
         <div>
           <strong>{{ t('webdavSync.disconnect.keepTitle') }}</strong>
           <p>{{ t('webdavSync.disconnect.keepDescription') }}</p>
@@ -773,7 +779,7 @@ watch(
           {{ t('webdavSync.disconnect.keepAction') }}
         </el-button>
       </section>
-      <el-collapse class="compact-danger">
+      <el-collapse class="disconnect-actions-collapse">
         <el-collapse-item name="delete" :title="t('webdavSync.disconnect.deleteTitle')">
           <el-alert
             type="error"
@@ -791,22 +797,24 @@ watch(
           <p>
             {{ t('webdavSync.disconnect.typePrompt', { text: 'DELETE WEBDAV DATA' }) }}
           </p>
-          <el-input v-model="deleteConfirmation" autocomplete="off" />
-          <el-button
-            type="danger"
-            :icon="DeleteForeverRound"
-            :disabled="deleteConfirmation !== 'DELETE WEBDAV DATA'"
-            @click="disconnect(true)"
-          >
-            {{ t('webdavSync.disconnect.deleteAction') }}
-          </el-button>
+          <el-space>
+            <el-input v-model="deleteConfirmation" autocomplete="off" />
+            <el-button
+              type="danger"
+              :icon="DeleteForeverRound"
+              :disabled="deleteConfirmation !== 'DELETE WEBDAV DATA'"
+              @click="disconnect(true)"
+            >
+              {{ t('webdavSync.disconnect.deleteAction') }}
+            </el-button>
+          </el-space>
         </el-collapse-item>
       </el-collapse>
     </div>
   </el-dialog>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
 .conflict-list,
 .history-list,
 .history-diff-list,
@@ -822,6 +830,7 @@ watch(
   display: grid;
   gap: 8px;
   padding: 10px;
+  background: var(--settings-option-background, var(--el-fill-color-light));
   border: 1px solid var(--el-border-color-lighter);
   border-radius: var(--le-radius-inner, 10px);
 
@@ -854,11 +863,29 @@ watch(
 .conflict-item,
 .history-list article,
 .device-list article,
-.disconnect-actions section {
+.disconnect-actions .disconnect-actions-collapse {
   padding: 12px;
   background: var(--settings-option-background, var(--el-fill-color-light));
   border: 1px solid var(--el-border-color-lighter);
   border-radius: var(--le-radius-inner, 10px);
+}
+
+.disconnect-actions-collapse {
+  --el-collapse-header-height: initial;
+  --el-collapse-border-color: transparent;
+  --el-collapse-header-bg-color: transparent;
+  --el-collapse-content-bg-color: transparent;
+  border: none;
+
+  .el-collapse-item__header,
+  .el-collapse-item__wrap {
+    border: none;
+  }
+
+  .el-collapse-item__content {
+    padding: 0;
+    margin-top: 1em;
+  }
 }
 
 .conflict-item header {
@@ -963,11 +990,14 @@ watch(
   display: grid;
   gap: 10px;
 
-  section {
+  .disconnect-actions-section {
     display: flex;
     gap: 14px;
     align-items: center;
     justify-content: space-between;
+    padding: 12px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: var(--le-radius-inner, 10px);
 
     p {
       margin: 4px 0 0;

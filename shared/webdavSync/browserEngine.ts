@@ -2,7 +2,11 @@ import { browser } from 'wxt/browser'
 
 import { CURRENT_CONFIG_VERSION } from '@/shared/settings'
 
-import { preserveBaselineWallpapers, preserveExcludedScope } from './apply.ts'
+import {
+  expectedAppliedSnapshot,
+  preserveBaselineWallpapers,
+  preserveExcludedScope,
+} from './apply.ts'
 import {
   captureBrowserSyncSnapshot,
   captureBrowserSyncSnapshotResult,
@@ -107,7 +111,10 @@ export async function readRevisions(
     const refreshedCommits = await repository.listCommits(metadata)
     const refreshedIds = new Set(refreshedCommits.map((commit) => commit.revisionId))
     if (commits.some((commit) => !refreshedIds.has(commit.revisionId))) {
-      throw new WebDavError('precondition', 'Committed revisions changed during remote history cleanup')
+      throw new WebDavError(
+        'precondition',
+        'Committed revisions changed during remote history cleanup',
+      )
     }
     throw error
   }
@@ -238,6 +245,10 @@ export async function finalizeSnapshot(input: {
   preserveLocalWallpapers?: boolean
 }): Promise<void> {
   if (input.apply) {
+    const expected = expectedAppliedSnapshot(
+      await captureBrowserSyncSnapshot(input.snapshot.scope),
+      input.snapshot,
+    )
     await patchSyncState({
       pending: {
         operationId: input.operationId,
@@ -262,7 +273,7 @@ export async function finalizeSnapshot(input: {
         ? { ...input.snapshot.scope, wallpapers: false }
         : input.snapshot.scope,
     )
-    if (!jsonEquals(applied, input.snapshot)) {
+    if (!jsonEquals(applied, expected)) {
       throw new WebDavError('precondition', 'Applied local snapshot did not pass verification')
     }
   }
@@ -296,7 +307,7 @@ export async function publishAndFinalize(input: {
 }): Promise<void> {
   let revisionId = input.pending.revisionId ?? crypto.randomUUID()
   let pending = await setPendingPhase(input.pending, 'captured', revisionId)
-  let snapshot = input.snapshot
+  let { snapshot } = input
   let assets: AssetReferenceV1[]
   let preservingLocalWallpapers = false
   try {
@@ -716,7 +727,7 @@ async function runSynchronizationOnce(): Promise<void> {
     }
     throw new WebDavError('not-found', 'Configured WebDAV vault was deleted')
   }
-  const metadata = inspection.metadata
+  const { metadata } = inspection
   if (metadata.vaultId !== initialState.vaultId) {
     throw new WebDavError('foreign-vault', 'Configured WebDAV vault identity changed')
   }
@@ -932,6 +943,10 @@ async function recordFailure(error: unknown): Promise<void> {
     phase: state.pending?.phase ?? 'unknown',
     status: webDavError.status,
   }
+  console.error('[webdav-sync] Synchronization failed', {
+    ...lastError,
+    ...(webDavError.category === 'precondition' ? { reason: webDavError.message } : {}),
+  })
   const pauseReason = pauseReasonFor(webDavError)
   await patchSyncState({
     lastError,
@@ -980,7 +995,7 @@ export async function unlockBrowserEncryption(password: string): Promise<LocalSy
   const inspection = requireConfiguredVaultInspection(await repository.inspect(), {
     vaultId: state.vaultId,
   })
-  const metadata = inspection.metadata
+  const { metadata } = inspection
   if (!metadata.encrypted || !metadata.encryption) {
     throw new WebDavError('invalid-response', 'WebDAV vault is not encrypted')
   }
@@ -1055,7 +1070,7 @@ async function inspectBrowserWebDavSetup(input: BrowserWebDavSetupInput): Promis
       revisions: [],
     }
   }
-  const metadata = inspection.metadata
+  const { metadata } = inspection
   let encryptionKey: CryptoKey | undefined
   if (metadata.encrypted) {
     if (!metadata.encryption || !input.encryptionPassword) {
@@ -1162,8 +1177,7 @@ export async function connectBrowserWebDav(
   ) {
     throw new WebDavError('precondition', 'WebDAV data changed after the connection preview')
   }
-  let metadata = scanned.metadata
-  let encryptionKey = scanned.encryptionKey
+  let { metadata, encryptionKey } = scanned
   if (!metadata) {
     const vaultId = crypto.randomUUID()
     const generationId = crypto.randomUUID()
@@ -1342,7 +1356,7 @@ export async function connectBrowserWebDav(
 }
 
 async function createPrivateDeviceName(): Promise<string> {
-  const userAgent = navigator.userAgent
+  const { userAgent } = navigator
   const browserName = userAgent.includes('Edg/')
     ? 'Edge'
     : userAgent.includes('Firefox/')
@@ -1453,7 +1467,7 @@ export async function resolveBrowserSyncConflict(
     generationId: state.generationId,
     vaultId: state.vaultId,
   })
-  const metadata = inspection.metadata
+  const { metadata } = inspection
   const encryptionKey = metadata.encrypted
     ? await getStoredEncryptionKey(metadata.vaultId, metadata.generationId)
     : undefined
@@ -1605,7 +1619,7 @@ export async function openConfiguredVault(readAllRevisions = true): Promise<{
     generationId: state.generationId,
     vaultId: state.vaultId,
   })
-  const metadata = inspection.metadata
+  const { metadata } = inspection
   const encryptionKey = metadata.encrypted
     ? await getStoredEncryptionKey(metadata.vaultId, metadata.generationId)
     : undefined

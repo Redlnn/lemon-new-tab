@@ -347,6 +347,13 @@ export function decideSynchronization(input: {
       stage: 'local-remote',
     }
   }
+  if (!hasBranches && jsonEquals(merge.snapshot, remote.snapshot)) {
+    return {
+      action: 'up-to-date',
+      revisionId: remote.headRevisionIds[0]!,
+      snapshot: remote.snapshot,
+    }
+  }
   return {
     action: 'publish',
     parents: remote.headRevisionIds,

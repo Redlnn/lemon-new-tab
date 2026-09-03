@@ -77,22 +77,3 @@ onMounted(() => void refresh())
     </el-collapse-item>
   </el-collapse>
 </template>
-
-<style scoped>
-.sync-compact-collapse {
-  --el-collapse-header-height: 42px;
-  border: 0;
-}
-
-.sync-compact-title,
-.sync-compact-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-p {
-  margin: 0 0 12px;
-  color: var(--el-text-color-secondary);
-}
-</style>
