@@ -1,0 +1,203 @@
+{
+  "about": {
+    "yiyanProvider": "Çin şiiri API'si {api} tarafından sağlanmaktadır"
+  },
+  "a11y": {
+    "actions": "Sayfa eylemleri",
+    "addQuickLinksGroup": "Hızlı Bağlantı grubu ekle",
+    "copyYiyan": "Alıntıyı kopyala",
+    "deleteGroup": "{{name}} grubunu sil",
+    "downloadBackground": "Arka planı indir",
+    "goToPage": "{{page}} sayfasına git",
+    "main": "Yeni sekme içeriği",
+    "moveGroupDown": "{{name}} grubunu aşağı taşı",
+    "moveGroupUp": "{{name}} grubunu yukarı taşı",
+    "nextPage": "Sonraki sayfa",
+    "openActionsMenu": "Sayfa eylemleri menüsünü aç",
+    "openBookmarks": "Yer imlerini aç",
+    "previousPage": "Önceki sayfa",
+    "quickLinksGroups": "Hızlı Bağlantı grupları",
+    "quickLinksPagination": "Hızlı Bağlantı sayfalandırması",
+    "refreshBackground": "Arka planı yenile",
+    "searchInput": "Anahtar kelimeleri ara",
+    "searchSuggestions": "Arama önerileri"
+  },
+  "bookmark": {
+    "404": "Hiçbir şey bulunamadı",
+    "addToQuickLinks": "Hızlı Bağlantılara Ekle",
+    "added": "Hızlı Bağlantılara eklendi",
+    "collapse": {
+      "all": "Düzeyde Tümünü Daralt",
+      "other": "Düzeyde Diğerlerini Daralt"
+    },
+    "delete": {
+      "confirm": "“{{title}}” öğesini silmek istediğinizden emin misiniz?",
+      "confirmFolder": "“{{title}}” bir klasördür. Silinmesi, içindeki tüm yer imlerini de silecektir. Emin misiniz?",
+      "success": "“{{title}}” silindi"
+    },
+    "expandHint": "Yer imlerini görüntülemek için lütfen yan çubuğu genişletin",
+    "moveError": "Yer imi taşınamadı",
+    "sortBy": "Sıralama ölçütü",
+    "sortMode": {
+      "createdAsc": "En yeni",
+      "createdDesc": "En eski",
+      "nameAsc": "Ada Göre A–Z",
+      "nameDesc": "Ada Göre Z–A",
+      "origin": "Orijinal"
+    },
+    "title": "Yer İmi",
+    "tooSmall": "Yan çubuk çok dar"
+  },
+  "bootstrap": {
+    "invalidVer": {
+      "bak": "Önceki ayarlar sürümünün bir yedeğini indirmek için aşağıdaki düğmeye de tıklayabilirsiniz (bu yedek mevcut sürüme aktarılamaz).",
+      "btn": "Temizle ve Yenile",
+      "msg": "Üzgünüz, ancak desteklenmeyen eski bir ayarlar sürümü tespit edildi. Uzantının düzgün çalışmasını sağlamak için lütfen uzantı verilerini temizleyin ve yenileyin.",
+      "title": "Desteklenmeyen Ayarlar Sürümü"
+    }
+  },
+  "changelog": {
+    "hideMajor": "Büyük sürüm güncelleme bildirimini gizle",
+    "newVersionMsg": "Başlangıç sayfanız güncellendi!",
+    "otherVersions": {
+      "description": "Yalnızca son 5 sürüm dahildir. Tam sürüm bildirimini görüntülemek için aşağıdaki bağlantılara tıklayın:",
+      "linkEn": "İngilizce",
+      "linkZhCN": "Çince (Basitleştirilmiş)",
+      "title": "Diğer Sürümler?"
+    },
+    "title": "Sürüm Bildirimi"
+  },
+  "common": {
+    "cancel": "İptal",
+    "confirm": "Evet",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "enable": "Etkinleştir",
+    "icon": "Simge (İsteğe bağlı)",
+    "name": "Ad",
+    "no": "Hayır",
+    "save": "Kaydet",
+    "tooLargeImageConfirm": "Bu görsel büyük ({{size}}) ve performansı ve yanıt verme hızını etkileyebilir. Devam edilsin mi?",
+    "undo": "Geri Al",
+    "url": "URL",
+    "warning": "Uyarı"
+  },
+  "customSearchEngine": {
+    "add": "Özel Arama Motoru Ekle",
+    "addDialog": {
+      "invalidUrlError": "Geçersiz URL veya %s yer tutucusu eksik",
+      "nameRequiredError": "Ad boş olamaz",
+      "urlHelp": "URL, arama anahtar kelimeleri için %s yer tutucusunu içermelidir"
+    },
+    "deleteConfirm": "“{{name}}” adlı arama motorunu silmek istediğinizden emin misiniz?",
+    "edit": "Özel Arama Motorunu Düzenle",
+    "title": "Özel Arama Motoru",
+    "fetchingFavicon": "Arka planda simge alınıyor..."
+  },
+  "dock": {
+    "launchpad": {
+      "add": "Ekle",
+      "empty": "Sonuç yok",
+      "search": "Ara...",
+      "title": "Başlatıcı"
+    }
+  },
+  "menu": {
+    "about": "Hakkında",
+    "backgroundPreference": "Arka Plan Tercihi",
+    "help": "Yardım / Geri Bildirim",
+    "searchEnginePreference": "Arama Motoru Tercihi",
+    "sponsor": "Destekçi"
+  },
+  "notification": {
+    "bing": {
+      "message": "Geliştirici araçlarında konsol çıktısını kontrol edin.",
+      "title": "Bing duvar kağıdı alınamadı"
+    },
+    "faviconCacheHint": {
+      "message": "Daha hızlı simge yüklemesi için \"Diğer\" ayarlarında favicon önbelleğini etkinleştirin",
+      "title": "İpucu: Favicon önbelleği devre dışı"
+    },
+    "wallpaperCache": {
+      "message": "Çevrimiçi duvar kağıdı önbelleğe alınamadı: {error}",
+      "title": "Çevrimiçi duvar kağıdı önbelleğe alınamadı"
+    },
+    "welcome": {
+      "message": "Lemon New Tab'i kurduğunuz için teşekkürler! Yeni sekme sayfanızı ayarlardan (sağ alt köşe) özelleştirin.",
+      "title": "Lemon New Tab'e Hoş Geldiniz"
+    }
+  },
+  "search": {
+    "enginePreference": {
+      "hide": "Gizle"
+    },
+    "engineMenu": {
+      "current": "Mevcut",
+      "tipPrefix": "İpucu: Arama motorunu değiştirmek için",
+      "tipSuffix": "tuşuna basın."
+    },
+    "engines": {
+      "baidu": "Baidu",
+      "bing": "Bing",
+      "duckduckgo": "DuckDuckGo",
+      "google": "Google",
+      "yandex": "Yandex"
+    },
+    "placeholder": "Ara",
+    "purgeSearchHistory": "Arama Geçmişini Temizle",
+    "searchEngineNotFound": "Arama motoru bulunamadı"
+  },
+  "sponsor": "Bu uzantı, kendi ihtiyaçlarımı çözmek için boş zamanlarımda tarafımdan oluşturuldu ve size de yardımcı olmasına çok sevindim! Beğendiyseniz, lütfen GitHub'da ⭐ vermeyi düşünün—bu benim için çok değerli. Fikirlerinizi veya geri bildirimlerinizi şu adrese göndermekten çekinmeyin: redlnn@outlook.com. Teşekkür ederim!",
+  "time": {
+    "afternoon": "",
+    "dawn": "",
+    "dusk": "",
+    "evening": "",
+    "lateNight": "",
+    "morning": "",
+    "noon": ""
+  },
+  "title": "Yeni Sekme",
+  "yiyan": {
+    "copied": "Panoya kopyalandı"
+  },
+  "quickLinks": {
+    "addDialog": {
+      "extensionIconTip": "Geçerli sayfayı Hızlı Bağlantılara eklemek için tarayıcı uzantıları menüsündeki simgeye de tıklayabilirsiniz.",
+      "invalidUrlError": "Geçersiz URL. Lütfen yeni bir tane girin",
+      "uploadFaviconAlert": "Bir simge yüklemezseniz, simgeleri otomatik olarak almak için Ayarlar → Diğer → Simge önbelleği seçeneğini etkinleştirmeyi düşünün."
+    },
+    "addLink": "Bağlantı Ekle",
+    "bookmark": {
+      "add": "Yer İmlerine Ekle",
+      "existing": "Bu yer imi zaten mevcut",
+      "success": "“{{folder}}” klasörüne kaydedildi"
+    },
+    "editLink": "Bağlantıyı Düzenle",
+    "groups": {
+      "default": "Varsayılan",
+      "defaultDeleteBlocked": "Varsayılan grup silinemez.",
+      "deleteConfirm": "“{{name}}” grubunu ve içindeki tüm bağlantıları sil?",
+      "moveTo": "Gruba Taşı",
+      "selectAddTarget": "Yeni bağlantı için bir grup seçin",
+      "selectMoveTarget": "Taşımak için bir grup seçin",
+      "selectPinTarget": "Kaydetmek için bir grup seçin",
+      "selectTitle": "Grup Seçin",
+      "topSites": "En çok ziyaret edilen",
+      "untitled": "Grup {{index}}"
+    },
+    "hide": "Gizle",
+    "moveError": "Taşıma başarısız",
+    "moveLeft": "Sola taşı",
+    "moveRight": "Sağa taşı",
+    "hideTopMessage": {
+      "content": "En çok ziyaret edilen site gizlendi.",
+      "restoreDefault": "Varsayılanı geri yükle",
+      "restoreSuccess": "Varsayılan en çok ziyaret edilen site geri yüklendi"
+    },
+    "pin": "Sabitle",
+    "unpin": "Sabitlemeyi kaldır",
+    "unpinMessage": "Bağlantının sabitlemesi kaldırıldı.",
+    "fetchingFavicon": "Arka planda simge alınıyor..."
+  }
+}

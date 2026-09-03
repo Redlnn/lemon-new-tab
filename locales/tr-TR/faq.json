@@ -1,0 +1,52 @@
+{
+  "help": {
+    "email": "E-posta",
+    "emailCopied": "E-posta adresi kopyalandı",
+    "github": "GitHub",
+    "title": "Yardım Alın · Geri Bildirim ve Önerilerde Bulunun"
+  },
+  "items": {
+    "activateSearch": {
+      "content": {
+        "chrome": "Chrome ve diğer Chromium tabanlı tarayıcı kullanıcıları, uzantımızın arama kutusunu otomatik olarak etkinleştirmek için yeni bir sekme açtıktan sonra {key} tuşuna basmanız yeterlidir.",
+        "firefox": "Aynı durum Firefox kullanıcıları için de geçerlidir, ancak Firefox penceredeki diğer düğmeleri önce etkinleştireceğinden, {key} tuşuna Chrome kullanıcılarından birkaç kez daha fazla basmanız gerekebilir.",
+        "intro": "Tarayıcı güvenlik politikası kısıtlamaları nedeniyle, yeni oluşturulan bir sekmede arama kutusuna otomatik olarak odaklanamıyoruz. Tarayıcı bunun yerine otomatik olarak adres çubuğuna odaklanacağından bu mümkün değildir."
+      },
+      "title": "Yeni bir sekme veya tarayıcı açıldığında arama kutusu otomatik olarak etkinleştirilebilir mi?"
+    },
+    "browserFreeze": {
+      "content": {
+        "intro": "Intel tümleşik grafiklere sahip bazı Windows cihazlarında, Chromium tabanlı tarayıcılar başlangıçta donabilir. Aşağıdaki çözümleri deneyin:",
+        "step1": "Grafik sürücüsünü güncelleyin: Grafik sürücünüzün güncel olduğundan emin olun.",
+        "step2": {
+          "note": "Google, OpenGL API oluşturmayı kullanmayı önermez, diğer seçeneklere geçmek de işe yarayabilir",
+          "text": "Denemeler (chrome://flags) sayfasında, {code1} öğesini {code2} olarak değiştirin"
+        },
+        "step3": "(Önerilmez) Tarayıcı donanım hızlandırmasını (diğer adıyla \"GPU hızlandırması\" veya \"grafik hızlandırması\") devre dışı bırakın."
+      },
+      "title": "Başlangıçta tarayıcı donuyor"
+    },
+    "chromeFooter": {
+      "content": {
+        "githubIssue": "GitHub Sorunu",
+        "reason": "Bunun nedeni, Google'ın tüm \"Chrome'u Özelleştir\" ile ilgili özellikleri yan çubuğa yerleştirmiş olmasıdır ve bu yan çubuğun giriş noktası yalnızca yeni sekme sayfasındadır.",
+        "reference": "Referans 👉",
+        "step": "Önce sağ alt köşedeki \"Chrome'u Özelleştir\" düğmesine tıklayarak yan çubuğu açabilir, ardından sayfanın alt kısmına gidip alt bilgi bölümündeki \"'Yeni Sekme' sayfasında alt bilgiyi göster\" seçeneğini kapatabilirsiniz."
+      },
+      "title": "Chrome'un yeni sekme sayfasının alt kısmındaki alt bilgi nasıl gizlenir?"
+    },
+    "performance": {
+      "content": {
+        "item1": "Performans ayarlarında gereksiz efektleri devre dışı bırakın (video duvar kağıtları kullanırken bulanıklık efektlerini etkinleştirmeyin)",
+        "item2": "Tarayıcı donanım hızlandırmasını etkinleştirin"
+      },
+      "title": "Arayüzde gecikme veya takılma, yüksek CPU/GPU kullanımı"
+    },
+    "restoreQuickLinks": {
+      "content": "Bir Hızlı Bağlantı öğesini kaldırdıktan sonra, açılan bildirimden geri yükleyebilirsiniz.",
+      "title": "Silinen/varsayılan Hızlı Bağlantı öğeleri nasıl geri yüklenir?"
+    }
+  },
+  "subtitle": "Umarım yardımcı olur~",
+  "title": "Sık Sorulan Sorular"
+}

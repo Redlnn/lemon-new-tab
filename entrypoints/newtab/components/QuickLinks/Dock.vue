@@ -362,7 +362,7 @@ function toggleLaunchpad() {
   showLaunchpad.value = !showLaunchpad.value
 }
 
-defineExpose({ refresh })
+defineExpose({ refresh, toggleLaunchpad })
 </script>
 
 <template>

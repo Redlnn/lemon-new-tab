@@ -385,7 +385,7 @@ const supportedLanguages = computed(() => {
   const locale = currentLanguage.value || navigator.language
   const displayNames = new Intl.DisplayNames([locale], { type: 'language' })
 
-  const languageCodes = ['zh-CN', 'zh-TW', 'zh-HK', 'en']
+  const languageCodes = ['zh-CN', 'zh-TW', 'zh-HK', 'en', 'tr-TR']
   const current = currentLanguage.value
 
   // 先添加当前语言，再添加其他语言

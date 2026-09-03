@@ -71,6 +71,27 @@ async function restoreDefaultTopSites() {
           <div class="settings__label">{{ t('common.openInNewTab') }}</div>
           <el-switch v-model="settings.dock.launchpad.openInNewTab" />
         </div>
+        <div class="settings__item settings__item--vertical settings-control-wide">
+          <div class="settings__label">{{ t('dock.launchpad.iconSize') }}</div>
+          <el-slider
+            v-model="settings.dock.launchpad.iconSize"
+            :min="40"
+            :max="96"
+            show-input
+            :show-input-controls="false"
+            :show-tooltip="false"
+          />
+        </div>
+        <div class="settings__item settings__item--horizontal settings__item--with-note">
+          <div class="settings__label">{{ t('dock.launchpad.rightClickToOpen') }}</div>
+          <el-switch
+            v-model="settings.dock.launchpad.rightClickToOpen"
+            :disabled="settings.bookmark.rightClickToOpen"
+          />
+          <p v-if="settings.bookmark.rightClickToOpen" class="settings__item-note">
+            {{ t('dock.launchpad.rightClickDisabledNote') }}
+          </p>
+        </div>
       </template>
     </SettingsSection>
 
