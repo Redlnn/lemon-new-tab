@@ -46,6 +46,7 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
       launchpad: {
         ...rest.dock.launchpad,
         iconSize: defaultSettings.dock.launchpad.iconSize,
+        rightClickToOpen: defaultSettings.dock.launchpad.rightClickToOpen,
       },
     },
     yiyan: {

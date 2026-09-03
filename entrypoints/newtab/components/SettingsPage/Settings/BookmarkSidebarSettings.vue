@@ -91,9 +91,15 @@ const sortModeOptions = [
           />
         </el-select>
       </div>
-      <div class="settings__item settings__item--horizontal">
+      <div class="settings__item settings__item--horizontal settings__item--with-note">
         <div class="settings__label">{{ t('bookmark.rightClickToOpen') }}</div>
-        <el-switch v-model="settings.bookmark.rightClickToOpen" />
+        <el-switch
+          v-model="settings.bookmark.rightClickToOpen"
+          :disabled="settings.dock.launchpad.rightClickToOpen"
+        />
+        <p v-if="settings.dock.launchpad.rightClickToOpen" class="settings__item-note">
+          {{ t('bookmark.rightClickDisabledNote') }}
+        </p>
       </div>
     </SettingsSection>
   </div>

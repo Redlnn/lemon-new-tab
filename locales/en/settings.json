@@ -100,6 +100,7 @@
       "rtl": "Right to left",
       "title": "Open direction"
     },
+    "rightClickDisabledNote": "Right-click to open Launchpad is enabled. Turn it off first.",
     "rightClickToOpen": "Right click on background to open",
     "showBtn": "Show bottom-right button",
     "title": "Bookmarks bar"
@@ -183,6 +184,8 @@
     "borderRadius": "Radius",
     "launchpad": {
       "iconSize": "Icon size",
+      "rightClickDisabledNote": "Right-click to open bookmarks is enabled. Turn it off first.",
+      "rightClickToOpen": "Right click on background to open",
       "show": "Show Launchpad in Dock",
       "title": "Launchpad"
     },

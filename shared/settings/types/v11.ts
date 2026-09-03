@@ -19,6 +19,7 @@ export interface SettingsSchemaV11 extends Omit<
   | 'yiyan'
   | 'layout'
   | 'dock'
+  | 'bookmark'
   | 'perf'
   | 'background'
 > {
@@ -68,6 +69,12 @@ export interface SettingsSchemaV11 extends Omit<
     launchpad: SettingsSchemaV10['dock']['launchpad'] & {
       iconSize: number
     }
+      rightClickToOpen: boolean
+    }
+  }
+
+  bookmark: SettingsSchemaV10['bookmark'] & {
+    rightClickToOpen: boolean
   }
 
   perf: Omit<

@@ -82,6 +82,16 @@ async function restoreDefaultTopSites() {
             :show-tooltip="false"
           />
         </div>
+        <div class="settings__item settings__item--horizontal settings__item--with-note">
+          <div class="settings__label">{{ t('dock.launchpad.rightClickToOpen') }}</div>
+          <el-switch
+            v-model="settings.dock.launchpad.rightClickToOpen"
+            :disabled="settings.bookmark.rightClickToOpen"
+          />
+          <p v-if="settings.bookmark.rightClickToOpen" class="settings__item-note">
+            {{ t('dock.launchpad.rightClickDisabledNote') }}
+          </p>
+        </div>
       </template>
     </SettingsSection>
 

@@ -132,8 +132,14 @@ watch(
   },
 )
 
-function openBookmarkSidebar() {
-  if (settings.bookmark.rightClickToOpen) {
+function handleBackgroundContextMenu() {
+  if (
+    settings.dock.enabled &&
+    settings.dock.launchpad.enabled &&
+    settings.dock.launchpad.rightClickToOpen
+  ) {
+    DockRef.value?.toggleLaunchpad()
+  } else if (settings.bookmark.rightClickToOpen) {
     void showBookmark()
   }
 }
@@ -256,7 +262,7 @@ function toggleMinimalMode() {
       class="app"
       :class="mainClass"
       :aria-label="t('a11y.main')"
-      @contextmenu.prevent="openBookmarkSidebar"
+      @contextmenu.prevent="handleBackgroundContextMenu"
       @dblclick.self="toggleMinimalMode"
     >
       <clock v-if="settings.clock.enabled" @contextmenu.stop />

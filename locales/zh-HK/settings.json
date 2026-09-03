@@ -100,6 +100,7 @@
       "rtl": "從右到左",
       "title": "打開方向"
     },
+    "rightClickDisabledNote": "已啟用右鍵背景打開啟動台，請先將其關閉。",
     "rightClickToOpen": "右鍵背景打開",
     "showBtn": "顯示右下角按鈕",
     "title": "書籤欄"
@@ -183,6 +184,8 @@
     "borderRadius": "圓角",
     "launchpad": {
       "iconSize": "圖示大小",
+      "rightClickDisabledNote": "已啟用右鍵背景打開書籤欄，請先將其關閉。",
+      "rightClickToOpen": "右鍵背景打開",
       "show": "在 Dock 中啟用啟動台",
       "title": "啟動台"
     },

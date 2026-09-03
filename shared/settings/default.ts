@@ -176,6 +176,7 @@ export const defaultSettings = {
       topSites: true,
       openInNewTab: false,
       iconSize: 72,
+      rightClickToOpen: false,
     },
   },
 
