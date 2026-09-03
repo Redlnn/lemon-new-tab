@@ -100,6 +100,7 @@
       "rtl": "從右到左",
       "title": "打開方向"
     },
+    "rightClickDisabledNote": "已啟用右鍵背景打開啟動台，請先將其關閉。",
     "rightClickToOpen": "右鍵背景打開",
     "showBtn": "顯示右下角快捷入口",
     "title": "書籤欄"
@@ -182,6 +183,8 @@
     "actionBtnNote": "開啟 Dock 後，功能按鈕只能放在頂部（可在「佈局」中選擇左/右）",
     "borderRadius": "圓角",
     "launchpad": {
+      "rightClickDisabledNote": "已啟用右鍵背景打開書籤欄，請先將其關閉。",
+      "rightClickToOpen": "右鍵背景打開",
       "show": "在 Dock 中啟用啟動台",
       "title": "啟動台"
     },

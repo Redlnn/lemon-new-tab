@@ -149,6 +149,18 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
     normalized.layout.minimalModeOnDoubleClick,
     defaultSettings.layout.minimalModeOnDoubleClick,
   )
+  normalized.dock.launchpad.rightClickToOpen = normalizeBoolean(
+    normalized.dock.launchpad.rightClickToOpen,
+    defaultSettings.dock.launchpad.rightClickToOpen,
+  )
+  normalized.bookmark.rightClickToOpen = normalizeBoolean(
+    normalized.bookmark.rightClickToOpen,
+    defaultSettings.bookmark.rightClickToOpen,
+  )
+  // 两个背景右键动作不能同时生效；旧设置中的书签行为优先保留。
+  if (normalized.bookmark.rightClickToOpen) {
+    normalized.dock.launchpad.rightClickToOpen = false
+  }
 
   const { bing } = normalized.background
   if (!isBingWallpaperResolution(bing.resolution)) {
