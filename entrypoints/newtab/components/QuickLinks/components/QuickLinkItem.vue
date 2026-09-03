@@ -4,6 +4,7 @@ import { OnLongPress } from '@vueuse/components'
 import Pin12Regular from '~icons/fluent/pin-12-regular'
 
 import { getFaviconDisplay } from '@/shared/media'
+import { useSettingsStore } from '@/shared/settings'
 
 import { isTouchEvent } from '@newtab/shared/touch'
 import { isValidUrl } from '@newtab/shared/utils'
@@ -19,10 +20,22 @@ const props = defineProps<{
   onContextMenu?: (event: MouseEvent | PointerEvent) => void
 }>()
 
+const settings = useSettingsStore()
 // 用户保存的图标不参与解析，移除后才恢复对链接 favicon 的获取。
 const faviconDisplay = getFaviconDisplay(computed(() => (props.favicon ? null : props.url)))
 const iconUrl = computed(() => props.favicon || faviconDisplay.value.src)
 const iconPending = computed(() => !props.favicon && faviconDisplay.value.state === 'pending')
+const titleInitial = computed(() => {
+  const title = props.title.trim()
+  return title ? String.fromCodePoint(title.codePointAt(0)!) : ''
+})
+const showTitleInitialFallback = computed(
+  () =>
+    settings.quickLinks.fallbackToTitleInitial &&
+    !props.favicon &&
+    faviconDisplay.value.state === 'fallback' &&
+    Boolean(titleInitial.value),
+)
 const safeUrl = computed(() => (isValidUrl(props.url) ? props.url : '#'))
 
 function openFocusedLink(event: KeyboardEvent) {
@@ -69,11 +82,15 @@ function openFocusedLink(event: KeyboardEvent) {
         >
           <span
             class="span"
-            :class="{ 'span--pending': iconPending }"
-            :style="{
-              backgroundImage: iconUrl ? `url(${iconUrl})` : undefined,
+            :class="{
+              'span--pending': iconPending,
+              'span--title-initial': showTitleInitialFallback,
             }"
-          ></span>
+            :style="{
+              backgroundImage: !showTitleInitialFallback && iconUrl ? `url(${iconUrl})` : undefined,
+            }"
+            >{{ showTitleInitialFallback ? titleInitial : '' }}</span
+          >
         </div>
       </div>
       <el-text
@@ -119,11 +136,15 @@ function openFocusedLink(event: KeyboardEvent) {
         >
           <span
             class="span"
-            :class="{ 'span--pending': iconPending }"
-            :style="{
-              backgroundImage: iconUrl ? `url(${iconUrl})` : undefined,
+            :class="{
+              'span--pending': iconPending,
+              'span--title-initial': showTitleInitialFallback,
             }"
-          ></span>
+            :style="{
+              backgroundImage: !showTitleInitialFallback && iconUrl ? `url(${iconUrl})` : undefined,
+            }"
+            >{{ showTitleInitialFallback ? titleInitial : '' }}</span
+          >
         </div>
       </div>
       <el-text

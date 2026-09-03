@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type CheckboxValueType, ElCheckbox, ElLoading, ElRadio, ElRadioGroup } from 'element-plus'
+import { ElCheckbox, ElLoading, ElRadio, ElRadioGroup, type CheckboxValueType } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import DeleteForeverOutlined from '~icons/ic/outline-delete-forever'
 import DownloadRound from '~icons/ic/round-download'

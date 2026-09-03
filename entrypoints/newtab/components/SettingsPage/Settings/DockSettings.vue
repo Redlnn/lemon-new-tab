@@ -68,6 +68,10 @@ async function restoreDefaultTopSites() {
           <el-switch v-model="settings.dock.launchpad.topSites" />
         </div>
         <div class="settings__item settings__item--horizontal">
+          <div class="settings__label">{{ t('quickLinks.fallbackToTitleInitial') }}</div>
+          <el-switch v-model="settings.quickLinks.fallbackToTitleInitial" />
+        </div>
+        <div class="settings__item settings__item--horizontal">
           <div class="settings__label">{{ t('common.openInNewTab') }}</div>
           <el-switch v-model="settings.dock.launchpad.openInNewTab" />
         </div>
@@ -108,6 +112,10 @@ async function restoreDefaultTopSites() {
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('common.openInNewTab') }}</div>
         <el-switch v-model="settings.dock.openInNewTab" />
+      </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('quickLinks.fallbackToTitleInitial') }}</div>
+        <el-switch v-model="settings.quickLinks.fallbackToTitleInitial" />
       </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('dock.limitCount') }}</div>

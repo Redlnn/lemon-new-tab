@@ -436,7 +436,7 @@ defineExpose({ refresh, toggleLaunchpad })
           :rel="settings.dock.openInNewTab ? 'noopener noreferrer' : undefined"
           @contextmenu.stop.prevent="onItemContextmenu($event, item, true, idx)"
         >
-          <favicon-image :url="item.url" :favicon="item.favicon" alt="" />
+          <favicon-image :url="item.url" :favicon="item.favicon" :title="item.title" />
         </a>
       </el-tooltip>
       <div
@@ -474,7 +474,7 @@ defineExpose({ refresh, toggleLaunchpad })
           @contextmenu.stop.prevent="onItemContextmenu($event, item, false, j)"
           @trigger="onItemLongPress($event, item, false, j)"
         >
-          <favicon-image :url="item.url" :favicon="item.favicon" alt="" />
+          <favicon-image :url="item.url" :favicon="item.favicon" :title="item.title" />
         </OnLongPress>
       </el-tooltip>
       <div v-if="j !== visibleTopSites.length - 1" class="dock-gap" :ref="setScalableRef"></div>
@@ -588,19 +588,32 @@ html.colorful .dock:not(.dock--opacity) {
     border-radius var(--td, 0s),
     background-color var(--el-transition-duration-fast) ease;
 
-  img {
+  img,
+  .favicon-image__title-initial {
     width: 75%;
     width: var(--item-ratio);
     height: var(--item-ratio);
-    object-fit: cover;
     border-radius: calc(var(--scale, 1) * var(--dock-icon-radius));
     transition:
       border-radius var(--td, 0s),
       opacity 0.1s ease;
+  }
+
+  img {
+    object-fit: cover;
 
     &.favicon-image--pending {
       opacity: 0;
     }
+  }
+
+  .favicon-image__title-initial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(var(--item-size) * 0.4);
+    font-weight: 500;
+    color: var(--el-text-color-primary);
   }
 
   svg {

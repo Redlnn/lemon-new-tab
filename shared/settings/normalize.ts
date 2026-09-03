@@ -59,7 +59,9 @@ type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
     builtInEngineOrder?: SearchSettings['builtInEngineOrder']
     hiddenBuiltInEngines?: SearchSettings['hiddenBuiltInEngines']
   }
-  quickLinks?: CURRENT_CONFIG_SCHEMA['quickLinks']
+  quickLinks?: Omit<CURRENT_CONFIG_SCHEMA['quickLinks'], 'fallbackToTitleInitial'> & {
+    fallbackToTitleInitial?: unknown
+  }
   yiyan?: CURRENT_CONFIG_SCHEMA['yiyan']
   layout?: Omit<CURRENT_CONFIG_SCHEMA['layout'], 'minimalModeOnDoubleClick'> & {
     minimalModeOnDoubleClick?: unknown
@@ -217,6 +219,10 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
   normalized.quickLinks.grouping ??= defaultSettings.quickLinks.grouping
   normalized.quickLinks.useScroll ??= defaultSettings.quickLinks.useScroll
   normalized.quickLinks.pagingLoop ??= defaultSettings.quickLinks.pagingLoop
+  normalized.quickLinks.fallbackToTitleInitial = normalizeBoolean(
+    normalized.quickLinks.fallbackToTitleInitial,
+    defaultSettings.quickLinks.fallbackToTitleInitial,
+  )
   normalized.quickLinks.iconBorderRadius = clampInteger(
     normalized.quickLinks.iconBorderRadius,
     defaultSettings.quickLinks.iconBorderRadius,
@@ -253,7 +259,6 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
     MIN_LAUNCHPAD_ICON_SIZE,
     MAX_LAUNCHPAD_ICON_SIZE,
   )
-
   normalizePerfSurface(normalized.perf, 'bookmark')
   normalizePerfSurface(normalized.perf, 'dialog')
   normalizePerfSurface(normalized.perf, 'searchBar')

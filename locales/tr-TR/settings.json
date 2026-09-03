@@ -345,6 +345,7 @@
   },
   "quickLinks": {
     "border": "Simge kenarlığını göster",
+    "fallbackToTitleInitial": "Simge kullanılamadığında başlığın ilk harfini göster",
     "grouping": "Grupları etkinleştir",
     "groupingDisableConfirm": "Grupları devre dışı bırakmak, tüm Hızlı Bağlantı gruplarını birleştirir ve yinelenen URL'leri kaldırır. Farklı gruplardaki yinelenen bağlantılar korunamaz.",
     "groupingTip": "Yeniden adlandırmak için Hızlı Bağlantılar veya Başlatıcı'da bir grup adına çift tıklayın.",

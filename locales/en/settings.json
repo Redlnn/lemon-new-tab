@@ -366,6 +366,7 @@
   },
   "quickLinks": {
     "border": "Show icon border",
+    "fallbackToTitleInitial": "Show title initial when icon is unavailable",
     "grouping": "Enable groups",
     "groupingDisableConfirm": "Disabling groups will merge all Quick Links groups and remove duplicate URLs. Duplicate links in different groups cannot be preserved.",
     "groupingTip": "Double-click a group name in Quick Links or Launchpad to rename it.",

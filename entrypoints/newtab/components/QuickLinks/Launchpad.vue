@@ -761,6 +761,7 @@ onBeforeUnmount(() => {
                             <favicon-image
                               :url="item.url"
                               :favicon="item.favicon"
+                              :title="item.title"
                               :alt="item.title"
                             />
                           </div>
@@ -834,6 +835,7 @@ onBeforeUnmount(() => {
                             <favicon-image
                               :url="item.url"
                               :favicon="item.favicon"
+                              :title="item.title"
                               :alt="item.title"
                             />
                           </div>
@@ -904,6 +906,7 @@ onBeforeUnmount(() => {
                           <favicon-image
                             :url="item.url"
                             :favicon="item.favicon"
+                            :title="item.title"
                             :alt="item.title"
                           />
                         </div>
@@ -950,6 +953,7 @@ onBeforeUnmount(() => {
                           <favicon-image
                             :url="item.url"
                             :favicon="item.favicon"
+                            :title="item.title"
                             :alt="item.title"
                           />
                         </div>
@@ -1270,16 +1274,29 @@ onBeforeUnmount(() => {
       border-radius: var(--le-radius-medium, 12px);
     }
 
-    img {
+    img,
+    .favicon-image__title-initial {
       width: 75%;
       height: 75%;
-      object-fit: contain;
       border-radius: var(--le-radius-inner, 10px);
       transition: opacity 0.1s ease;
+    }
+
+    img {
+      object-fit: contain;
 
       &.favicon-image--pending {
         opacity: 0;
       }
+    }
+
+    .favicon-image__title-initial {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: calc(var(--launchpad-icon-size) * 0.55);
+      font-weight: 500;
+      color: #fff;
     }
 
     &--add {

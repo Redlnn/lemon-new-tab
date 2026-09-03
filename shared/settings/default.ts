@@ -127,6 +127,7 @@ export const defaultSettings = {
     useScroll: false,
     pagingLoop: false,
     showOnSearchFocus: false,
+    fallbackToTitleInitial: false,
 
     iconSize: 50,
     iconRatio: 0.5,

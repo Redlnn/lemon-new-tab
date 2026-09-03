@@ -130,6 +130,10 @@ const alertType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'inf
         <div class="settings__label">{{ t('quickLinks.showTitle') }}</div>
         <el-switch v-model="settings.quickLinks.title.show" />
       </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('quickLinks.fallbackToTitleInitial') }}</div>
+        <el-switch v-model="settings.quickLinks.fallbackToTitleInitial" />
+      </div>
     </SettingsSection>
 
     <SettingsSection

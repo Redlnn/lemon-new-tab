@@ -52,6 +52,7 @@ export interface SettingsSchemaV11 extends Omit<
 
   quickLinks: SettingsSchemaV10['shortcut'] & {
     iconBorderRadius: number
+    fallbackToTitleInitial: boolean
   }
 
   yiyan: SettingsSchemaV10['yiyan'] & {
