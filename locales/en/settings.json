@@ -183,6 +183,7 @@
     "actionBtnNote": "When Dock is enabled, the button bar can only be placed at the top (choose left/right in Layout settings)",
     "borderRadius": "Radius",
     "launchpad": {
+      "iconSize": "Icon size",
       "rightClickDisabledNote": "Right-click to open bookmarks is enabled. Turn it off first.",
       "rightClickToOpen": "Right click on background to open",
       "show": "Show Launchpad in Dock",

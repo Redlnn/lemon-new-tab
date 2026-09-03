@@ -139,9 +139,8 @@ const COLS = computed(() => {
 })
 const ROWS = computed(() => {
   const isSmall = windowWidth.value <= 500
-  const isMid = windowWidth.value <= 800
   const h = containerHeight.value - (isSmall ? 70 : 88) - 64
-  const rowHeight = isSmall ? 106 : isMid ? 114 : 122
+  const rowHeight = settings.dock.launchpad.iconSize + 50
   return Math.max(1, Math.floor((h + 8) / rowHeight))
 })
 
@@ -592,6 +591,7 @@ onBeforeUnmount(() => {
           <div
             ref="container"
             class="launchpad-wrapper"
+            :style="{ '--launchpad-icon-size': `${settings.dock.launchpad.iconSize}px` }"
             tabindex="-1"
             @click.self="close"
             @contextmenu.prevent.stop
@@ -1255,22 +1255,18 @@ onBeforeUnmount(() => {
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    width: 72px;
-    height: 72px;
+    width: var(--launchpad-icon-size);
+    height: var(--launchpad-icon-size);
     margin-bottom: 8px;
     overflow: hidden;
     border-radius: calc(var(--le-radius-base, 20px) * 0.9);
     transition: 0.15s ease;
 
     @media (width <= 800px) {
-      width: 64px;
-      height: 64px;
       border-radius: calc(var(--le-radius-base, 20px) * 0.7);
     }
 
     @media (width <= 500px) {
-      width: 56px;
-      height: 56px;
       border-radius: var(--le-radius-medium, 12px);
     }
 

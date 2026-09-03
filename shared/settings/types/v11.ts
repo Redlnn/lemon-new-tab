@@ -67,6 +67,8 @@ export interface SettingsSchemaV11 extends Omit<
   dock: Omit<SettingsSchemaV10['dock'], 'launchpad'> & {
     borderRadius: number
     launchpad: SettingsSchemaV10['dock']['launchpad'] & {
+      iconSize: number
+    }
       rightClickToOpen: boolean
     }
   }

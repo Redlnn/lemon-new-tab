@@ -26,6 +26,8 @@ const MIN_GLOBAL_BORDER_RADIUS = 0
 const MAX_GLOBAL_BORDER_RADIUS = 40
 const MIN_DOCK_BORDER_RADIUS = 0
 const MAX_DOCK_BORDER_RADIUS = 40
+const MIN_LAUNCHPAD_ICON_SIZE = 40
+const MAX_LAUNCHPAD_ICON_SIZE = 96
 type PerfTransparencyKey =
   | 'bookmark'
   | 'dialog'
@@ -62,7 +64,11 @@ type MutableCurrentSettings = CURRENT_CONFIG_SCHEMA & {
   layout?: Omit<CURRENT_CONFIG_SCHEMA['layout'], 'minimalModeOnDoubleClick'> & {
     minimalModeOnDoubleClick?: unknown
   }
-  dock?: CURRENT_CONFIG_SCHEMA['dock']
+  dock?: Omit<CURRENT_CONFIG_SCHEMA['dock'], 'launchpad'> & {
+    launchpad?: Omit<CURRENT_CONFIG_SCHEMA['dock']['launchpad'], 'iconSize'> & {
+      iconSize?: unknown
+    }
+  }
   perf?: CURRENT_CONFIG_SCHEMA['perf']
 }
 
@@ -135,6 +141,7 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
   normalized.yiyan ??= structuredClone(defaultSettings.yiyan)
   normalized.layout ??= structuredClone(defaultSettings.layout)
   normalized.dock ??= structuredClone(defaultSettings.dock)
+  normalized.dock.launchpad ??= structuredClone(defaultSettings.dock.launchpad)
   normalized.perf ??= structuredClone(defaultSettings.perf)
 
   normalized.theme.keepClockVisibleOnIdle = normalizeBoolean(
@@ -239,6 +246,12 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
     defaultSettings.dock.borderRadius,
     MIN_DOCK_BORDER_RADIUS,
     MAX_DOCK_BORDER_RADIUS,
+  )
+  normalized.dock.launchpad.iconSize = clampInteger(
+    normalized.dock.launchpad.iconSize,
+    defaultSettings.dock.launchpad.iconSize,
+    MIN_LAUNCHPAD_ICON_SIZE,
+    MAX_LAUNCHPAD_ICON_SIZE,
   )
 
   normalizePerfSurface(normalized.perf, 'bookmark')

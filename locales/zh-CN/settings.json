@@ -183,6 +183,7 @@
     "actionBtnNote": "开启 Dock 后，功能按钮只能放在顶部（可在「布局」中选择左/右）",
     "borderRadius": "圆角",
     "launchpad": {
+      "iconSize": "图标大小",
       "rightClickDisabledNote": "已启用右键背景打开书签栏，请先将其关闭。",
       "rightClickToOpen": "右键背景打开",
       "show": "在 Dock 中启用启动台",
