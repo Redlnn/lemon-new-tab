@@ -6,11 +6,12 @@ export {
   clearFaviconCache,
   fetchFaviconWithCache,
   hydrateFaviconCache,
+  markFaviconFetchFailed,
   setFaviconCacheEnabled,
   warmFaviconCache,
 } from './faviconFetch'
 
-import { fetchFaviconWithCache, peekFaviconFromL1 } from './faviconFetch'
+import { fetchFaviconWithCache, markFaviconFetchFailed, peekFaviconFromL1 } from './faviconFetch'
 
 export function getFaviconURL(url: string | Ref<string | null>): Ref<string> {
   const iconUrl = ref('/favicon.png')
@@ -144,7 +145,10 @@ export function getFaviconDisplay(url: string | Ref<string | null>): Ref<Favicon
     const favicon = await fetchFaviconWithCache(u).catch(() => null)
     if (currentSeq !== seq) return
     if (!favicon || !(await preloadFavicon(favicon)) || currentSeq !== seq) {
-      if (currentSeq === seq) display.value = { src: '/favicon.png', state: 'fallback' }
+      if (currentSeq === seq) {
+        markFaviconFetchFailed(u)
+        display.value = { src: '/favicon.png', state: 'fallback' }
+      }
       return
     }
 
