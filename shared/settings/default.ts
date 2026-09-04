@@ -265,6 +265,7 @@ export const defaultSettings = {
     rightClickToOpen: true,
     showBtn: true,
     defaultSortMode: SortMode.Original,
+    drawerWidth: 400,
   },
 
   hideMajorChangelog: true,

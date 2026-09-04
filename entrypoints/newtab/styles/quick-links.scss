@@ -411,12 +411,12 @@
               display: flex;
               align-items: center;
               justify-content: center;
-              font-size: calc(var(--icon_size) * 0.3);
+              font-size: calc(var(--icon_size) * var(--icon_ratio));
               font-weight: 500;
-              color: var(--el-text-color-primary);
+              color: var(--el-text-color-regular);
               user-select: none;
 
-              .quick-links__container--white-in-light & {
+              html:not(.dark) .quick-links__container--white-in-light & {
                 color: var(--quick-links-light-title-color);
               }
             }
@@ -440,7 +440,7 @@
             0 0 6px rgb(0 0 0 / 10%);
         }
 
-        .quick-links__container--white-in-light & {
+        html:not(.dark) .quick-links__container--white-in-light & {
           color: var(--quick-links-light-title-color);
         }
       }

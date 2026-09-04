@@ -1,5 +1,5 @@
 // shared/media/faviconFetch.ts
-import { browser } from '#imports'
+import { browser, storage } from '#imports'
 
 import {
   clearFaviconCacheEntries,
@@ -104,6 +104,15 @@ const l1Cache = new Map<string, FaviconCacheEntry>()
 // 去重：防止对同一 origin 发起多个并发请求
 const pendingFetches = new Map<string, Promise<string | null>>()
 
+// 同一浏览器会话内已确认无图标的站点直接回落，避免重复探测。
+const FAVICON_FAILURE_CACHE_MAX_ENTRIES = 200
+const faviconFailureStorage = storage.defineItem<string[]>('session:faviconFetchFailures', {
+  fallback: [],
+})
+const failedFaviconKeys = new Set<string>()
+let faviconFailureHydrationTask: Promise<void> | null = null
+let faviconFailureWriteQueue = Promise.resolve()
+
 // ---------------------------------------------------------------------------
 // 常见 favicon 路径（策略 B/D 共用）
 // ---------------------------------------------------------------------------
@@ -183,6 +192,47 @@ function toOrigin(url: string): string | null {
   } catch {
     return null
   }
+}
+
+function faviconFailureKey(origin: string, cacheEnabled = _cacheEnabled): string {
+  // 开关会改变抓取策略；切换后允许对同一站点重新尝试。
+  return `${cacheEnabled ? 'aggressive' : 'default'}:${origin}`
+}
+
+function hydrateFaviconFailures(): Promise<void> {
+  if (!faviconFailureHydrationTask) {
+    faviconFailureHydrationTask = faviconFailureStorage
+      .getValue()
+      .then((keys) => {
+        for (const key of keys.slice(-FAVICON_FAILURE_CACHE_MAX_ENTRIES)) {
+          failedFaviconKeys.add(key)
+        }
+      })
+      .catch(() => {})
+  }
+  return faviconFailureHydrationTask
+}
+
+function rememberFaviconFailure(origin: string, cacheEnabled = _cacheEnabled): void {
+  const key = faviconFailureKey(origin, cacheEnabled)
+  if (failedFaviconKeys.has(key)) return
+
+  failedFaviconKeys.add(key)
+  while (failedFaviconKeys.size > FAVICON_FAILURE_CACHE_MAX_ENTRIES) {
+    const oldestKey = failedFaviconKeys.keys().next().value
+    if (oldestKey === undefined) break
+    failedFaviconKeys.delete(oldestKey)
+  }
+
+  const keys = [...failedFaviconKeys]
+  const next = faviconFailureWriteQueue.then(() => faviconFailureStorage.setValue(keys))
+  faviconFailureWriteQueue = next.catch(() => {})
+}
+
+/** 标记图片加载失败，避免同一会话内继续请求该站点。 */
+export function markFaviconFetchFailed(pageUrl: string): void {
+  const origin = toOrigin(pageUrl)
+  if (origin) rememberFaviconFailure(origin)
 }
 
 /** 从 <link> 标签字符串中解析出属性键值对。 */
@@ -453,6 +503,9 @@ export async function fetchFaviconWithCache(pageUrl: string): Promise<string | n
   const origin = toOrigin(pageUrl)
   if (!origin) return null
 
+  await hydrateFaviconFailures()
+  if (failedFaviconKeys.has(faviconFailureKey(origin))) return null
+
   const l1 = l1Get(origin)
   if (l1) {
     if (isFreshFaviconEntry(l1)) return l1.data
@@ -486,6 +539,7 @@ async function doFetch(pageUrl: string, origin: string): Promise<string | null> 
   if (existing) return existing
 
   const generationAtStart = cacheGeneration
+  const cacheEnabledAtStart = _cacheEnabled
 
   const promise = (async (): Promise<string | null> => {
     let data: string | null = null
@@ -520,6 +574,8 @@ async function doFetch(pageUrl: string, origin: string): Promise<string | null> 
     if (data && generationAtStart === cacheGeneration) {
       const entry: FaviconCacheEntry = { data, type, fetchedAt: Date.now() }
       await writeFaviconCacheEntry(origin, entry, generationAtStart)
+    } else if (!data) {
+      rememberFaviconFailure(origin, cacheEnabledAtStart)
     }
 
     return data

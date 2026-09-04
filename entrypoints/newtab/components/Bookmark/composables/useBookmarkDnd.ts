@@ -1,5 +1,4 @@
 export const BOOKMARK_DND_TYPE = 'bookmark-item'
-export const BOOKMARK_DND_GROUP = 'bookmark-tree'
 
 export type BookmarkDndData =
   | {
@@ -15,17 +14,11 @@ export type BookmarkDndData =
       index: number
     }
 
-export type SortableLike = {
-  initialGroup?: unknown
-  group?: unknown
-  initialIndex?: unknown
-  index?: unknown
-  sortable?: {
-    initialGroup?: unknown
-    group?: unknown
-    initialIndex?: unknown
-    index?: unknown
-  }
+export type BookmarkDropPreview = {
+  nodeId: string
+  placement: 'before' | 'after' | 'inside'
+  parentId: string
+  index: number
 }
 
 export function bookmarkDndId(id: string) {
@@ -47,45 +40,59 @@ export function getBookmarkDndData(entity: unknown): BookmarkDndData | null {
   return toBookmarkDndData((entity as { data?: unknown } | null | undefined)?.data)
 }
 
-export function getSortableString(value: SortableLike | null, key: 'initialGroup' | 'group') {
-  const direct = value?.[key]
-  if (typeof direct === 'string') return direct
-  const nested = value?.sortable?.[key]
-  return typeof nested === 'string' ? nested : null
-}
+export function createBookmarkDropPreview(
+  source: BookmarkDndData | null,
+  target: BookmarkDndData | null,
+  pointerY?: number,
+  targetCenterY?: number,
+): BookmarkDropPreview | null {
+  if (source?.kind !== 'bookmark-item' || !target) return null
 
-export function getSortableNumber(value: SortableLike | null, key: 'initialIndex' | 'index') {
-  const direct = value?.[key]
-  if (typeof direct === 'number') return direct
-  const nested = value?.sortable?.[key]
-  return typeof nested === 'number' ? nested : null
-}
-
-function clampBookmarkMoveIndex(
-  index: number,
-  parentId: string,
-  getChildrenCount: (parentId: string) => number | null,
-) {
-  const childrenCount = getChildrenCount(parentId)
-  if (childrenCount === null) return Math.max(0, index)
-
-  return Math.min(Math.max(0, index), Math.max(0, childrenCount))
-}
-
-export function resolveBookmarkMoveIndex(options: {
-  fromParentId: string | undefined
-  fromIndex: number
-  nextParentId: string
-  nextIndex: number
-  getChildrenCount: (parentId: string) => number | null
-}) {
-  const { fromParentId, fromIndex, nextParentId, nextIndex, getChildrenCount } = options
-  if (fromParentId !== nextParentId || nextIndex <= fromIndex) {
-    return clampBookmarkMoveIndex(nextIndex, nextParentId, getChildrenCount)
+  if (target.kind === 'bookmark-container') {
+    return {
+      nodeId: target.parentId,
+      placement: 'inside',
+      parentId: target.parentId,
+      index: target.index,
+    }
   }
 
-  // dnd-kit 的同级排序 index 描述拖拽列表位置，bookmarks.move 接收的是移除源节点后的插入位置。
-  const offset = nextIndex - fromIndex
-  const browserMoveIndex = offset === 1 ? nextIndex - 1 : nextIndex + 1
-  return clampBookmarkMoveIndex(browserMoveIndex, nextParentId, getChildrenCount)
+  if (source.id === target.id || target.parentId === undefined || target.index === undefined) {
+    return null
+  }
+
+  const placement =
+    pointerY === undefined || targetCenterY === undefined
+      ? source.parentId === target.parentId && (source.index ?? 0) < target.index
+        ? 'after'
+        : 'before'
+      : pointerY < targetCenterY
+        ? 'before'
+        : 'after'
+
+  return {
+    nodeId: target.id,
+    placement,
+    parentId: target.parentId,
+    index: target.index + (placement === 'after' ? 1 : 0),
+  }
+}
+
+export function resolveBookmarkMoveDestination(options: {
+  fromParentId: string | undefined
+  fromIndex: number
+  preview: BookmarkDropPreview
+  getChildrenCount: (parentId: string) => number | null
+}) {
+  const { fromParentId, fromIndex, preview, getChildrenCount } = options
+  const sameParent = fromParentId === preview.parentId
+  const childrenCount = getChildrenCount(preview.parentId)
+  const maxIndex = childrenCount === null ? Number.POSITIVE_INFINITY : Math.max(0, childrenCount)
+  const index = Math.min(Math.max(0, preview.index), maxIndex)
+
+  return {
+    parentId: preview.parentId,
+    // 同级移动使用移除前的索引；当前位置后一格也代表无需移动。
+    index: sameParent && index === fromIndex + 1 ? fromIndex : index,
+  }
 }

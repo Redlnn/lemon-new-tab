@@ -13,6 +13,8 @@ import { hasExactWebDavPermission } from '@/shared/webdavSync/permissions'
 import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
 import { serializeWebDavError, WebDavError } from '@/shared/webdavSync/webdav'
 
+import { initializeBookmarkCache } from './bookmarkCache'
+
 const SYNC_DATA_KEYS = new Set([
   'settings',
   'quickLinks',
@@ -22,6 +24,8 @@ const SYNC_DATA_KEYS = new Set([
 ])
 
 export default defineBackground(() => {
+  initializeBookmarkCache()
+
   let applyingRemote = false
   let configured = false
   let maintenance = false

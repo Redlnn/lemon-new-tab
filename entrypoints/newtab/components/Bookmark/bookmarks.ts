@@ -4,6 +4,7 @@ import i18next from 'i18next'
 
 import { browser, type Browser } from 'wxt/browser'
 
+import { getCachedBookmarkTree } from '@/shared/bookmarks/cacheBridge'
 import { SortMode } from '@/shared/enums'
 import { createExtensionWorker } from '@/shared/worker'
 
@@ -38,14 +39,19 @@ const bookmarkListeners: {
       oldIndex: number
     },
   ) => void
+  childrenReordered?: (id: string, reorderInfo: { childIds: string[] }) => void
+  importBegan?: () => void
   importEnded?: () => void
 } = {}
 
 type BookmarkListenerKey = keyof typeof bookmarkListeners
 
 const suppressedMoveReloadIds = new Set<string>()
+let importingBookmarks = false
 type BookmarkTreeNode = Browser.bookmarks.BookmarkTreeNode
 let bookmarkNodeIndex = new Map<string, BookmarkTreeNode>()
+let workerReady = false
+let pendingWorkerInit: BookmarkTreeNode[] | null = null
 
 function setBookmarkListener<K extends BookmarkListenerKey>(
   key: K,
@@ -60,6 +66,7 @@ function setBookmarkListener<K extends BookmarkListenerKey>(
   } catch (error) {
     if (errorLabel) {
       console.warn(`[bookmark] ${errorLabel}:`, error)
+      delete bookmarkListeners[key]
       return
     }
 
@@ -141,19 +148,20 @@ function buildBookmarkNodeIndex(nodes: BookmarkTreeNode[]) {
 }
 
 export const useBookmarkStore = defineStore('bookmark', () => {
-  const tree = ref<Browser.bookmarks.BookmarkTreeNode[]>([])
+  const tree = shallowRef<Browser.bookmarks.BookmarkTreeNode[]>([])
   const loaded = ref(false)
   const sortMode = ref<SortMode>(SortMode.Original)
   const searchQuery = ref('')
   // 根据查询/排序计算后的树结果
-  const filteredResult = ref<Browser.bookmarks.BookmarkTreeNode[]>([])
+  const filteredResult = shallowRef<Browser.bookmarks.BookmarkTreeNode[]>([])
   // 首个匹配路径（按照排序/展示顺序），空数组表示无匹配
   const firstMatchPath = ref<string[]>([])
+  let latestLoadRequest = 0
 
   // 根据 `searchQuery` 过滤后的树。如果查询为空则返回完整的排序树。
   const filteredTree = computed(() => filteredResult.value)
   const reloadBookmarks = (reason: string) => {
-    void loadBookmarks().catch((error) => {
+    void loadBookmarks(true).catch((error) => {
       console.error(`[bookmark] Failed to reload bookmarks after ${reason}:`, error)
     })
   }
@@ -185,7 +193,13 @@ export const useBookmarkStore = defineStore('bookmark', () => {
   }
 
   const postWorkerInit = (nodes: BookmarkTreeNode[]) => {
-    worker?.postMessage({
+    if (!worker) return
+    if (!workerReady) {
+      pendingWorkerInit = nodes
+      return
+    }
+
+    worker.postMessage({
       type: 'INIT',
       payload: {
         tree: nodes,
@@ -196,6 +210,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
   }
 
   const postWorkerFilter = () => {
+    if (!workerReady) return
     worker?.postMessage({
       type: 'FILTER',
       payload: {
@@ -208,6 +223,8 @@ export const useBookmarkStore = defineStore('bookmark', () => {
 
   const initWorker = () => {
     if (worker) return
+
+    workerReady = false
     worker = createExtensionWorker(bookmarkWorkerUrl)
     if (!languageChangedListener) {
       languageChangedListener = (lang) => {
@@ -224,6 +241,13 @@ export const useBookmarkStore = defineStore('bookmark', () => {
 
     worker.onmessage = (e) => {
       const { type, filteredResult: result, firstMatchPath: path } = e.data
+      if (type === 'READY') {
+        workerReady = true
+        const nodes = pendingWorkerInit
+        pendingWorkerInit = null
+        if (nodes) postWorkerInit(nodes)
+        return
+      }
       if (type === 'ERROR') {
         const workerError =
           typeof e.data.error === 'string' && e.data.error ? e.data.error : 'Unknown worker error'
@@ -236,13 +260,17 @@ export const useBookmarkStore = defineStore('bookmark', () => {
       }
 
       if (type === 'INIT_DONE' || type === 'FILTER_DONE') {
-        filteredResult.value = result
+        if (Array.isArray(result)) filteredResult.value = result
         firstMatchPath.value = path
-        if (type === 'INIT_DONE') loaded.value = true
+        if (type === 'INIT_DONE') {
+          loaded.value = true
+          if (searchQuery.value) postWorkerFilter()
+        }
       }
     }
 
     worker.onerror = (event) => {
+      workerReady = false
       const message = event.message || 'Unknown worker runtime error'
       console.error('Bookmark worker runtime error:', event)
       ElNotification.error({
@@ -250,11 +278,16 @@ export const useBookmarkStore = defineStore('bookmark', () => {
         message,
       })
     }
+  }
 
-    // 添加书签变更监听，变更时重新加载书签并刷新 worker 缓存
+  const ensureBookmarkListeners = () => {
     setBookmarkListener(
       'created',
-      () => reloadBookmarks('onCreated'),
+      () => {
+        if (!importingBookmarks || !bookmarkListeners.importEnded) {
+          reloadBookmarks('onCreated')
+        }
+      },
       (listener) => browser.bookmarks.onCreated.addListener(listener),
     )
     setBookmarkListener(
@@ -276,26 +309,55 @@ export const useBookmarkStore = defineStore('bookmark', () => {
       (listener) => browser.bookmarks.onMoved.addListener(listener),
     )
     setBookmarkListener(
+      'childrenReordered',
+      () => reloadBookmarks('onChildrenReordered'),
+      (listener) => browser.bookmarks.onChildrenReordered.addListener(listener),
+      'onChildrenReordered listener is unavailable in this browser',
+    )
+    setBookmarkListener(
+      'importBegan',
+      () => {
+        importingBookmarks = true
+      },
+      (listener) => browser.bookmarks.onImportBegan.addListener(listener),
+      'onImportBegan listener is unavailable in this browser',
+    )
+    setBookmarkListener(
       'importEnded',
-      () => reloadBookmarks('onImportEnded'),
+      () => {
+        importingBookmarks = false
+        reloadBookmarks('onImportEnded')
+      },
       (listener) => browser.bookmarks.onImportEnded.addListener(listener),
       'onImportEnded listener is unavailable in this browser',
     )
   }
 
-  const loadBookmarks = async () => {
-    const _tree = await browser.bookmarks.getTree()
-    const children = _tree[0]?.children ?? []
+  const loadBookmarks = async (forceNative = false) => {
+    const request = ++latestLoadRequest
+    const cachedTree = forceNative ? null : await getCachedBookmarkTree()
+    const useCachedTree = cachedTree !== null && hasBookmarkContent(cachedTree)
+    const children =
+      useCachedTree && cachedTree
+        ? cachedTree
+        : ((await browser.bookmarks.getTree())[0]?.children ?? [])
+    if (request !== latestLoadRequest) return
+
     tree.value = children
     buildBookmarkNodeIndex(children)
+    ensureBookmarkListeners()
 
     if (!hasBookmarkContent(children)) {
       filteredResult.value = []
       firstMatchPath.value = []
-      loaded.value = true
+      if (worker) postWorkerInit([])
+      else loaded.value = true
       return
     }
 
+    // 搜索 Worker 仅负责筛选与排序；已有原始树时先渲染，避免其启动失败或延迟使面板误显示为空。
+    filteredResult.value = children
+    firstMatchPath.value = []
     initWorker()
 
     postWorkerInit(children)
@@ -315,13 +377,13 @@ export const useBookmarkStore = defineStore('bookmark', () => {
         : nextTree
 
       if (!source || !targetSiblings) {
-        await loadBookmarks()
+        await loadBookmarks(true)
         return
       }
 
       const [node] = source.siblings.splice(source.index, 1)
       if (!node) {
-        await loadBookmarks()
+        await loadBookmarks(true)
         return
       }
 
@@ -392,10 +454,21 @@ export const useBookmarkStore = defineStore('bookmark', () => {
       'onMoved',
     )
     unsetBookmarkListener(
+      'childrenReordered',
+      (listener) => browser.bookmarks.onChildrenReordered.removeListener(listener),
+      'onChildrenReordered',
+    )
+    unsetBookmarkListener(
+      'importBegan',
+      (listener) => browser.bookmarks.onImportBegan.removeListener(listener),
+      'onImportBegan',
+    )
+    unsetBookmarkListener(
       'importEnded',
       (listener) => browser.bookmarks.onImportEnded.removeListener(listener),
       'onImportEnded',
     )
+    importingBookmarks = false
 
     if (worker) {
       worker.onmessage = null
@@ -403,6 +476,21 @@ export const useBookmarkStore = defineStore('bookmark', () => {
       worker.terminate()
       worker = null
     }
+    workerReady = false
+    pendingWorkerInit = null
+  }
+
+  const dispose = () => {
+    // 让尚未完成的缓存/原生读取结果失效，并释放 Pinia 单例持有的大对象。
+    latestLoadRequest++
+    terminateWorker()
+    tree.value = []
+    filteredResult.value = []
+    firstMatchPath.value = []
+    bookmarkNodeIndex.clear()
+    suppressedMoveReloadIds.clear()
+    searchQuery.value = ''
+    loaded.value = false
   }
 
   return {
@@ -424,5 +512,6 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     updateFilteredResult,
     triggerFilter,
     terminateWorker,
+    dispose,
   }
 })

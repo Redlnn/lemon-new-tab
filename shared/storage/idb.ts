@@ -1,4 +1,6 @@
-import { type DBSchema, openDB } from 'idb'
+import { type DBSchema, type IDBPDatabase, openDB } from 'idb'
+
+import type { Browser } from 'wxt/browser'
 
 /** favicon 缓存条目（与 faviconCache.ts 保持一致） */
 export interface FaviconCacheEntry {
@@ -15,6 +17,13 @@ export interface CachedImage {
   blob: Blob
   timestamp: number
 }
+
+export interface BookmarkCacheMetadata {
+  schemaVersion: number
+  state: 'ready' | 'oversize'
+}
+
+export type BookmarkCacheEntry = BookmarkCacheMetadata | Browser.bookmarks.BookmarkTreeNode[]
 
 interface LemonDBSchema extends DBSchema {
   favicon: {
@@ -37,6 +46,10 @@ interface LemonDBSchema extends DBSchema {
     key: string
     value: CachedImage
   }
+  bookmarkCache: {
+    key: string
+    value: BookmarkCacheEntry
+  }
   webdavSync: {
     key: string
     value: unknown
@@ -51,10 +64,11 @@ const REQUIRED_STORES: readonly StoreName[] = [
   'wallpaperBing',
   'wallpaperDark',
   'onlineWallpaperCache',
+  'bookmarkCache',
   'webdavSync',
 ]
 
-let dbPromise: Promise<import('idb').IDBPDatabase<LemonDBSchema>> | null = null
+let dbPromise: Promise<IDBPDatabase<LemonDBSchema>> | null = null
 
 /**
  * 探测已有数据库的版本和 store 情况。
@@ -85,13 +99,22 @@ function getDB() {
         ? Math.max(existingVersion + 1, DB_VERSION)
         : existingVersion
 
-      return openDB<LemonDBSchema>(DB_NAME, targetVersion, {
+      const db = await openDB<LemonDBSchema>(DB_NAME, targetVersion, {
         upgrade(db) {
           for (const store of REQUIRED_STORES) {
             if (!db.objectStoreNames.contains(store)) db.createObjectStore(store)
           }
         },
       })
+
+      // 新增 store 会触发其它扩展页面的版本升级请求。主动关闭旧连接，
+      // 避免它们阻塞后台打开新版本数据库，进而让书签读取请求永久等待。
+      db.addEventListener('versionchange', () => {
+        db.close()
+        dbPromise = null
+      })
+
+      return db
     })()
   }
   return dbPromise
@@ -103,6 +126,7 @@ export type StoreName =
   | 'wallpaperBing'
   | 'wallpaperDark'
   | 'onlineWallpaperCache'
+  | 'bookmarkCache'
   | 'webdavSync'
 
 /** 获取指定 store 中某个 key 的值 */

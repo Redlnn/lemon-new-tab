@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { useDebounceFn } from '@vueuse/core'
+import { useDebounceFn, useElementSize } from '@vueuse/core'
 
-import { DragDropProvider, type DragEndEvent } from '@dnd-kit/vue'
+import {
+  DragDropProvider,
+  type DragEndEvent,
+  type DragMoveEvent,
+  type DragStartEvent,
+} from '@dnd-kit/vue'
+import type { ScrollbarInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import SearchRound from '~icons/ic/round-search'
 
@@ -25,12 +31,16 @@ import BookmarkEditDialog from './components/BookmarkEditDialog.vue'
 import BookmarkItem from './components/BookmarkItem.vue'
 import { provideBookmarkItemContext } from './composables/bookmarkItemContext'
 import {
+  createBookmarkDropPreview,
   getBookmarkDndData,
-  getSortableNumber,
-  getSortableString,
-  resolveBookmarkMoveIndex,
-  type SortableLike,
+  resolveBookmarkMoveDestination,
+  type BookmarkDropPreview,
 } from './composables/useBookmarkDnd'
+import {
+  BOOKMARK_ROW_HEIGHT,
+  flattenVisibleBookmarkTree,
+  getBookmarkVirtualRange,
+} from './virtualTree'
 
 function snapshotActiveMap(map: Record<number, string[]>) {
   return Object.fromEntries(
@@ -61,10 +71,13 @@ provideBookmarkItemContext({
 const store = useBookmarkStore()
 store._setSortMode(settings.bookmark.defaultSortMode)
 
-const drawerWidth = ref(400)
+const drawerWidth = ref(settings.bookmark.drawerWidth)
 const editDialogRef = ref<InstanceType<typeof BookmarkEditDialog>>()
 const groupSelectDialogRef = ref<InstanceType<typeof QuickLinkGroupSelectDialog>>()
-const dndRenderKey = ref(0)
+const animateTreeChanges = ref(false)
+let treeAnimationTimer: ReturnType<typeof setTimeout> | null = null
+const draggedNodeId = ref<string | null>(null)
+const dropPreview = ref<BookmarkDropPreview | null>(null)
 // 本地拖拽会异步刷新 worker 结果；等刷新结果抵达后再恢复，避免被默认展开路径覆盖。
 const activeMapSnapshotForNextRefresh = ref<Record<number, string[]> | null>(null)
 
@@ -81,10 +94,34 @@ function onDrawerResize(_e: MouseEvent, size: number): void {
   drawerWidth.value = size
 }
 
-onMounted(() => {
-  if (!store.loaded) {
-    store.loadBookmarks()
-  }
+function onDrawerResizeEnd(_e: MouseEvent, size: number): void {
+  drawerWidth.value = size
+  settings.bookmark.drawerWidth = size
+}
+
+watch(
+  opened,
+  (isOpen) => {
+    if (isOpen && !store.loaded) void store.loadBookmarks()
+  },
+  { immediate: true },
+)
+
+function handleDrawerClosed() {
+  if (opened.value) return
+
+  activeMap.value = {}
+  activeMapSnapshotForNextRefresh.value = null
+  draggedNodeId.value = null
+  dropPreview.value = null
+  searchQuery.value = ''
+  resetVirtualScroll()
+  store.dispose()
+}
+
+onUnmounted(() => {
+  if (treeAnimationTimer) clearTimeout(treeAnimationTimer)
+  store.dispose()
 })
 
 const searchQuery = ref('')
@@ -150,17 +187,72 @@ const sortOptions = [
 const activeMap = ref<Record<number, string[]>>({})
 provide(BOOKMARK_ACTIVE_MAP, activeMap)
 
+watch(
+  activeMap,
+  () => {
+    animateTreeChanges.value = true
+    if (treeAnimationTimer) clearTimeout(treeAnimationTimer)
+    treeAnimationTimer = setTimeout(() => {
+      animateTreeChanges.value = false
+      treeAnimationTimer = null
+    }, 200)
+  },
+  { deep: true },
+)
+
+const virtualScrollbarRef = ref<ScrollbarInstance>()
+const virtualViewportRef = computed(() => virtualScrollbarRef.value?.wrapRef)
+const virtualScrollTop = ref(0)
+const { height: virtualViewportHeight } = useElementSize(virtualViewportRef, {
+  width: 0,
+  height: 600,
+})
+const virtualRows = computed(() =>
+  flattenVisibleBookmarkTree(store.filteredResult, activeMap.value),
+)
+const virtualRange = computed(() =>
+  getBookmarkVirtualRange(
+    virtualRows.value.length,
+    virtualScrollTop.value,
+    virtualViewportHeight.value,
+  ),
+)
+const renderedRows = computed(() => {
+  const rows = virtualRows.value.slice(virtualRange.value.start, virtualRange.value.end)
+  const draggedId = draggedNodeId.value
+  if (!draggedId || rows.some((row) => row.node.id === draggedId)) return rows
+
+  const draggedRow = virtualRows.value.find((row) => row.node.id === draggedId)
+  return draggedRow ? [...rows, draggedRow].sort((a, b) => a.index - b.index) : rows
+})
+
+watch(
+  () => virtualRows.value.length,
+  () => {
+    nextTick(() => {
+      const viewport = virtualViewportRef.value
+      if (!viewport) return
+      const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
+      if (viewport.scrollTop <= maxScrollTop) return
+      virtualScrollbarRef.value?.setScrollTop(maxScrollTop)
+      virtualScrollTop.value = maxScrollTop
+      virtualScrollbarRef.value?.update()
+    })
+  },
+)
+
+function handleVirtualScroll({ scrollTop }: { scrollTop: number }) {
+  virtualScrollTop.value = scrollTop
+}
+
+function resetVirtualScroll() {
+  virtualScrollTop.value = 0
+  virtualScrollbarRef.value?.setScrollTop(0)
+}
+
 // 记录当前打开的右键菜单关闭函数，实现全局唯一
 const openedMenuCloseFn = ref<(() => void) | null>(null)
 provide(BOOKMARK_OPENED_MENU_CLOSE_FN, openedMenuCloseFn)
-
-// 顶层 collapse 对应深度为 1，暴露一个 computed 以绑定到 v-model
-const topModel = computed({
-  get: () => activeMap.value[1] ?? [],
-  set: (v: string[]) => {
-    activeMap.value[1] = v
-  },
-})
 
 watch(
   () => store.firstMatchPath,
@@ -172,6 +264,7 @@ watch(
       return
     }
 
+    resetVirtualScroll()
     if (searchQuery.value.trim() === '' && path.length === 0) {
       activeMap.value = {}
       return
@@ -188,56 +281,68 @@ watch(
   { immediate: true },
 )
 
-function handleBookmarkDragStart() {
+function handleBookmarkDragStart(event: DragStartEvent) {
+  const source = getBookmarkDndData(event.operation.source)
+  draggedNodeId.value = source?.kind === 'bookmark-item' ? source.id : null
+  dropPreview.value = null
   if (openedMenuCloseFn.value) {
     openedMenuCloseFn.value()
     openedMenuCloseFn.value = null
   }
 }
 
-async function handleBookmarkDragEnd(event: DragEndEvent) {
+function handleBookmarkDragMove(event: DragMoveEvent) {
   const source = getBookmarkDndData(event.operation.source)
   const target = getBookmarkDndData(event.operation.target)
-  if (event.canceled || source?.kind !== 'bookmark-item') return
-  if (searchQuery.value.trim() !== '' || store.sortMode !== SortMode.Original) return
+  const preview = createBookmarkDropPreview(
+    source,
+    target,
+    event.to?.y ?? event.operation.position.current.y,
+    event.operation.target?.shape?.center.y,
+  )
 
-  const operationSource = event.operation.source as SortableLike | null
-  const fromParentId = getSortableString(operationSource, 'initialGroup') ?? source.parentId
-  const fromIndex = getSortableNumber(operationSource, 'initialIndex') ?? source.index
+  dropPreview.value =
+    preview &&
+    source?.kind === 'bookmark-item' &&
+    source.isFolder &&
+    store.isBookmarkSelfOrDescendant(source.id, preview.parentId)
+      ? null
+      : preview
+}
 
-  const runtimeParentId = getSortableString(operationSource, 'group')
-  const runtimeIndex = getSortableNumber(operationSource, 'index')
-  const nextParentId =
-    target?.kind === 'bookmark-container'
-      ? target.parentId
-      : (runtimeParentId ?? (target?.kind === 'bookmark-item' ? target.parentId : null))
-  let nextIndex =
-    target?.kind === 'bookmark-container'
-      ? target.index
-      : (runtimeIndex ?? (target?.kind === 'bookmark-item' ? target.index : null))
-  if (!nextParentId || nextIndex === null || nextIndex === undefined || fromIndex === undefined) {
+async function handleBookmarkDragEnd(event: DragEndEvent) {
+  const preview = dropPreview.value
+  dropPreview.value = null
+  const source = getBookmarkDndData(event.operation.source)
+  if (event.canceled || source?.kind !== 'bookmark-item' || !preview) {
+    draggedNodeId.value = null
+    return
+  }
+  if (searchQuery.value.trim() !== '' || store.sortMode !== SortMode.Original) {
+    draggedNodeId.value = null
+    return
+  }
+  if (source.index === undefined) {
+    draggedNodeId.value = null
     return
   }
 
-  nextIndex = resolveBookmarkMoveIndex({
-    fromParentId,
-    fromIndex,
-    nextParentId,
-    nextIndex,
+  const destination = resolveBookmarkMoveDestination({
+    fromParentId: source.parentId,
+    fromIndex: source.index,
+    preview,
     getChildrenCount: store.getBookmarkChildrenCount,
   })
+  if (source.parentId === destination.parentId && source.index === destination.index) {
+    draggedNodeId.value = null
+    return
+  }
 
-  if (fromParentId === nextParentId && fromIndex === nextIndex) return
-  if (source.isFolder && store.isBookmarkSelfOrDescendant(source.id, nextParentId)) return
-
+  const drop = event.suspend()
   const expandedSnapshot = snapshotActiveMap(activeMap.value)
+  activeMapSnapshotForNextRefresh.value = expandedSnapshot
   try {
-    activeMapSnapshotForNextRefresh.value = expandedSnapshot
-    await store.moveBookmark(source.id, {
-      parentId: nextParentId,
-      index: nextIndex,
-    })
-    dndRenderKey.value++
+    await store.moveBookmark(source.id, destination)
   } catch (error) {
     console.error(t('bookmark.moveError'), error)
     ElNotification.error({
@@ -245,8 +350,11 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
       message: (error as Error).message || 'Unknown error.',
     })
     activeMapSnapshotForNextRefresh.value = expandedSnapshot
-    await store.loadBookmarks()
-    dndRenderKey.value++
+    await store.loadBookmarks(true)
+  } finally {
+    await nextTick()
+    drop.abort()
+    draggedNodeId.value = null
   }
 }
 </script>
@@ -256,12 +364,14 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
     v-model="opened"
     :direction="settings.bookmark.direction"
     :title="t('bookmark.title')"
-    size="400"
+    :size="settings.bookmark.drawerWidth"
     class="noselect"
     :class="bookmarkPerfClass"
     append-to-body
     resizable
     @resize="onDrawerResize"
+    @resize-end="onDrawerResizeEnd"
+    @closed="handleDrawerClosed"
     close-on-click-modal
     :close-on-press-escape="!isImeComposing"
     destroy-on-close
@@ -288,22 +398,36 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
           </el-select>
         </div>
         <template v-if="store.filteredResult.length > 0">
-          <el-scrollbar style="height: calc(100% - 42px)">
-            <DragDropProvider
-              :key="dndRenderKey"
-              @dragStart="handleBookmarkDragStart"
-              @dragEnd="handleBookmarkDragEnd"
+          <el-scrollbar
+            ref="virtualScrollbarRef"
+            class="bookmark-virtual-list"
+            @scroll="handleVirtualScroll"
+          >
+            <div
+              class="bookmark-virtual-list__spacer"
+              :style="{ height: `${virtualRange.totalHeight}px` }"
             >
-              <el-collapse v-model="topModel" expand-icon-position="left">
-                <bookmark-item
-                  v-for="item in store.filteredResult"
-                  :key="item.id"
-                  :node="item"
-                  :is-searching="searchQuery.trim() !== ''"
-                  :is-sorted-mode="store.sortMode !== SortMode.Original"
-                />
-              </el-collapse>
-            </DragDropProvider>
+              <DragDropProvider
+                @dragStart="handleBookmarkDragStart"
+                @dragMove="handleBookmarkDragMove"
+                @dragEnd="handleBookmarkDragEnd"
+              >
+                <TransitionGroup :name="animateTreeChanges ? 'bookmark-tree' : undefined">
+                  <bookmark-item
+                    v-for="row in renderedRows"
+                    :key="row.node.id"
+                    :node="row.node"
+                    :depth="row.depth"
+                    :is-searching="searchQuery.trim() !== ''"
+                    :is-sorted-mode="store.sortMode !== SortMode.Original"
+                    :drop-preview-placement="
+                      dropPreview?.nodeId === row.node.id ? dropPreview.placement : null
+                    "
+                    :style="{ top: `${row.index * BOOKMARK_ROW_HEIGHT}px` }"
+                  />
+                </TransitionGroup>
+              </DragDropProvider>
+            </div>
           </el-scrollbar>
           <bookmark-edit-dialog ref="editDialogRef" />
         </template>
@@ -375,10 +499,6 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
 
   .el-drawer__title {
     font-weight: bold;
-  }
-
-  .el-scrollbar__view {
-    padding-bottom: 20px;
   }
 
   .el-drawer__close-btn {
@@ -475,15 +595,24 @@ html.colorful .bookmark {
   }
 }
 
-.bookmark .el-scrollbar__view > .el-collapse {
+.bookmark-virtual-list {
+  position: relative;
+  height: calc(100% - 42px);
+  contain: strict;
+
+  &__spacer {
+    position: relative;
+    width: 100%;
+  }
+
   &:not(:has(.bookmark-dnd-item--dragging)) {
     .bookmark-link-item:hover,
-    .el-collapse-item__header:hover {
+    .bookmark-folder-item:hover {
       background-color: var(--el-color-primary-light-8);
     }
 
     .bookmark-link-item:focus-visible,
-    .el-collapse-item__header:focus-visible {
+    .bookmark-folder-item:focus-visible {
       position: relative;
       outline: none;
 
@@ -505,7 +634,34 @@ html.colorful .bookmark {
 }
 
 .bookmark-dnd-item {
+  position: absolute;
+  right: 0;
+  left: 0;
+  display: grid;
+  height: 40px;
   transition: opacity var(--el-transition-duration-fast);
+
+  &--drop-before::before,
+  &--drop-after::after {
+    position: absolute;
+    right: 16px;
+    left: calc(var(--depth) + 20px);
+    z-index: 2;
+    height: 3px;
+    pointer-events: none;
+    content: '';
+    background: var(--el-color-primary);
+    border-radius: 999px;
+    box-shadow: 0 0 0 1px var(--el-bg-color);
+  }
+
+  &--drop-before::before {
+    top: -1px;
+  }
+
+  &--drop-after::after {
+    bottom: -1px;
+  }
 
   &--dragging {
     opacity: 0.35;
@@ -513,56 +669,85 @@ html.colorful .bookmark {
 
   &--drop-target {
     > .bookmark-link-item,
-    > .el-collapse-item > .el-collapse-item__header {
+    > .bookmark-folder-item {
       background-color: var(--el-color-primary-light-8);
     }
   }
+
+  &--drop-inside > .bookmark-folder-item {
+    background-color: var(--el-color-primary-light-8);
+    box-shadow: inset 0 0 0 2px var(--el-color-primary);
+  }
+}
+
+.bookmark-tree-enter-active,
+.bookmark-tree-leave-active {
+  transition: opacity var(--el-transition-duration-fast);
+}
+
+.bookmark-tree-move {
+  transition: transform var(--el-transition-duration) ease;
+}
+
+.bookmark-tree-enter-from,
+.bookmark-tree-leave-to {
+  opacity: 0;
 }
 
 .bookmark-dnd-children {
-  min-height: 6px;
-  border-radius: var(--le-radius-small, 8px);
-
   &--drop-target {
     box-shadow: inset 0 0 0 1px var(--el-color-primary-light-5);
   }
 }
 
-.bookmark .el-collapse {
-  --el-collapse-border-color: transparent;
-  --el-collapse-header-bg-color: transparent;
-  --el-collapse-content-bg-color: transparent;
-  --el-collapse-header-height: 40px;
+.bookmark-folder-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 40px;
+  padding-right: 20px;
+  padding-left: var(--depth);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
 
-  .el-collapse-item__header {
-    padding-right: 20px;
-    padding-left: var(--depth);
-  }
-
-  .el-collapse-item__title {
+  &__arrow {
     display: flex;
+    flex: 0 0 20px;
     align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: transform var(--el-transition-duration-fast) ease;
 
-    .el-icon:not(.bookmark-drag-handle) {
-      margin-right: 10px;
-    }
-
-    span {
-      width: stretch;
+    &.is-expanded {
+      transform: rotate(90deg);
     }
   }
 
-  .el-collapse-item__content {
-    padding-bottom: 0;
+  &__content {
+    display: flex;
+    flex: 1;
+    gap: 10px;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .el-text {
+    flex: 1;
+    min-width: 0;
+    color: inherit;
   }
 }
 
 .bookmark-link-item {
   display: flex;
   align-items: center;
-  height: var(--el-collapse-header-height);
+  height: 40px;
   padding-right: 20px;
-  padding-left: calc(var(--depth) + 40px);
+  padding-left: calc(var(--depth) + 20px);
   color: inherit;
   text-decoration: none;
 

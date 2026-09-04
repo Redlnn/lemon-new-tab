@@ -41,6 +41,10 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
       iconBorderRadius: defaultSettings.quickLinks.iconBorderRadius,
       fallbackToTitleInitial: defaultSettings.quickLinks.fallbackToTitleInitial,
     },
+    bookmark: {
+      ...rest.bookmark,
+      drawerWidth: defaultSettings.bookmark.drawerWidth,
+    },
     dock: {
       ...rest.dock,
       borderRadius: defaultSettings.dock.borderRadius,

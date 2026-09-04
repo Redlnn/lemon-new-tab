@@ -204,6 +204,8 @@ function buildIndex() {
 
 // 只读获取排序树。优先返回已缓存版本（如果存在并匹配 sortMode），
 function getSortedTree(mode: SortMode): BookmarkTreeNode[] {
+  if (mode === SortMode.Original) return tree
+
   // 检查缓存
   if (cachedSortedTree && cachedSortedTreeKey === mode) {
     return cachedSortedTree
@@ -331,8 +333,14 @@ self.onmessage = (e: MessageEvent) => {
         // 构建扁平索引，供后续搜索使用
         buildIndex()
         // 初始过滤（空查询）
-        const initRes = filter('', payload.sortMode || SortMode.NameAsc)
-        self.postMessage({ type: 'INIT_DONE', ...initRes })
+        const initialSortMode = payload.sortMode || SortMode.NameAsc
+        const initRes = filter('', initialSortMode)
+        self.postMessage({
+          type: 'INIT_DONE',
+          ...initRes,
+          // 主线程已经持有原始树，无需再结构化克隆并回传一份。
+          filteredResult: initialSortMode === SortMode.Original ? null : initRes.filteredResult,
+        })
         break
 
       case 'UPDATE_SETTINGS':
@@ -358,3 +366,5 @@ self.onmessage = (e: MessageEvent) => {
     self.postMessage({ type: 'ERROR', error: String(err) })
   }
 }
+
+self.postMessage({ type: 'READY' })
