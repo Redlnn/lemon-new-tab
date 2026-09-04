@@ -1,6 +1,10 @@
 import type { QuickLink, QuickLinksData } from '@/shared/quickLinks'
 
-import { applySyncSettings, preserveUnknownSyncSettings } from './settingsWhitelist.ts'
+import {
+  applySyncSettings,
+  preserveUnknownSyncSettings,
+  stripExcludedSyncSettings,
+} from './settingsWhitelist.ts'
 import type {
   JsonObject,
   SyncCustomSearchEngineDataV1,
@@ -234,6 +238,7 @@ export function preserveExcludedScope(
   else if (result.settings && baseline.settings) {
     result.settings = preserveUnknownSyncSettings(result.settings, baseline.settings)
   }
+  if (result.settings) result.settings = stripExcludedSyncSettings(result.settings)
   if (!scope.quickLinks) copyCategory(result, baseline, 'quickLinks')
   if (!scope.customSearchEngines) copyCategory(result, baseline, 'customSearchEngines')
   if (!scope.uiPreferences) copyCategory(result, baseline, 'ui')

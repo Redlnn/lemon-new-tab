@@ -1,7 +1,7 @@
 import { defineBackground } from '#imports'
-import { browser } from 'wxt/browser'
+import { browser, type Browser } from 'wxt/browser'
 
-import { isWebDavSyncMessage } from '@/shared/webdavSync/bridge'
+import { isWebDavSyncMessage, type WebDavSyncMessage } from '@/shared/webdavSync/bridge'
 import { createSyncConflictDetails } from '@/shared/webdavSync/conflictDetails'
 import { SyncCoordinator } from '@/shared/webdavSync/coordinator'
 import {
@@ -10,6 +10,7 @@ import {
   webDavSyncConfigStorage,
 } from '@/shared/webdavSync/localState'
 import { hasExactWebDavPermission } from '@/shared/webdavSync/permissions'
+import { syncSettingsChanged } from '@/shared/webdavSync/settingsWhitelist'
 import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
 import { serializeWebDavError, WebDavError } from '@/shared/webdavSync/webdav'
 
@@ -22,6 +23,13 @@ const SYNC_DATA_KEYS = new Set([
   'uiPreferences',
   'blockedTopStites',
 ])
+
+function routeWebDavMessage(handler: (message: WebDavSyncMessage) => Promise<unknown>) {
+  return (message: unknown, sender: Browser.runtime.MessageSender) => {
+    if (sender.id && sender.id !== browser.runtime.id) return undefined
+    return isWebDavSyncMessage(message) ? handler(message) : undefined
+  }
+}
 
 export default defineBackground(() => {
   initializeBookmarkCache()
@@ -75,14 +83,17 @@ export default defineBackground(() => {
       const state = stateChange.newValue as LocalSyncStateV1
       applyingRemote = state.pending?.phase === 'applying-local'
     }
-    if (!applyingRemote && Object.keys(changes).some((key) => SYNC_DATA_KEYS.has(key))) {
+    const syncDataChanged = Object.entries(changes).some(([key, change]) =>
+      key === 'settings'
+        ? syncSettingsChanged(change.oldValue, change.newValue)
+        : SYNC_DATA_KEYS.has(key),
+    )
+    if (!applyingRemote && syncDataChanged) {
       scheduleConfiguredDataChange()
     }
   })
 
-  browser.runtime.onMessage.addListener(async (message, sender) => {
-    if (sender.id && sender.id !== browser.runtime.id) return undefined
-    if (!isWebDavSyncMessage(message)) return undefined
+  const handleWebDavMessage = async (message: WebDavSyncMessage) => {
     if (message.type === 'webdav-sync:data-changed') {
       scheduleConfiguredDataChange()
       return undefined
@@ -192,7 +203,8 @@ export default defineBackground(() => {
           : 'natural'
     await coordinator.trigger(trigger)
     return getOrCreateSyncState()
-  })
+  }
+  browser.runtime.onMessage.addListener(routeWebDavMessage(handleWebDavMessage))
 
   void coordinator.trigger('startup')
 })

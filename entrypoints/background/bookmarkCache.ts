@@ -272,15 +272,10 @@ function registerBookmarkCacheListeners() {
 export function initializeBookmarkCache() {
   registerBookmarkCacheListeners()
 
-  browser.runtime.onMessage.addListener(async (message, sender) => {
+  browser.runtime.onMessage.addListener((message, sender) => {
     if (sender.id && sender.id !== browser.runtime.id) return undefined
     if (!isBookmarkCacheMessage(message)) return undefined
 
-    if (message.type === 'bookmark-cache:warm') {
-      await warmBookmarkCache()
-      return undefined
-    }
-
-    return getBookmarkTree()
+    return message.type === 'bookmark-cache:warm' ? warmBookmarkCache() : getBookmarkTree()
   })
 }

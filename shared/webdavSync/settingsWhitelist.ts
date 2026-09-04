@@ -1,5 +1,26 @@
-import { canonicalize } from './canonical.ts'
+import { canonicalize, jsonEquals } from './canonical.ts'
 import type { JsonObject, JsonValue } from './types.ts'
+
+const EXCLUDED_SYNC_SETTING_PATHS = [
+  // 本机缓存、运行状态和旧同步元数据。
+  'background.bing.cachedResolution',
+  'background.bing.id',
+  'background.bing.updateDate',
+  'background.bing.url',
+  'bookmark.drawerWidth',
+  'pluginVersion',
+  'readChangeLog',
+  'sync.enabled',
+  'version',
+  // 仅允许通过壁纸专用范围同步，不能作为普通设置透传。
+  'background.local.id',
+  'background.local.mediaType',
+  'background.local.url',
+  'background.localDark.id',
+  'background.localDark.mediaType',
+  'background.localDark.url',
+  'background.online.url',
+] as const
 
 /**
  * 设置同步的唯一白名单。新增设置必须在这里明确归类，不能因为位于已知对象下就自动上传。
@@ -75,6 +96,7 @@ export const SYNC_SETTING_PATHS = [
   'quickLinks.layout.rows',
   'quickLinks.layout.columns',
   'quickLinks.marginTop',
+  'quickLinks.fallbackToTitleInitial',
   'quickLinks.spacing.itemGapX',
   'quickLinks.spacing.itemGapY',
   'quickLinks.spacing.iconTitleGap',
@@ -92,8 +114,10 @@ export const SYNC_SETTING_PATHS = [
   'dock.iconRatio',
   'dock.borderRadius',
   'dock.launchpad.enabled',
+  'dock.launchpad.iconSize',
   'dock.launchpad.topSites',
   'dock.launchpad.openInNewTab',
+  'dock.launchpad.rightClickToOpen',
   'yiyan.enabled',
   'yiyan.alwaysShow',
   'yiyan.provider',
@@ -210,6 +234,16 @@ export function pickSyncSettings(settings: unknown): JsonObject {
   return result
 }
 
+export function syncSettingsChanged(previous: unknown, next: unknown): boolean {
+  return !jsonEquals(pickSyncSettings(previous), pickSyncSettings(next))
+}
+
+export function stripExcludedSyncSettings(settings: JsonObject): JsonObject {
+  const result = structuredClone(settings)
+  for (const path of EXCLUDED_SYNC_SETTING_PATHS) deletePath(result, path)
+  return result
+}
+
 export function applySyncSettings<T>(current: T, incoming: JsonObject): T {
   const result = structuredClone(current) as T
   for (const path of SYNC_SETTING_PATHS) {
@@ -221,7 +255,7 @@ export function applySyncSettings<T>(current: T, incoming: JsonObject): T {
 
 /** 保留同一格式版本中本客户端尚不认识的字段，但永不把它们应用到本机设置。 */
 export function preserveUnknownSyncSettings(local: JsonObject, remote: JsonObject): JsonObject {
-  const result = structuredClone(remote)
+  const result = stripExcludedSyncSettings(remote)
   for (const path of SYNC_SETTING_PATHS) {
     deletePath(result, path)
     const value = getPath(local, path)
@@ -231,7 +265,7 @@ export function preserveUnknownSyncSettings(local: JsonObject, remote: JsonObjec
 }
 
 function unknownSyncSettings(settings: JsonObject): JsonObject {
-  const result = structuredClone(settings)
+  const result = stripExcludedSyncSettings(settings)
   for (const path of SYNC_SETTING_PATHS) deletePath(result, path)
   return result
 }
