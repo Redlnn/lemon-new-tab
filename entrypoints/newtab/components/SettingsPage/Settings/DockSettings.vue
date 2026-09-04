@@ -12,6 +12,7 @@ import SettingsSection from './SettingsSection.vue'
 
 const { t } = useTranslation('settings')
 
+const isChrome = import.meta.env.CHROME
 const settings = useSettingsStore()
 const { handleGroupingChange } = useQuickLinksGroupingChange()
 
@@ -67,9 +68,12 @@ async function restoreDefaultTopSites() {
           <div class="settings__label">{{ t('quickLinks.topSites') }}</div>
           <el-switch v-model="settings.dock.launchpad.topSites" />
         </div>
-        <div class="settings__item settings__item--horizontal">
+        <div class="settings__item settings__item--horizontal settings__item--with-note">
           <div class="settings__label">{{ t('quickLinks.fallbackToTitleInitial') }}</div>
           <el-switch v-model="settings.quickLinks.fallbackToTitleInitial" />
+          <p v-if="isChrome" class="settings__item-note">
+            {{ t('quickLinks.fallbackToTitleInitialChromeTip') }}
+          </p>
         </div>
         <div class="settings__item settings__item--horizontal">
           <div class="settings__label">{{ t('common.openInNewTab') }}</div>
@@ -113,9 +117,12 @@ async function restoreDefaultTopSites() {
         <div class="settings__label">{{ t('common.openInNewTab') }}</div>
         <el-switch v-model="settings.dock.openInNewTab" />
       </div>
-      <div class="settings__item settings__item--horizontal">
+      <div class="settings__item settings__item--horizontal settings__item--with-note">
         <div class="settings__label">{{ t('quickLinks.fallbackToTitleInitial') }}</div>
         <el-switch v-model="settings.quickLinks.fallbackToTitleInitial" />
+        <p v-if="isChrome" class="settings__item-note">
+          {{ t('quickLinks.fallbackToTitleInitialChromeTip') }}
+        </p>
       </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('dock.limitCount') }}</div>

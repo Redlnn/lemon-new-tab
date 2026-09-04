@@ -14,6 +14,7 @@ import SettingsSection from './SettingsSection.vue'
 const { t } = useTranslation('settings')
 
 const isChromium = import.meta.env.CHROME || import.meta.env.EDGE || import.meta.env.OPERA
+const isChrome = import.meta.env.CHROME
 const settings = useSettingsStore()
 const { handleGroupingChange } = useQuickLinksGroupingChange()
 
@@ -126,9 +127,12 @@ const alertType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'inf
         <div class="settings__label">{{ t('quickLinks.showTitle') }}</div>
         <el-switch v-model="settings.quickLinks.title.show" />
       </div>
-      <div class="settings__item settings__item--horizontal">
+      <div class="settings__item settings__item--horizontal settings__item--with-note">
         <div class="settings__label">{{ t('quickLinks.fallbackToTitleInitial') }}</div>
         <el-switch v-model="settings.quickLinks.fallbackToTitleInitial" />
+        <p v-if="isChrome" class="settings__item-note">
+          {{ t('quickLinks.fallbackToTitleInitialChromeTip') }}
+        </p>
       </div>
     </SettingsSection>
 
