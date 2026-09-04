@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 
 import { version } from '@/package.json'
 
+import { warmBookmarkCache } from '@/shared/bookmarks/cacheBridge'
 import { i18n } from '@/shared/i18n'
 import { hydrateFaviconCache, setFaviconCacheEnabled } from '@/shared/media'
 import { useSettingsStore } from '@/shared/settings'
@@ -76,6 +77,9 @@ export const main = async () => {
   const dataStoresInit = useCustomSearchEngineStore().init()
 
   app.mount('body')
+
+  // 在应用挂载后预热，避免把书签读取放到首屏关键路径。
+  void warmBookmarkCache()
 
   void dataStoresInit.catch((error) => {
     console.error('[newtab] Failed to initialize data stores:', error)

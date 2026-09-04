@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { onLongPress } from '@vueuse/core'
 
-import { useDroppable } from '@dnd-kit/vue'
-import { useSortable } from '@dnd-kit/vue/sortable'
+import { useDraggable, useDroppable } from '@dnd-kit/vue'
 import type { DropdownInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import Dismiss12Regular from '~icons/fluent/dismiss-12-regular'
@@ -31,7 +30,6 @@ import { isSafeUrl, isValidUrl } from '@newtab/shared/utils'
 
 import { useBookmarkItemContext } from '../composables/bookmarkItemContext'
 import {
-  BOOKMARK_DND_GROUP,
   BOOKMARK_DND_TYPE,
   bookmarkContainerDndId,
   bookmarkDndId,
@@ -52,12 +50,14 @@ const props = withDefaults(
     isSearching?: boolean
     isSortedMode?: boolean
     disableDrag?: boolean
+    dropPreviewPlacement?: 'before' | 'after' | 'inside' | null
   }>(),
   {
     depth: 1,
     isSearching: false,
     isSortedMode: false,
     disableDrag: false,
+    dropPreviewPlacement: null,
   },
 )
 const isFolder = computed(() => !!props.node.children)
@@ -109,28 +109,24 @@ const bookmarkDndData = computed(() => ({
   isFolder: isFolder.value,
 }))
 
-const bookmarkSortableDisabled = computed(() => {
-  const disabled = isDragDisabled.value || isTopLevel.value
-  return {
-    draggable: disabled,
-    droppable: disabled,
-  }
-})
+const itemDndDisabled = computed(() => isDragDisabled.value || isTopLevel.value)
 
-const { isDragging, isDropTarget } = useSortable({
+const { isDragging } = useDraggable({
   id: computed(() => bookmarkDndId(props.node.id)),
-  index: computed(() => props.node.index ?? 0),
-  group: computed(() => props.node.parentId ?? BOOKMARK_DND_GROUP),
   element: sortableRef,
   handle: dragHandleRef,
   type: BOOKMARK_DND_TYPE,
+  data: bookmarkDndData,
+  disabled: itemDndDisabled,
+})
+
+const { isDropTarget } = useDroppable({
+  id: computed(() => bookmarkDndId(props.node.id)),
+  element: sortableRef,
+  type: BOOKMARK_DND_TYPE,
   accept: BOOKMARK_DND_TYPE,
   data: bookmarkDndData,
-  disabled: bookmarkSortableDisabled,
-  transition: {
-    duration: 150,
-    easing: 'ease',
-  },
+  disabled: itemDndDisabled,
 })
 let suppressClickUntil = 0
 
@@ -233,39 +229,25 @@ async function addToQuickLinks() {
 // 注入共享的 activeMap（按深度索引），用于跨层级控制折叠展开
 const activeMap = inject(BOOKMARK_ACTIVE_MAP)
 
-// 本层嵌套 collapse 对应的深度键（children 的深度）
-const childDepthKey = props.depth + 1
-
-const model = computed({
-  get: () => activeMap?.value?.[childDepthKey] ?? [],
-  set: (v: string[]) => {
-    if (!activeMap) return
-    const prev = activeMap.value || {}
-    activeMap.value = {
-      ...prev,
-      [childDepthKey]: v,
-    }
-  },
-})
-
-// 懒加载优化：判断当前节点是否展开
 const isExpanded = computed(() => {
   return activeMap?.value?.[props.depth]?.includes(String(id.value)) ?? false
 })
 
-const hasBeenExpanded = ref(false)
+function toggleFolder() {
+  if (!activeMap || !isFolder.value) return
 
-watch(
-  isExpanded,
-  (val) => {
-    if (val) {
-      hasBeenExpanded.value = true
-    }
-  },
-  { immediate: true },
-)
+  const depth = props.depth
+  const self = String(id.value)
+  const current = activeMap.value[depth] ?? []
+  const next = current.includes(self)
+    ? current.filter((expandedId) => expandedId !== self)
+    : [...current, self]
 
-const shouldRenderChildren = computed(() => hasBeenExpanded.value || isExpanded.value)
+  activeMap.value = {
+    ...activeMap.value,
+    [depth]: next,
+  }
+}
 
 async function deleteBookmark() {
   try {
@@ -325,46 +307,39 @@ function collapseOther(_e: Event | undefined, all: boolean = false) {
     :class="{
       'bookmark-dnd-item--dragging': isDragging,
       'bookmark-dnd-item--drop-target': isDropTarget,
+      'bookmark-dnd-item--drop-before': dropPreviewPlacement === 'before',
+      'bookmark-dnd-item--drop-after': dropPreviewPlacement === 'after',
+      'bookmark-dnd-item--drop-inside': dropPreviewPlacement === 'inside',
     }"
-    style="display: grid"
+    :style="{ '--depth': `${depth * 20}px` }"
     @click.capture="handleClickCapture"
     @contextmenu.stop.prevent="handleContextmenu"
     @dragstart.prevent
   >
-    <el-collapse-item
+    <button
       v-if="node.children"
-      :name="node.id"
-      :style="{ '--depth': `${depth * 20}px` }"
+      type="button"
+      ref="itemRef"
+      class="bookmark-folder-item"
+      :class="{ 'bookmark-dnd-children--drop-target': isChildrenDropTarget }"
+      @click="toggleFolder"
     >
-      <template #title>
+      <span class="bookmark-folder-item__arrow" :class="{ 'is-expanded': isExpanded }">›</span>
+      <span ref="childrenDropRef" class="bookmark-folder-item__content">
         <el-icon color="var(--el-color-primary)"><folder-open-round /></el-icon>
-        <span>{{ node.title || '(未命名)' }}</span>
-        <div v-if="!(depth === 1)" ref="dragHandleRef" class="bookmark-drag-handle-container">
-          <el-icon v-if="!isDragDisabled" class="bookmark-drag-handle">
-            <drag-indicator-round />
-          </el-icon>
-        </div>
-      </template>
-      <el-collapse v-if="shouldRenderChildren" v-model="model" expand-icon-position="left">
-        <div
-          ref="childrenDropRef"
-          class="bookmark-dnd-children"
-          :class="{ 'bookmark-dnd-children--drop-target': isChildrenDropTarget }"
-        >
-          <bookmark-item
-            v-for="child in node.children ?? []"
-            :key="child.id"
-            :node="child"
-            :depth="depth + 1"
-            :is-searching="isSearching"
-            :is-sorted-mode="isSortedMode"
-            :disable-drag="isDragDisabled"
-            :data-node-id="child.id"
-            :data-node-indexx="child.index"
-          />
-        </div>
-      </el-collapse>
-    </el-collapse-item>
+        <el-text truncated>{{ node.title || '(未命名)' }}</el-text>
+      </span>
+      <div
+        v-if="!(depth === 1)"
+        ref="dragHandleRef"
+        class="bookmark-drag-handle-container"
+        @click.stop
+      >
+        <el-icon v-if="!isDragDisabled" class="bookmark-drag-handle">
+          <drag-indicator-round />
+        </el-icon>
+      </div>
+    </button>
     <a
       v-else
       ref="itemRef"
@@ -377,7 +352,7 @@ function collapseOther(_e: Event | undefined, all: boolean = false) {
       <el-text line-clamp="2">
         {{ node.title }}
       </el-text>
-      <div ref="dragHandleRef" class="bookmark-drag-handle-container">
+      <div ref="dragHandleRef" class="bookmark-drag-handle-container" @click.stop>
         <el-icon v-if="!isDragDisabled" class="bookmark-drag-handle">
           <drag-indicator-round />
         </el-icon>
