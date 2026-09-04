@@ -71,7 +71,7 @@ provideBookmarkItemContext({
 const store = useBookmarkStore()
 store._setSortMode(settings.bookmark.defaultSortMode)
 
-const drawerWidth = ref(400)
+const drawerWidth = ref(settings.bookmark.drawerWidth)
 const editDialogRef = ref<InstanceType<typeof BookmarkEditDialog>>()
 const groupSelectDialogRef = ref<InstanceType<typeof QuickLinkGroupSelectDialog>>()
 const animateTreeChanges = ref(false)
@@ -92,6 +92,11 @@ provide(
 
 function onDrawerResize(_e: MouseEvent, size: number): void {
   drawerWidth.value = size
+}
+
+function onDrawerResizeEnd(_e: MouseEvent, size: number): void {
+  drawerWidth.value = size
+  settings.bookmark.drawerWidth = size
 }
 
 watch(
@@ -359,12 +364,13 @@ async function handleBookmarkDragEnd(event: DragEndEvent) {
     v-model="opened"
     :direction="settings.bookmark.direction"
     :title="t('bookmark.title')"
-    size="400"
+    :size="settings.bookmark.drawerWidth"
     class="noselect"
     :class="bookmarkPerfClass"
     append-to-body
     resizable
     @resize="onDrawerResize"
+    @resize-end="onDrawerResizeEnd"
     @closed="handleDrawerClosed"
     close-on-click-modal
     :close-on-press-escape="!isImeComposing"

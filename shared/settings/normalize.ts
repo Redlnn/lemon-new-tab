@@ -28,6 +28,7 @@ const MIN_DOCK_BORDER_RADIUS = 0
 const MAX_DOCK_BORDER_RADIUS = 40
 const MIN_LAUNCHPAD_ICON_SIZE = 40
 const MAX_LAUNCHPAD_ICON_SIZE = 96
+const MIN_BOOKMARK_DRAWER_WIDTH = 200
 type PerfTransparencyKey =
   | 'bookmark'
   | 'dialog'
@@ -165,6 +166,12 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
   normalized.bookmark.rightClickToOpen = normalizeBoolean(
     normalized.bookmark.rightClickToOpen,
     defaultSettings.bookmark.rightClickToOpen,
+  )
+  normalized.bookmark.drawerWidth = clampInteger(
+    normalized.bookmark.drawerWidth,
+    defaultSettings.bookmark.drawerWidth,
+    MIN_BOOKMARK_DRAWER_WIDTH,
+    Number.MAX_SAFE_INTEGER,
   )
   // 两个背景右键动作不能同时生效；旧设置中的书签行为优先保留。
   if (normalized.bookmark.rightClickToOpen) {

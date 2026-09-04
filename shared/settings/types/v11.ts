@@ -75,6 +75,7 @@ export interface SettingsSchemaV11 extends Omit<
 
   bookmark: SettingsSchemaV10['bookmark'] & {
     rightClickToOpen: boolean
+    drawerWidth: number
   }
 
   perf: Omit<
