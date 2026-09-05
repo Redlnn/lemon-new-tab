@@ -16,6 +16,7 @@ import {
   resumePendingBrowserApply,
   type IncomingWallpaperResources,
 } from './browserData.ts'
+import { observeBrowserWebDavRequest } from './browserRedirects.ts'
 import { canonicalJson, hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
 import { inlineImageHashesAreValid } from './capture.ts'
 import { resolveSyncConflicts } from './conflicts.ts'
@@ -88,11 +89,16 @@ export function createClient(
   config: NonNullable<Awaited<ReturnType<typeof webDavSyncConfigStorage.getValue>>>,
   password: string,
 ): WebDavClient {
-  return new WebDavClient({
-    ...config.connection,
-    username: config.username,
-    password,
-  })
+  return new WebDavClient(
+    {
+      ...config.connection,
+      username: config.username,
+      password,
+    },
+    undefined,
+    undefined,
+    observeBrowserWebDavRequest,
+  )
 }
 
 export async function readRevisions(
@@ -239,15 +245,42 @@ export async function finalizeSnapshot(input: {
   operationId: string
   revisionId: string
   snapshot: SyncSnapshotV1
+  expectedLocal: SyncSnapshotV1
   state: LocalSyncStateV1
   apply: boolean
   wallpapers?: IncomingWallpaperResources
   preserveLocalWallpapers?: boolean
 }): Promise<void> {
+  const capture = await captureBrowserSyncSnapshotResult(
+    input.expectedLocal.scope,
+    input.expectedLocal,
+  )
+  const local = preserveExcludedScope(
+    capture.snapshot,
+    input.expectedLocal,
+    input.expectedLocal.scope,
+  )
+  if (!jsonEquals(local, input.expectedLocal)) {
+    throw new WebDavError(
+      'precondition',
+      'Local data changed before applying the synchronized snapshot',
+    )
+  }
   if (input.apply) {
-    const expected = expectedAppliedSnapshot(
-      await captureBrowserSyncSnapshot(input.snapshot.scope),
+    const verificationScope = input.preserveLocalWallpapers
+      ? { ...input.snapshot.scope, wallpapers: false }
+      : input.snapshot.scope
+    const expected = preserveExcludedScope(
+      expectedAppliedSnapshot(
+        capture.resourceOmissions.length === 0 &&
+          jsonEquals(input.expectedLocal.scope, input.snapshot.scope)
+          ? capture.snapshot
+          : await captureBrowserSyncSnapshot(input.snapshot.scope),
+        input.snapshot,
+        Object.keys(input.wallpapers ?? {}) as Array<'dark' | 'light'>,
+      ),
       input.snapshot,
+      verificationScope,
     )
     await patchSyncState({
       pending: {
@@ -266,13 +299,7 @@ export async function finalizeSnapshot(input: {
       input.wallpapers,
     )
     const captured = await captureBrowserSyncSnapshot(input.snapshot.scope)
-    const applied = preserveExcludedScope(
-      captured,
-      input.snapshot,
-      input.preserveLocalWallpapers
-        ? { ...input.snapshot.scope, wallpapers: false }
-        : input.snapshot.scope,
-    )
+    const applied = preserveExcludedScope(captured, input.snapshot, verificationScope)
     if (!jsonEquals(applied, expected)) {
       throw new WebDavError('precondition', 'Applied local snapshot did not pass verification')
     }
@@ -300,6 +327,7 @@ export async function publishAndFinalize(input: {
   reason: SyncRevisionReason
   repairedRevisionId?: string
   snapshot: SyncSnapshotV1
+  expectedLocal: SyncSnapshotV1
   tombstones: TombstoneV1[]
   knownAssets: AssetReferenceV1[]
   encryptionKey?: CryptoKey
@@ -449,6 +477,7 @@ export async function publishAndFinalize(input: {
     operationId: pending.operationId,
     revisionId,
     snapshot,
+    expectedLocal: input.expectedLocal,
     state: input.state,
     apply: true,
     wallpapers,
@@ -789,6 +818,7 @@ async function runSynchronizationOnce(): Promise<void> {
       parents: [],
       reason: 'initial',
       snapshot: capture.snapshot,
+      expectedLocal: capture.snapshot,
       tombstones: [],
       knownAssets: [],
       encryptionKey,
@@ -860,39 +890,31 @@ async function runSynchronizationOnce(): Promise<void> {
     await patchSyncState({ paused: true, pauseReason: 'conflict' })
     return
   }
-  if (decision.action === 'up-to-date') {
+  if (decision.action === 'up-to-date' || decision.action === 'apply-remote') {
+    const snapshot =
+      decision.action === 'apply-remote' ? decision.remote.snapshot : decision.snapshot
+    const apply = !jsonEquals(local, snapshot)
+    const assets =
+      decision.action === 'apply-remote'
+        ? decision.remote.assets
+        : revisions.find((revision) => revision.revisionId === decision.revisionId)!.assets
+    const wallpapers = apply
+      ? await prepareIncomingWallpapers(
+          repository,
+          metadata,
+          state,
+          snapshot,
+          assets,
+          encryptionKey,
+        )
+      : undefined
     await finalizeSnapshot({
       operationId: pending.operationId,
       revisionId: decision.revisionId,
-      snapshot: decision.snapshot,
+      snapshot,
+      expectedLocal: local,
       state,
-      apply: !jsonEquals(local, decision.snapshot),
-    })
-    await writeDevicePresence(
-      repository,
-      metadata,
-      state,
-      decision.revisionId,
-      encryptionKey,
-      false,
-    )
-    return
-  }
-  if (decision.action === 'apply-remote') {
-    const wallpapers = await prepareIncomingWallpapers(
-      repository,
-      metadata,
-      state,
-      decision.remote.snapshot,
-      decision.remote.assets,
-      encryptionKey,
-    )
-    await finalizeSnapshot({
-      operationId: pending.operationId,
-      revisionId: decision.revisionId,
-      snapshot: decision.remote.snapshot,
-      state,
-      apply: true,
+      apply,
       wallpapers,
     })
     await writeDevicePresence(
@@ -919,6 +941,7 @@ async function runSynchronizationOnce(): Promise<void> {
     parents: decision.parents,
     reason: decision.reason,
     snapshot: decision.snapshot,
+    expectedLocal: local,
     tombstones,
     knownAssets: decision.assets,
     encryptionKey,
@@ -1060,7 +1083,12 @@ function setupScope(input: BrowserWebDavSetupInput): LocalSyncStateV1['scope'] {
 }
 
 async function inspectBrowserWebDavSetup(input: BrowserWebDavSetupInput): Promise<SetupInspection> {
-  const client = new WebDavClient(input.connection)
+  const client = new WebDavClient(
+    input.connection,
+    undefined,
+    undefined,
+    observeBrowserWebDavRequest,
+  )
   const repository = new WebDavVaultRepository(client, input.directory)
   await probeWebDavAccess(client)
   const inspection = await repository.inspect()
@@ -1261,6 +1289,7 @@ export async function connectBrowserWebDav(
       parents: [],
       reason: 'initial',
       snapshot: scanned.local,
+      expectedLocal: scanned.local,
       tombstones: [],
       knownAssets: [],
       encryptionKey,
@@ -1327,6 +1356,7 @@ export async function connectBrowserWebDav(
       operationId: crypto.randomUUID(),
       revisionId: remote.headRevisionIds[0]!,
       snapshot: remote.snapshot,
+      expectedLocal: scanned.local,
       state,
       apply: true,
       wallpapers,
@@ -1354,6 +1384,7 @@ export async function connectBrowserWebDav(
     parents: remote.headRevisionIds,
     reason: 'merge',
     snapshot: comparison.snapshot,
+    expectedLocal: scanned.local,
     tombstones: remote.tombstones,
     knownAssets: remote.assets,
     encryptionKey,
@@ -1550,6 +1581,7 @@ export async function resolveBrowserSyncConflict(
     parents: headIds,
     reason: 'merge',
     snapshot,
+    expectedLocal: local,
     tombstones: mergeTombstones(
       heads.flatMap((revision) => revision.tombstones),
       deriveSnapshotTombstones(baseline, snapshot, revisionId),

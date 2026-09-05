@@ -18,7 +18,7 @@ import type {
 
 export const MAX_METADATA_BYTES = 256 * 1024
 export const MAX_REVISION_BYTES = MAX_SYNC_SNAPSHOT_BYTES
-const MAX_STORED_REVISION_BYTES = MAX_REVISION_BYTES + 64 * 1024
+export const MAX_STORED_REVISION_BYTES = MAX_REVISION_BYTES + 64 * 1024
 
 export type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string }
 

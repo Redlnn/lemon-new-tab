@@ -1,3 +1,4 @@
+import { pruneInlineImages } from './apply.ts'
 import { mergeSyncSnapshots } from './merge.ts'
 import type {
   JsonObject,
@@ -56,33 +57,60 @@ export function resolveSyncConflicts(input: {
       }
       keepBothEntities(snapshot, input.local, input.remote, conflict, resolution.duplicateId)
     } else {
-      applySelectedValue(
+      applyConflictCandidate(
         snapshot,
         resolution.choice === 'local' ? input.local : input.remote,
         conflict,
-        resolution.choice,
+        resolution.choice === 'local' ? conflict.local : conflict.remote,
       )
     }
   }
   if (choices.size !== merged.conflicts.length) throw new TypeError('Unknown conflict resolution')
+  pruneInlineImages(snapshot)
   const validation = validateSyncSnapshot(snapshot)
   if (!validation.ok) throw new TypeError(validation.error)
   return validation.value
 }
 
-function applySelectedValue(
+/** 从原始候选快照读取值，不依赖合并过程中不断变化的中间结果。 */
+export function readConflictValue(
+  snapshot: SyncSnapshotV1,
+  conflict: SyncConflict,
+): JsonValue | undefined {
+  const path = conflict.path
+  for (const [prefix, items] of [
+    ['quickLinks.items.', snapshot.quickLinks?.items],
+    ['quickLinks.groups.', snapshot.quickLinks?.groups],
+    ['customSearchEngines.items.', snapshot.customSearchEngines?.items],
+  ] as const) {
+    if (!path.startsWith(prefix)) continue
+    const [id, ...keys] = path.slice(prefix.length).split('.')
+    let value: unknown = items?.find((item) => item.id === id)
+    for (const key of keys) value = (value as JsonObject | undefined)?.[key]
+    return value as JsonValue | undefined
+  }
+  if (path.startsWith('quickLinks.location.')) {
+    const id = path.slice('quickLinks.location.'.length)
+    if (!snapshot.quickLinks?.items.some((item) => item.id === id)) return undefined
+    return snapshot.quickLinks.groups.find((group) => group.itemIds.includes(id))?.id ?? 'root'
+  }
+  let value: unknown = snapshot
+  for (const key of path.split('.')) value = (value as JsonObject | undefined)?.[key]
+  return value as JsonValue | undefined
+}
+
+export function applyConflictCandidate(
   target: SyncSnapshotV1,
   source: SyncSnapshotV1,
   conflict: SyncConflict,
-  side: 'local' | 'remote',
+  value = readConflictValue(source, conflict),
 ): void {
-  const selected = side === 'local' ? conflict.local : conflict.remote
-  const present = Object.hasOwn(conflict, side)
   if (conflict.kind === 'delete-vs-modify' || conflict.kind === 'simultaneous-create') {
-    applyEntity(target, source, conflict, present ? selected : undefined)
-    return
+    applyEntity(target, source, conflict, value)
+  } else {
+    applyPathValue(target, conflict.path, value, value !== undefined)
   }
-  applyPathValue(target, conflict.path, selected, present)
+  if (source.inlineImages) target.inlineImages = { ...target.inlineImages, ...source.inlineImages }
 }
 
 function entityTarget(

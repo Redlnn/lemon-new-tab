@@ -601,6 +601,9 @@
       "conflict": "Remote data has a conflict",
       "corrupted": "Remote data is corrupted",
       "network": "The server is temporarily unreachable",
+      "redirect-cross-origin": "The server redirected to another origin, so sync was stopped",
+      "redirect-insecure": "The server tried to downgrade HTTPS to HTTP, so sync was stopped",
+      "redirect-required": "The redirect is unsafe or could not be verified. Only same-origin redirects and same-host HTTP-to-HTTPS upgrades are allowed; you can also enter the final WebDAV address.",
       "server": "The WebDAV service returned an error",
       "storage-full": "The WebDAV storage is full",
       "timeout": "The connection timed out",
@@ -742,7 +745,8 @@
         "foreign": "This directory contains data not owned by Lemon New Tab. Use an empty or correct extension-only directory.",
         "format": "This sync format was created by a newer extension. Upgrade the extension first.",
         "network": "The browser could not send the request. Open the server address in a normal tab to verify the address and HTTPS certificate, then check the network, proxy, and redirects.",
-        "permission": "Access to this exact WebDAV server was not granted, so the connection was not saved."
+        "permission": "Access to this exact WebDAV server was not granted, so the connection was not saved.",
+        "unsupported": "The server cannot reliably create, read, list, or delete WebDAV files."
       },
       "finish": "Enable sync",
       "http": {
@@ -775,9 +779,8 @@
       },
       "test": {
         "action": "Test connection",
-        "description": "Only {{origin}} is requested; access to all websites is not a sync requirement.",
         "notTested": "Waiting for Test",
-        "permissionNote": "Click the Test button to request access permission and attempt to connect to the server.",
+        "permissionNote": "After you click Test, the browser requests optional permissions to access this WebDAV server and inspect requests. The former connects to the server; the latter determines whether this connection is secure.",
         "retry": "Test again",
         "scanned": "Successfully connected to the server.",
         "success": "Connection successful",

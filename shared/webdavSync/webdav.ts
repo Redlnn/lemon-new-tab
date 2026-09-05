@@ -12,18 +12,18 @@ import type { AssetReferenceV1, CommitRecordV1, SyncRevisionV1, VaultMetadataV1 
 import {
   MAX_METADATA_BYTES,
   MAX_REVISION_BYTES,
+  MAX_STORED_REVISION_BYTES,
   validateCommitRecord,
   validateSyncRevision,
 } from './validation.ts'
 
 const MAX_PROPFIND_BYTES = 5 * 1024 * 1024
 const MAX_PROPFIND_ENTRIES = 2048
-const MAX_REDIRECTS = 3
 const METADATA_TIMEOUT_MS = 30_000
 const ASSET_TIMEOUT_MS = 120_000
+const MAX_REDIRECTS = 3
 const PRODUCT_ID = 'lemon-new-tab'
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308])
 const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder('utf-8', { fatal: true })
 
@@ -36,7 +36,6 @@ export type WebDavErrorCategory =
   | 'format-too-new'
   | 'generation-reset'
   | 'insecure-http'
-  | 'insecure-redirect'
   | 'encryption-locked'
   | 'invalid-response'
   | 'locked'
@@ -45,6 +44,8 @@ export type WebDavErrorCategory =
   | 'precondition'
   | 'rate-limited'
   | 'redirect-cross-origin'
+  | 'redirect-insecure'
+  | 'redirect-required'
   | 'response-too-large'
   | 'server'
   | 'storage-full'
@@ -54,19 +55,12 @@ export type WebDavErrorCategory =
 export class WebDavError extends Error {
   readonly category: WebDavErrorCategory
   readonly status?: number
-  readonly redirectOrigin?: string
 
-  constructor(
-    category: WebDavErrorCategory,
-    message: string,
-    status?: number,
-    redirectOrigin?: string,
-  ) {
+  constructor(category: WebDavErrorCategory, message: string, status?: number) {
     super(message)
     this.name = 'WebDavError'
     this.category = category
     this.status = status
-    this.redirectOrigin = redirectOrigin
   }
 }
 
@@ -104,7 +98,6 @@ export interface WebDavEntry {
 
 export interface WebDavPutOptions {
   contentType?: string
-  ifNoneMatch?: '*'
   timeoutMs?: number
 }
 
@@ -114,6 +107,17 @@ export interface StoredDevicePayload {
 }
 
 export type WebDavMultiStatusParser = (xml: string, requestUrl: URL) => WebDavEntry[]
+
+export interface ObservedWebDavResponse {
+  response: Response
+  redirectUrl?: string
+}
+
+export type WebDavRequestObserver = (
+  url: URL,
+  method: string,
+  request: () => Promise<Response>,
+) => Promise<ObservedWebDavResponse>
 
 export type WebDavVaultInspection =
   | { state: 'missing' | 'empty' }
@@ -197,7 +201,7 @@ export function classifyWebDavAddress(value: string): {
   }
   return {
     origin: url.origin,
-    permissionOrigin: `${url.origin}/*`,
+    permissionOrigin: `${url.protocol}//${url.hostname}/*`,
     transport: url.protocol === 'https:' ? 'https' : 'local-http',
   }
 }
@@ -218,6 +222,30 @@ function normalizeBaseUrl(connection: WebDavConnection): URL {
   return url
 }
 
+export function resolveWebDavRedirect(source: URL, value: string): URL {
+  let target: URL
+  try {
+    target = new URL(value, source)
+  } catch {
+    throw new WebDavError('invalid-response', 'WebDAV redirect URL is invalid')
+  }
+  if (target.username || target.password) {
+    throw new WebDavError('redirect-cross-origin', 'WebDAV redirect changes origin')
+  }
+  if (source.protocol === 'https:' && target.protocol === 'http:') {
+    throw new WebDavError('redirect-insecure', 'WebDAV redirect downgrades HTTPS')
+  }
+  const sameOrigin = target.origin === source.origin
+  const sameHostUpgrade =
+    source.protocol === 'http:' &&
+    target.protocol === 'https:' &&
+    target.hostname === source.hostname
+  if (!sameOrigin && !sameHostUpgrade) {
+    throw new WebDavError('redirect-cross-origin', 'WebDAV redirect changes origin')
+  }
+  return target
+}
+
 function encodeBasicCredentials(username: string, password: string): string {
   const bytes = textEncoder.encode(`${username}:${password}`)
   let binary = ''
@@ -230,7 +258,10 @@ function toRelativePath(path: string): string {
   if (segments.length === 0 || segments.some((segment) => segment === '.' || segment === '..')) {
     throw new WebDavError('invalid-response', 'WebDAV path is invalid')
   }
-  return segments.map((segment) => encodeURIComponent(segment)).join('/')
+  return (
+    segments.map((segment) => encodeURIComponent(segment)).join('/') +
+    (path.endsWith('/') ? '/' : '')
+  )
 }
 
 function statusError(status: number): WebDavError {
@@ -250,7 +281,10 @@ function statusError(status: number): WebDavError {
   return new WebDavError('invalid-response', 'WebDAV returned an unexpected status', status)
 }
 
-async function readBoundedBytes(response: Response, maximum: number): Promise<Uint8Array> {
+async function readBoundedBytes(
+  response: Response,
+  maximum: number,
+): Promise<Uint8Array<ArrayBuffer>> {
   const declaredLength = Number(response.headers.get('content-length'))
   if (Number.isFinite(declaredLength) && declaredLength > maximum) {
     throw new WebDavError('response-too-large', 'WebDAV response exceeds its size limit')
@@ -346,16 +380,21 @@ export class WebDavClient {
   private readonly authorization: string
   private readonly fetchImpl: typeof fetch
   private readonly parseMultiStatus: WebDavMultiStatusParser
+  private readonly observeRequest: WebDavRequestObserver
 
   constructor(
     connection: WebDavConnection,
     fetchImpl: typeof fetch = fetch,
     parseMultiStatus: WebDavMultiStatusParser = parseWebDavMultiStatus,
+    observeRequest: WebDavRequestObserver = async (_url, _method, request) => ({
+      response: await request(),
+    }),
   ) {
     this.baseUrl = normalizeBaseUrl(connection)
     this.authorization = encodeBasicCredentials(connection.username, connection.password)
     this.fetchImpl = fetchImpl.bind(globalThis)
     this.parseMultiStatus = parseMultiStatus
+    this.observeRequest = observeRequest
   }
 
   resolve(path: string): URL {
@@ -363,9 +402,10 @@ export class WebDavClient {
   }
 
   async get(path: string, maximum = MAX_METADATA_BYTES, timeoutMs = METADATA_TIMEOUT_MS) {
-    const response = await this.request('GET', path, { timeoutMs })
-    if (!response.ok) throw statusError(response.status)
-    return { bytes: await readBoundedBytes(response, maximum) }
+    return this.request('GET', path, { timeoutMs }, async (response) => {
+      if (!response.ok) throw statusError(response.status)
+      return { bytes: await readBoundedBytes(response, maximum) }
+    })
   }
 
   async put(
@@ -376,25 +416,35 @@ export class WebDavClient {
     const headers = new Headers({
       'Content-Type': options.contentType ?? 'application/octet-stream',
     })
-    if (options.ifNoneMatch) headers.set('If-None-Match', options.ifNoneMatch)
-    const response = await this.request('PUT', path, {
-      body,
-      headers,
-      timeoutMs: options.timeoutMs ?? METADATA_TIMEOUT_MS,
-    })
-    if (!response.ok) throw statusError(response.status)
+    await this.request(
+      'PUT',
+      path,
+      { body, headers, timeoutMs: options.timeoutMs ?? METADATA_TIMEOUT_MS },
+      async (response) => {
+        if (!response.ok) throw statusError(response.status)
+        await response.body?.cancel()
+      },
+    )
   }
 
   async delete(path: string, ignoreMissing = false): Promise<void> {
-    const response = await this.request('DELETE', path, { timeoutMs: METADATA_TIMEOUT_MS })
-    if (ignoreMissing && response.status === 404) return
-    if (!response.ok) throw statusError(response.status)
+    await this.request('DELETE', path, { timeoutMs: METADATA_TIMEOUT_MS }, async (response) => {
+      if (!(ignoreMissing && response.status === 404) && !response.ok)
+        throw statusError(response.status)
+      await response.body?.cancel()
+    })
   }
 
   async makeCollection(path: string): Promise<void> {
-    const response = await this.request('MKCOL', path, { timeoutMs: METADATA_TIMEOUT_MS })
-    if (response.status === 405) return
-    if (!response.ok) throw statusError(response.status)
+    await this.request(
+      'MKCOL',
+      `${path.replace(/\/$/, '')}/`,
+      { timeoutMs: METADATA_TIMEOUT_MS },
+      async (response) => {
+        if (response.status !== 405 && !response.ok) throw statusError(response.status)
+        await response.body?.cancel()
+      },
+    )
   }
 
   async ensureCollection(path: string): Promise<void> {
@@ -408,69 +458,61 @@ export class WebDavClient {
     const headers = new Headers({ Depth: '1', 'Content-Type': 'application/xml; charset=utf-8' })
     const body =
       '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:getcontentlength/><d:getlastmodified/></d:prop></d:propfind>'
-    const response = await this.request('PROPFIND', path, {
-      body,
-      headers,
-      timeoutMs: METADATA_TIMEOUT_MS,
-    })
-    if (response.status !== 207) throw statusError(response.status)
-    const xml = textDecoder.decode(await readBoundedBytes(response, MAX_PROPFIND_BYTES))
-    const entries = this.parseMultiStatus(xml, this.resolve(path))
+    const collectionPath = `${path.replace(/\/$/, '')}/`
+    const xml = await this.request(
+      'PROPFIND',
+      collectionPath,
+      {
+        body,
+        headers,
+        timeoutMs: METADATA_TIMEOUT_MS,
+      },
+      async (response) => {
+        if (response.status !== 207) throw statusError(response.status)
+        return textDecoder.decode(await readBoundedBytes(response, MAX_PROPFIND_BYTES))
+      },
+    )
+    const entries = this.parseMultiStatus(xml, this.resolve(collectionPath))
     if (entries.length > MAX_PROPFIND_ENTRIES) {
       throw new WebDavError('response-too-large', 'WebDAV directory contains too many entries')
     }
     return entries
   }
 
-  private async request(
+  private async request<T>(
     method: string,
     path: string,
     options: { body?: string | Uint8Array; headers?: Headers; timeoutMs: number },
-  ): Promise<Response> {
+    consume: (response: Response) => Promise<T>,
+  ): Promise<T> {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), options.timeoutMs)
     const headers = new Headers(options.headers)
+    const body = typeof options.body === 'string' ? options.body : options.body?.slice().buffer
     headers.set('Authorization', this.authorization)
-    let url = this.resolve(path)
-
     try {
+      let url = this.resolve(path)
       for (let redirects = 0; ; redirects += 1) {
-        let body: string | ArrayBuffer | undefined
-        if (typeof options.body === 'string') body = options.body
-        else if (options.body) {
-          const copy = new Uint8Array(options.body.byteLength)
-          copy.set(options.body)
-          body = copy.buffer
+        const { response, redirectUrl } = await this.observeRequest(url, method, () =>
+          this.fetchImpl(url, {
+            method,
+            headers,
+            body,
+            redirect: 'manual',
+            signal: controller.signal,
+          }),
+        )
+        if (!redirectUrl) {
+          if (response.type === 'opaqueredirect') {
+            throw new WebDavError('redirect-required', 'Unable to inspect WebDAV redirect')
+          }
+          return await consume(response)
         }
-        const response = await this.fetchImpl(url, {
-          method,
-          headers,
-          body,
-          redirect: 'manual',
-          signal: controller.signal,
-        })
-        if (!REDIRECT_STATUSES.has(response.status)) return response
+        await response.body?.cancel()
         if (redirects >= MAX_REDIRECTS) {
           throw new WebDavError('invalid-response', 'WebDAV redirected too many times')
         }
-        const location = response.headers.get('location')
-        if (!location) throw new WebDavError('invalid-response', 'WebDAV redirect has no target')
-        const target = new URL(location, url)
-        if (target.username || target.password) {
-          throw new WebDavError('invalid-response', 'WebDAV redirect contains embedded credentials')
-        }
-        if (url.protocol === 'https:' && target.protocol === 'http:') {
-          throw new WebDavError('insecure-redirect', 'WebDAV attempted to downgrade HTTPS')
-        }
-        if (target.origin !== this.baseUrl.origin) {
-          throw new WebDavError(
-            'redirect-cross-origin',
-            'WebDAV redirected to another server origin',
-            response.status,
-            target.origin,
-          )
-        }
-        url = target
+        url = resolveWebDavRedirect(url, redirectUrl)
       }
     } catch (error) {
       if (error instanceof WebDavError) throw error
@@ -478,6 +520,7 @@ export class WebDavClient {
       throw new WebDavError('network', 'WebDAV network request failed')
     } finally {
       clearTimeout(timeout)
+      controller.abort()
     }
   }
 }
@@ -493,12 +536,11 @@ export async function probeWebDavAccess(client: WebDavClient): Promise<void> {
   const filename = `probe-${crypto.randomUUID()}.bin`
   const path = `${directory}/${filename}`
   const expected = crypto.getRandomValues(new Uint8Array(32))
-  const replacement = crypto.getRandomValues(new Uint8Array(32))
   let created = false
 
   await client.ensureCollection(directory)
   try {
-    await client.put(path, expected, { ifNoneMatch: '*' })
+    await client.put(path, expected)
     created = true
     const stored = await client.get(path, expected.byteLength)
     if (!sameBytes(stored.bytes, expected)) {
@@ -508,23 +550,12 @@ export async function probeWebDavAccess(client: WebDavClient): Promise<void> {
     if (!listed.some((entry) => entry.name === filename)) {
       throw new WebDavError('unsupported', 'WebDAV cannot reliably enumerate unique files')
     }
-    await assertPreconditionFailure(() => client.put(path, replacement, { ifNoneMatch: '*' }))
   } finally {
     if (created) {
       await client.delete(path, true).catch(() => undefined)
-      await client.delete(directory, true).catch(() => undefined)
+      await client.delete(`${directory}/`, true).catch(() => undefined)
     }
   }
-}
-
-async function assertPreconditionFailure(operation: () => Promise<void>): Promise<void> {
-  try {
-    await operation()
-  } catch (error) {
-    if (error instanceof WebDavError && error.category === 'precondition') return
-    throw error
-  }
-  throw new WebDavError('unsupported', 'WebDAV ignored a conditional write')
 }
 
 function normalizeVaultDirectory(directory: string): string {
@@ -628,20 +659,9 @@ export class WebDavVaultRepository {
     }
 
     await this.client.ensureCollection(this.directory)
-    try {
-      await this.client.put(`${this.directory}/vault.json`, canonicalJson(metadata), {
-        contentType: 'application/json',
-        ifNoneMatch: '*',
-      })
-    } catch (error) {
-      if (!(error instanceof WebDavError) || error.category !== 'precondition') throw error
-      const existing = await this.inspect()
-      if (existing.state === 'ready' && existing.metadata.vaultId === metadata.vaultId) {
-        await this.prepareVaultDirectories(metadata)
-        return
-      }
-      throw new WebDavError('foreign-vault', 'WebDAV directory already contains another vault')
-    }
+    await this.client.put(`${this.directory}/vault.json`, canonicalJson(metadata), {
+      contentType: 'application/json',
+    })
     await this.prepareVaultDirectories(metadata)
     const verified = await this.inspect()
     if (verified.state !== 'ready' || verified.metadata.vaultId !== metadata.vaultId) {
@@ -824,10 +844,7 @@ export class WebDavVaultRepository {
     const validation = validateCommitRecord(commit)
     if (!validation.ok) throw new WebDavError('corrupted', validation.error)
     const path = `${this.directory}/${commit.payloadPath}`
-    const result = await this.client.get(path, commit.payloadSize + 1)
-    const copy = new Uint8Array(result.bytes.byteLength)
-    copy.set(result.bytes)
-    return copy
+    return (await this.client.get(path, MAX_STORED_REVISION_BYTES)).bytes
   }
 
   async writeDevicePayload(
@@ -924,7 +941,7 @@ export class WebDavVaultRepository {
     if (inspection.state !== 'ready' || inspection.metadata.vaultId !== expectedVaultId) {
       throw new WebDavError('foreign-vault', 'WebDAV vault ownership could not be verified')
     }
-    await this.client.delete(this.directory)
+    await this.client.delete(`${this.directory}/`)
   }
 
   async deleteRevision(metadata: VaultMetadataV1, revisionId: string): Promise<void> {
@@ -1063,9 +1080,6 @@ export class WebDavVaultRepository {
     timeoutMs = METADATA_TIMEOUT_MS,
   ): Promise<void> {
     try {
-      await this.client.put(path, bytes, { ifNoneMatch: '*', timeoutMs })
-    } catch (error) {
-      if (!(error instanceof WebDavError) || error.category !== 'precondition') throw error
       const stored = await this.client.get(path, bytes.byteLength, timeoutMs)
       if (
         stored.bytes.byteLength === bytes.byteLength &&
@@ -1074,7 +1088,10 @@ export class WebDavVaultRepository {
         return
       }
       throw new WebDavError('precondition', 'Immutable WebDAV object already exists')
+    } catch (error) {
+      if (!(error instanceof WebDavError) || error.category !== 'not-found') throw error
     }
+    await this.client.put(path, bytes, { timeoutMs })
     const stored = await this.client.get(path, bytes.byteLength, ASSET_TIMEOUT_MS)
     if (
       stored.bytes.byteLength !== bytes.byteLength ||

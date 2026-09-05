@@ -601,6 +601,9 @@
       "conflict": "遠端資料發生衝突",
       "corrupted": "遠端資料損壞",
       "network": "暫時無法連線伺服器",
+      "redirect-cross-origin": "伺服器嘗試重新導向至其他來源，已停止同步",
+      "redirect-insecure": "伺服器嘗試由 HTTPS 降級至 HTTP，已停止同步",
+      "redirect-required": "伺服器重新導向不安全或無法驗證。只支援同源重新導向及同一主機由 HTTP 升級至 HTTPS；亦可填寫最終的 WebDAV 位址。",
       "server": "WebDAV 服務暫時發生錯誤",
       "storage-full": "WebDAV 空間不足",
       "timeout": "連線逾時",
@@ -742,7 +745,8 @@
         "foreign": "此目錄包含不屬於 Lemon New Tab 的資料。請使用空目錄或正確的專屬目錄。",
         "format": "同步格式由較新版本的擴充功能建立，請先更新擴充功能。",
         "network": "瀏覽器未能送出請求。請先在一般分頁開啟伺服器位址，確認位址和 HTTPS 憑證有效，再檢查網絡、Proxy 與重新導向設定。",
-        "permission": "未取得此 WebDAV 伺服器的精確存取權限，連線未保存。"
+        "permission": "未取得此 WebDAV 伺服器的精確存取權限，連線未保存。",
+        "unsupported": "伺服器無法可靠完成 WebDAV 檔案的建立、讀取、列出或刪除。"
       },
       "finish": "確認開啟同步",
       "http": {
@@ -775,9 +779,8 @@
       },
       "test": {
         "action": "測試連線",
-        "description": "只申請 {{origin}}，不會把存取所有網站作為同步前提。",
         "notTested": "等待測試",
-        "permissionNote": "點擊測試按鈕以申請權限，並嘗試連接至伺服器。",
+        "permissionNote": "點擊測試後，瀏覽器會申請存取此 WebDAV 伺服器及偵測請求的選用權限；前者用於連接伺服器，後者用於判斷本次連接是否安全。",
         "retry": "重新測試",
         "scanned": "已成功連接伺服器。",
         "success": "連線成功",

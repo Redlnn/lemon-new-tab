@@ -309,6 +309,7 @@ async function downloadCorruption() {
     const result = await downloadSyncCorruption(
       corruption.value.corruptedRevisionId,
       corruption.value.actualPayloadHash,
+      corruption.value.payloadSize,
     )
     downloadBlob(new Blob([result.bytes]), result.filename)
     corruptedDownloaded.value = true

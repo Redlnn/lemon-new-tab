@@ -601,6 +601,9 @@
       "conflict": "远端数据发生冲突",
       "corrupted": "远端数据损坏",
       "network": "暂时无法连接服务器",
+      "redirect-cross-origin": "服务器尝试重定向到其他来源，已停止同步",
+      "redirect-insecure": "服务器尝试从 HTTPS 降级到 HTTP，已停止同步",
+      "redirect-required": "服务器重定向不安全或无法验证。仅支持同源跳转和同主机的 HTTP 到 HTTPS 升级；也可填写最终的 WebDAV 地址。",
       "server": "WebDAV 服务暂时出错",
       "storage-full": "WebDAV 空间不足",
       "timeout": "连接超时",
@@ -742,7 +745,8 @@
         "foreign": "该目录包含不属于 Lemon New Tab 的数据。请改用空目录或正确的专属目录。",
         "format": "同步格式由更高版本扩展创建，请先升级扩展。",
         "network": "浏览器未能发出请求。请先在普通标签页打开服务器地址，确认地址和 HTTPS 证书有效，再检查网络、代理和跳转设置。",
-        "permission": "未获得此 WebDAV 服务器的精确访问权限，连接没有保存。"
+        "permission": "未获得此 WebDAV 服务器的精确访问权限，连接没有保存。",
+        "unsupported": "服务器无法可靠完成 WebDAV 文件的创建、读取、列出或删除。"
       },
       "finish": "确认开启同步",
       "http": {
@@ -775,9 +779,8 @@
       },
       "test": {
         "action": "测试连接",
-        "description": "只申请 {{origin}}，不会把访问所有网站作为同步前提。",
         "notTested": "等待测试",
-        "permissionNote": "点击测试按钮申请访问权限并尝试连接服务器",
+        "permissionNote": "点击测试后，浏览器会申请访问此 WebDAV 服务器和检测请求的可选权限；前者用于连接服务器，后者用于判断本次连接是否安全。",
         "retry": "重新测试",
         "scanned": "成功连接到服务器",
         "success": "连接成功",

@@ -214,7 +214,7 @@ function preserveEntityIcons(result: SyncSnapshotV1, baseline: SyncSnapshotV1): 
   }
 }
 
-function pruneInlineImages(snapshot: SyncSnapshotV1, baseline?: SyncSnapshotV1): void {
+export function pruneInlineImages(snapshot: SyncSnapshotV1, baseline?: SyncSnapshotV1): void {
   const used = new Set(
     [
       ...(snapshot.quickLinks?.items.map((item) => item.faviconHash) ?? []),
@@ -256,8 +256,30 @@ export function preserveExcludedScope(
 export function expectedAppliedSnapshot(
   beforeApply: SyncSnapshotV1,
   target: SyncSnapshotV1,
+  wallpaperVariants: readonly ('dark' | 'light')[] = [],
 ): SyncSnapshotV1 {
   const result = preserveExcludedScope(beforeApply, target, target.scope)
+  if (target.scope.quickLinks && target.quickLinks) copyCategory(result, target, 'quickLinks')
+  if (target.scope.customSearchEngines && target.customSearchEngines)
+    copyCategory(result, target, 'customSearchEngines')
+  if (target.scope.uiPreferences && target.ui) copyCategory(result, target, 'ui')
+  if (!target.scope.userIcons) preserveEntityIcons(result, beforeApply)
+  result.inlineImages = { ...beforeApply.inlineImages, ...target.inlineImages }
+  for (const key of ['blockedTopSites', 'onlineWallpaperUrl'] as const) {
+    preserveOptionalField(
+      result,
+      target,
+      key,
+      target.scope[key] && target.optional?.[key] !== undefined,
+    )
+  }
+  for (const variant of wallpaperVariants) {
+    const wallpaper = target.optional?.wallpapers?.[variant]
+    if (!target.scope.wallpapers || !wallpaper) continue
+    result.optional ??= {}
+    result.optional.wallpapers ??= {}
+    result.optional.wallpapers[variant] = structuredClone(wallpaper)
+  }
   if (target.scope.settings) {
     const targetSettings = target.settings ?? {}
     const settings = preserveUnknownSyncSettings(
@@ -267,6 +289,7 @@ export function expectedAppliedSnapshot(
     if (Object.keys(settings).length) result.settings = settings
     else delete result.settings
   }
+  pruneInlineImages(result)
   return result
 }
 

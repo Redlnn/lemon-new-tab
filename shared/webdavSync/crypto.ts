@@ -6,13 +6,15 @@ export const MIN_PBKDF2_ITERATIONS = 600_000
 export const MAX_PBKDF2_ITERATIONS = 2_000_000
 const encoder = new TextEncoder()
 
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = ''
-  for (const byte of bytes) binary += String.fromCharCode(byte)
-  return btoa(binary)
+export function bytesToBase64(bytes: Uint8Array): string {
+  const chunks: string[] = []
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+    chunks.push(String.fromCharCode(...bytes.subarray(offset, offset + 0x8000)))
+  }
+  return btoa(chunks.join(''))
 }
 
-function base64ToBytes(value: string): Uint8Array<ArrayBuffer> {
+export function base64ToBytes(value: string): Uint8Array<ArrayBuffer> {
   let binary: string
   try {
     binary = atob(value)

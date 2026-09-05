@@ -52,7 +52,7 @@ According to the extension manifest, the extension may access:
 - **topSites / browsing activity related capabilities**: to show frequently visited sites;
 - **storage**: to save settings and cache, and to temporarily detect, download, or clear sync data left by older versions;
 - **tabs / activeTab / scripting** (depending on browser): to interact with tabs, the new tab page, and related pages;
-- **optional host permissions**: when you enable features that need access to website resources, such as fetching favicons or loading online media from arbitrary sites.
+- **optional host and request-inspection permissions**: when you enable features that need network resources, the browser may request access to specific hosts or arbitrary website resources, such as favicons or online media. Only when you test a WebDAV connection does the extension request that server host and the optional `webRequest` permission; the latter is used only to identify and validate WebDAV redirects and does not read response bodies.
 
 These permissions are used to provide local functionality. For example, the extension may read **page titles, page URLs / hostnames, and favicon information** from tabs you visit or currently open in order to display Quick Links, frequently visited sites, or related site cards. Such information is generally processed locally in your browser and does not mean the developer receives that content.
 

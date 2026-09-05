@@ -8,10 +8,12 @@ import type {
   BrowserSyncDeviceEntry,
 } from './browserEngine.ts'
 import type { BrowserCorruptionInspection } from './browserManagement.ts'
+import { sha256Hex } from './canonical.ts'
 import type { SyncConflictDisplayContext } from './conflictPresentation.ts'
+import { base64ToBytes } from './crypto.ts'
 import type { LocalSyncStateV1, SyncConflict, SyncConflictResolution } from './types.ts'
 import { parseLocalSyncState } from './validation.ts'
-import { deserializeWebDavError, type SerializedWebDavError } from './webdav.ts'
+import { deserializeWebDavError, WebDavError, type SerializedWebDavError } from './webdav.ts'
 
 export interface BrowserSyncConflictDetails {
   conflicts: SyncConflict[]
@@ -100,15 +102,21 @@ export function inspectSyncCorruption(): Promise<BrowserCorruptionInspection> {
   } satisfies WebDavSyncMessage)
 }
 
-export function downloadSyncCorruption(
+export async function downloadSyncCorruption(
   revisionId: string,
   actualPayloadHash: string,
+  payloadSize: number,
 ): Promise<{ bytes: Uint8Array<ArrayBuffer>; filename: string }> {
-  return browser.runtime.sendMessage({
+  const result: { base64: string; filename: string } = await browser.runtime.sendMessage({
     type: 'webdav-sync:download-corruption',
     revisionId,
     actualPayloadHash,
   } satisfies WebDavSyncMessage)
+  const bytes = base64ToBytes(result.base64)
+  if (bytes.byteLength !== payloadSize || (await sha256Hex(bytes)) !== actualPayloadHash) {
+    throw new WebDavError('corrupted', 'Downloaded backup failed integrity validation')
+  }
+  return { bytes, filename: result.filename }
 }
 
 export function repairSyncCorruption(input: {

@@ -103,7 +103,8 @@
     "rightClickDisabledNote": "Başlatıcı'yı açmak için sağ tıklama etkinleştirildi. Önce kapatın.",
     "rightClickToOpen": "Açmak için arka plana sağ tıklayın",
     "showBtn": "Sağ alt düğmesini göster",
-    "title": "Yer imleri çubuğu"
+    "title": "Yer imleri çubuğu",
+    "syncNote": "Tarayıcı yer imleri tarayıcı tarafından yönetilir ve WebDAV üzerinden eşitlenmez."
   },
   "clock": {
     "blink": "Yanıp sönen iki nokta üst üste",
@@ -240,7 +241,22 @@
         "no": "Hayır",
         "title": "Dosyadan içe aktarmak istediğinizden emin misiniz?",
         "yes": "Evet"
-      }
+      },
+      "exporting": "Yedek oluşturuluyor...",
+      "importing": "İçe aktarılan veriler güvenli şekilde uygulanıyor...",
+      "omittedIcons": "Bu yedeklemede çok büyük olan {{count}} kullanıcı simgesi atlandı",
+      "syncMode": {
+        "confirmMismatch": "Girilen onay metni eşleşmiyor",
+        "deletePrompt": "WebDAV verilerini silmek için “{{text}}” yazın",
+        "deleteRemote": "Uzak eşitleme kasasını sil, bağlantıyı kes ve ardından yerel verileri değiştir",
+        "description": "WebDAV eşitlemesi açık. Bu içe aktarmanın diğer cihazları nasıl etkileyeceğini seçin.",
+        "disconnectTitle": "Yerel verileri değiştirmeden önce bağlantıyı kesin",
+        "keepRemote": "Uzak eşitleme kasasını koru, bağlantıyı kes ve ardından yerel verileri değiştir",
+        "merge": "Mevcut verilerle birleştir ve eşitle (çakışmada duraklat)",
+        "replace": "Eşitlenen tüm verileri içe aktarılan içerikle değiştir",
+        "title": "İçe aktarma ve eşitleme"
+      },
+      "validating": "Yedek bütünlüğü doğrulanıyor..."
     },
     "language": "Dil",
     "purge": {
@@ -250,7 +266,12 @@
           "includeSync": "Bulut senkronizasyon verilerini de temizle",
           "message": "Bu işlem uzantı ayarlarını, göz ardı edilen en çok ziyaret edilen siteleri, sabitlenmiş veya favorilere eklenmiş siteleri, seçilen arka plan resimlerini veya videolarını vb. sıfırlayacaktır.",
           "purging": "Uzantı verileri temizleniyor...",
-          "title": "Bu uzantının tüm verilerini temizlemek istediğinizden emin misiniz?"
+          "title": "Bu uzantının tüm verilerini temizlemek istediğinizden emin misiniz?",
+          "deleteRemote": "Uzak verileri sil, bağlantıyı kes ve ardından sıfırla",
+          "deleteRemotePrompt": "Uzak eşitleme kasasını silmek için “{{text}}” yazın",
+          "deleteRemoteTitle": "Uzak eşitleme verileri silinsin mi?",
+          "keepRemote": "Uzak verileri koru, bağlantıyı kes ve ardından sıfırla",
+          "syncQuestion": "Eşitleme açık. Bu sıfırlama nasıl işlenmeli?"
         },
         "icon": {
           "message": "Bu işlem, önbelleğe alınmış tüm site simgelerini silecektir.",
@@ -475,5 +496,346 @@
     },
     "shadow": "Metin gölgesini göster",
     "title": "Alıntı"
+  },
+  "sync": {
+    "availability": {
+      "blockedTopSitesScopeDisabled": "Gizlenen site kayıtları yalnızca bu cihazda tutulur. Bunları WebDAV eşitleme kapsamına ekleyebilirsiniz.",
+      "bookmarksBrowserManaged": "Yer imleri tarayıcı tarafından yönetilir ve WebDAV üzerinden eşitlenmez.",
+      "faviconCacheLocal": "Site simgesi önbelleği yeniden oluşturulabilir ve yüklenmez. Önbelleği etkinleştirme tercihi eşitlenir.",
+      "onlineWallpaperCacheLocal": "Önbellek dosyaları yalnızca bu cihazda tutulur; etkinleştirme tercihi eşitlenir.",
+      "onlineWallpaperUrlScopeDisabled": "Çevrimiçi/API duvar kâğıdı adresi yalnızca bu cihazda tutulur. Gelişmiş eşitleme kapsamına ekleyebilirsiniz.",
+      "pendingPermission": "Ayar eşitlendi ancak bu cihaz izin vermedi. İlgili özellik izin bekliyor.",
+      "quickLinksScopeDisabled": "Hızlı Bağlantılar eşitlemesi kapalı olduğundan veriler yalnızca bu cihazda tutulur.",
+      "searchEnginesScopeDisabled": "Özel arama motoru eşitlemesi kapalı olduğundan veriler yalnızca bu cihazda tutulur.",
+      "searchHistoryLocal": "Arama geçmişi her zaman yalnızca bu cihazda tutulur ve yüklenmez.",
+      "settingsScopeDisabled": "Ayar eşitlemesi kapalı olduğundan uzantı ayarları yalnızca bu cihazda tutulur.",
+      "uiScopeDisabled": "Dil ve renk modu eşitlemesi kapalı olduğundan yalnızca bu cihazda tutulur.",
+      "userIconsScopeDisabled": "Kullanıcının seçtiği simgeler yalnızca bu cihazda tutulur. Gelişmiş eşitleme kapsamına ekleyebilirsiniz.",
+      "wallpaperFailed": "Duvar kâğıdı yükleme veya bütünlük denetimini geçemedi. Diğer veriler eşitlenmeye devam eder.",
+      "wallpaperScopeDisabled": "Yerel resim duvar kâğıtları yalnızca bu cihazda tutulur. WebDAV eşitleme kapsamına ekleyebilirsiniz.",
+      "wallpaperTooLarge": "Resim 20 MB sınırını aştığından duvar kâğıdı eşitlenmedi. Diğer veriler eşitlenmeye devam eder.",
+      "wallpaperVideo": "Video duvar kâğıtları WebDAV üzerinden eşitlenmez."
+    }
+  },
+  "webdavSync": {
+    "conflicts": {
+      "batch": {
+        "prefer": "Toplu seçim"
+      },
+      "both": "İkisini de koru",
+      "bothNote": "Değiştirilen kopyaya yeni ve kalıcı bir kimlik verilir.",
+      "categories": {
+        "blocked-top-sites": "Gizlenen siteler",
+        "search-engines": "Arama motorları",
+        "settings": "Ayarlar",
+        "ui": "Arayüz tercihleri"
+      },
+      "deleted": "Silinmiş veya mevcut değil",
+      "empty": "Çözülmemiş çakışma bulunamadı",
+      "fields": {
+        "colorMode": "Renk modu",
+        "customSearchEngine": "Özel arama motoru",
+        "groupName": "Grup adı",
+        "groupOrder": "Grup sırası",
+        "linkGroup": "Bağlantı grubu",
+        "linkIcon": "Bağlantı simgesi",
+        "linkOrder": "Hızlı Bağlantılar sırası",
+        "linkTitle": "Bağlantı başlığı",
+        "linkUrl": "Bağlantı adresi",
+        "quickLink": "Hızlı Bağlantı",
+        "quickLinkGroup": "Hızlı Bağlantılar grubu",
+        "searchEngineIcon": "Arama motoru simgesi",
+        "searchEngineName": "Arama motoru adı",
+        "searchEngineOrder": "Arama motoru sırası",
+        "searchEngineUrl": "Arama motoru adresi",
+        "wallpaper": "Duvar kâğıdı",
+        "wallpaperDark": "Koyu duvar kâğıdı",
+        "wallpaperLight": "Açık duvar kâğıdı"
+      },
+      "finish": "Birleştirme sürümü oluştur",
+      "local": "Yerel verileri koru",
+      "notice": "Bazı içerikler cihazlarınızda farklı biçimde değiştirildi. Korunacak içeriği seçin.",
+      "noticeTitle": "Eşitlenecek içeriği onaylayın",
+      "remote": "Bulut verilerini kullan",
+      "resolved": "Çakışmalar çözüldü ve yeni bir birleştirme sürümü oluşturuldu",
+      "sourceDevice": "{{device}} cihazı",
+      "sourceLocal": "Yerel",
+      "sourceRemote": "Bulut",
+      "sources": "Çakışan veri kaynakları",
+      "title": "Eşitleme çakışmalarını çöz",
+      "useDevice": "{{device}} cihazındaki verileri kullan",
+      "values": {
+        "changed": "Değiştirildi",
+        "customIcon": "Özel simge kullanılıyor",
+        "disabled": "Kapalı",
+        "enabled": "Açık",
+        "enabledScopeCount": "{{count}} eşitleme öğesi etkin",
+        "group": "Grup: {{name}}",
+        "groupSummary": "{{name}} · {{count}} bağlantı",
+        "itemCount": "{{count}} öğe",
+        "noBaseline": "Ortak başlangıçta bu öğe yok",
+        "noCustomIcon": "Özel simge kullanılmıyor",
+        "orderChanged": "Sıralama değiştirildi",
+        "quickLinksSummary": "{{items}} bağlantı · {{groups}} grup",
+        "rootGroup": "Gruplanmamış",
+        "searchEnginesSummary": "{{count}} arama motoru",
+        "settingCount": "{{count}} ayar",
+        "unknownGroup": "Diğer grup",
+        "untitled": "Adsız",
+        "wallpaperCount": "{{count}} duvar kâğıdı seçildi"
+      }
+    },
+    "connectionActions": {
+      "open": "Bağlantıyı yönet",
+      "title": "Bağlantıyı kes veya sil"
+    },
+    "deviceName": "Geçerli cihaz: {{name}}",
+    "devices": {
+      "firstSeen": "İlk eşitleme: {{time}}",
+      "stale": "180 günden uzun süredir çevrimdışı",
+      "title": "Eşitlenen cihazlar",
+      "unknownDescription": "WebDAV kimlik bilgileriniz açığa çıkmış olabilir. Sağlayıcınızda parolayı veya uygulama parolasını değiştirin, ardından güvendiğiniz cihazları yeniden bağlayın. Cihaz kaydını silmek erişimi iptal etmez.",
+      "unknownTitle": "Tanımadığınız bir cihaz mı var?"
+    },
+    "disconnect": {
+      "deleteAction": "Kalıcı olarak sil ve bağlantıyı kes",
+      "deleteDescription": "Yalnızca doğru sahiplik işaretine sahip LemonNewTab dizini silinir. Silme başarısız olursa yeniden deneyebilmeniz için bu cihazın bağlantısı korunur.",
+      "deleteTitle": "Uzak eşitleme kasasını kalıcı olarak sil",
+      "deleted": "Uzak eşitleme verileri silindi ve bu cihazın bağlantısı kesildi",
+      "disconnected": "Uzak veriler korundu ve bu cihazın bağlantısı kesildi",
+      "impact": "{{devices}} cihazı ve {{versions}} sürümü etkiler",
+      "keepAction": "Uzak verileri koru ve bağlantıyı kes",
+      "keepDescription": "Bu cihazdaki bağlantı temizlenir. Diğer cihazlar ve uzak veriler etkilenmez.",
+      "keepTitle": "WebDAV eşitlemesini kapat",
+      "title": "WebDAV bağlantısını yönet",
+      "typePrompt": "Devam etmek için “{{text}}” yazın"
+    },
+    "empty": {
+      "title": "WebDAV eşitlemesi yapılandırılmadı"
+    },
+    "encrypted": "İstemci tarafında şifreli",
+    "encryption": {
+      "description": "Bu parola WebDAV oturum açma parolanızdan ayrıdır. Unutulursa kasa yalnızca silinebilir ve kurtarılamaz.",
+      "disabled": "Şifreleme varsayılan olarak kapalıdır",
+      "enabled": "Bu eşitleme kasası şifrelidir",
+      "fixedMode": "Şifreleme modu kasa oluşturulurken seçilir ve daha sonra değiştirilemez.",
+      "keyNote": "Başarılı olduktan sonra yalnızca dışa aktarılamayan türetilmiş anahtar saklanır. Parola yüklenmez, dışa aktarılmaz veya günlüğe yazılmaz.",
+      "password": "Bağımsız eşitleme şifreleme parolası",
+      "title": "İstemci tarafı şifreleme",
+      "unlock": "Eşitleme kasasının kilidini aç"
+    },
+    "errors": {
+      "authentication": "Parola yanlış veya sağlayıcı erişimi reddetti",
+      "conflict": "Uzak verilerde çakışma var",
+      "corrupted": "Uzak veriler bozuk",
+      "network": "Sunucuya geçici olarak ulaşılamıyor",
+      "redirect-cross-origin": "Sunucu başka bir kaynağa yönlendirdiği için eşitleme durduruldu",
+      "redirect-insecure": "Sunucu HTTPS bağlantısını HTTP bağlantısına düşürmeye çalıştığı için eşitleme durduruldu",
+      "redirect-required": "Yönlendirme güvenli değil veya doğrulanamadı. Yalnızca aynı kaynaklı yönlendirmelere ve aynı ana bilgisayarda HTTP’den HTTPS’ye yükseltmelere izin verilir; son WebDAV adresini de girebilirsiniz.",
+      "server": "WebDAV hizmeti hata döndürdü",
+      "storage-full": "WebDAV depolama alanı dolu",
+      "timeout": "Bağlantı zaman aşımına uğradı",
+      "unknown": "Eşitleme başarısız oldu. Durumu inceleyip yeniden deneyin."
+    },
+    "experimental": {
+      "description": "Bu özellik hâlâ test edilip geliştiriliyor. Etkinleştirmeden önce mevcut ayarlarınızı Diğer Ayarlar bölümünden dışa aktarmanız önerilir.",
+      "title": "Deneysel özellik"
+    },
+    "history": {
+      "back": "Geçmiş listesine dön",
+      "current": "Geçerli yerel veri",
+      "noDifferences": "Bu sürüm geçerli yerel verilerle aynı",
+      "preview": "Farkları incele",
+      "reasons": {
+        "import": "İçe aktarma",
+        "initial": "İlk sürüm",
+        "local-change": "Yerel değişiklik",
+        "merge": "Otomatik birleştirme",
+        "repair": "Hasar onarımı",
+        "restore": "Geçmişi geri yükleme"
+      },
+      "restore": "Yeni sürüm olarak geri yükle",
+      "restoreDescription": "İncelenen eski içerik yeni en son sürüm olarak gönderilir. Ön izlemeden sonra yerel veya uzak veriler değişirse işlem durur.",
+      "restoreTitle": "İncelenen sürüm geri yüklensin mi?",
+      "restored": "Geçmişten yeni bir en son sürüm oluşturuldu",
+      "target": "Geçmiş sürümü",
+      "title": "Sürüm geçmişi",
+      "truncated": "Yalnızca ilk 200 fark gösterilir. Geri yüklemeden önce sürümün tamamı yine doğrulanır.",
+      "wallpaperMissing": "Bu geçmiş duvar kâğıdı artık saklanmıyor; geçerli duvar kâğıdı korunacak"
+    },
+    "lastSuccess": "Son başarılı eşitleme: {{time}}",
+    "later": "Şimdi değil",
+    "legacy": {
+      "clearConfirm": "Bu işlem yalnızca kullanımdan kaldırılan tarayıcı eşitlemesinden kalan verileri temizler. Geçerli ayarlar ve yeni WebDAV eşitlemesi etkilenmez. Devam edilsin mi?",
+      "description": "Bunlar eski tarayıcı storage.sync verileridir ve WebDAV’a yüklenmez.",
+      "found": "Veri bulundu",
+      "title": "Eski tarayıcı bulut eşitleme verileri"
+    },
+    "management": {
+      "devices": "Cihazlar",
+      "history": "Geçmiş",
+      "summary": "Geçmiş, cihazlar, şifreleme ve kurtarma",
+      "title": "Eşitleme yönetimi"
+    },
+    "messages": {
+      "syncComplete": "Eşitleme denetimi tamamlandı"
+    },
+    "never": "Henüz başarılı eşitleme yok",
+    "omissions": {
+      "aggregate-too-large": "Seçilen simgelerin toplam boyutu 8 MB sınırını aşıyor",
+      "item-too-large": "Seçilen bir simge 2 MB sınırını aşıyor",
+      "too-large": "Bir duvar kâğıdı 20 MB sınırını aşıyor",
+      "unavailable": "Seçilen yerel resim kullanılamıyor",
+      "unsupported": "Animasyonlu resimler ve videolar eşitlenmez"
+    },
+    "plaintext": "İstemci şifrelemesi kapalı",
+    "refresh": "Durumu yenile",
+    "remoteDeleted": {
+      "action": "Bu cihazın bağlantısını temizle",
+      "description": "Bu cihazın bağlı olduğu uzak eşitleme kasası silindi. Eşitlemeyi yeniden kurmadan önce bu cihazın bağlantısını temizleyin; uzak dosyalar okunmaz veya silinmez.",
+      "title": "Uzak eşitleme kasası silindi"
+    },
+    "repair": {
+      "action": "Onarım sürümü oluştur",
+      "completed": "Hasarlı sürüm yalıtıldı ve onarım sürümü oluşturuldu",
+      "corrupted": "En son sürüm hasarlı; otomatik eşitleme durduruldu",
+      "corruptedDescription": "Önce ham dosyayı indirin, ardından geçerli yerel verileri veya önceki eksiksiz uzak sürümü seçin.",
+      "deleteEvidenceDescription": "Önce onarım sürümü yüklenip doğrulanır. Yalnızca başarılı olduktan sonra indirilmiş hasarlı bulut sürümü silinir.",
+      "deleteEvidenceTitle": "Onarımdan sonra hasarlı bulut sürümü silinsin mi?",
+      "download": "Hasarlı ham dosyayı indir",
+      "downloaded": "Ham dosya indirildi",
+      "healthy": "Onarım gerekmiyor",
+      "healthyDescription": "En son sürüm ve eşitleme durumu sağlıklı.",
+      "local": "Geçerli yerel verileri kullan",
+      "previous": "Önceki eksiksiz bulut sürümünü kullan",
+      "revision": "Hasarlı sürüm: {{id}}",
+      "same": "Yerel veriler önceki eksiksiz sürümle aynı; onarım sürümü oluşturmak için otomatik olarak bu sürüm kullanılacak.",
+      "size": "Ham dosya boyutu: {{size}} bayt",
+      "title": "Denetle ve onar",
+      "wallpaperDescription": "Boyut sınırını aşan veya desteklenmeyen resimler atlanır. Kapsamı değiştirin veya daha küçük bir resim seçin; uzantı özgün dosyayı değiştirmez.",
+      "wallpaperTitle": "Bazı resimler eşitlenmedi"
+    },
+    "resolve": "Sorunu çöz",
+    "scope": {
+      "blockedTopSites": "Gizlenen sık ziyaret edilen siteler",
+      "customSearchEngines": "Özel arama motorları",
+      "onlineWallpaperUrl": "Çevrimiçi duvar kâğıdı adresi",
+      "onlineWallpaperUrlNote": "Adres bir erişim belirteci içerebilir.",
+      "settings": "Temel ayarlar",
+      "summary": "Her kategoriyi ayrı seçebilirsiniz; kapsam tüm eşitleme kasasına kaydedilir ve diğer cihazlara eşitlenir.",
+      "title": "Eşitleme kapsamı",
+      "uiPreferences": "Dil ve koyu mod",
+      "userIcons": "Özel bağlantı simgeleri",
+      "userIconsNote": "Özel Hızlı Erişim ve özel arama motoru simgeleri gibi. Her simge en fazla 2 MB, tüm simgeler toplam en fazla 8 MB olabilir.",
+      "wallpapers": "Yerel resim duvar kâğıtları",
+      "wallpapersNote": "Video duvar kâğıtları hariçtir. Her resim en fazla 20 MB olabilir; sınırı aşan resimler atlanır."
+    },
+    "setup": {
+      "advanced": "Gelişmiş ayarlar",
+      "back": "Geri",
+      "compare": {
+        "conflicts": "{{count}} çakışmanın çözülmesi gerekiyor",
+        "existing": "Uzak veriler mevcut",
+        "existingTitle": "Bu cihaz ile uzak verileri karşılaştır",
+        "firstConnectionNote": "Bu cihazda ve uzakta veri var ancak henüz ortak bir eşitleme sürümü yok. Eşitlemeyi açtıktan sonra öğeleri tek tek çözün veya Ayarlar’da toplu tercih seçin; onay ortak başlangıcı oluşturur.",
+        "firstConnectionTitle": "İlk bağlantı: korunacak verileri seçin",
+        "initial": "Yeni eşitleme kasası",
+        "initialTitle": "İlk yüklemeyi inceleyin",
+        "safe": "Yerel ve uzak veriler arasında çakışma yok. Eşitleme güvenle etkinleştirilebilir."
+      },
+      "confirm": {
+        "autoDevice": "Tam işletim sistemi sürümünü içermeyen anonim bir ad oluşturulacak",
+        "description": "Eşitleme kasası yalnızca bu onaydan sonra oluşturulur veya değiştirilir.",
+        "encrypted": "Etkin; unutulan parola kurtarılamaz",
+        "plaintext": "Kapalı (varsayılan)",
+        "title": "Son onay"
+      },
+      "connected": "WebDAV eşitlemesi etkinleştirildi",
+      "connection": {
+        "deviceName": "Cihaz adı (isteğe bağlı)",
+        "deviceNamePlaceholder": "Örneğin: Ofis bilgisayarı",
+        "directory": "Uzantıya özel dizin",
+        "password": "Parola veya uygulama parolası",
+        "remember": "Bu tarayıcı profilinde sakla ve arka planda otomatik eşitlemeye izin ver",
+        "rememberNote": "Parola yüklenmez, dışa aktarılmaz veya günlüğe yazılmaz.",
+        "sessionNote": "Yalnızca bu oturumda kullanılır; tarayıcı kapandığında temizlenir ve arka planda otomatik eşitleme kullanılamaz.",
+        "title": "Ağ depolama alanınızı bağlayın",
+        "url": "Sunucu adresi",
+        "username": "Kullanıcı adı"
+      },
+      "encryption": {
+        "enable": "Eşitlenen içeriği bağımsız bir parolayla şifrele",
+        "password": "Bağımsız eşitleme şifreleme parolası (en az 8 karakter)"
+      },
+      "errors": {
+        "authentication": "Parola yanlış veya sağlayıcı bu hesaba erişimi reddetti. Kullanıcı adını, parolayı veya uygulama parolasını kontrol edin.",
+        "encryption": "Bu kasa şifreli. Gelişmiş ayarlarda doğru bağımsız eşitleme şifreleme parolasını girin.",
+        "foreign": "Bu dizinde Lemon New Tab’a ait olmayan veriler var. Boş veya doğru uzantıya özel dizini kullanın.",
+        "format": "Bu eşitleme biçimi uzantının daha yeni bir sürümüyle oluşturulmuş. Önce uzantıyı güncelleyin.",
+        "network": "Tarayıcı isteği gönderemedi. Sunucu adresini normal bir sekmede açarak adresi ve HTTPS sertifikasını doğrulayın; ardından ağı, proxy’yi ve yönlendirmeleri kontrol edin.",
+        "permission": "Bu WebDAV sunucusuna erişim izni verilmediği için bağlantı kaydedilmedi.",
+        "unsupported": "Sunucu WebDAV dosyalarını güvenilir biçimde oluşturamıyor, okuyamıyor, listeleyemiyor veya silemiyor."
+      },
+      "finish": "Eşitlemeyi etkinleştir",
+      "http": {
+        "accept": "Yerel ağ HTTP trafiğinin aynı ağdaki kişilerce ele geçirilebileceğini anlıyorum",
+        "localWarning": "Bu bir yerel ağ HTTP adresidir. Oturum açma bilgileri ve şifrelenmemiş içerik aynı ağdaki kişilerce görülebilir.",
+        "publicUnsupported": "Genel HTTP WebDAV adresleri desteklenmez. HTTPS veya yerel ağ adresi kullanın."
+      },
+      "next": "İleri",
+      "scan": {
+        "empty": "Dizin boş ve yeni bir eşitleme kasası oluşturulabilir",
+        "emptyNote": "LemonNewTab dizini ve ilk sürüm yalnızca son onaydan sonra oluşturulur.",
+        "existing": "Mevcut bir eşitleme kasası bulundu",
+        "existingNote": "Sahiplik işareti ve sürüm bütünlüğü doğrulandı. Sonraki adımda bu cihazdaki veriler karşılaştırılacak.",
+        "remote-conflict": "Uzak kasada birden fazla sürüm dalı var",
+        "remoteConflictNote": "Bu cihaz dalları öğe öğe çözebilir. Bağlandıktan sonra tüm çakışmalar çözülene kadar eşitleme duraklatılır.",
+        "title": "Uzak tarama sonucu"
+      },
+      "scope": {
+        "description": "Bu seçim diğer cihazlara da uygulanır.",
+        "omittedResources": "Boyut sınırını aşan veya desteklenmeyen {{count}} seçili resim atlanacak",
+        "title": "Eşitleme kapsamını seçin"
+      },
+      "steps": {
+        "compare": "Karşılaştır",
+        "confirm": "Onayla",
+        "connection": "Bağlantı",
+        "scan": "Tara",
+        "scope": "Kapsam",
+        "test": "Test"
+      },
+      "test": {
+        "action": "Bağlantıyı test et",
+        "notTested": "Test bekleniyor",
+        "permissionNote": "Test’e tıkladıktan sonra tarayıcı bu WebDAV sunucusuna erişmek ve istekleri denetlemek için isteğe bağlı izinler ister. İlki sunucuya bağlanmak, ikincisi bu bağlantının güvenli olup olmadığını belirlemek için kullanılır.",
+        "retry": "Yeniden test et",
+        "scanned": "Sunucuya başarıyla bağlanıldı",
+        "success": "Bağlantı başarılı",
+        "title": "Bağlantıyı test et ve izin iste"
+      },
+      "title": "WebDAV eşitlemesini ayarla",
+      "wallpaper": {
+        "oversized": "{{count}} duvar kâğıdı 20 MB sınırını aşıyor ve atlanacak",
+        "summary": "Video duvar kâğıtları hariç, toplam {{size}} boyutunda {{count}} resim. Her resim en fazla 20 MB olabilir; sınırı aşanlar atlanır."
+      }
+    },
+    "status": {
+      "authentication": "Yeniden oturum açılması gerekiyor",
+      "conflict": "Çakışmaların çözülmesi gerekiyor",
+      "corrupted": "En son uzak sürüm hasarlı",
+      "encryptionPassword": "Eşitleme şifreleme parolası gerekiyor",
+      "formatTooNew": "Eşitleme biçimi daha yeni; uzantıyı güncelleyin",
+      "paused": "Eşitleme duraklatıldı",
+      "pending": "Yüklenmeyi bekleyen değişiklikler var",
+      "ready": "Bağlandı; ilk denetim bekleniyor",
+      "remoteDeleted": "Uzak eşitleme verileri silindi",
+      "storageFull": "WebDAV depolama alanı dolu",
+      "synced": "Eşitlendi",
+      "unconfigured": "Yapılandırılmadı",
+      "wallpaperSkipped": "Temel veriler eşitlendi; duvar kâğıdı eşitlenmedi"
+    },
+    "syncNow": "Şimdi eşitle",
+    "title": "WebDAV Eşitlemesi"
   }
 }

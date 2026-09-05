@@ -130,12 +130,19 @@ function readableError(error: unknown) {
   if (error instanceof WebDavError) {
     if (error.category === 'authentication') return t('webdavSync.setup.errors.authentication')
     if (error.category === 'forbidden') return t('webdavSync.setup.errors.permission')
+    if (
+      error.category === 'redirect-required' ||
+      error.category === 'redirect-cross-origin' ||
+      error.category === 'redirect-insecure'
+    )
+      return t('webdavSync.errors.redirect-required')
     if (error.category === 'network' || error.category === 'timeout')
       return t('webdavSync.setup.errors.network')
     if (error.category === 'encryption-locked') return t('webdavSync.setup.errors.encryption')
     if (error.category === 'foreign-vault') return t('webdavSync.setup.errors.foreign')
     if (error.category === 'format-too-new') return t('webdavSync.setup.errors.format')
     if (error.category === 'storage-full') return t('webdavSync.errors.storage-full')
+    if (error.category === 'unsupported') return t('webdavSync.setup.errors.unsupported')
     return t('webdavSync.errors.unknown')
   }
   const message = error instanceof Error ? error.message : String(error)
@@ -352,13 +359,6 @@ watch(
           <template v-else-if="step === 1">
             <header>
               <h3>{{ t('webdavSync.setup.test.title') }}</h3>
-              <p>
-                {{
-                  t('webdavSync.setup.test.description', {
-                    origin: addressAssessment?.permissionOrigin,
-                  })
-                }}
-              </p>
             </header>
             <section class="setup-result-card">
               <component :is="preview ? CheckCircleRound : CloudDoneRound" />

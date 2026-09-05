@@ -12,7 +12,7 @@ import {
   type BrowserSyncHistoryPreview,
 } from './browserEngine.ts'
 import { hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
-import { createEncryptionAad, decryptSyncBytes } from './crypto.ts'
+import { bytesToBase64, createEncryptionAad, decryptSyncBytes } from './crypto.ts'
 import { compareSyncSnapshots } from './differences.ts'
 import { getBaseline, getOrCreateSyncState, patchSyncState } from './localState.ts'
 import { findRevisionHeads, hasConfirmedCorruptionRepair } from './syncDecision.ts'
@@ -123,7 +123,7 @@ export async function inspectBrowserSyncCorruption(): Promise<BrowserCorruptionI
 export async function downloadBrowserCorruptedPayload(input: {
   actualPayloadHash: string
   revisionId: string
-}): Promise<{ bytes: Uint8Array<ArrayBuffer>; filename: string }> {
+}): Promise<{ base64: string; filename: string }> {
   const opened = await openConfiguredVault(false)
   const commit = (await opened.repository.listCommits(opened.metadata)).find(
     (item) => item.revisionId === input.revisionId,
@@ -134,7 +134,7 @@ export async function downloadBrowserCorruptedPayload(input: {
     throw new WebDavError('precondition', 'Damaged revision changed before download')
   }
   return {
-    bytes,
+    base64: bytesToBase64(bytes),
     filename: `lemon-corrupted-${commit.revisionId}.${commit.encrypted ? 'bin' : 'json'}`,
   }
 }
@@ -186,6 +186,7 @@ export async function repairBrowserSyncCorruption(input: {
       operationId: crypto.randomUUID(),
       revisionId: previous.revisionId,
       snapshot: previous.snapshot,
+      expectedLocal: local,
       state: opened.state,
       apply: true,
       wallpapers,
@@ -207,6 +208,7 @@ export async function repairBrowserSyncCorruption(input: {
     reason: repairAlreadyConfirmed ? 'local-change' : 'repair',
     repairedRevisionId: repairAlreadyConfirmed ? undefined : commit.revisionId,
     snapshot,
+    expectedLocal: local,
     tombstones: previous.tombstones,
     knownAssets: scan.valid.flatMap((revision) => revision.assets),
     encryptionKey: opened.encryptionKey,
@@ -420,13 +422,13 @@ export async function restoreBrowserSyncHistory(
     knownAssets.set(asset.id, asset)
   }
   const { snapshot } = prepareHistoricalSnapshot(target, heads[0]!, knownAssets)
+  const baseline = await getBaseline()
+  const local = preserveExcludedScope(
+    await captureBrowserSyncSnapshot(opened.state.scope),
+    baseline ?? heads[0]!.snapshot,
+    opened.state.scope,
+  )
   if (expected) {
-    const baseline = await getBaseline()
-    const local = preserveExcludedScope(
-      await captureBrowserSyncSnapshot(opened.state.scope),
-      baseline ?? heads[0]!.snapshot,
-      opened.state.scope,
-    )
     if (
       heads[0]!.revisionId !== expected.headRevisionId ||
       (await hashCanonicalJson(local)) !== expected.currentSnapshotHash
@@ -447,6 +449,7 @@ export async function restoreBrowserSyncHistory(
     parents: [heads[0]!.revisionId],
     reason: 'restore',
     snapshot,
+    expectedLocal: local,
     tombstones: heads[0]!.tombstones,
     knownAssets: [...knownAssets.values()],
     encryptionKey: opened.encryptionKey,
