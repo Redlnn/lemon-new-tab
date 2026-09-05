@@ -15,9 +15,9 @@ import {
 import { hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
 import { bytesToBase64, createEncryptionAad, decryptSyncBytes } from './crypto.ts'
 import { compareSyncSnapshots } from './differences.ts'
+import { deriveSnapshotTombstones } from './lifecycle.ts'
 import { getBaseline, getOrCreateSyncState, patchSyncState } from './localState.ts'
 import { findRevisionHeads, hasConfirmedCorruptionRepair } from './syncDecision.ts'
-import { deriveSnapshotTombstones } from './lifecycle.ts'
 import type {
   AssetReferenceV1,
   LocalSyncStateV1,
@@ -366,11 +366,7 @@ export async function removeBrowserRemoteWallpapers(): Promise<LocalSyncStateV1>
   if (!Object.values(scope).some(Boolean)) {
     throw new WebDavError('invalid-response', 'At least one sync category must remain enabled')
   }
-  const local = preserveExcludedScope(
-    await captureBrowserSyncSnapshot(scope),
-    head.snapshot,
-    scope,
-  )
+  const local = preserveExcludedScope(await captureBrowserSyncSnapshot(scope), head.snapshot, scope)
   const snapshot = structuredClone(local)
   if (snapshot.optional) {
     delete snapshot.optional.wallpapers
