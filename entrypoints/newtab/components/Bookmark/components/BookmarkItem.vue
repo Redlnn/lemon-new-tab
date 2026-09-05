@@ -212,6 +212,7 @@ async function addToQuickLinks() {
     url: props.node.url,
     title: props.node.title || '',
     favicon: faviconRef.value,
+    faviconSource: 'automatic' as const,
   }
   if (quickLinksGrouping.value) {
     const groupId = await openQuickLinkGroupSelectDialog?.({

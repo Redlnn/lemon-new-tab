@@ -1,45 +1,53 @@
 <script setup lang="ts">
-import { ElCheckbox, ElLoading, type CheckboxValueType } from 'element-plus'
+import { ElCheckbox, ElLoading, ElRadio, ElRadioGroup, type CheckboxValueType } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import DeleteForeverOutlined from '~icons/ic/outline-delete-forever'
 import DownloadRound from '~icons/ic/round-download'
 import FileUploadRound from '~icons/ic/round-file-upload'
 
-import { downloadJSON } from '@/shared/download'
+import { browser } from 'wxt/browser'
+
+import { downloadBlob } from '@/shared/download'
 import { clearFaviconCache } from '@/shared/media'
-import { type QuickLinksData, useQuickLinksStore } from '@/shared/quickLinks'
-import { ensureSearchEngineAvailable } from '@/shared/searchEngines'
-import {
-  type CURRENT_CONFIG_SCHEMA,
-  defaultSettings,
-  normalizeCurrentSettings,
-  useSettingsStore,
-} from '@/shared/settings'
+import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import { clearExtensionData, reloadNewtabTabs } from '@/shared/settings/legacySettingsRecovery'
 import { idbClearMany } from '@/shared/storage/idb'
+import {
+  disconnectSyncConnection,
+  getSyncState,
+  sendSyncDataChanged,
+} from '@/shared/webdavSync/bridge'
+import {
+  applyPreparedBrowserImport,
+  createBrowserJsonBackup,
+  mergePreparedBrowserImport,
+  prepareBrowserImport,
+} from '@/shared/webdavSync/browserBackup'
 
 import {
   PermissionContext,
   PermissionResult,
   usePermission,
 } from '@newtab/composables/usePermission'
-import {
-  type CustomSearchEngineStorage,
-  useCustomSearchEngineStore,
-} from '@newtab/shared/customSearchEngine'
-import { OPEN_SYNC_RETIREMENT } from '@newtab/shared/keys'
 import { wallpaperUrlCache } from '@newtab/shared/wallpaper'
+
+import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
 
 import SettingsSection from './SettingsSection.vue'
 
 const { t, i18next } = useTranslation('settings')
 
 const settings = useSettingsStore()
-const quickLinks = useQuickLinksStore()
-const customSearchEngineStore = useCustomSearchEngineStore()
-const openSyncRetirement = inject(OPEN_SYNC_RETIREMENT, () => {})
-
 const { checkAndRequestPermission } = usePermission()
+const faviconPermissionPending = ref(false)
+
+async function refreshFaviconPermission() {
+  faviconPermissionPending.value =
+    settings.faviconCacheEnabled && !(await browser.permissions.contains({ origins: ['*://*/*'] }))
+}
+
+onMounted(refreshFaviconPermission)
+watch(() => settings.faviconCacheEnabled, refreshFaviconPermission)
 
 const beforeFaviconCacheChange = async (): Promise<boolean> => {
   // 正在关闭 → 直接允许（不撤销 *://*/* 权限）
@@ -79,6 +87,8 @@ async function confirmAndRun(
 
 async function confirmClearExtensionData() {
   const includeSync = ref(false)
+  const syncState = await getSyncState().catch(() => null)
+  const resetMode = ref<'delete' | 'keep'>('keep')
   try {
     await ElMessageBox.confirm(
       () =>
@@ -93,6 +103,26 @@ async function confirmClearExtensionData() {
             },
             () => t('other.purge.confirm.data.includeSync'),
           ),
+          ...(syncState?.configured
+            ? [
+                h('p', { style: 'margin: 16px 0 8px' }, t('other.purge.confirm.data.syncQuestion')),
+                h(
+                  ElRadioGroup,
+                  {
+                    modelValue: resetMode.value,
+                    'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
+                      if (value === 'delete' || value === 'keep') resetMode.value = value
+                    },
+                  },
+                  () => [
+                    h(ElRadio, { value: 'keep' }, () => t('other.purge.confirm.data.keepRemote')),
+                    h(ElRadio, { value: 'delete' }, () =>
+                      t('other.purge.confirm.data.deleteRemote'),
+                    ),
+                  ],
+                ),
+              ]
+            : []),
         ]),
       t('other.purge.confirm.data.title'),
       {
@@ -105,7 +135,20 @@ async function confirmClearExtensionData() {
     return
   }
 
-  void clearExtensionDataAndReload(includeSync.value)
+  const selectedMode = syncState?.configured ? resetMode.value : 'keep'
+  if (syncState?.configured && selectedMode === 'delete') {
+    try {
+      const confirmation = await ElMessageBox.prompt(
+        t('other.purge.confirm.data.deleteRemotePrompt', { text: 'DELETE WEBDAV DATA' }),
+        t('other.purge.confirm.data.deleteRemoteTitle'),
+        { showCancelButton: true },
+      )
+      if (confirmation.value !== 'DELETE WEBDAV DATA') return
+    } catch {
+      return
+    }
+  }
+  void clearExtensionDataAndReload(includeSync.value, selectedMode)
 }
 
 async function confirmClearWallpaperData() {
@@ -181,9 +224,19 @@ async function clearWallpaperData() {
   })
 }
 
-async function clearExtensionDataAndReload(includeSync: boolean) {
+async function clearExtensionDataAndReload(
+  includeLegacySync: boolean,
+  resetMode: 'delete' | 'keep',
+) {
   await runClearAndReload(t('other.purge.confirm.data.purging'), async () => {
-    await clearExtensionData({ includeSync })
+    const state = await getSyncState().catch(() => null)
+    if (state?.configured) {
+      await disconnectSyncConnection(
+        resetMode === 'delete',
+        resetMode === 'delete' ? 'DELETE WEBDAV DATA' : undefined,
+      )
+    }
+    await clearExtensionData({ includeSync: includeLegacySync })
   })
 }
 
@@ -191,27 +244,7 @@ async function clearIconCache() {
   await runClearAndReload(t('other.purge.confirm.icon.purging'), clearFaviconCache)
 }
 
-function beforeSyncChange(): boolean {
-  openSyncRetirement()
-  return false
-}
-
 const fileInput = useTemplateRef('fileInput')
-type Backup = {
-  settings: CURRENT_CONFIG_SCHEMA
-  quickLinks: QuickLinksData
-  customSearchEngines: CustomSearchEngineStorage
-}
-
-type ImportBackup = Partial<Backup> & {
-  bookmark?: QuickLinksData
-  bookmarks?: QuickLinksData
-  shortcuts?: QuickLinksData
-}
-
-/**
- * 通用文件选择器打开函数
- */
 async function openFilePicker() {
   await confirmAndRun(
     t('other.importExport.warningDialog.content'),
@@ -225,137 +258,125 @@ async function openFilePicker() {
 }
 
 async function exportBackup() {
-  const backup: Backup = {
-    settings: settings.$state,
-    quickLinks: quickLinks.getSnapshot(),
-    customSearchEngines: customSearchEngineStore.$state,
+  const loading = showLoading(t('other.importExport.exporting'))
+  try {
+    const { json, omissions } = await createBrowserJsonBackup()
+    downloadBlob(new Blob([json], { type: 'application/json' }), 'lemon-new-tab-backup.json')
+    if (omissions.length)
+      ElMessage.warning(t('other.importExport.omittedIcons', { count: omissions.length }))
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('other.importExport.unknownError'))
+  } finally {
+    loading.close()
   }
-
-  downloadJSON<Backup>(backup, 'lemon-new-tab-backup.json')
 }
 
-function hasObjectKey(data: Record<string, unknown>, key: string): boolean {
-  return key in data && typeof data[key] === 'object' && data[key] !== null
-}
-
-function backupValidator(data: unknown): data is ImportBackup {
-  if (typeof data !== 'object' || data === null) return false
-  const record = data as Record<string, unknown>
-  if (hasObjectKey(record, 'settings')) return true
-  if (hasObjectKey(record, 'quickLinks')) return true
-  if (hasObjectKey(record, 'bookmark')) return true
-  if (hasObjectKey(record, 'bookmarks')) return true
-  if (hasObjectKey(record, 'shortcuts')) return true
-  if (hasObjectKey(record, 'customSearchEngines')) return true
-  return false
-}
-
-function handleFileChange(event: Event) {
-  return handleFileImport<ImportBackup>(event, fileInput, backupValidator, async (data) => {
-    // settings 部分（沿用之前的逻辑）
-    if (data.settings && settings.version !== data.settings.version) {
-      throw new Error(t('other.importExport.versionMismatch'))
-    }
-
-    const ignoredEnabledSync = data.settings?.sync?.enabled === true
-
-    if (data.settings) {
-      data.settings.background.local = settings.$state.background.local
-      data.settings.background.localDark = data.settings.background.localDark || {
-        id: '',
-        url: '',
-        mediaType: undefined,
-      }
-      data.settings.background.bing = settings.$state.background.bing
-      data.settings.background.online.url = settings.$state.background.online.url
-
-      const importedSettings = normalizeCurrentSettings(data.settings)
-      importedSettings.sync.enabled = false
-      settings.$patch(importedSettings)
-    }
-
-    // quickLinks 部分
-    const quickLinksData = data.quickLinks ?? data.bookmark ?? data.bookmarks ?? data.shortcuts
-    if (quickLinksData) {
-      await quickLinks.save(quickLinksData, { groupingEnabled: settings.quickLinks.grouping })
-    }
-
-    // custom search engines 部分
-    if (data.customSearchEngines) {
-      await customSearchEngineStore.save(data.customSearchEngines)
-    }
-
-    ensureSearchEngineAvailable(
-      settings.search,
-      customSearchEngineStore.items.map((engine) => engine.id),
+async function chooseImportMode(configured: boolean) {
+  if (!configured) return 'replace' as const
+  const mode = ref<'merge' | 'replace'>('merge')
+  try {
+    await ElMessageBox.confirm(
+      () =>
+        h('div', { class: 'backup-import-modes' }, [
+          h('p', null, t('other.importExport.syncMode.description')),
+          h(
+            ElRadioGroup,
+            {
+              modelValue: mode.value,
+              'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
+                if (value === 'merge' || value === 'replace') mode.value = value
+              },
+            },
+            () => [
+              h(ElRadio, { value: 'merge' }, () => t('other.importExport.syncMode.merge')),
+              h(ElRadio, { value: 'replace' }, () => t('other.importExport.syncMode.replace')),
+            ],
+          ),
+        ]),
+      t('other.importExport.syncMode.title'),
+      { type: 'warning' },
     )
-
-    if (ignoredEnabledSync) ElMessage.info(t('other.syncRetirement.importIgnored'))
-  })
+    return mode.value
+  } catch {
+    return null
+  }
 }
 
-/**
- * 通用文件导入处理函数
- */
-function handleFileImport<T>(
-  event: Event,
-  inputRef: Ref<HTMLInputElement | null>,
-  validator: (data: unknown) => data is T,
-  onSuccess: (data: T) => Promise<void> | void,
-) {
+async function disconnectBeforeReplacement() {
+  const disposition = ref<'delete' | 'keep'>('keep')
+  await ElMessageBox.confirm(
+    () =>
+      h(
+        ElRadioGroup,
+        {
+          modelValue: disposition.value,
+          'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
+            if (value === 'delete' || value === 'keep') disposition.value = value
+          },
+        },
+        () => [
+          h(ElRadio, { value: 'keep' }, () => t('other.importExport.syncMode.keepRemote')),
+          h(ElRadio, { value: 'delete' }, () => t('other.importExport.syncMode.deleteRemote')),
+        ],
+      ),
+    t('other.importExport.syncMode.disconnectTitle'),
+    { type: 'warning' },
+  )
+  if (disposition.value === 'delete') {
+    const { value } = await ElMessageBox.prompt(
+      t('other.importExport.syncMode.deletePrompt', { text: 'DELETE WEBDAV DATA' }),
+      t('other.importExport.syncMode.disconnectTitle'),
+    )
+    if (value !== 'DELETE WEBDAV DATA')
+      throw new Error(t('other.importExport.syncMode.confirmMismatch'))
+  }
+  await disconnectSyncConnection(
+    disposition.value === 'delete',
+    disposition.value === 'delete' ? 'DELETE WEBDAV DATA' : undefined,
+  )
+}
+
+async function handleFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input?.files?.[0]
   if (!file) {
     ElMessage.error(
       t('other.importExport.importFailed', { reason: t('other.importExport.noFileSelected') }),
     )
-    console.error('No file selected')
     return
   }
+  const loading = showLoading(t('other.importExport.validating'))
+  let applying: ReturnType<typeof showLoading> | undefined
+  try {
+    const prepared = await prepareBrowserImport(file)
+    loading.close()
+    const state = await getSyncState()
+    const mode = await chooseImportMode(state.configured)
+    if (!mode) return
 
-  const reader = new FileReader()
-  let fileContent: T | null = null
-  let parseError: string | null = null
-
-  const showImportFailure = (reason: string) => {
-    ElMessage.error(t('other.importExport.importFailed', { reason }))
-  }
-
-  reader.onload = () => {
-    try {
-      const json = JSON.parse(reader.result as string)
-      if (validator(json)) {
-        fileContent = json
-      } else {
-        parseError = t('other.importExport.invalidFileFormat')
-        showImportFailure(parseError)
-      }
-    } catch {
-      parseError = t('other.importExport.invalidJSON')
-      showImportFailure(parseError)
+    applying = showLoading(t('other.importExport.importing'))
+    if (mode === 'replace') {
+      if (state.configured) await disconnectBeforeReplacement()
+      await applyPreparedBrowserImport(prepared)
+    } else {
+      const merged = await mergePreparedBrowserImport(prepared, state.scope)
+      await applyPreparedBrowserImport(prepared, merged)
+      sendSyncDataChanged()
     }
+    ElMessage.success(t('other.importExport.importSuccess'))
+    if (!(await reloadNewtabTabs())) location.reload()
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    ElMessage.error(
+      t('other.importExport.importFailed', {
+        reason: reason || t('other.importExport.unknownError'),
+      }),
+    )
+  } finally {
+    applying?.close()
+    loading.close()
+    if (fileInput.value) fileInput.value.value = ''
   }
-
-  reader.readAsText(file)
-  return new Promise<void>((resolve) => {
-    reader.onloadend = async () => {
-      try {
-        if (fileContent) {
-          await onSuccess(fileContent)
-          ElMessage.success(t('other.importExport.importSuccess'))
-        } else {
-          showImportFailure(parseError || t('other.importExport.unknownError'))
-        }
-      } catch (error) {
-        const reason = error instanceof Error ? error.message : String(error)
-        showImportFailure(reason || t('other.importExport.unknownError'))
-      } finally {
-        // 重置 file input 以允许导入同一个文件
-        if (inputRef.value) inputRef.value.value = ''
-        resolve()
-      }
-    }
-  })
 }
 
 const currentLanguage = ref(i18next.language)
@@ -394,17 +415,11 @@ function changeLanguage(lang: string) {
       content-class="settings-control-grid"
       mobile-open
     >
-      <div
-        class="settings__item settings__item--horizontal settings__item--with-note settings-control-wide"
-      >
-        <div class="settings__label">{{ t('other.sync') }}</div>
-        <el-switch :model-value="false" :before-change="beforeSyncChange" />
-        <p class="settings__item-note">
-          {{ t('other.syncWarning') }}
-        </p>
-      </div>
       <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('other.language') }}</div>
+        <div class="settings__label">
+          {{ t('other.language') }}
+          <SyncAvailabilityIcon catalog-key="ui.language" />
+        </div>
         <el-select
           v-model="currentLanguage"
           style="width: 165px"
@@ -422,7 +437,10 @@ function changeLanguage(lang: string) {
         </el-select>
       </div>
       <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('newtab:changelog.hideMajor') }}</div>
+        <div class="settings__label">
+          {{ t('newtab:changelog.hideMajor') }}
+          <SyncAvailabilityIcon catalog-key="settings" />
+        </div>
         <el-switch v-model="settings.hideMajorChangelog" />
       </div>
     </SettingsSection>
@@ -448,7 +466,15 @@ function changeLanguage(lang: string) {
       <div
         class="settings__item settings__item--horizontal settings__item--with-note settings-control-wide"
       >
-        <div class="settings__label">{{ t('other.faviconCache.label') }}</div>
+        <div class="settings__label">
+          {{ t('other.faviconCache.label') }}
+          <SyncAvailabilityIcon catalog-key="faviconCache" />
+          <SyncAvailabilityIcon
+            v-if="faviconPermissionPending"
+            catalog-key="permission.favicon"
+            pending-permission="favicon"
+          />
+        </div>
         <el-switch
           v-model="settings.faviconCacheEnabled"
           :before-change="beforeFaviconCacheChange"
@@ -484,7 +510,7 @@ function changeLanguage(lang: string) {
     <input
       ref="fileInput"
       type="file"
-      accept="application/json"
+      accept="application/json,.json"
       style="display: none"
       @change="handleFileChange"
     />

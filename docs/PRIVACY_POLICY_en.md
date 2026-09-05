@@ -1,6 +1,6 @@
 # Lemon New Tab Privacy Policy
 
-> Last updated: 2026-05-04
+> Last updated: 2026-08-09
 
 This Privacy Policy applies to the browser extension **Lemon New Tab** and its related public source code repository.
 
@@ -18,12 +18,13 @@ Browser stores, browser vendors retaining historical sync data, third-party APIs
 
 ## 2. What This Policy Covers
 
-This Policy covers four categories of processing:
+This Policy covers five categories of processing:
 
 1. **Local extension processing**: data stored in browser local storage, session storage, or IndexedDB.
 2. **Historical sync data retirement**: the current version may read, download, or clear data left in browser sync storage by older versions, but it no longer uploads or applies that data.
-3. **Third-party service requests**: requests sent directly from your browser to external services when you enable online features.
-4. **App store distribution**: data that browser stores may process for installation, updates, diagnostics, or analytics.
+3. **User-selected WebDAV sync**: only after you configure and enable the experimental WebDAV feature does the extension connect directly to the server you specify.
+4. **Third-party service requests**: requests sent directly from your browser to external services when you enable online features.
+5. **App store distribution**: data that browser stores may process for installation, updates, diagnostics, or analytics.
 
 ## 3. What the Extension Itself May Process
 
@@ -38,6 +39,8 @@ The extension store the following data locally on your device:
 - local wallpapers, video wallpapers, cached Bing wallpapers, and related metadata;
 - historical sync metadata such as device name, device identifier, sync timestamps, and sync version numbers;
 - custom search engine lists, settings snapshots, and Quick Links data left by older versions.
+- if you enable WebDAV, the connection address, username, random device identifier and name, sync scope, comparison baseline, task state, and sanitized errors; the WebDAV password is stored only in the current browser profile by default, or only for the current browser session if you choose that mode;
+- if you enable client-side encryption, a non-exportable derived key used for background sync. The independent sync encryption password itself is never uploaded, exported, or logged.
 
 This data is generally stored in your browser environment and is controlled by you or your browser. It is not automatically transmitted to the developer.
 
@@ -49,7 +52,7 @@ According to the extension manifest, the extension may access:
 - **topSites / browsing activity related capabilities**: to show frequently visited sites;
 - **storage**: to save settings and cache, and to temporarily detect, download, or clear sync data left by older versions;
 - **tabs / activeTab / scripting** (depending on browser): to interact with tabs, the new tab page, and related pages;
-- **optional host permissions**: when you enable features that need access to website resources, such as fetching favicons or loading online media from arbitrary sites.
+- **optional host and request-inspection permissions**: when you enable features that need network resources, the browser may request access to specific hosts or arbitrary website resources, such as favicons or online media. Only when you test a WebDAV connection does the extension request that server host and the optional `webRequest` permission; the latter is used only to identify and validate WebDAV redirects and does not read response bodies.
 
 These permissions are used to provide local functionality. For example, the extension may read **page titles, page URLs / hostnames, and favicon information** from tabs you visit or currently open in order to display Quick Links, frequently visited sites, or related site cards. Such information is generally processed locally in your browser and does not mean the developer receives that content.
 
@@ -61,7 +64,7 @@ Except as otherwise described in this Policy, the extension developer does **not
 - the contents of your bookmarks, browsing history, or search terms;
 - the contents of your local images, videos, or files;
 - copies of page titles, page URLs, site hostnames, or favicon data from your tabs, except where your browser sends the relevant request directly to a third-party service;
-- your extension settings, Quick Links, wallpaper files, or search history.
+- your extension settings, Quick Links, or wallpaper files, **except that content you explicitly select is sent directly to your chosen WebDAV provider when you enable WebDAV sync; it is not sent to the developer's servers**.
 
 If the browser vendor still retains sync data left by an older version, or if you enable third-party online features, relevant data may instead be received and processed by the **browser vendor or the third-party service provider**.
 
@@ -132,6 +135,16 @@ Risk notes:
 - Purpose: allow you to use any image, video, or API endpoint that you choose;
 - Risk note: once you configure an online resource URL, your browser sends requests directly to that site. The developer cannot review or control that site's privacy practices, security, legality, logging behavior, cross-border transfers, or downstream uses. Only use providers you trust.
 
+### 6.6 User-Selected WebDAV Sync (Experimental)
+
+- Default: **off**. The extension connects only after you provide a server address, username, and password and confirm setup.
+- Purpose: two-way synchronization between your devices of selected settings, Quick Links, custom search engines, UI preferences, and optionally hidden sites, online wallpaper addresses, user-selected icons, and current static image wallpapers.
+- Never uploaded: WebDAV passwords, independent sync encryption passwords, browser permissions, browser bookmarks, video wallpapers, Bing/online wallpaper caches, favicon caches, object URLs, or retired browser-sync data.
+- Provider-visible data: even with client-side encryption, a WebDAV provider can generally see your account, connection IP, request time, directory existence, file counts, and transfer sizes.
+- Encryption boundary: client-side encryption is off by default. If enabled when the vault is created, selected content is encrypted before upload using your independent password. The encryption mode and password cannot be changed after creation, and the developer cannot recover a forgotten password.
+- HTTP risk: HTTPS is required by default. Only LAN addresses may use HTTP after explicit acknowledgement; public HTTP is unsupported. LAN HTTP can still expose credentials and unencrypted content to others on the same network. Client content encryption does not protect the WebDAV login or all network metadata.
+- Third-party responsibility: the server is controlled by you or your provider. The developer cannot guarantee its security, availability, data location, logs, backups, deletion propagation, or legal compliance. Prefer HTTPS, an app-specific password, and a provider you trust.
+
 ## 7. Purposes of Processing
 
 The extension, browser vendor, or third parties may process data for purposes such as:
@@ -139,6 +152,7 @@ The extension, browser vendor, or third parties may process data for purposes su
 - providing new tab page functionality;
 - storing your local preferences and cache;
 - detecting, downloading, or clearing browser sync data left by older versions;
+- synchronizing selected data to your configured WebDAV server, with conflict detection, version retention, integrity checks, and optional client-side encryption;
 - providing search suggestions, wallpapers, poetry, quotes, and site icons;
 - maintaining service stability, rate limiting, abuse prevention, security, and troubleshooting.
 
@@ -155,6 +169,8 @@ Processing necessary for the extension's core local functionality, such as savin
 For online features that cause your browser to send requests to third parties, especially the **enabled-by-default or available-by-default** search suggestions and Jinrishici content, the extension treats those requests as based on your **consent**. You may withdraw that consent by disabling the relevant feature, switching to a non-network alternative, blocking the relevant domains, clearing related cache, or uninstalling the extension.
 
 Requests triggered by online wallpaper URLs, media URLs, third-party API endpoints, or other custom online resources that you configure are also treated as based on your consent.
+
+Experimental WebDAV synchronization, local credential storage, and uploading selected content are likewise based on your affirmative choice and consent. You can stop future processing by turning sync off and clearing the local connection. To remove data already held by the provider, use “delete remote data and disconnect” or the provider's own controls.
 
 ### 8.3 Legitimate interests
 
@@ -179,7 +195,11 @@ Data stored locally by the extension is generally retained until one of the foll
 
 The current version no longer provides browser account sync. Data left by older versions may still be retained under the browser vendor's sync policies. The extension temporarily provides detection, download, and cleanup controls, but cannot guarantee when deletion propagates across devices. You can also use your browser account or sync-data management controls.
 
-### 9.3 Third-party logs and caches
+### 9.3 WebDAV synchronization data
+
+WebDAV history keeps at most 10 normal versions and removes data whose server modification time is over 180 days when it is not the current or previous version. Deletion tombstones are retained for up to 180 days. Current static image wallpapers are deduplicated by content hash and only currently used resources are retained. Turning sync off keeps remote data by default. If you choose deletion, the extension only attempts to remove its extension-specific directory with a valid ownership marker; on failure, local connection information is retained so you can retry. Provider backups, trash, logs, or replicas may remain under the provider's own policy, and the extension cannot guarantee immediate or complete erasure.
+
+### 9.4 Third-party logs and caches
 
 For Jinrishici, Hitokoto, Bing, Google, Baidu, and any custom online resources you use, retention periods for logs, caches, and access records are determined by those providers. The extension developer usually does not know the exact retention period and cannot delete those records on their behalf.
 
@@ -205,6 +225,7 @@ The following scenarios may therefore involve cross-border transfer risks:
 - using Google search suggestions;
 - using Bing global services or related CDNs / edge nodes;
 - using online wallpapers, media, or API endpoints hosted abroad;
+- using a WebDAV provider located abroad or relying on cross-border infrastructure;
 - browser vendors processing account sync data left by older versions.
 
 Different jurisdictions provide different levels of personal data protection. Transfer mechanisms that may be used by relevant providers can include, without limitation, Standard Contractual Clauses (SCCs), intra-group transfer rules, statutory certification or assessment mechanisms, data localization arrangements, regional traffic routing, or direct cross-border requests initiated on the basis of your consent. Because the developer does not control those third-party infrastructures, the developer cannot guarantee that any particular mechanism applies to every service or every region.
@@ -243,6 +264,7 @@ For this extension specifically:
 
 - because the developer generally **does not hold a server-side copy of your extension content**, practical control over most data remains with you, your browser vendor, or the relevant third-party service;
 - you can exercise much of your control by uninstalling the extension, clearing browser extension storage, disabling online features, deleting local wallpapers and search history, or using the extension's historical cloud-data cleanup control;
+- for WebDAV data, you can change sync scope, export a local backup, keep remote data and disconnect, or delete the extension-specific remote directory after typed confirmation; contact the provider directly for its separate backups or logs;
 - if you have questions about matters within the developer's controllable scope, contact <lemon@redlnn.top>.
 
 ## 13. Children

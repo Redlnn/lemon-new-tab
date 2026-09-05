@@ -2,7 +2,7 @@
 import { useElementBounding, useElementHover, useEventListener } from '@vueuse/core'
 
 import { ElMessage } from 'element-plus'
-import i18next from 'i18next'
+import { useTranslation } from 'i18next-vue'
 import ContentCopyTwotone from '~icons/ic/twotone-content-copy'
 
 import { useSettingsStore } from '@/shared/settings'
@@ -12,6 +12,7 @@ import { useYiYan } from '@newtab/composables/useYiYan'
 
 const { yiyan, yiyanOrigin, load, isEnabled } = useYiYan()
 const settings = useSettingsStore()
+const { t } = useTranslation()
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.yiyan.transparent,
@@ -105,7 +106,7 @@ async function copyToClipboard() {
   if (!yiyan.value) return
   try {
     await navigator.clipboard.writeText(yiyan.value || '')
-    ElMessage.success(i18next.t('yiyan.copied'))
+    ElMessage.success(t('yiyan.copied'))
   } catch {}
 }
 </script>
@@ -130,7 +131,7 @@ async function copyToClipboard() {
       <button
         type="button"
         class="yiyan__copy-btn"
-        :aria-label="i18next.t('newtab:a11y.copyYiyan')"
+        :aria-label="t('newtab:a11y.copyYiyan')"
         @click="copyToClipboard"
       >
         <el-icon>

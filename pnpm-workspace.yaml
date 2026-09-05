@@ -1,11 +1,14 @@
 allowBuilds:
   esbuild: true
 
+minimumReleaseAgeExclude:
+  - markdown-exit@1.2.0
+
 overrides:
   glob: '^13.0.6' # 统一版本
-  markdown-it: 'npm:markdown-exit@latest' # 替换为高性能实现
-  markdown-exit: 'latest' # 替换为高性能实现
-  sass: 'npm:sass-embedded@^1.100.0' # 替换为高性能实现
+  markdown-it: 'npm:markdown-exit@^1.2.0' # 替换为高性能实现
+  markdown-exit: '^1.2.0' # 替换为高性能实现
+  sass: 'npm:sass-embedded@^1.103.1' # 替换为高性能实现
   # -----
   # 以下是为了修复 CVE-2026-44705
   'config-chain>ini': '^7.0.0'

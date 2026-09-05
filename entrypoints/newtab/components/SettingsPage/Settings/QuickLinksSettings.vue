@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/shared/settings'
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 import { isHasTouchDevice } from '@newtab/shared/touch'
 
+import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
 import { useQuickLinksGroupingChange } from '../composables/useQuickLinksGroupingChange'
 
 import SettingsSection from './SettingsSection.vue'
@@ -71,7 +72,10 @@ const alertType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'inf
       </template>
       <el-alert :type="alertType" show-icon :closable="false">
         <p style="margin: 0.5em 0">1. {{ t('quickLinks.tip') }}</p>
-        <p style="margin: 0.5em 0">2. {{ t('quickLinks.iconCacheTip') }}</p>
+        <p style="margin: 0.5em 0">
+          2. {{ t('quickLinks.iconCacheTip') }}
+          <SyncAvailabilityIcon catalog-key="userIcons" />
+        </p>
       </el-alert>
     </SettingsSection>
 
@@ -264,7 +268,10 @@ const alertType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'inf
       :summary="t('common.sections.summary.data')"
     >
       <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('quickLinks.restoreDefault') }}</div>
+        <div class="settings__label">
+          {{ t('quickLinks.restoreDefault') }}
+          <SyncAvailabilityIcon catalog-key="blockedTopSites" />
+        </div>
         <el-popconfirm
           width="220"
           :confirm-button-text="t('newtab:common.confirm')"

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { useTimeoutFn } from '@vueuse/core'
 
-import i18next from 'i18next'
 import { useTranslation } from 'i18next-vue'
-import CloudOffRound from '~icons/ic/round-cloud-off'
 import ComputerRound from '~icons/ic/round-computer'
 import DarkModeRound from '~icons/ic/round-dark-mode'
 import LightModeRound from '~icons/ic/round-light-mode'
+
+import { browser } from 'wxt/browser'
 
 import { BgType } from '@/shared/enums'
 import { defaultSettings, useSettingsStore } from '@/shared/settings'
@@ -17,6 +17,8 @@ import {
   usePermission,
 } from '@newtab/composables/usePermission'
 import { colorMode as mode, preferredDark } from '@newtab/shared/colorMode'
+
+import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
 
 import SettingsSection from './SettingsSection.vue'
 
@@ -96,6 +98,17 @@ function setColorMode(newMode: 'auto' | 'dark' | 'light') {
 }
 
 const { checkAndRequestPermission } = usePermission()
+const monetPermissionPending = ref(false)
+
+async function refreshMonetPermission() {
+  monetPermissionPending.value =
+    settings.theme.monetColor &&
+    settings.background.bgType === BgType.Online &&
+    !(await browser.permissions.contains({ origins: ['*://*/*'] }))
+}
+
+onMounted(refreshMonetPermission)
+watch(() => [settings.theme.monetColor, settings.background.bgType], refreshMonetPermission)
 
 const beforeMonetChange = async () => {
   // 已经开了就是想要关，所以允许关
@@ -138,8 +151,9 @@ const beforeMonetChange = async () => {
   const res = result === PermissionResult.GrantedAll
 
   if (res) settings.background.online.cache.enabled = true
-  else ElMessage.warning(i18next.t('settings:background.warning.monetDisabled'))
+  else ElMessage.warning(t('settings:background.warning.monetDisabled'))
 
+  await refreshMonetPermission()
   return res
 }
 
@@ -156,7 +170,7 @@ const tagType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'info'
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">
           {{ t('theme.mode.dark') }}
-          <cloud-off-round />
+          <SyncAvailabilityIcon catalog-key="ui.colorMode" />
         </div>
       </div>
       <div class="settings__item theme-mode-selector">
@@ -200,7 +214,11 @@ const tagType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'info'
       <div class="settings__item settings__item--horizontal settings__item--with-note">
         <div class="settings__label">
           {{ t('theme.monet.label') }}
-          <cloud-off-round />
+          <SyncAvailabilityIcon
+            v-if="monetPermissionPending"
+            catalog-key="permission.monet"
+            pending-permission="monet"
+          />
         </div>
         <el-switch
           v-model="settings.theme.monetColor"

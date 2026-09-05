@@ -103,6 +103,7 @@
     "rightClickDisabledNote": "已启用右键背景打开启动台，请先将其关闭。",
     "rightClickToOpen": "右键背景打开",
     "showBtn": "显示右下角入口",
+    "syncNote": "浏览器书签由浏览器管理，不通过 WebDAV 同步。",
     "title": "书签栏"
   },
   "clock": {
@@ -227,13 +228,28 @@
     "importExport": {
       "backup": "备份扩展设置",
       "export": "导出",
+      "exporting": "正在创建备份...",
       "import": "导入",
       "importFailed": "导入失败：{{reason}}",
       "importSuccess": "导入成功",
+      "importing": "正在安全应用导入数据...",
       "invalidFileFormat": "文件格式不正确",
       "invalidJSON": "无效的 JSON 格式",
       "noFileSelected": "未选择文件",
+      "omittedIcons": "本次备份已跳过 {{count}} 个过大的用户图标",
+      "syncMode": {
+        "confirmMismatch": "输入的确认文字不匹配",
+        "deletePrompt": "请输入“{{text}}”以删除 WebDAV 数据",
+        "deleteRemote": "删除云端同步库并断开，然后替换本机数据",
+        "description": "检测到 WebDAV 同步已开启。请选择这次导入如何影响其他设备。",
+        "disconnectTitle": "替换本机数据前断开同步",
+        "keepRemote": "保留云端同步库并断开，然后替换本机数据",
+        "merge": "合并到当前数据并同步（冲突时暂停）",
+        "replace": "用导入内容替换所有已同步数据",
+        "title": "导入与同步"
+      },
       "unknownError": "未知错误",
+      "validating": "正在验证备份完整性...",
       "versionMismatch": "文件内配置版本与当前扩展配置版本不符",
       "warningDialog": {
         "content": "导入会覆盖你当前的数据，请谨慎使用该功能，是否继续？",
@@ -247,9 +263,14 @@
       "btn": "清除",
       "confirm": {
         "data": {
-          "includeSync": "同时清除云同步数据",
+          "deleteRemote": "删除云端数据并断开，然后重置",
+          "deleteRemotePrompt": "请输入“{{text}}”以删除云端同步库",
+          "deleteRemoteTitle": "删除云端同步数据？",
+          "includeSync": "仅清除旧版浏览器云同步残留",
+          "keepRemote": "保留云端数据并断开，然后重置",
           "message": "该操作将会重置扩展设置、已忽略的最常访问网站、收藏/置顶的网站、已选择的背景图片/视频等。",
           "purging": "正在清除扩展数据...",
+          "syncQuestion": "同步已开启。如何处理这次重置？",
           "title": "确定要清除所有数据吗？"
         },
         "icon": {
@@ -274,9 +295,9 @@
     "sync": "云同步（已停止支持）",
     "syncRetirement": {
       "acknowledge": "好的",
+      "clearCloudData": "清理云端数据",
       "clearFailedMessage": "旧的云端数据暂时没有删除成功。我们不会再上传或应用这些数据，下次启动时会再次提醒你。",
       "clearFailedTitle": "未能删除云端数据",
-      "clearCloudData": "清理云端数据",
       "clearSuccess": "旧的云端数据已清除",
       "downloadCloudData": "下载云端数据",
       "downloadFailed": "无法读取或下载云端数据，请稍后重试",
@@ -399,6 +420,26 @@
     "tip": "想要打开新标签页就激活搜索输入？请查看页面右下角按钮菜单的「帮助和反馈」",
     "title": "搜索"
   },
+  "sync": {
+    "availability": {
+      "blockedTopSitesScopeDisabled": "隐藏记录仅保存在此设备。可在 WebDAV 同步范围中开启。",
+      "bookmarksBrowserManaged": "书签由浏览器管理，不通过 WebDAV 同步。",
+      "faviconCacheLocal": "网站图标缓存可重新生成，不会上传。图标缓存开关本身会同步。",
+      "onlineWallpaperCacheLocal": "缓存文件只保存在本机；启用偏好会同步。",
+      "onlineWallpaperUrlScopeDisabled": "在线/API 壁纸地址仅保存在此设备。可在高级同步范围中开启。",
+      "pendingPermission": "设置已同步，但此设备尚未授权；对应功能等待授权。",
+      "quickLinksScopeDisabled": "快速导航同步已关闭，数据仅保存在此设备。",
+      "searchEnginesScopeDisabled": "自定义搜索引擎同步已关闭，数据仅保存在此设备。",
+      "searchHistoryLocal": "搜索记录始终只保存在此设备，不会上传。",
+      "settingsScopeDisabled": "设置同步已关闭，数据仅保存在此设备。",
+      "uiScopeDisabled": "语言和颜色模式同步已关闭，仅保存在此设备。",
+      "userIconsScopeDisabled": "用户选择的图标仅保存在此设备。可在高级同步范围中开启。",
+      "wallpaperFailed": "壁纸文件未通过上传或完整性校验，其他数据仍会同步。",
+      "wallpaperScopeDisabled": "本地图片壁纸仅保存在此设备。可在 WebDAV 同步范围中开启。",
+      "wallpaperTooLarge": "图片超过 20 MB，壁纸未同步；其他数据仍会同步。",
+      "wallpaperVideo": "视频壁纸不会通过 WebDAV 同步。"
+    }
+  },
   "theme": {
     "color": {
       "acgn": {
@@ -448,6 +489,334 @@
     "title": "主题"
   },
   "title": "设置",
+  "webdavSync": {
+    "conflicts": {
+      "batch": {
+        "prefer": "批量选择"
+      },
+      "both": "保留两份",
+      "bothNote": "修改项会获得新的稳定 ID。",
+      "categories": {
+        "blocked-top-sites": "隐藏站点",
+        "search-engines": "搜索引擎",
+        "settings": "设置",
+        "ui": "界面偏好"
+      },
+      "deleted": "已删除或不存在",
+      "empty": "没有找到待处理冲突",
+      "fields": {
+        "colorMode": "颜色模式",
+        "customSearchEngine": "自定义搜索引擎",
+        "groupName": "分组名称",
+        "groupOrder": "分组排序",
+        "linkGroup": "所在分组",
+        "linkIcon": "链接图标",
+        "linkOrder": "快速导航排序",
+        "linkTitle": "链接标题",
+        "linkUrl": "链接地址",
+        "quickLink": "快速导航",
+        "quickLinkGroup": "快速导航分组",
+        "searchEngineIcon": "搜索引擎图标",
+        "searchEngineName": "搜索引擎名称",
+        "searchEngineOrder": "搜索引擎排序",
+        "searchEngineUrl": "搜索引擎地址",
+        "wallpaper": "壁纸",
+        "wallpaperDark": "深色壁纸",
+        "wallpaperLight": "浅色壁纸"
+      },
+      "finish": "创建合并版本",
+      "local": "保留本地数据",
+      "notice": "部分内容在不同设备上有不同修改，请选择要保留的内容。",
+      "noticeTitle": "请确认同步内容",
+      "remote": "使用云端数据",
+      "resolved": "冲突已解决并创建新的合并版本",
+      "sourceDevice": "设备 {{device}}",
+      "sourceLocal": "本地",
+      "sourceRemote": "云端",
+      "sources": "冲突数据来源",
+      "title": "解决同步冲突",
+      "useDevice": "使用设备 {{device}} 的数据",
+      "values": {
+        "changed": "已更改",
+        "customIcon": "使用自定义图标",
+        "disabled": "已关闭",
+        "enabled": "已开启",
+        "enabledScopeCount": "已启用 {{count}} 个同步项目",
+        "group": "分组：{{name}}",
+        "groupSummary": "{{name}} · {{count}} 个链接",
+        "itemCount": "{{count}} 项",
+        "noBaseline": "共同基线中没有此项",
+        "noCustomIcon": "未使用自定义图标",
+        "orderChanged": "已调整排序",
+        "quickLinksSummary": "{{items}} 个链接 · {{groups}} 个分组",
+        "rootGroup": "未分组",
+        "searchEnginesSummary": "{{count}} 个搜索引擎",
+        "settingCount": "{{count}} 项设置",
+        "unknownGroup": "其他分组",
+        "untitled": "未命名",
+        "wallpaperCount": "已选择 {{count}} 张壁纸"
+      }
+    },
+    "connectionActions": {
+      "open": "管理连接",
+      "title": "断开或删除"
+    },
+    "deviceName": "当前设备：{{name}}",
+    "devices": {
+      "firstSeen": "首次同步：{{time}}",
+      "stale": "超过 180 天",
+      "title": "已同步设备",
+      "unknownDescription": "WebDAV 凭据可能已泄露。请在服务商处更换密码或应用专用密码，并在可信设备上重新连接。删除设备记录不能撤销访问权限。",
+      "unknownTitle": "看到不认识的设备？"
+    },
+    "disconnect": {
+      "deleteAction": "永久删除并断开",
+      "deleteDescription": "只删除具有正确所有权标记的 LemonNewTab 专属目录。删除失败时保留本机连接配置。",
+      "deleteTitle": "永久删除整个云端同步库",
+      "deleted": "云端同步数据已删除，本机已断开",
+      "disconnected": "已保留云端数据并断开",
+      "impact": "将影响 {{devices}} 台设备和 {{versions}} 个版本",
+      "keepAction": "保留云端并断开",
+      "keepDescription": "清除本机连接配置，其他设备和云端数据不受影响。",
+      "keepTitle": "关闭 WebDAV 同步",
+      "title": "管理 WebDAV 连接",
+      "typePrompt": "请输入“{{text}}”继续"
+    },
+    "empty": {
+      "title": "尚未配置 WebDAV 同步"
+    },
+    "encrypted": "客户端已加密",
+    "encryption": {
+      "description": "加密密码独立于 WebDAV 登录密码。忘记后只能删除同步库，无法找回。",
+      "disabled": "加密默认关闭",
+      "enabled": "此同步库已加密",
+      "fixedMode": "同步库创建后不能更改加密状态或加密密码。",
+      "keyNote": "成功后只保存不可导出的派生密钥；密码不会上传、导出或写入日志。",
+      "password": "独立同步加密密码",
+      "title": "客户端加密",
+      "unlock": "解锁同步库"
+    },
+    "errors": {
+      "authentication": "密码不正确或服务商拒绝访问",
+      "conflict": "远端数据发生冲突",
+      "corrupted": "远端数据损坏",
+      "network": "暂时无法连接服务器",
+      "redirect-cross-origin": "服务器尝试重定向到其他来源，已停止同步",
+      "redirect-insecure": "服务器尝试从 HTTPS 降级到 HTTP，已停止同步",
+      "redirect-required": "服务器重定向不安全或无法验证。仅支持同源跳转和同主机的 HTTP 到 HTTPS 升级；也可填写最终的 WebDAV 地址。",
+      "server": "WebDAV 服务暂时出错",
+      "storage-full": "WebDAV 空间不足",
+      "timeout": "连接超时",
+      "unknown": "同步操作失败，请查看状态后重试"
+    },
+    "experimental": {
+      "description": "该功能仍在测试与完善中，打开前建议在其他设置中导出现有设置以避免覆盖。",
+      "title": "实验性功能"
+    },
+    "history": {
+      "back": "返回历史列表",
+      "current": "当前本机",
+      "noDifferences": "该版本与当前本机数据相同",
+      "preview": "查看差异",
+      "reasons": {
+        "import": "导入",
+        "initial": "初始版本",
+        "local-change": "本机修改",
+        "merge": "自动合并",
+        "repair": "损坏修复",
+        "restore": "历史恢复"
+      },
+      "restore": "恢复为新版本",
+      "restoreDescription": "已查看的旧内容会作为新的最新版本提交；若预览后本机或云端发生变化，操作会停止并要求重新比较。",
+      "restoreTitle": "恢复已查看的历史版本？",
+      "restored": "已从历史内容创建新的最新版本",
+      "target": "历史版本",
+      "title": "历史版本",
+      "truncated": "仅显示前 200 项差异；恢复前仍会完整验证整个版本。",
+      "wallpaperMissing": "该历史壁纸未保留，将继续使用当前壁纸"
+    },
+    "lastSuccess": "最近成功：{{time}}",
+    "later": "暂不处理",
+    "legacy": {
+      "clearConfirm": "只会清除已停止支持的浏览器云同步残留，不影响当前设置或新的 WebDAV 同步。是否继续？",
+      "description": "这是旧版浏览器 storage.sync 的残留处理，不会上传到 WebDAV。",
+      "found": "发现残留",
+      "title": "旧版浏览器云同步数据"
+    },
+    "management": {
+      "devices": "设备",
+      "history": "历史",
+      "summary": "历史、设备和加密",
+      "title": "同步管理"
+    },
+    "messages": {
+      "syncComplete": "同步检查已完成"
+    },
+    "never": "尚未成功同步",
+    "omissions": {
+      "aggregate-too-large": "所选图标总大小超过 8 MB",
+      "item-too-large": "单个所选图标超过 2 MB",
+      "too-large": "单张壁纸超过 20 MB",
+      "unavailable": "无法读取所选本地图片",
+      "unsupported": "不同步动画图片和视频"
+    },
+    "plaintext": "未启用客户端加密",
+    "refresh": "刷新状态",
+    "remoteDeleted": {
+      "action": "清除本机连接",
+      "description": "该设备连接的云端同步库已被删除。清除本机连接后可重新配置同步，不会访问或删除云端文件。",
+      "title": "云端同步库已删除"
+    },
+    "repair": {
+      "action": "创建修复版本",
+      "completed": "损坏版本已隔离并创建修复版本",
+      "corrupted": "最新版本损坏，自动同步已停止",
+      "corruptedDescription": "先下载原始文件留存，再选择本机数据或云端上一份完整版本。",
+      "corruptionTitle": "损坏修复",
+      "deleteEvidenceDescription": "系统会先上传并验证新的修复版本；只有成功后才删除你已下载留存的云端损坏版本。",
+      "deleteEvidenceTitle": "修复成功后删除云端损坏版本？",
+      "download": "下载损坏的原始文件",
+      "downloaded": "原始文件已下载",
+      "healthy": "没有发现需要修复的问题",
+      "healthyDescription": "最近版本和同步状态正常。",
+      "local": "使用当前本机数据",
+      "missingPayload": "损坏版本的正文已经丢失，无法下载原文件。你仍可使用本机数据或上一份完整版本修复。",
+      "previous": "使用云端上一份完整版本",
+      "removeWallpapersAction": "停止同步壁纸并清理云端图片",
+      "removeWallpapersCompleted": "已停止同步壁纸并清理不再使用的云端图片",
+      "removeWallpapersDescription": "系统会发布一个不含壁纸的新版本，再清理不再被保留版本引用的云端图片。本机壁纸不会被删除。",
+      "removeWallpapersTitle": "停止同步壁纸并清理云端图片？",
+      "revision": "损坏版本：{{id}}",
+      "retry": "重新检查",
+      "same": "本机数据与上一完整版本相同，将自动使用上一版本创建修复版本。",
+      "size": "原始文件大小：{{size}} 字节",
+      "title": "检查与修复",
+      "wallpaperDescription": "超限或不支持的图片会被跳过。请关闭对应范围或选择更小的图片；扩展不会修改原图。",
+      "wallpaperTitle": "部分图片未同步"
+    },
+    "resolve": "处理问题",
+    "scope": {
+      "blockedTopSites": "隐藏的最常访问站点",
+      "customSearchEngines": "自定义搜索引擎",
+      "onlineWallpaperUrl": "在线壁纸地址",
+      "onlineWallpaperUrlNote": "可能会包含访问 Token。",
+      "settings": "基础设置",
+      "summary": "可逐项选择；范围会记录到整个同步库，并同步到其他设备。",
+      "title": "同步范围",
+      "uiPreferences": "语言和深色模式",
+      "userIcons": "自定义的链接图标",
+      "userIconsNote": "如自定义的快速访问与自定义搜索引擎图标，单个最多 2 MB，总计最多 8 MB。",
+      "wallpapers": "本地图片壁纸",
+      "wallpapersNote": "不含视频壁纸，每张最多20MB，超出时跳过该图片"
+    },
+    "setup": {
+      "advanced": "高级设置",
+      "back": "上一步",
+      "compare": {
+        "conflicts": "有 {{count}} 个冲突需要解决",
+        "existing": "远端已有数据",
+        "existingTitle": "比较本机与云端",
+        "firstConnectionNote": "本机与云端都有数据，尚未有共同同步版本。开启后可在设置中逐项处理，或批量优先选择本机或云端；确认后将建立共同基线。",
+        "firstConnectionTitle": "首次接入：选择要保留的数据",
+        "initial": "新同步库",
+        "initialTitle": "确认初始上传内容",
+        "safe": "本地与远端无冲突，可直接安全开启同步"
+      },
+      "confirm": {
+        "autoDevice": "将生成不含精确系统版本的匿名设备名",
+        "description": "只有现在确认后才会创建或更新同步库。",
+        "encrypted": "已开启；忘记密码无法找回",
+        "plaintext": "关闭（默认）",
+        "title": "最终确认"
+      },
+      "connected": "WebDAV 同步已开启",
+      "connection": {
+        "deviceName": "设备名称（选填）",
+        "deviceNamePlaceholder": "例如：办公室电脑",
+        "directory": "扩展专属目录",
+        "password": "密码或应用专用密码",
+        "remember": "保存在当前浏览器配置文件并允许后台自动同步",
+        "rememberNote": "密码不会上传、导出或写入日志。",
+        "sessionNote": "仅本次使用；关闭浏览器后清除，后台自动同步不可用。",
+        "title": "连接您的网络存储",
+        "url": "服务器地址",
+        "username": "用户名"
+      },
+      "encryption": {
+        "enable": "使用独立密码加密同步内容",
+        "password": "独立同步加密密码（至少 8 位）"
+      },
+      "errors": {
+        "authentication": "密码不正确，或服务商拒绝此账号访问。请检查用户名、密码或应用专用密码。",
+        "encryption": "同步库已加密，请在高级设置中输入正确的独立同步加密密码。",
+        "foreign": "该目录包含不属于 Lemon New Tab 的数据。请改用空目录或正确的专属目录。",
+        "format": "同步格式由更高版本扩展创建，请先升级扩展。",
+        "network": "浏览器未能发出请求。请先在普通标签页打开服务器地址，确认地址和 HTTPS 证书有效，再检查网络、代理和跳转设置。",
+        "permission": "未获得此 WebDAV 服务器的精确访问权限，连接没有保存。",
+        "unsupported": "服务器无法可靠完成 WebDAV 文件的创建、读取、列出或删除。"
+      },
+      "finish": "确认开启同步",
+      "http": {
+        "accept": "我了解局域网 HTTP 也可能被同网络中的人窃听",
+        "localWarning": "这是局域网 HTTP 地址。登录信息和未加密内容仍可能被同一网络中的其他人看到。",
+        "publicUnsupported": "不支持外部公网 HTTP WebDAV 地址。请使用 HTTPS 或局域网地址。"
+      },
+      "next": "下一步",
+      "scan": {
+        "empty": "目录为空，可以创建新同步库",
+        "emptyNote": "只有最终确认后才会创建 LemonNewTab 目录和第一个版本。",
+        "existing": "找到一个已有同步库",
+        "existingNote": "已验证所有权标记和版本完整性，下一步将比较本机数据。",
+        "remote-conflict": "远端存在多个版本分支",
+        "remoteConflictNote": "可在本设备逐项处理这些分支；连接后同步将保持暂停，直到所有冲突解决。",
+        "title": "远端扫描结果"
+      },
+      "scope": {
+        "description": "该选择对其他设备也会生效。",
+        "omittedResources": "{{count}} 个过大或不支持的所选图片将被跳过",
+        "title": "选择同步范围"
+      },
+      "steps": {
+        "compare": "比较",
+        "confirm": "确认",
+        "connection": "连接",
+        "scan": "扫描",
+        "scope": "范围",
+        "test": "测试"
+      },
+      "test": {
+        "action": "测试连接",
+        "notTested": "等待测试",
+        "permissionNote": "点击测试后，浏览器会申请访问此 WebDAV 服务器和检测请求的可选权限；前者用于连接服务器，后者用于判断本次连接是否安全。",
+        "retry": "重新测试",
+        "scanned": "成功连接到服务器",
+        "success": "连接成功",
+        "title": "测试连接并申请权限"
+      },
+      "title": "设置 WebDAV 同步",
+      "wallpaper": {
+        "oversized": "{{count}} 张壁纸超过 20 MB，将被跳过",
+        "summary": "不含视频壁纸，{{count}} 张共 {{size}}，每张最多20MB，超出时跳过该图片"
+      }
+    },
+    "status": {
+      "authentication": "需要重新登录",
+      "conflict": "有冲突需要处理",
+      "corrupted": "远端最新版本损坏",
+      "encryptionPassword": "需要同步加密密码",
+      "formatTooNew": "同步格式较新，请升级扩展",
+      "paused": "同步已暂停",
+      "pending": "有待上传修改",
+      "ready": "已连接，等待首次检查",
+      "remoteDeleted": "云端同步数据已被删除",
+      "storageFull": "WebDAV 空间不足",
+      "synced": "已同步",
+      "unconfigured": "未配置",
+      "wallpaperSkipped": "核心数据已同步，壁纸未同步"
+    },
+    "syncNow": "立即同步",
+    "title": "WebDAV 同步"
+  },
   "yiyan": {
     "alwaysShow": "总是显示",
     "borderRadius": "一言背景圆角",

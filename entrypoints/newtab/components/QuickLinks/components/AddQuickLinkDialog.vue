@@ -54,7 +54,7 @@ const confirmLabel = computed(() => t(isEditing.value ? 'common.save' : 'common.
 
 function resetFields() {
   modelForm.value?.resetFields()
-  Object.assign(data, { url: '', title: '', favicon: '' })
+  Object.assign(data, { url: '', title: '', favicon: '', faviconSource: undefined })
   editingTarget.value = null
   addingGroupId.value = null
 }
@@ -76,6 +76,7 @@ function prepareEditDialog(targetRef: QuickLinkTarget) {
     url: target.url,
     title: target.title,
     favicon: target.favicon ?? '',
+    faviconSource: target.faviconSource,
   })
 }
 
@@ -99,6 +100,7 @@ async function submit() {
     url: formatUrl(data.url),
     title: data.title.trim(),
     ...(!data.favicon ? {} : { favicon: data.favicon }),
+    ...(!data.faviconSource ? {} : { faviconSource: data.faviconSource }),
   }
 
   if (isEditing.value && editingTarget.value !== null) {
@@ -162,7 +164,11 @@ async function cancel() {
             class="quick-links__favicon-uploader"
             :show-file-list="false"
             :http-request="
-              (option: UploadRequestOptions) => httpRequest(option, (b64) => (data.favicon = b64))
+              (option: UploadRequestOptions) =>
+                httpRequest(option, (b64) => {
+                  data.favicon = b64
+                  data.faviconSource = 'user-selected'
+                })
             "
             :before-upload="beforeFaviconUpload"
             accept="image/*"

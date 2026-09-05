@@ -1,5 +1,5 @@
 <script setup lang="ts" vapor>
-import i18next from 'i18next'
+import { useTranslation } from 'i18next-vue'
 
 import { browser } from 'wxt/browser'
 
@@ -18,9 +18,9 @@ import { isValidUrl } from '@newtab/shared/utils'
 const props = defineProps<{
   hasInvalidSettings: boolean
 }>()
+const { t } = useTranslation()
 
-const t = (key: string) => i18next.t(key)
-const legacyT = (key: string) => i18next.t(`newtab:bootstrap.invalidVer.${key}`)
+const legacyT = (key: string) => t(`newtab:bootstrap.invalidVer.${key}`)
 const quickLinksStore = useQuickLinksStore()
 
 const currentTab = shallowRef<{
@@ -150,6 +150,7 @@ async function addCurrentPage() {
     // 此处若获取到图标则同时把缓存的base64结果存储到quickLinksStore
     // 后续QuickLinkItem组件优先使用该字段，避免每次都调用getFaviconURL函数获取图标
     favicon: finalFavicon ?? undefined,
+    faviconSource: finalFavicon ? ('automatic' as const) : undefined,
   }
 
   if (groupingEnabled.value) {

@@ -8,17 +8,12 @@ let stopWatching: (() => void) | null = null
 let suppressNextWatch = false
 
 async function loadFromStorage() {
-  const list = await searchHistoriesStorage.getValue()
-  historiesRef.value = list
+  historiesRef.value = await searchHistoriesStorage.getValue()
 }
 
 async function ensureLoaded(force = false) {
-  if (force) {
-    loaded = false
-  }
-  if (loaded) {
-    return
-  }
+  if (force) loaded = false
+  if (loaded) return
   if (!loadingPromise) {
     loadingPromise = loadFromStorage().finally(() => {
       loadingPromise = null
@@ -30,7 +25,6 @@ async function ensureLoaded(force = false) {
 
 function retainWatcher() {
   activeConsumers += 1
-
   if (!stopWatching) {
     stopWatching = searchHistoriesStorage.watch(async () => {
       if (suppressNextWatch) {
@@ -41,13 +35,9 @@ function retainWatcher() {
       loaded = true
     })
   }
-
   return () => {
     activeConsumers = Math.max(0, activeConsumers - 1)
-    if (activeConsumers > 0) {
-      return
-    }
-
+    if (activeConsumers > 0) return
     stopWatching?.()
     stopWatching = null
   }
@@ -61,36 +51,21 @@ async function updateStorage(list: string[]) {
 }
 
 async function addHistory(text: string, limit = 15) {
-  if (!text) {
-    return
-  }
+  if (!text) return
   await ensureLoaded()
-
-  const current = historiesRef.value
-  const next: string[] = [text]
-  for (let i = 0, len = current.length; i < len && next.length < limit; i++) {
-    if (current[i] !== text) {
-      next.push(current[i]!)
-    }
-  }
+  const next = [text, ...historiesRef.value.filter((item) => item !== text)].slice(0, limit)
   await updateStorage(next)
 }
 
 async function clearHistories() {
   await ensureLoaded()
-  if (historiesRef.value.length === 0) {
-    return
-  }
+  if (historiesRef.value.length === 0) return
   await updateStorage([])
 }
 
 export function useSearchHistoryCache() {
   const releaseWatcher = retainWatcher()
-
-  if (getCurrentScope()) {
-    onScopeDispose(releaseWatcher)
-  }
-
+  if (getCurrentScope()) onScopeDispose(releaseWatcher)
   return {
     histories: readonly(historiesRef),
     ensureLoaded,

@@ -1,0 +1,406 @@
+import { pruneInlineImages } from './apply.ts'
+import { mergeSyncSnapshots } from './merge.ts'
+import type {
+  JsonObject,
+  JsonValue,
+  SyncConflict,
+  SyncConflictResolution,
+  SyncSnapshotV1,
+} from './types.ts'
+import { validateSyncSnapshot } from './validation.ts'
+
+type EntityValue = { id: string; [key: string]: JsonValue }
+type QuickLinks = NonNullable<SyncSnapshotV1['quickLinks']>
+type SearchEngines = NonNullable<SyncSnapshotV1['customSearchEngines']>
+
+function quickLinks(snapshot: SyncSnapshotV1): QuickLinks {
+  if (!snapshot.quickLinks) throw new TypeError('Quick Link conflict has no data')
+  return snapshot.quickLinks
+}
+
+function searchEngines(snapshot: SyncSnapshotV1): SearchEngines {
+  if (!snapshot.customSearchEngines) throw new TypeError('Search engine conflict has no data')
+  return snapshot.customSearchEngines
+}
+
+export function resolveSyncConflicts(input: {
+  base: SyncSnapshotV1
+  local: SyncSnapshotV1
+  remote: SyncSnapshotV1
+  resolutions: readonly SyncConflictResolution[]
+}): SyncSnapshotV1 {
+  if (
+    input.resolutions.some(
+      (item) =>
+        !item ||
+        typeof item.conflictId !== 'string' ||
+        !['both', 'local', 'remote'].includes(item.choice) ||
+        (item.choice === 'both' && typeof item.duplicateId !== 'string'),
+    )
+  ) {
+    throw new TypeError('Conflict resolution is invalid')
+  }
+  const merged = mergeSyncSnapshots(input.base, input.local, input.remote)
+  if (merged.conflicts.length === 0) return merged.snapshot
+  const choices = new Map(input.resolutions.map((item) => [item.conflictId, item]))
+  if (choices.size !== input.resolutions.length)
+    throw new TypeError('Conflict resolution is duplicated')
+  const snapshot = structuredClone(merged.snapshot)
+  for (const conflict of merged.conflicts) {
+    const resolution = choices.get(conflict.id)
+    if (!resolution) throw new TypeError(`Conflict resolution is missing: ${conflict.id}`)
+    if (resolution.choice === 'candidate')
+      throw new TypeError(`Conflict requires a multi-device resolver: ${conflict.id}`)
+    if (resolution.choice === 'both') {
+      if (!conflict.canKeepBoth) {
+        throw new TypeError(`Conflict cannot keep both values: ${conflict.id}`)
+      }
+      keepBothEntities(snapshot, input.local, input.remote, conflict, resolution.duplicateId)
+    } else {
+      applyConflictCandidate(
+        snapshot,
+        resolution.choice === 'local' ? input.local : input.remote,
+        conflict,
+        resolution.choice === 'local' ? conflict.local : conflict.remote,
+      )
+    }
+  }
+  if (choices.size !== merged.conflicts.length) throw new TypeError('Unknown conflict resolution')
+  pruneInlineImages(snapshot)
+  const validation = validateSyncSnapshot(snapshot)
+  if (!validation.ok) throw new TypeError(validation.error)
+  return validation.value
+}
+
+/** 从原始候选快照读取值，不依赖合并过程中不断变化的中间结果。 */
+export function readConflictValue(
+  snapshot: SyncSnapshotV1,
+  conflict: SyncConflict,
+): JsonValue | undefined {
+  const path = conflict.path
+  for (const [prefix, items] of [
+    ['quickLinks.items.', snapshot.quickLinks?.items],
+    ['quickLinks.groups.', snapshot.quickLinks?.groups],
+    ['customSearchEngines.items.', snapshot.customSearchEngines?.items],
+  ] as const) {
+    if (!path.startsWith(prefix)) continue
+    const [id, ...keys] = path.slice(prefix.length).split('.')
+    let value: unknown = items?.find((item) => item.id === id)
+    for (const key of keys) value = (value as JsonObject | undefined)?.[key]
+    return value as JsonValue | undefined
+  }
+  if (path.startsWith('quickLinks.location.')) {
+    const id = path.slice('quickLinks.location.'.length)
+    if (!snapshot.quickLinks?.items.some((item) => item.id === id)) return undefined
+    return snapshot.quickLinks.groups.find((group) => group.itemIds.includes(id))?.id ?? 'root'
+  }
+  let value: unknown = snapshot
+  for (const key of path.split('.')) value = (value as JsonObject | undefined)?.[key]
+  return value as JsonValue | undefined
+}
+
+export function applyConflictCandidate(
+  target: SyncSnapshotV1,
+  source: SyncSnapshotV1,
+  conflict: SyncConflict,
+  value = readConflictValue(source, conflict),
+): void {
+  if (conflict.kind === 'delete-vs-modify' || conflict.kind === 'simultaneous-create') {
+    applyEntity(target, source, conflict, value)
+  } else {
+    applyPathValue(target, conflict.path, value, value !== undefined)
+  }
+  if (source.inlineImages) target.inlineImages = { ...target.inlineImages, ...source.inlineImages }
+}
+
+function entityTarget(
+  snapshot: SyncSnapshotV1,
+  conflict: SyncConflict,
+): { items: EntityValue[]; order: string[] } {
+  if (conflict.path.startsWith('quickLinks.items.')) {
+    const links = quickLinks(snapshot)
+    return {
+      items: links.items as unknown as EntityValue[],
+      order: links.rootOrder,
+    }
+  }
+  if (conflict.path.startsWith('quickLinks.groups.')) {
+    const links = quickLinks(snapshot)
+    return {
+      items: links.groups as unknown as EntityValue[],
+      order: links.groupOrder,
+    }
+  }
+  if (conflict.path.startsWith('customSearchEngines.items.')) {
+    const engines = searchEngines(snapshot)
+    return {
+      items: engines.items as unknown as EntityValue[],
+      order: engines.order,
+    }
+  }
+  throw new TypeError(`Unsupported entity conflict: ${conflict.path}`)
+}
+
+function entityId(conflict: SyncConflict): string {
+  const prefix = conflict.path.startsWith('quickLinks.items.')
+    ? 'quickLinks.items.'
+    : conflict.path.startsWith('quickLinks.groups.')
+      ? 'quickLinks.groups.'
+      : 'customSearchEngines.items.'
+  return conflict.path.slice(prefix.length)
+}
+
+function applyEntity(
+  target: SyncSnapshotV1,
+  source: SyncSnapshotV1,
+  conflict: SyncConflict,
+  value: JsonValue | undefined,
+): void {
+  const id = entityId(conflict)
+  const destination = entityTarget(target, conflict)
+  removeEntity(destination, target, conflict, id)
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return
+  const entity = structuredClone(value) as EntityValue
+  if (conflict.path.startsWith('quickLinks.groups.')) {
+    const sourceGroup = quickLinks(source).groups.find((group) => group.id === id)
+    const targetLinks = quickLinks(target)
+    const validIds = new Set(targetLinks.items.map((item) => item.id))
+    const itemIds = sourceGroup?.itemIds.filter((itemId) => validIds.has(itemId)) ?? []
+    for (const itemId of itemIds) {
+      targetLinks.rootOrder = targetLinks.rootOrder.filter((item) => item !== itemId)
+      for (const group of targetLinks.groups) {
+        group.itemIds = group.itemIds.filter((item) => item !== itemId)
+      }
+    }
+    entity.itemIds = itemIds
+  }
+  destination.items.push(entity)
+  insertEntityOrder(destination.order, target, source, conflict, id, id)
+}
+
+function keepBothEntities(
+  target: SyncSnapshotV1,
+  local: SyncSnapshotV1,
+  remote: SyncSnapshotV1,
+  conflict: SyncConflict,
+  duplicateId: string,
+): void {
+  if (!duplicateId || duplicateId.length > 128)
+    throw new TypeError('Duplicate entity ID is invalid')
+  const originalId = entityId(conflict)
+  const destination = entityTarget(target, conflict)
+  if (destination.items.some((item) => item.id === duplicateId)) {
+    throw new TypeError('Duplicate entity ID already exists')
+  }
+  const localValue = Object.hasOwn(conflict, 'local') ? conflict.local : undefined
+  const remoteValue = Object.hasOwn(conflict, 'remote') ? conflict.remote : undefined
+  const modified =
+    conflict.kind === 'simultaneous-create' ? remoteValue : (localValue ?? remoteValue)
+  if (!modified || typeof modified !== 'object' || Array.isArray(modified)) {
+    throw new TypeError('Conflict has no entity to duplicate')
+  }
+  if (conflict.kind === 'delete-vs-modify') {
+    removeEntity(destination, target, conflict, originalId)
+  }
+  const duplicate = { ...(structuredClone(modified) as JsonObject), id: duplicateId } as EntityValue
+  destination.items.push(duplicate)
+  const source = conflict.kind === 'simultaneous-create' || !localValue ? remote : local
+  insertEntityOrder(destination.order, target, source, conflict, originalId, duplicateId)
+}
+
+function removeEntity(
+  target: { items: EntityValue[]; order: string[] },
+  snapshot: SyncSnapshotV1,
+  conflict: SyncConflict,
+  id: string,
+): void {
+  const index = target.items.findIndex((item) => item.id === id)
+  const links = conflict.path.startsWith('quickLinks.') ? quickLinks(snapshot) : undefined
+  const removedGroup = conflict.path.startsWith('quickLinks.groups.')
+    ? links?.groups.find((group) => group.id === id)
+    : undefined
+  if (index >= 0) target.items.splice(index, 1)
+  target.order.splice(0, target.order.length, ...target.order.filter((item) => item !== id))
+  if (conflict.path.startsWith('quickLinks.items.')) {
+    for (const group of links!.groups) {
+      group.itemIds = group.itemIds.filter((item) => item !== id)
+    }
+  } else if (conflict.path.startsWith('quickLinks.groups.')) {
+    if (removedGroup) {
+      for (const itemId of removedGroup.itemIds) {
+        if (!links!.rootOrder.includes(itemId)) {
+          links!.rootOrder.push(itemId)
+        }
+      }
+    }
+  }
+}
+
+function insertEntityOrder(
+  fallbackOrder: string[],
+  target: SyncSnapshotV1,
+  source: SyncSnapshotV1,
+  conflict: SyncConflict,
+  sourceId: string,
+  insertedId: string,
+): void {
+  if (conflict.path.startsWith('quickLinks.items.')) {
+    const sourceLinks = quickLinks(source)
+    const sourceGroup = sourceLinks.groups.find((group) => group.itemIds.includes(sourceId))
+    if (!sourceGroup) {
+      insertAfterSource(fallbackOrder, sourceLinks.rootOrder, sourceId, insertedId)
+      return
+    }
+    const targetGroup = quickLinks(target).groups.find((group) => group.id === sourceGroup.id)
+    if (targetGroup) {
+      insertAfterSource(targetGroup.itemIds, sourceGroup.itemIds, sourceId, insertedId)
+    } else {
+      fallbackOrder.push(insertedId)
+    }
+    return
+  }
+  if (conflict.path.startsWith('quickLinks.groups.')) {
+    insertAfterSource(fallbackOrder, quickLinks(source).groupOrder, sourceId, insertedId)
+    return
+  }
+  const sourceOrder = searchEngines(source).order
+  insertAfterSource(fallbackOrder, sourceOrder, sourceId, insertedId)
+}
+
+function insertAfterSource(
+  target: string[],
+  source: readonly string[],
+  sourceId: string,
+  insertedId: string,
+): void {
+  const sourceIndex = source.indexOf(sourceId)
+  const previous = sourceIndex > 0 ? source[sourceIndex - 1] : undefined
+  const targetIndex = previous ? target.indexOf(previous) + 1 : target.length
+  target.splice(Math.max(0, targetIndex), 0, insertedId)
+}
+
+function applyPathValue(
+  snapshot: SyncSnapshotV1,
+  path: string,
+  value: JsonValue | undefined,
+  present: boolean,
+): void {
+  if (path.startsWith('quickLinks.location.')) {
+    moveQuickLink(snapshot, path.slice('quickLinks.location.'.length), present ? value : undefined)
+    return
+  }
+  if (path.startsWith('quickLinks.items.')) {
+    applyEntityField(
+      quickLinks(snapshot).items as unknown as EntityValue[],
+      path.slice('quickLinks.items.'.length),
+      value,
+      present,
+    )
+    return
+  }
+  if (path.startsWith('quickLinks.groups.')) {
+    applyQuickLinkGroupPath(snapshot, path.slice('quickLinks.groups.'.length), value, present)
+    return
+  }
+  if (path === 'quickLinks.rootOrder' || path === 'quickLinks.groupOrder') {
+    const key = path.endsWith('rootOrder') ? 'rootOrder' : 'groupOrder'
+    quickLinks(snapshot)[key] = present && Array.isArray(value) ? ([...value] as string[]) : []
+    return
+  }
+  if (path.startsWith('customSearchEngines.items.')) {
+    applyEntityField(
+      searchEngines(snapshot).items as unknown as EntityValue[],
+      path.slice('customSearchEngines.items.'.length),
+      value,
+      present,
+    )
+    return
+  }
+  if (path === 'customSearchEngines.order') {
+    searchEngines(snapshot).order = present && Array.isArray(value) ? ([...value] as string[]) : []
+    return
+  }
+  const [root, ...keys] = path.split('.')
+  if (
+    !root ||
+    ![
+      'settings',
+      'ui',
+      'optional',
+      'scope',
+      'quickLinks',
+      'customSearchEngines',
+      'inlineImages',
+    ].includes(root)
+  ) {
+    throw new TypeError(`Unsupported conflict path: ${path}`)
+  }
+  applyObjectPath(snapshot as unknown as JsonObject, [root, ...keys], value, present)
+}
+
+function applyEntityField(
+  items: EntityValue[],
+  path: string,
+  value: JsonValue | undefined,
+  present: boolean,
+): void {
+  const separator = path.indexOf('.')
+  if (separator < 1) throw new TypeError(`Entity field path is invalid: ${path}`)
+  const id = path.slice(0, separator)
+  const item = items.find((candidate) => candidate.id === id)
+  if (!item) throw new TypeError(`Conflict entity is missing: ${id}`)
+  applyObjectPath(item, path.slice(separator + 1).split('.'), value, present)
+}
+
+function applyQuickLinkGroupPath(
+  snapshot: SyncSnapshotV1,
+  path: string,
+  value: JsonValue | undefined,
+  present: boolean,
+): void {
+  const separator = path.indexOf('.')
+  if (separator < 1) throw new TypeError(`Quick Link group path is invalid: ${path}`)
+  const id = path.slice(0, separator)
+  const key = path.slice(separator + 1)
+  const group = quickLinks(snapshot).groups.find((candidate) => candidate.id === id)
+  if (!group) throw new TypeError(`Quick Link group is missing: ${id}`)
+  if (key === 'itemIds') {
+    group.itemIds = present && Array.isArray(value) ? ([...value] as string[]) : []
+  } else {
+    applyObjectPath(group as unknown as JsonObject, key.split('.'), value, present)
+  }
+}
+
+function moveQuickLink(snapshot: SyncSnapshotV1, id: string, value: JsonValue | undefined): void {
+  const links = quickLinks(snapshot)
+  links.rootOrder = links.rootOrder.filter((item) => item !== id)
+  for (const group of links.groups) {
+    group.itemIds = group.itemIds.filter((item) => item !== id)
+  }
+  if (typeof value === 'string' && value !== 'root') {
+    const group = links.groups.find((candidate) => candidate.id === value)
+    if (group) {
+      group.itemIds.push(id)
+      return
+    }
+  }
+  links.rootOrder.push(id)
+}
+
+function applyObjectPath(
+  root: JsonObject,
+  keys: readonly string[],
+  value: JsonValue | undefined,
+  present: boolean,
+): void {
+  let current = root
+  for (const key of keys.slice(0, -1)) {
+    const child = current[key]
+    if (!child || typeof child !== 'object' || Array.isArray(child)) current[key] = {}
+    current = current[key] as JsonObject
+  }
+  const key = keys.at(-1)
+  if (!key) throw new TypeError('Conflict path is empty')
+  if (present && value !== undefined) current[key] = structuredClone(value)
+  else delete current[key]
+}

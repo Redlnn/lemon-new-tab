@@ -1,0 +1,1112 @@
+<script setup lang="ts">
+import { useTranslation } from 'i18next-vue'
+import CallMergeRound from '~icons/ic/round-call-merge'
+import ComputerRound from '~icons/ic/round-computer'
+import DeleteForeverRound from '~icons/ic/round-delete-forever'
+import DevicesRound from '~icons/ic/round-devices'
+import DownloadRound from '~icons/ic/round-download'
+import HistoryRound from '~icons/ic/round-history'
+import LockRound from '~icons/ic/round-lock'
+import SecurityRound from '~icons/ic/round-security'
+import StorageRound from '~icons/ic/round-storage'
+
+import { downloadBlob } from '@/shared/download'
+import {
+  disconnectSyncConnection,
+  deleteSyncCorruption,
+  downloadSyncCorruption,
+  getSyncConflict,
+  getSyncDevices,
+  getSyncHistory,
+  inspectSyncCorruption,
+  previewSyncHistory,
+  removeRemoteSyncWallpapers,
+  repairSyncCorruption,
+  resolveSyncConflict,
+  restoreSyncHistory,
+  syncNow,
+  unlockSyncEncryption,
+} from '@/shared/webdavSync/bridge'
+import type {
+  BrowserSyncDeviceEntry,
+  BrowserSyncHistoryEntry,
+  BrowserSyncHistoryPreview,
+} from '@/shared/webdavSync/browserEngine'
+import type { BrowserCorruptionInspection } from '@/shared/webdavSync/browserManagement'
+import {
+  createSyncConflictDisplayContext,
+  displaySyncCategory,
+  displaySyncDifference,
+  presentSyncConflict,
+} from '@/shared/webdavSync/conflictPresentation'
+import type {
+  JsonValue,
+  LocalSyncStateV1,
+  SyncConflict,
+  SyncConflictResolution,
+} from '@/shared/webdavSync/types'
+
+type DialogMode =
+  | 'conflict'
+  | 'devices'
+  | 'disconnect'
+  | 'encryption'
+  | 'history'
+  | 'remote-deleted'
+  | 'repair'
+  | null
+
+const props = defineProps<{ state: LocalSyncStateV1 }>()
+const emit = defineEmits<{ updated: [] }>()
+const model = defineModel<DialogMode>({ required: true })
+const { t } = useTranslation('settings')
+
+const loading = ref(false)
+const conflicts = shallowRef<SyncConflict[]>([])
+const conflictDisplayContext = shallowRef(createSyncConflictDisplayContext([]))
+const resolutions = reactive<Record<string, string>>({})
+const remoteVersions = ref<Array<{ revisionId: string; deviceName: string; modifiedAt: string }>>(
+  [],
+)
+const history = ref<BrowserSyncHistoryEntry[]>([])
+const historyPreview = shallowRef<BrowserSyncHistoryPreview>()
+const devices = ref<BrowserSyncDeviceEntry[]>([])
+const corruption = shallowRef<BrowserCorruptionInspection>()
+const corruptedDownloaded = ref(false)
+const repairChoice = ref<'local' | 'previous'>('previous')
+const currentEncryptionPassword = ref('')
+const deleteConfirmation = ref('')
+
+const allConflictsResolved = computed<boolean>(
+  () =>
+    conflicts.value.length > 0 && conflicts.value.every((item) => Boolean(resolutions[item.id])),
+)
+const canBatchResolve = computed(() => conflicts.value.every((item) => !item.candidates?.length))
+const conflictSources = computed(() => {
+  const devices = [...new Map(remoteVersions.value.map((item) => [item.revisionId, item])).values()]
+  return [
+    { label: t('webdavSync.conflicts.sourceLocal'), name: props.state.deviceName },
+    ...devices.map((device, index) => ({
+      label:
+        devices.length === 1
+          ? t('webdavSync.conflicts.sourceRemote')
+          : t('webdavSync.conflicts.sourceDevice', { device: String.fromCharCode(65 + index) }),
+      name: device.deviceName,
+    })),
+  ]
+})
+
+function dialogVisible(name: Exclude<DialogMode, null>) {
+  return computed<boolean>({
+    get: () => model.value === name,
+    set: (value) => {
+      if (!value && model.value === name) model.value = null
+    },
+  })
+}
+
+const conflictVisible = dialogVisible('conflict')
+const historyVisible = dialogVisible('history')
+const devicesVisible = dialogVisible('devices')
+const encryptionVisible = dialogVisible('encryption')
+const remoteDeletedVisible = dialogVisible('remote-deleted')
+const repairVisible = dialogVisible('repair')
+const disconnectVisible = dialogVisible('disconnect')
+const repairTitle = computed(() =>
+  props.state.pauseReason === 'corrupted-remote'
+    ? t('webdavSync.repair.corruptionTitle')
+    : t('webdavSync.repair.wallpaperTitle'),
+)
+const canRemoveRemoteWallpapers = computed(
+  () =>
+    props.state.scope.wallpapers ||
+    props.state.resourceOmissions.some((item) => item.kind === 'wallpaper'),
+)
+
+function displayConflict(conflict: SyncConflict) {
+  return presentSyncConflict(conflict, conflictDisplayContext.value, t)
+}
+
+function displayDifference(difference: {
+  category: SyncConflict['category']
+  path: string
+  value?: JsonValue
+}) {
+  return displaySyncDifference(difference, conflictDisplayContext.value, t)
+}
+
+function displayCategory(category: SyncConflict['category']) {
+  return displaySyncCategory(category, t)
+}
+
+function displayCandidate(
+  conflict: SyncConflict,
+  candidate: NonNullable<SyncConflict['candidates']>[number],
+) {
+  return displayDifference({
+    category: conflict.category,
+    path: conflict.path,
+    value: candidate.value,
+  }).value
+}
+
+function localCandidate(conflict: SyncConflict) {
+  return conflict.candidates?.find((candidate) => candidate.source === 'local')
+}
+
+function remoteCandidates(conflict: SyncConflict) {
+  return conflict.candidates?.filter((candidate) => candidate.source === 'remote') ?? []
+}
+
+function preferAllConflicts(choice: 'local' | 'remote') {
+  for (const conflict of conflicts.value) resolutions[conflict.id] = choice
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
+    new Date(value),
+  )
+}
+
+function applyConflictDetails(details: NonNullable<Awaited<ReturnType<typeof getSyncConflict>>>) {
+  conflicts.value = details.conflicts
+  conflictDisplayContext.value = details.context
+  remoteVersions.value = details.remoteVersions
+  for (const key of Object.keys(resolutions)) delete resolutions[key]
+}
+
+function showError(error: unknown) {
+  ElMessage.error(error instanceof Error ? error.message : t('webdavSync.errors.unknown'))
+}
+
+async function loadConflicts() {
+  loading.value = true
+  try {
+    const details = await getSyncConflict()
+    if (details && details.conflicts.length === 0) {
+      await resolveSyncConflict([])
+      ElMessage.success(t('webdavSync.conflicts.resolved'))
+      conflictVisible.value = false
+      emit('updated')
+      return
+    }
+    if (details) applyConflictDetails(details)
+    else conflicts.value = []
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function submitConflicts() {
+  if (!allConflictsResolved.value) return
+  loading.value = true
+  try {
+    const values: SyncConflictResolution[] = conflicts.value.map((item) => {
+      const choice = resolutions[item.id]!
+      if (item.candidates?.length)
+        return { choice: 'candidate', candidateId: choice, conflictId: item.id }
+      if (choice === 'both')
+        return { choice, conflictId: item.id, duplicateId: crypto.randomUUID() }
+      return { choice: choice as 'local' | 'remote', conflictId: item.id }
+    })
+    await resolveSyncConflict(values)
+    const details = await getSyncConflict()
+    if (details?.conflicts.length) {
+      applyConflictDetails(details)
+      return
+    }
+    ElMessage.success(t('webdavSync.conflicts.resolved'))
+    conflictVisible.value = false
+    emit('updated')
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadHistory() {
+  historyPreview.value = undefined
+  loading.value = true
+  try {
+    history.value = await getSyncHistory()
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function previewHistory(revision: BrowserSyncHistoryEntry) {
+  loading.value = true
+  try {
+    historyPreview.value = await previewSyncHistory(revision.revisionId)
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function restore(preview: BrowserSyncHistoryPreview) {
+  try {
+    await ElMessageBox.confirm(
+      t('webdavSync.history.restoreDescription'),
+      t('webdavSync.history.restoreTitle'),
+      { type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  loading.value = true
+  try {
+    await restoreSyncHistory(preview)
+    ElMessage.success(t('webdavSync.history.restored'))
+    historyPreview.value = undefined
+    await loadHistory()
+    emit('updated')
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadDevices() {
+  loading.value = true
+  try {
+    devices.value = await getSyncDevices()
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function unlock() {
+  if (!currentEncryptionPassword.value) return
+  loading.value = true
+  try {
+    await unlockSyncEncryption(currentEncryptionPassword.value)
+    currentEncryptionPassword.value = ''
+    encryptionVisible.value = false
+    emit('updated')
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadRepair() {
+  corruption.value = undefined
+  corruptedDownloaded.value = false
+  if (props.state.pauseReason !== 'corrupted-remote') return
+  loading.value = true
+  try {
+    corruption.value = await inspectSyncCorruption()
+    corruptedDownloaded.value = corruption.value.payloadMissing
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function downloadCorruption() {
+  if (
+    !corruption.value?.actualPayloadHash ||
+    corruption.value.payloadSize === undefined ||
+    corruption.value.payloadMissing
+  )
+    return
+  loading.value = true
+  try {
+    const result = await downloadSyncCorruption(
+      corruption.value.corruptedRevisionId,
+      corruption.value.actualPayloadHash,
+      corruption.value.payloadSize,
+    )
+    downloadBlob(new Blob([result.bytes]), result.filename)
+    corruptedDownloaded.value = true
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function repairCorruption() {
+  if (!corruption.value || !corruptedDownloaded.value) return
+  loading.value = true
+  try {
+    await repairSyncCorruption({
+      actualPayloadHash: corruption.value.actualPayloadHash,
+      choice: corruption.value.localMatchesPrevious ? undefined : repairChoice.value,
+      downloaded: !corruption.value.payloadMissing,
+      revisionId: corruption.value.corruptedRevisionId,
+    })
+    ElMessage.success(t('webdavSync.repair.completed'))
+    try {
+      await ElMessageBox.confirm(
+        t('webdavSync.repair.deleteEvidenceDescription'),
+        t('webdavSync.repair.deleteEvidenceTitle'),
+        { type: 'warning' },
+      )
+    } catch {
+      repairVisible.value = false
+      emit('updated')
+      return
+    }
+    await deleteSyncCorruption(
+      corruption.value.corruptedRevisionId,
+      corruption.value.actualPayloadHash,
+    )
+    repairVisible.value = false
+    emit('updated')
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function retryStorageCheck() {
+  loading.value = true
+  try {
+    await syncNow()
+    repairVisible.value = false
+    emit('updated')
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function removeRemoteWallpapers() {
+  try {
+    await ElMessageBox.confirm(
+      t('webdavSync.repair.removeWallpapersDescription'),
+      t('webdavSync.repair.removeWallpapersTitle'),
+      { type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  loading.value = true
+  try {
+    await removeRemoteSyncWallpapers()
+    ElMessage.success(t('webdavSync.repair.removeWallpapersCompleted'))
+    repairVisible.value = false
+    emit('updated')
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function disconnect(deleteRemote: boolean) {
+  if (deleteRemote && deleteConfirmation.value !== 'DELETE WEBDAV DATA') return
+  loading.value = true
+  try {
+    await disconnectSyncConnection(
+      deleteRemote,
+      deleteRemote ? deleteConfirmation.value : undefined,
+    )
+    ElMessage.success(
+      t(deleteRemote ? 'webdavSync.disconnect.deleted' : 'webdavSync.disconnect.disconnected'),
+    )
+    disconnectVisible.value = false
+    emit('updated')
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function clearDeletedConnection() {
+  loading.value = true
+  try {
+    await disconnectSyncConnection(false)
+    ElMessage.success(t('webdavSync.disconnect.disconnected'))
+    remoteDeletedVisible.value = false
+    emit('updated')
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadDisconnectImpact() {
+  deleteConfirmation.value = ''
+  await Promise.all([loadDevices(), loadHistory()])
+}
+
+watch(
+  model,
+  (mode) => {
+    if (mode === 'conflict') void loadConflicts()
+    else if (mode === 'history') void loadHistory()
+    else if (mode === 'devices') void loadDevices()
+    else if (mode === 'repair') void loadRepair()
+    else if (mode === 'disconnect') void loadDisconnectImpact()
+  },
+  { immediate: true },
+)
+</script>
+
+<template>
+  <el-dialog
+    v-model="conflictVisible"
+    :title="t('webdavSync.conflicts.title')"
+    width="820px"
+    :close-on-click-modal="false"
+    destroy-on-close
+    append-to-body
+  >
+    <el-alert
+      type="warning"
+      :closable="false"
+      show-icon
+      :title="t('webdavSync.conflicts.noticeTitle')"
+    >
+      {{ t('webdavSync.conflicts.notice') }}
+    </el-alert>
+    <div class="conflict-sources">
+      <span>{{ t('webdavSync.conflicts.sources') }}:</span>
+      <el-tag v-for="source in conflictSources" :key="source.label" effect="plain">
+        {{ source.label }}：{{ source.name }}
+      </el-tag>
+    </div>
+    <el-space v-if="canBatchResolve" class="conflict-batch-actions">
+      <div style="color: var(--el-text-color-secondary)">
+        {{ t('webdavSync.conflicts.batch.prefer') }}:
+      </div>
+      <el-button size="small" @click="preferAllConflicts('local')">
+        {{ t('webdavSync.conflicts.local') }}
+      </el-button>
+      <el-button size="small" @click="preferAllConflicts('remote')">
+        {{ t('webdavSync.conflicts.remote') }}
+      </el-button>
+    </el-space>
+    <div v-loading="loading" class="conflict-list">
+      <article v-for="conflict in conflicts" :key="conflict.id" class="conflict-item">
+        <header>
+          <el-tag size="small" effect="plain">
+            {{ displayConflict(conflict).section }}
+          </el-tag>
+          <strong>{{ displayConflict(conflict).title }}</strong>
+        </header>
+        <el-radio-group v-model="resolutions[conflict.id]" class="conflict-options">
+          <template v-if="conflict.candidates?.length">
+            <el-radio v-if="localCandidate(conflict)" :value="localCandidate(conflict)!.id" border>
+              <el-space>
+                <computer-round />
+                <span>{{ t('webdavSync.conflicts.local') }}</span>
+              </el-space>
+              <small>{{ displayCandidate(conflict, localCandidate(conflict)!) }}</small>
+            </el-radio>
+            <el-radio
+              v-for="candidate in remoteCandidates(conflict)"
+              :key="candidate.id"
+              :value="candidate.id"
+              border
+            >
+              <el-space>
+                <storage-round />
+                <span>
+                  {{ t('webdavSync.conflicts.useDevice', { device: candidate.deviceName }) }}
+                </span>
+              </el-space>
+              <small>{{ displayCandidate(conflict, candidate) }}</small>
+            </el-radio>
+          </template>
+          <template v-else>
+            <el-radio value="local" border>
+              <el-space>
+                <computer-round />
+                <span>{{ t('webdavSync.conflicts.local') }}</span>
+              </el-space>
+              <small>{{ displayConflict(conflict).local }}</small>
+            </el-radio>
+            <el-radio value="remote" border>
+              <el-space>
+                <storage-round />
+                <span>{{ t('webdavSync.conflicts.remote') }}</span>
+              </el-space>
+              <small>{{ displayConflict(conflict).remote }}</small>
+            </el-radio>
+            <el-radio v-if="conflict.canKeepBoth" value="both" border>
+              <call-merge-round />
+              {{ t('webdavSync.conflicts.both') }}
+              <small>{{ t('webdavSync.conflicts.bothNote') }}</small>
+            </el-radio>
+          </template>
+        </el-radio-group>
+      </article>
+      <el-empty
+        v-if="!loading && conflicts.length === 0"
+        :description="t('webdavSync.conflicts.empty')"
+      />
+    </div>
+    <template #footer>
+      <el-button @click="conflictVisible = false">{{ t('webdavSync.later') }}</el-button>
+      <el-button
+        type="primary"
+        :loading="loading"
+        :disabled="!allConflictsResolved"
+        @click="submitConflicts"
+      >
+        {{ t('webdavSync.conflicts.finish') }}
+      </el-button>
+    </template>
+  </el-dialog>
+
+  <el-dialog
+    v-model="historyVisible"
+    :title="t('webdavSync.history.title')"
+    width="720px"
+    destroy-on-close
+    append-to-body
+  >
+    <div v-loading="loading">
+      <template v-if="historyPreview">
+        <el-alert
+          v-if="historyPreview.wallpaperUnavailable.length"
+          type="warning"
+          :closable="false"
+          show-icon
+          :title="t('webdavSync.history.wallpaperMissing')"
+        />
+        <div class="history-diff-list">
+          <article
+            v-for="difference in historyPreview.differences"
+            :key="`${difference.category}:${difference.path}`"
+          >
+            <header>
+              <el-tag size="small" effect="plain">
+                {{ displayCategory(difference.category) }}
+              </el-tag>
+              <strong>
+                {{ displayDifference({ ...difference, value: difference.current }).title }}
+              </strong>
+            </header>
+            <div>
+              <span>{{ t('webdavSync.history.current') }}</span>
+              <span class="conflict-value">
+                {{ displayDifference({ ...difference, value: difference.current }).value }}
+              </span>
+            </div>
+            <div>
+              <span>{{ t('webdavSync.history.target') }}</span>
+              <span class="conflict-value">
+                {{ displayDifference({ ...difference, value: difference.target }).value }}
+              </span>
+            </div>
+          </article>
+          <el-empty
+            v-if="historyPreview.differences.length === 0"
+            :description="t('webdavSync.history.noDifferences')"
+          />
+        </div>
+        <el-alert v-if="historyPreview.truncated" type="info" :closable="false">
+          {{ t('webdavSync.history.truncated') }}
+        </el-alert>
+        <div class="dialog-actions">
+          <el-button @click="historyPreview = undefined">
+            {{ t('webdavSync.history.back') }}
+          </el-button>
+          <el-button type="primary" @click="restore(historyPreview)">
+            {{ t('webdavSync.history.restore') }}
+          </el-button>
+        </div>
+      </template>
+      <div v-else class="history-list">
+        <article v-for="revision in history" :key="revision.revisionId">
+          <history-round />
+          <div>
+            <strong>
+              {{ formatDate(revision.createdAt) }} ·
+              {{ t(`webdavSync.history.reasons.${revision.reason}`) }}
+            </strong>
+            <span>{{ revision.deviceName }}</span>
+            <small v-if="Object.values(revision.wallpaperAvailable).includes(false)">
+              {{ t('webdavSync.history.wallpaperMissing') }}
+            </small>
+          </div>
+          <el-button size="small" @click="previewHistory(revision)">
+            {{ t('webdavSync.history.preview') }}
+          </el-button>
+        </article>
+        <el-empty v-if="!loading && history.length === 0" />
+      </div>
+    </div>
+  </el-dialog>
+
+  <el-dialog
+    v-model="devicesVisible"
+    :title="t('webdavSync.devices.title')"
+    width="650px"
+    destroy-on-close
+    append-to-body
+  >
+    <div v-loading="loading" class="device-list">
+      <article v-for="device in devices" :key="device.deviceId">
+        <devices-round />
+        <div>
+          <strong>{{ device.name }}</strong>
+          <span>
+            {{ t('webdavSync.devices.firstSeen', { time: formatDate(device.firstSeenAt) }) }}
+          </span>
+        </div>
+        <div>
+          <span>{{ formatDate(device.lastSeenAt) }}</span>
+          <el-tag v-if="device.stale" type="warning" size="small">
+            {{ t('webdavSync.devices.stale') }}
+          </el-tag>
+        </div>
+      </article>
+      <el-alert
+        type="warning"
+        :closable="false"
+        show-icon
+        :title="t('webdavSync.devices.unknownTitle')"
+      >
+        {{ t('webdavSync.devices.unknownDescription') }}
+      </el-alert>
+    </div>
+  </el-dialog>
+
+  <el-dialog
+    v-model="encryptionVisible"
+    :title="t('webdavSync.encryption.title')"
+    width="600px"
+    destroy-on-close
+    append-to-body
+  >
+    <div class="dialog-heading">
+      <security-round />
+      <div>
+        <strong>
+          {{
+            state.encrypted
+              ? t('webdavSync.encryption.enabled')
+              : t('webdavSync.encryption.disabled')
+          }}
+        </strong>
+        <span>{{ t('webdavSync.encryption.description') }}</span>
+      </div>
+    </div>
+    <template v-if="state.pauseReason === 'encryption-password'">
+      <el-form-item :label="t('webdavSync.encryption.password')">
+        <el-input v-model="currentEncryptionPassword" type="password" show-password />
+      </el-form-item>
+      <el-alert type="info" :closable="false">{{ t('webdavSync.encryption.keyNote') }}</el-alert>
+    </template>
+    <el-alert v-else type="info" :closable="false">
+      {{ t('webdavSync.encryption.fixedMode') }}
+    </el-alert>
+    <template #footer>
+      <el-button @click="encryptionVisible = false">{{ t('newtab:common.cancel') }}</el-button>
+      <el-button
+        v-if="state.pauseReason === 'encryption-password'"
+        type="primary"
+        :icon="LockRound"
+        :loading="loading"
+        :disabled="!currentEncryptionPassword"
+        @click="unlock"
+      >
+        {{ t('webdavSync.encryption.unlock') }}
+      </el-button>
+    </template>
+  </el-dialog>
+
+  <el-dialog
+    v-model="remoteDeletedVisible"
+    :title="t('webdavSync.remoteDeleted.title')"
+    width="560px"
+    destroy-on-close
+    append-to-body
+  >
+    <el-result
+      icon="warning"
+      :title="t('webdavSync.remoteDeleted.title')"
+      :sub-title="t('webdavSync.remoteDeleted.description')"
+    >
+      <template #extra>
+        <el-button type="primary" :loading="loading" @click="clearDeletedConnection">
+          {{ t('webdavSync.remoteDeleted.action') }}
+        </el-button>
+      </template>
+    </el-result>
+  </el-dialog>
+
+  <el-dialog
+    v-model="repairVisible"
+    :title="repairTitle"
+    width="650px"
+    destroy-on-close
+    append-to-body
+  >
+    <template v-if="state.pauseReason === 'corrupted-remote'">
+      <el-alert type="error" :closable="false" show-icon :title="t('webdavSync.repair.corrupted')">
+        {{ t('webdavSync.repair.corruptedDescription') }}
+      </el-alert>
+      <div v-if="corruption" class="repair-details">
+        <p>{{ t('webdavSync.repair.revision', { id: corruption.corruptedRevisionId }) }}</p>
+        <p v-if="corruption.payloadSize !== undefined">
+          {{ t('webdavSync.repair.size', { size: corruption.payloadSize }) }}
+        </p>
+      </div>
+      <el-alert v-if="corruption?.payloadMissing" type="warning" :closable="false">
+        {{ t('webdavSync.repair.missingPayload') }}
+      </el-alert>
+      <el-button v-else :icon="DownloadRound" :loading="loading" @click="downloadCorruption">
+        {{
+          corruptedDownloaded ? t('webdavSync.repair.downloaded') : t('webdavSync.repair.download')
+        }}
+      </el-button>
+      <el-radio-group
+        v-if="corruption && !corruption.localMatchesPrevious"
+        v-model="repairChoice"
+        class="repair-options"
+      >
+        <el-radio value="previous">{{ t('webdavSync.repair.previous') }}</el-radio>
+        <el-radio value="local">{{ t('webdavSync.repair.local') }}</el-radio>
+      </el-radio-group>
+      <el-alert v-else-if="corruption?.localMatchesPrevious" type="info" :closable="false">
+        {{ t('webdavSync.repair.same') }}
+      </el-alert>
+      <div class="dialog-actions">
+        <el-button
+          type="primary"
+          :disabled="!corruptedDownloaded"
+          :loading="loading"
+          @click="repairCorruption"
+        >
+          {{ t('webdavSync.repair.action') }}
+        </el-button>
+      </div>
+    </template>
+    <template v-else-if="state.pauseReason === 'storage-full' || state.resourceOmissions.length">
+      <el-alert
+        type="warning"
+        :closable="false"
+        show-icon
+        :title="t('webdavSync.repair.wallpaperTitle')"
+      >
+        {{ t('webdavSync.repair.wallpaperDescription') }}
+      </el-alert>
+      <ul>
+        <li v-for="item in state.resourceOmissions" :key="JSON.stringify(item)">
+          {{
+            item.reason === 'storage-full'
+              ? t('webdavSync.status.storageFull')
+              : t(`webdavSync.omissions.${item.reason}`)
+          }}
+        </li>
+      </ul>
+      <div class="dialog-actions">
+        <el-button
+          v-if="state.pauseReason === 'storage-full'"
+          :loading="loading"
+          @click="retryStorageCheck"
+        >
+          {{ t('webdavSync.repair.retry') }}
+        </el-button>
+        <el-button
+          v-if="canRemoveRemoteWallpapers"
+          type="danger"
+          plain
+          :loading="loading"
+          @click="removeRemoteWallpapers"
+        >
+          {{ t('webdavSync.repair.removeWallpapersAction') }}
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+
+  <el-dialog
+    v-model="disconnectVisible"
+    :title="t('webdavSync.disconnect.title')"
+    width="620px"
+    :close-on-click-modal="false"
+    destroy-on-close
+    append-to-body
+  >
+    <div v-loading="loading" class="disconnect-actions">
+      <section class="disconnect-actions-section">
+        <div>
+          <strong>{{ t('webdavSync.disconnect.keepTitle') }}</strong>
+          <p>{{ t('webdavSync.disconnect.keepDescription') }}</p>
+        </div>
+        <el-button type="primary" @click="disconnect(false)">
+          {{ t('webdavSync.disconnect.keepAction') }}
+        </el-button>
+      </section>
+      <el-collapse class="disconnect-actions-collapse">
+        <el-collapse-item name="delete" :title="t('webdavSync.disconnect.deleteTitle')">
+          <el-alert
+            type="error"
+            :closable="false"
+            show-icon
+            :title="
+              t('webdavSync.disconnect.impact', {
+                devices: devices.length,
+                versions: history.length,
+              })
+            "
+          >
+            {{ t('webdavSync.disconnect.deleteDescription') }}
+          </el-alert>
+          <p>
+            {{ t('webdavSync.disconnect.typePrompt', { text: 'DELETE WEBDAV DATA' }) }}
+          </p>
+          <el-space>
+            <el-input v-model="deleteConfirmation" autocomplete="off" />
+            <el-button
+              type="danger"
+              :icon="DeleteForeverRound"
+              :disabled="deleteConfirmation !== 'DELETE WEBDAV DATA'"
+              @click="disconnect(true)"
+            >
+              {{ t('webdavSync.disconnect.deleteAction') }}
+            </el-button>
+          </el-space>
+        </el-collapse-item>
+      </el-collapse>
+    </div>
+  </el-dialog>
+</template>
+
+<style lang="scss">
+.conflict-list,
+.history-list,
+.history-diff-list,
+.device-list {
+  display: grid;
+  gap: 10px;
+  max-height: 52vh;
+  padding-top: 14px;
+  overflow: auto;
+}
+
+.history-diff-list article {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  background: var(--settings-option-background, var(--el-fill-color-light));
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--le-radius-inner, 10px);
+
+  header,
+  div {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  > div > span:first-child {
+    flex: 0 0 70px;
+    color: var(--el-text-color-secondary);
+  }
+}
+
+.conflict-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.conflict-batch-actions {
+  margin-top: 12px;
+}
+
+.conflict-item,
+.history-list article,
+.device-list article,
+.disconnect-actions .disconnect-actions-collapse {
+  padding: 12px;
+  background: var(--settings-option-background, var(--el-fill-color-light));
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--le-radius-inner, 10px);
+}
+
+.disconnect-actions-collapse {
+  --el-collapse-header-height: initial;
+  --el-collapse-border-color: transparent;
+  --el-collapse-header-bg-color: transparent;
+  --el-collapse-content-bg-color: transparent;
+  border: none;
+
+  .el-collapse-item__header,
+  .el-collapse-item__wrap {
+    border: none;
+  }
+
+  .el-collapse-item__content {
+    padding: 0;
+    margin-top: 1em;
+  }
+}
+
+.conflict-item header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.conflict-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 10px;
+
+  .el-radio {
+    width: 100%;
+    height: auto;
+    min-height: 42px;
+    margin: 0;
+  }
+
+  small {
+    display: block;
+    margin-top: 3px;
+    color: var(--el-text-color-secondary);
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (width <= 599px) {
+  .conflict-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+.history-list article,
+.device-list article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+
+  > svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  div {
+    display: grid;
+    gap: 3px;
+  }
+
+  span,
+  small {
+    color: var(--el-text-color-secondary);
+  }
+}
+
+.dialog-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+
+  > svg {
+    width: 32px;
+    height: 32px;
+    color: var(--el-color-primary);
+  }
+
+  div {
+    display: grid;
+    gap: 4px;
+  }
+
+  span {
+    color: var(--el-text-color-secondary);
+  }
+}
+
+.repair-details,
+.repair-options,
+.dialog-actions {
+  margin-top: 14px;
+}
+
+.repair-options {
+  display: grid;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.disconnect-actions {
+  display: grid;
+  gap: 10px;
+
+  .disconnect-actions-section {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: var(--le-radius-inner, 10px);
+
+    p {
+      margin: 4px 0 0;
+      color: var(--el-text-color-secondary);
+    }
+  }
+}
+
+.compact-danger {
+  --el-collapse-header-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--le-radius-inner, 10px);
+
+  p {
+    color: var(--el-text-color-secondary);
+  }
+
+  .el-button {
+    margin: 10px 0;
+  }
+}
+
+@media (width <= 599px) {
+  .history-list article,
+  .device-list article {
+    grid-template-columns: auto minmax(0, 1fr);
+
+    > .el-button,
+    > div:last-child {
+      grid-column: 2;
+    }
+  }
+
+  .disconnect-actions section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+</style>

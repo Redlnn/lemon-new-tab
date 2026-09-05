@@ -128,7 +128,7 @@ class BingWallpaperURLGetter {
       },
     )
     bingInfoCache.watch((cache) => {
-      const id = settings.background.bing.id
+      const { id } = settings.background.bing
       if (!cache || !id || cache.wallpaperId !== id) {
         this.clearInfo()
         return
@@ -284,7 +284,7 @@ class BingWallpaperURLGetter {
 
     if (!isLatest()) return false
 
-    const bing = settings.background.bing
+    const { bing } = settings.background
     const previous = {
       id: bing.id,
       url: bing.url,
@@ -353,7 +353,7 @@ class BingWallpaperURLGetter {
 
   private async runRefresh(force: boolean, notifyOnFailure: boolean) {
     const settings = useSettingsStore()
-    const resolution = settings.background.bing.resolution
+    const { resolution } = settings.background.bing
     const hasRequestedCache = () =>
       Boolean(settings.background.bing.id) &&
       settings.background.bing.cachedResolution === resolution
@@ -451,7 +451,7 @@ class BingWallpaperURLGetter {
       }
     }
 
-    const bing = settings.background.bing
+    const { bing } = settings.background
     const requiresDownload = !bing.id || bing.cachedResolution !== resolution
     return await this.runRefresh(requiresDownload, false)
   }

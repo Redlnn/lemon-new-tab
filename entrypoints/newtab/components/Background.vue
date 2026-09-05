@@ -9,7 +9,7 @@ import {
 } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 
-import i18next from 'i18next'
+import { useTranslation } from 'i18next-vue'
 
 import { browser } from '#imports'
 
@@ -34,6 +34,7 @@ const isDark = useDark()
 
 const focusStore = useFocusState()
 const settings = useSettingsStore()
+const { t } = useTranslation()
 
 // 如果设置了快速初始动画，则直接使用短时间
 if (settings.background.fastAnimation) {
@@ -292,8 +293,8 @@ const bgTypeProviders: Record<BgType, () => Promise<BackgroundSource>> = {
         return { url: '', sourceKey: '', ownedObjectUrl: false }
       }
       ElNotification.error({
-        title: i18next.t('newtab:notification.wallpaperCache.title'),
-        message: i18next.t('newtab:notification.wallpaperCache.message', { error: e }),
+        title: t('newtab:notification.wallpaperCache.title'),
+        message: t('newtab:notification.wallpaperCache.message', { error: e }),
       })
       if (cached) {
         return createOnlineWallpaperBlobUrl(rawUrl, cached) // 如果下载失败，不管缓存是否过期都继续使用缓存

@@ -7,8 +7,11 @@ import resources from 'virtual:i18next-loader'
 
 import { browser } from 'wxt/browser'
 
+import { getUiPreferences, patchUiPreferences, uiPreferencesStorage } from './uiPreferences'
+
 export const getLang = () => i18next.language || browser.i18n.getUILanguage()
 export const isChinese = ref(getLang().startsWith('zh'))
+let stopUiPreferencesWatch: (() => void) | null = null
 
 function isHKorMO() {
   const { timeZone } = Intl.DateTimeFormat().resolvedOptions()
@@ -29,10 +32,12 @@ const languageDetector = new LanguageDetector(null, {
 })
 
 export async function initI18n() {
+  const uiPreferences = await getUiPreferences()
   // 检测用户语言
   // 参考: https://github.com/i18next/i18next-browser-languageDetector
   await i18next.use(languageDetector).init({
     resources,
+    lng: uiPreferences.language,
     fallbackLng: {
       'zh-MO': ['zh-HK'],
       zh: ['zh-CN'],
@@ -55,12 +60,21 @@ export async function initI18n() {
 
   changeDocument()
   isChinese.value = i18next.language.startsWith('zh')
+  await patchUiPreferences({ language: i18next.language })
 
   i18next.off('languageChanged') // 避免重复绑定事件
   i18next.on('languageChanged', (lng: string) => {
     // 同步 UI：当语言变化时，更新 <html lang> 与标题
     changeDocument()
     isChinese.value = lng.startsWith('zh')
+    void patchUiPreferences({ language: lng })
+  })
+
+  stopUiPreferencesWatch?.()
+  stopUiPreferencesWatch = uiPreferencesStorage.watch((next) => {
+    if (next?.language && next.language !== i18next.language) {
+      void i18next.changeLanguage(next.language)
+    }
   })
 }
 

@@ -9,7 +9,7 @@ import { hydrateFaviconCache, setFaviconCacheEnabled } from '@/shared/media'
 import { useSettingsStore } from '@/shared/settings'
 import { applyStoredMonetColors, getMonetColors } from '@/shared/theme'
 
-import { colorMode, preferredDark } from '@newtab/shared/colorMode'
+import { colorMode, initColorModePreference, preferredDark } from '@newtab/shared/colorMode'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 
 import App from './App.vue'
@@ -52,6 +52,7 @@ export const main = async () => {
   // 必须先加载设置：组件渲染依赖设置（主题、v-if 控制等）
   await useSettingsStore().init()
   const settings = useSettingsStore()
+  await initColorModePreference()
 
   // 缓存预热不阻塞应用外壳；图标消费者会复用同一个预热任务。
   void hydrateFaviconCache(settings.faviconCacheEnabled)
