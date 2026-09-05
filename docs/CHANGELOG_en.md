@@ -6,13 +6,15 @@
 
 ### New Features✨
 
-- **Clock:** Added a date-size control.
+- **Page display:** Added controls for date size, double-clicking the blank background to toggle minimal mode, and keeping the clock and date visible while page elements fade when inactive.
 - **Wallpaper:** Added an option to show or hide the download button for online/Bing wallpapers.
-- **Page display:** Added double-clicking the blank background to toggle minimal mode.
-- **Page display:** Added an option to keep the clock and date visible while page elements fade when inactive.
 - **Search:** Added an option to disable search suggestions.
 - **Search:** Added an option to left-align search input text.
 - **Bookmarks:** When adding a bookmark to Quick Links, the current Quick Links group is selected by default.
+- **Launchpad:** Added an icon-size control.
+- **Bookmarks:** When a site has no favicon, its first title character can be used as the link icon; the bookmarks sidebar width is also remembered.
+- Added Turkish localization.
+- **Sync:** Added experimental WebDAV backup and sync.
 - **Settings:** Reorganized settings sections and appearance.
 
 ### Improvements⚡️
@@ -21,6 +23,7 @@
 - **Search:** Added a shortcut from the search-engine menu in the search box to Search Preferences.
 - **Quick Links:** In grouped mode, changed the Top Sites context-menu label from “Pin” to “Add to Quick Links”.
 - Removed third-party favicon services to reduce extra third-party requests.
+- Improved bookmark-page loading performance.
 - Clearing wallpaper or icon caches now reloads open new-tab pages and provides clearer failure hints and recovery.
 - Simplified some settings UI wording and reordered options.
 
