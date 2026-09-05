@@ -3,7 +3,7 @@ import { usePreferredDark } from '@vueuse/core'
 import { createPinia } from 'pinia'
 import { createVaporApp } from 'vue'
 
-import { initI18n } from '@/shared/i18n'
+import { i18n, initI18n } from '@/shared/i18n'
 import { isSettingsCompatible, useSettingsStore } from '@/shared/settings'
 import {
   applyStoredMonetColors,
@@ -37,6 +37,7 @@ export async function bootstrapPopup() {
   const pinia = createPinia()
 
   app.use(pinia)
+  i18n(app)
 
   if (!isCompatible) {
     app.mount('#app')
