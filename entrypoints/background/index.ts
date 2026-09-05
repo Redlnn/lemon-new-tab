@@ -7,10 +7,14 @@ import { SyncCoordinator } from '@/shared/webdavSync/coordinator'
 import {
   getStoredConflict,
   getOrCreateSyncState,
+  patchSyncState,
   webDavSyncConfigStorage,
 } from '@/shared/webdavSync/localState'
 import { hasExactWebDavPermission } from '@/shared/webdavSync/permissions'
-import { syncSettingsChanged } from '@/shared/webdavSync/settingsWhitelist'
+import {
+  syncSettingsChanged,
+  syncWallpaperSettingsChanged,
+} from '@/shared/webdavSync/settingsWhitelist'
 import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
 import { serializeWebDavError, WebDavError } from '@/shared/webdavSync/webdav'
 
@@ -85,7 +89,8 @@ export default defineBackground(() => {
     }
     const syncDataChanged = Object.entries(changes).some(([key, change]) =>
       key === 'settings'
-        ? syncSettingsChanged(change.oldValue, change.newValue)
+        ? syncSettingsChanged(change.oldValue, change.newValue) ||
+          syncWallpaperSettingsChanged(change.oldValue, change.newValue)
         : SYNC_DATA_KEYS.has(key),
     )
     if (!applyingRemote && syncDataChanged) {
@@ -142,6 +147,11 @@ export default defineBackground(() => {
       const { listBrowserSyncDevices } = await import('@/shared/webdavSync/browserManagement')
       return listBrowserSyncDevices()
     }
+    if (message.type === 'webdav-sync:remove-remote-wallpapers') {
+      const { removeBrowserRemoteWallpapers } =
+        await import('@/shared/webdavSync/browserManagement')
+      return runMaintenance(removeBrowserRemoteWallpapers)
+    }
     if (message.type === 'webdav-sync:inspect-corruption') {
       const { inspectBrowserSyncCorruption } = await import('@/shared/webdavSync/browserManagement')
       return inspectBrowserSyncCorruption()
@@ -194,6 +204,12 @@ export default defineBackground(() => {
           scope: message.scope,
         }),
       )
+    }
+    if (message.type === 'webdav-sync:immediate') {
+      const state = await getOrCreateSyncState()
+      if (state.pauseReason === 'storage-full') {
+        await patchSyncState({ paused: false, pauseReason: undefined })
+      }
     }
     const trigger =
       message.type === 'webdav-sync:immediate'

@@ -1,4 +1,10 @@
-import { ensureQuickLinksStableIds, type QuickLinksData } from '@/shared/quickLinks'
+import {
+  ensureQuickLinksStableIds,
+  getQuickLinksStorageValue,
+  quickLinksStorage,
+  type QuickLink,
+  type QuickLinksData,
+} from '@/shared/quickLinks'
 import { migrateSettingsToCurrent, type MigratableSettings } from '@/shared/settings'
 import { getUiPreferences } from '@/shared/uiPreferences'
 
@@ -17,6 +23,12 @@ const textDecoder = new TextDecoder('utf-8', { fatal: true })
 export interface PreparedBrowserImport extends ParsedLocalBackup {
   source: 'json-v1' | 'legacy-json'
   scope: SyncScopePreferences
+  legacyIcons?: LegacyLocalIcons
+}
+
+interface LegacyLocalIcons {
+  quickLinks: Record<string, { favicon: string; url: string }>
+  searchEngines: Record<string, { icon: string; url: string }>
 }
 
 export async function createBrowserJsonBackup() {
@@ -61,16 +73,17 @@ export async function mergePreparedBrowserImport(
   return mergeImportedSnapshot(current.snapshot, input.snapshot)
 }
 
-export function applyPreparedBrowserImport(
+export async function applyPreparedBrowserImport(
   input: PreparedBrowserImport,
   snapshot: SyncSnapshotV1 = input.snapshot,
 ): Promise<void> {
-  return prepareAndApplyBrowserSnapshot(
+  await prepareAndApplyBrowserSnapshot(
     crypto.randomUUID(),
     crypto.randomUUID(),
     snapshot,
     snapshot.scope,
   )
+  if (input.legacyIcons) await restoreLegacyIcons(input.legacyIcons)
 }
 
 function inferImportScope(snapshot: SyncSnapshotV1): SyncScopePreferences {
@@ -138,7 +151,65 @@ async function prepareLegacyImport(value: unknown): Promise<PreparedBrowserImpor
     snapshot,
     source: 'legacy-json',
     scope: { ...DEFAULT_SYNC_SCOPE, userIcons: false },
+    legacyIcons: collectLegacyIcons(quickLinks, customSearchEngines),
   }
+}
+
+function collectLegacyIcons(
+  quickLinks: QuickLinksData,
+  searchEngines: { items: Array<{ id: string; icon?: string; url: string }> },
+): LegacyLocalIcons {
+  const items = quickLinks.groups?.length
+    ? quickLinks.groups.flatMap((group) => group.items)
+    : quickLinks.items
+  return {
+    quickLinks: Object.fromEntries(
+      items.flatMap((item) =>
+        item.id && item.favicon ? [[item.id, { favicon: item.favicon, url: item.url }]] : [],
+      ),
+    ),
+    searchEngines: Object.fromEntries(
+      searchEngines.items.flatMap((item) =>
+        item.icon ? [[item.id, { icon: item.icon, url: item.url }]] : [],
+      ),
+    ),
+  }
+}
+
+async function restoreLegacyIcons(icons: LegacyLocalIcons): Promise<void> {
+  const [quickLinks, searchEngines] = await Promise.all([
+    getQuickLinksStorageValue(),
+    customSearchEngineStorage.getValue(),
+  ])
+  let quickLinksChanged = false
+  const restoreQuickLink = (item: QuickLink) => {
+    const icon = item.id ? icons.quickLinks[item.id] : undefined
+    if (!icon || icon.url !== item.url || item.favicon === icon.favicon) return item
+    quickLinksChanged = true
+    const restored = { ...item, favicon: icon.favicon }
+    delete restored.faviconSource
+    return restored
+  }
+  const restoredQuickLinks = {
+    items: quickLinks.items.map(restoreQuickLink),
+    groups: quickLinks.groups?.map((group) => ({
+      ...group,
+      items: group.items.map(restoreQuickLink),
+    })),
+  }
+  let searchEnginesChanged = false
+  const restoredSearchEngines = {
+    items: searchEngines.items.map((item) => {
+      const icon = icons.searchEngines[item.id]
+      if (!icon || icon.url !== item.url || item.icon === icon.icon) return item
+      searchEnginesChanged = true
+      return { ...item, icon: icon.icon }
+    }),
+  }
+  await Promise.all([
+    quickLinksChanged ? quickLinksStorage.setValue(restoredQuickLinks) : undefined,
+    searchEnginesChanged ? customSearchEngineStorage.setValue(restoredSearchEngines) : undefined,
+  ])
 }
 
 function materializeLegacyQuickLinks(snapshot: SyncSnapshotV1): QuickLinksData {

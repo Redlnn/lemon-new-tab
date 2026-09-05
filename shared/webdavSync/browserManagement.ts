@@ -6,6 +6,7 @@ import {
   openConfiguredVault,
   prepareIncomingWallpapers,
   publishAndFinalize,
+  mergeTombstones,
   readRevisions,
   type BrowserSyncDeviceEntry,
   type BrowserSyncHistoryEntry,
@@ -16,6 +17,7 @@ import { bytesToBase64, createEncryptionAad, decryptSyncBytes } from './crypto.t
 import { compareSyncSnapshots } from './differences.ts'
 import { getBaseline, getOrCreateSyncState, patchSyncState } from './localState.ts'
 import { findRevisionHeads, hasConfirmedCorruptionRepair } from './syncDecision.ts'
+import { deriveSnapshotTombstones } from './lifecycle.ts'
 import type {
   AssetReferenceV1,
   LocalSyncStateV1,
@@ -61,12 +63,28 @@ export async function listBrowserSyncHistory(): Promise<BrowserSyncHistoryEntry[
 }
 
 export interface BrowserCorruptionInspection {
-  actualPayloadHash: string
+  actualPayloadHash?: string
   corruptedRevisionId: string
   encrypted: boolean
   localMatchesPrevious: boolean
-  payloadSize: number
+  payloadMissing: boolean
+  payloadSize?: number
   previousRevisionId?: string
+}
+
+async function inspectCorruptedPayload(
+  opened: Awaited<ReturnType<typeof openConfiguredVault>>,
+  commit: Awaited<ReturnType<typeof scanCorruptedRevisions>>['corrupted'][number],
+) {
+  try {
+    const bytes = await opened.repository.readStoredPayloadUnchecked(commit)
+    return { bytes, hash: await sha256Hex(bytes), missing: false as const }
+  } catch (error) {
+    if (error instanceof WebDavError && error.category === 'not-found') {
+      return { missing: true as const }
+    }
+    throw error
+  }
 }
 
 async function scanCorruptedRevisions(opened: Awaited<ReturnType<typeof openConfiguredVault>>) {
@@ -103,7 +121,7 @@ export async function inspectBrowserSyncCorruption(): Promise<BrowserCorruptionI
     throw new WebDavError('corrupted', 'Multiple damaged revisions require manual recovery')
   }
   const commit = scan.corrupted[0]!
-  const raw = await opened.repository.readStoredPayloadUnchecked(commit)
+  const payload = await inspectCorruptedPayload(opened, commit)
   const validHeads = findRevisionHeads(scan.valid)
   const previous = validHeads.length === 1 ? validHeads[0] : undefined
   const local = await captureBrowserSyncSnapshot(opened.state.scope)
@@ -111,11 +129,13 @@ export async function inspectBrowserSyncCorruption(): Promise<BrowserCorruptionI
     ? preserveExcludedScope(local, previous.snapshot, opened.state.scope)
     : local
   return {
-    actualPayloadHash: await sha256Hex(raw),
+    ...(!payload.missing
+      ? { actualPayloadHash: payload.hash, payloadSize: payload.bytes.byteLength }
+      : {}),
     corruptedRevisionId: commit.revisionId,
     encrypted: commit.encrypted,
     localMatchesPrevious: Boolean(previous && jsonEquals(comparable, previous.snapshot)),
-    payloadSize: raw.byteLength,
+    payloadMissing: payload.missing,
     previousRevisionId: previous?.revisionId,
   }
 }
@@ -140,20 +160,26 @@ export async function downloadBrowserCorruptedPayload(input: {
 }
 
 export async function repairBrowserSyncCorruption(input: {
-  actualPayloadHash: string
+  actualPayloadHash?: string
   choice?: 'local' | 'previous'
   downloaded: boolean
   revisionId: string
 }): Promise<LocalSyncStateV1> {
-  if (!input.downloaded) throw new WebDavError('forbidden', 'Download the damaged file first')
   const opened = await openConfiguredVault(false)
   const scan = await scanCorruptedRevisions(opened)
   if (scan.corrupted.length !== 1 || scan.corrupted[0]!.revisionId !== input.revisionId) {
     throw new WebDavError('precondition', 'Damaged revision changed before repair')
   }
   const commit = scan.corrupted[0]!
-  const raw = await opened.repository.readStoredPayloadUnchecked(commit)
-  if ((await sha256Hex(raw)) !== input.actualPayloadHash) {
+  const payload = await inspectCorruptedPayload(opened, commit)
+  if (!payload.missing && !input.downloaded) {
+    throw new WebDavError('forbidden', 'Download the damaged file first')
+  }
+  if (
+    payload.missing
+      ? input.actualPayloadHash !== undefined || input.downloaded
+      : payload.hash !== input.actualPayloadHash
+  ) {
     throw new WebDavError('precondition', 'Damaged revision changed before repair')
   }
   const validHeads = findRevisionHeads(scan.valid)
@@ -218,7 +244,7 @@ export async function repairBrowserSyncCorruption(input: {
 }
 
 export async function deleteBrowserCorruptedRevision(input: {
-  actualPayloadHash: string
+  actualPayloadHash?: string
   revisionId: string
 }): Promise<LocalSyncStateV1> {
   const opened = await openConfiguredVault(false)
@@ -234,8 +260,12 @@ export async function deleteBrowserCorruptedRevision(input: {
   ) {
     throw new WebDavError('precondition', 'Repair state changed before damaged data was deleted')
   }
-  const raw = await opened.repository.readStoredPayloadUnchecked(damaged)
-  if ((await sha256Hex(raw)) !== input.actualPayloadHash) {
+  const payload = await inspectCorruptedPayload(opened, damaged)
+  if (
+    payload.missing
+      ? input.actualPayloadHash !== undefined
+      : payload.hash !== input.actualPayloadHash
+  ) {
     throw new WebDavError('precondition', 'Damaged revision changed before deletion')
   }
   const repairConfirmed =
@@ -321,6 +351,58 @@ export async function listBrowserSyncDevices(): Promise<BrowserSyncDeviceEntry[]
       name: record.name,
       stale: Date.parse(record.lastSeenAt) < staleBefore,
     }))
+}
+
+export async function removeBrowserRemoteWallpapers(): Promise<LocalSyncStateV1> {
+  const opened = await openConfiguredVault()
+  const heads = findRevisionHeads(opened.revisions)
+  if (heads.length !== 1) throw new WebDavError('conflict', 'Resolve remote branches first')
+
+  const head = heads[0]!
+  if (opened.state.baseRevisionId !== head.revisionId) {
+    throw new WebDavError('precondition', 'Run a sync check before removing remote wallpapers')
+  }
+  const scope = { ...opened.state.scope, wallpapers: false }
+  if (!Object.values(scope).some(Boolean)) {
+    throw new WebDavError('invalid-response', 'At least one sync category must remain enabled')
+  }
+  const local = preserveExcludedScope(
+    await captureBrowserSyncSnapshot(scope),
+    head.snapshot,
+    scope,
+  )
+  const snapshot = structuredClone(local)
+  if (snapshot.optional) {
+    delete snapshot.optional.wallpapers
+    if (Object.keys(snapshot.optional).length === 0) delete snapshot.optional
+  }
+  const revisionId = crypto.randomUUID()
+  const pending: PendingSyncOperation = {
+    operationId: crypto.randomUUID(),
+    phase: 'captured',
+    revisionId,
+    startedAt: new Date().toISOString(),
+  }
+  await publishAndFinalize({
+    repository: opened.repository,
+    metadata: opened.metadata,
+    state: opened.state,
+    pending,
+    parents: [head.revisionId],
+    reason: 'local-change',
+    snapshot,
+    expectedLocal: local,
+    tombstones: mergeTombstones(
+      head.tombstones,
+      deriveSnapshotTombstones(head.snapshot, snapshot, revisionId),
+    ),
+    knownAssets: opened.revisions.flatMap((revision) => revision.assets),
+    encryptionKey: opened.encryptionKey,
+  })
+  const state = await getOrCreateSyncState()
+  return patchSyncState({
+    resourceOmissions: state.resourceOmissions.filter((item) => item.kind !== 'wallpaper'),
+  })
 }
 
 function validateDeviceRecord(

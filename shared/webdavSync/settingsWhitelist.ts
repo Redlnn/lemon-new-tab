@@ -238,6 +238,22 @@ export function syncSettingsChanged(previous: unknown, next: unknown): boolean {
   return !jsonEquals(pickSyncSettings(previous), pickSyncSettings(next))
 }
 
+const SYNC_WALLPAPER_SETTING_PATHS = [
+  'background.local.id',
+  'background.localDark.id',
+  'background.online.url',
+] as const
+
+export function syncWallpaperSettingsChanged(previous: unknown, next: unknown): boolean {
+  return SYNC_WALLPAPER_SETTING_PATHS.some((path) => {
+    const before = getPath(previous, path)
+    const after = getPath(next, path)
+    return before === undefined || after === undefined
+      ? before !== after
+      : !jsonEquals(before, after)
+  })
+}
+
 export function stripExcludedSyncSettings(settings: JsonObject): JsonObject {
   const result = structuredClone(settings)
   for (const path of EXCLUDED_SYNC_SETTING_PATHS) deletePath(result, path)

@@ -646,7 +646,7 @@
     "management": {
       "devices": "裝置",
       "history": "歷史",
-      "summary": "歷史、裝置、加密與異常復原",
+      "summary": "歷史、裝置與加密",
       "title": "同步管理"
     },
     "messages": {
@@ -672,6 +672,7 @@
       "completed": "損壞版本已隔離並建立修復版本",
       "corrupted": "最新版本損壞，自動同步已停止",
       "corruptedDescription": "先下載原始檔案保存，再選擇本機資料或雲端上一份完整版本。",
+      "corruptionTitle": "損壞修復",
       "deleteEvidenceDescription": "系統會先上傳並驗證新的修復版本；只有成功後才刪除你已下載保存的雲端損壞版本。",
       "deleteEvidenceTitle": "修復成功後刪除雲端損壞版本？",
       "download": "下載損壞的原始檔案",
@@ -679,8 +680,14 @@
       "healthy": "沒有需要修復的問題",
       "healthyDescription": "最近版本與同步狀態正常。",
       "local": "使用目前本機資料",
+      "missingPayload": "損壞版本的正文已經遺失，無法下載原始檔案。你仍可使用本機資料或上一份完整版本修復。",
       "previous": "使用雲端上一份完整版本",
+      "removeWallpapersAction": "停止同步桌布並清理雲端圖片",
+      "removeWallpapersCompleted": "已停止同步桌布並清理不再使用的雲端圖片",
+      "removeWallpapersDescription": "系統會發佈一個不含桌布的新版本，再清理不再被保留版本引用的雲端圖片。本機桌布不會被刪除。",
+      "removeWallpapersTitle": "停止同步桌布並清理雲端圖片？",
       "revision": "損壞版本：{{id}}",
+      "retry": "重新檢查",
       "same": "本機資料與上一完整版本相同，將自動使用上一版本建立修復版本。",
       "size": "原始檔案大小：{{size}} 位元組",
       "title": "檢查與修復",

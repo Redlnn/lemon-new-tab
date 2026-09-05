@@ -46,7 +46,7 @@ export type WebDavSyncMessage =
     }
   | {
       type: 'webdav-sync:delete-corruption'
-      actualPayloadHash: string
+      actualPayloadHash?: string
       revisionId: string
     }
   | { type: 'webdav-sync:get-state' }
@@ -55,6 +55,7 @@ export type WebDavSyncMessage =
   | { type: 'webdav-sync:list-history' }
   | { type: 'webdav-sync:preview-history'; revisionId: string }
   | { type: 'webdav-sync:list-devices' }
+  | { type: 'webdav-sync:remove-remote-wallpapers' }
   | { type: 'webdav-sync:natural' }
   | { type: 'webdav-sync:online' }
   | { type: 'webdav-sync:preview-connection'; input: BrowserWebDavSetupInput }
@@ -67,7 +68,7 @@ export type WebDavSyncMessage =
     }
   | {
       type: 'webdav-sync:repair-corruption'
-      actualPayloadHash: string
+      actualPayloadHash?: string
       choice?: 'local' | 'previous'
       downloaded: boolean
       revisionId: string
@@ -120,7 +121,7 @@ export async function downloadSyncCorruption(
 }
 
 export function repairSyncCorruption(input: {
-  actualPayloadHash: string
+  actualPayloadHash?: string
   choice?: 'local' | 'previous'
   downloaded: boolean
   revisionId: string
@@ -133,7 +134,7 @@ export function repairSyncCorruption(input: {
 
 export function deleteSyncCorruption(
   revisionId: string,
-  actualPayloadHash: string,
+  actualPayloadHash?: string,
 ): Promise<LocalSyncStateV1> {
   return sendStateMessage({
     type: 'webdav-sync:delete-corruption',
@@ -209,6 +210,10 @@ export function getSyncDevices(): Promise<BrowserSyncDeviceEntry[]> {
   return browser.runtime.sendMessage({
     type: 'webdav-sync:list-devices',
   } satisfies WebDavSyncMessage)
+}
+
+export function removeRemoteSyncWallpapers(): Promise<LocalSyncStateV1> {
+  return sendStateMessage({ type: 'webdav-sync:remove-remote-wallpapers' })
 }
 
 export function previewSyncHistory(revisionId: string): Promise<BrowserSyncHistoryPreview> {
@@ -296,9 +301,16 @@ export function isWebDavSyncMessage(value: unknown): value is WebDavSyncMessage 
       (message.confirmationText === undefined || typeof message.confirmationText === 'string')
     )
   }
-  if (type === 'webdav-sync:download-corruption' || type === 'webdav-sync:delete-corruption') {
+  if (type === 'webdav-sync:download-corruption') {
     const message = value as { actualPayloadHash?: unknown; revisionId?: unknown }
     return typeof message.actualPayloadHash === 'string' && typeof message.revisionId === 'string'
+  }
+  if (type === 'webdav-sync:delete-corruption') {
+    const message = value as { actualPayloadHash?: unknown; revisionId?: unknown }
+    return (
+      (message.actualPayloadHash === undefined || typeof message.actualPayloadHash === 'string') &&
+      typeof message.revisionId === 'string'
+    )
   }
   if (type === 'webdav-sync:repair-corruption') {
     const message = value as {
@@ -308,7 +320,7 @@ export function isWebDavSyncMessage(value: unknown): value is WebDavSyncMessage 
       revisionId?: unknown
     }
     return (
-      typeof message.actualPayloadHash === 'string' &&
+      (message.actualPayloadHash === undefined || typeof message.actualPayloadHash === 'string') &&
       (message.choice === undefined ||
         message.choice === 'local' ||
         message.choice === 'previous') &&
@@ -345,6 +357,7 @@ export function isWebDavSyncMessage(value: unknown): value is WebDavSyncMessage 
     type === 'webdav-sync:inspect-corruption' ||
     type === 'webdav-sync:list-history' ||
     type === 'webdav-sync:list-devices' ||
+    type === 'webdav-sync:remove-remote-wallpapers' ||
     type === 'webdav-sync:natural' ||
     type === 'webdav-sync:online' ||
     type === 'webdav-sync:resume-apply'

@@ -20,9 +20,11 @@ import {
   getSyncHistory,
   inspectSyncCorruption,
   previewSyncHistory,
+  removeRemoteSyncWallpapers,
   repairSyncCorruption,
   resolveSyncConflict,
   restoreSyncHistory,
+  syncNow,
   unlockSyncEncryption,
 } from '@/shared/webdavSync/bridge'
 import type {
@@ -110,6 +112,16 @@ const encryptionVisible = dialogVisible('encryption')
 const remoteDeletedVisible = dialogVisible('remote-deleted')
 const repairVisible = dialogVisible('repair')
 const disconnectVisible = dialogVisible('disconnect')
+const repairTitle = computed(() =>
+  props.state.pauseReason === 'corrupted-remote'
+    ? t('webdavSync.repair.corruptionTitle')
+    : t('webdavSync.repair.wallpaperTitle'),
+)
+const canRemoveRemoteWallpapers = computed(
+  () =>
+    props.state.scope.wallpapers ||
+    props.state.resourceOmissions.some((item) => item.kind === 'wallpaper'),
+)
 
 function displayConflict(conflict: SyncConflict) {
   return presentSyncConflict(conflict, conflictDisplayContext.value, t)
@@ -295,6 +307,7 @@ async function loadRepair() {
   loading.value = true
   try {
     corruption.value = await inspectSyncCorruption()
+    corruptedDownloaded.value = corruption.value.payloadMissing
   } catch (error) {
     showError(error)
   } finally {
@@ -303,7 +316,12 @@ async function loadRepair() {
 }
 
 async function downloadCorruption() {
-  if (!corruption.value) return
+  if (
+    !corruption.value?.actualPayloadHash ||
+    corruption.value.payloadSize === undefined ||
+    corruption.value.payloadMissing
+  )
+    return
   loading.value = true
   try {
     const result = await downloadSyncCorruption(
@@ -327,7 +345,7 @@ async function repairCorruption() {
     await repairSyncCorruption({
       actualPayloadHash: corruption.value.actualPayloadHash,
       choice: corruption.value.localMatchesPrevious ? undefined : repairChoice.value,
-      downloaded: true,
+      downloaded: !corruption.value.payloadMissing,
       revisionId: corruption.value.corruptedRevisionId,
     })
     ElMessage.success(t('webdavSync.repair.completed'))
@@ -346,6 +364,42 @@ async function repairCorruption() {
       corruption.value.corruptedRevisionId,
       corruption.value.actualPayloadHash,
     )
+    repairVisible.value = false
+    emit('updated')
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function retryStorageCheck() {
+  loading.value = true
+  try {
+    await syncNow()
+    repairVisible.value = false
+    emit('updated')
+  } catch (error) {
+    showError(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function removeRemoteWallpapers() {
+  try {
+    await ElMessageBox.confirm(
+      t('webdavSync.repair.removeWallpapersDescription'),
+      t('webdavSync.repair.removeWallpapersTitle'),
+      { type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  loading.value = true
+  try {
+    await removeRemoteSyncWallpapers()
+    ElMessage.success(t('webdavSync.repair.removeWallpapersCompleted'))
     repairVisible.value = false
     emit('updated')
   } catch (error) {
@@ -695,7 +749,7 @@ watch(
 
   <el-dialog
     v-model="repairVisible"
-    :title="t('webdavSync.repair.title')"
+    :title="repairTitle"
     width="650px"
     destroy-on-close
     append-to-body
@@ -706,9 +760,14 @@ watch(
       </el-alert>
       <div v-if="corruption" class="repair-details">
         <p>{{ t('webdavSync.repair.revision', { id: corruption.corruptedRevisionId }) }}</p>
-        <p>{{ t('webdavSync.repair.size', { size: corruption.payloadSize }) }}</p>
+        <p v-if="corruption.payloadSize !== undefined">
+          {{ t('webdavSync.repair.size', { size: corruption.payloadSize }) }}
+        </p>
       </div>
-      <el-button :icon="DownloadRound" :loading="loading" @click="downloadCorruption">
+      <el-alert v-if="corruption?.payloadMissing" type="warning" :closable="false">
+        {{ t('webdavSync.repair.missingPayload') }}
+      </el-alert>
+      <el-button v-else :icon="DownloadRound" :loading="loading" @click="downloadCorruption">
         {{
           corruptedDownloaded ? t('webdavSync.repair.downloaded') : t('webdavSync.repair.download')
         }}
@@ -753,13 +812,25 @@ watch(
           }}
         </li>
       </ul>
+      <div class="dialog-actions">
+        <el-button
+          v-if="state.pauseReason === 'storage-full'"
+          :loading="loading"
+          @click="retryStorageCheck"
+        >
+          {{ t('webdavSync.repair.retry') }}
+        </el-button>
+        <el-button
+          v-if="canRemoveRemoteWallpapers"
+          type="danger"
+          plain
+          :loading="loading"
+          @click="removeRemoteWallpapers"
+        >
+          {{ t('webdavSync.repair.removeWallpapersAction') }}
+        </el-button>
+      </div>
     </template>
-    <el-result
-      v-else
-      icon="success"
-      :title="t('webdavSync.repair.healthy')"
-      :sub-title="t('webdavSync.repair.healthyDescription')"
-    />
   </el-dialog>
 
   <el-dialog
@@ -906,7 +977,7 @@ watch(
   gap: 7px;
   margin-top: 10px;
 
-  :deep(.el-radio) {
+  .el-radio {
     width: 100%;
     height: auto;
     min-height: 42px;

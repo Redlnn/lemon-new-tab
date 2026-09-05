@@ -674,7 +674,7 @@
     "management": {
       "devices": "Cihazlar",
       "history": "Geçmiş",
-      "summary": "Geçmiş, cihazlar, şifreleme ve kurtarma",
+      "summary": "Geçmiş, cihazlar ve şifreleme",
       "title": "Eşitleme yönetimi"
     },
     "messages": {
@@ -700,6 +700,7 @@
       "completed": "Hasarlı sürüm yalıtıldı ve onarım sürümü oluşturuldu",
       "corrupted": "En son sürüm hasarlı; otomatik eşitleme durduruldu",
       "corruptedDescription": "Önce ham dosyayı indirin, ardından geçerli yerel verileri veya önceki eksiksiz uzak sürümü seçin.",
+      "corruptionTitle": "Hasarlı verileri onar",
       "deleteEvidenceDescription": "Önce onarım sürümü yüklenip doğrulanır. Yalnızca başarılı olduktan sonra indirilmiş hasarlı bulut sürümü silinir.",
       "deleteEvidenceTitle": "Onarımdan sonra hasarlı bulut sürümü silinsin mi?",
       "download": "Hasarlı ham dosyayı indir",
@@ -707,8 +708,14 @@
       "healthy": "Onarım gerekmiyor",
       "healthyDescription": "En son sürüm ve eşitleme durumu sağlıklı.",
       "local": "Geçerli yerel verileri kullan",
+      "missingPayload": "Hasarlı sürümün içeriği eksik ve indirilemiyor. Yerel verileri veya önceki eksiksiz sürümü kullanarak yine de onarabilirsiniz.",
       "previous": "Önceki eksiksiz bulut sürümünü kullan",
+      "removeWallpapersAction": "Duvar kâğıdı eşitlemesini durdur ve bulut resimlerini temizle",
+      "removeWallpapersCompleted": "Duvar kâğıdı eşitlemesi durduruldu ve kullanılmayan bulut resimleri temizlendi",
+      "removeWallpapersDescription": "Duvar kâğıdı içermeyen yeni bir sürüm yayımlanır, ardından korunan sürümlerin artık başvurmadığı bulut resimleri silinir. Yerel duvar kâğıtları korunur.",
+      "removeWallpapersTitle": "Duvar kâğıdı eşitlemesi durdurulup bulut resimleri temizlensin mi?",
       "revision": "Hasarlı sürüm: {{id}}",
+      "retry": "Yeniden denetle",
       "same": "Yerel veriler önceki eksiksiz sürümle aynı; onarım sürümü oluşturmak için otomatik olarak bu sürüm kullanılacak.",
       "size": "Ham dosya boyutu: {{size}} bayt",
       "title": "Denetle ve onar",

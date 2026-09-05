@@ -9,7 +9,6 @@ import ErrorRound from '~icons/ic/round-error'
 import HistoryRound from '~icons/ic/round-history'
 import LockRound from '~icons/ic/round-lock'
 import RefreshRound from '~icons/ic/round-refresh'
-import SettingsBackupRestoreRound from '~icons/ic/round-settings-backup-restore'
 import SyncRound from '~icons/ic/round-sync'
 import WarningRound from '~icons/ic/round-warning'
 
@@ -114,11 +113,14 @@ const lastError = computed(() => {
   })}${statusCode}`
 })
 
-async function refresh() {
+async function refresh(checkStorage = false) {
   loading.value = true
   try {
     state.value =
-      state.value.pauseReason === 'remote-deleted' ? await syncNow() : await getSyncState()
+      state.value.pauseReason === 'remote-deleted' ||
+      (checkStorage && state.value.pauseReason === 'storage-full')
+        ? await syncNow()
+        : await getSyncState()
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : String(error))
   } finally {
@@ -159,6 +161,7 @@ function openPauseAction() {
   else if (reason === 'encryption-password') dialogMode.value = 'encryption'
   else if (reason === 'remote-deleted') dialogMode.value = 'remote-deleted'
   else if (reason === 'storage-full') dialogMode.value = 'repair'
+  else if (state.value.resourceOmissions.length) dialogMode.value = 'repair'
   else dialogMode.value = 'disconnect'
 }
 
@@ -217,18 +220,22 @@ onMounted(() => void refresh())
             :icon="RefreshRound"
             circle
             :aria-label="t('webdavSync.refresh')"
-            @click="refresh"
+            @click="refresh(true)"
           />
           <el-button
             type="primary"
             :icon="SyncRound"
             :loading="syncing"
-            :disabled="state.paused"
+            :disabled="state.paused && state.pauseReason !== 'storage-full'"
             @click="runSync"
           >
             {{ t('webdavSync.syncNow') }}
           </el-button>
-          <el-button v-if="state.paused" type="warning" @click="openPauseAction">
+          <el-button
+            v-if="state.paused || state.resourceOmissions.length"
+            type="warning"
+            @click="openPauseAction"
+          >
             {{ t('webdavSync.resolve') }}
           </el-button>
         </div>
@@ -279,9 +286,6 @@ onMounted(() => void refresh())
           </el-button>
           <el-button :icon="LockRound" @click="dialogMode = 'encryption'">
             {{ t('webdavSync.encryption.title') }}
-          </el-button>
-          <el-button :icon="SettingsBackupRestoreRound" @click="dialogMode = 'repair'">
-            {{ t('webdavSync.repair.title') }}
           </el-button>
         </div>
       </SettingsSection>

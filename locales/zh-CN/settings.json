@@ -646,7 +646,7 @@
     "management": {
       "devices": "设备",
       "history": "历史",
-      "summary": "历史、设备、加密和异常恢复",
+      "summary": "历史、设备和加密",
       "title": "同步管理"
     },
     "messages": {
@@ -672,6 +672,7 @@
       "completed": "损坏版本已隔离并创建修复版本",
       "corrupted": "最新版本损坏，自动同步已停止",
       "corruptedDescription": "先下载原始文件留存，再选择本机数据或云端上一份完整版本。",
+      "corruptionTitle": "损坏修复",
       "deleteEvidenceDescription": "系统会先上传并验证新的修复版本；只有成功后才删除你已下载留存的云端损坏版本。",
       "deleteEvidenceTitle": "修复成功后删除云端损坏版本？",
       "download": "下载损坏的原始文件",
@@ -679,8 +680,14 @@
       "healthy": "没有发现需要修复的问题",
       "healthyDescription": "最近版本和同步状态正常。",
       "local": "使用当前本机数据",
+      "missingPayload": "损坏版本的正文已经丢失，无法下载原文件。你仍可使用本机数据或上一份完整版本修复。",
       "previous": "使用云端上一份完整版本",
+      "removeWallpapersAction": "停止同步壁纸并清理云端图片",
+      "removeWallpapersCompleted": "已停止同步壁纸并清理不再使用的云端图片",
+      "removeWallpapersDescription": "系统会发布一个不含壁纸的新版本，再清理不再被保留版本引用的云端图片。本机壁纸不会被删除。",
+      "removeWallpapersTitle": "停止同步壁纸并清理云端图片？",
       "revision": "损坏版本：{{id}}",
+      "retry": "重新检查",
       "same": "本机数据与上一完整版本相同，将自动使用上一版本创建修复版本。",
       "size": "原始文件大小：{{size}} 字节",
       "title": "检查与修复",

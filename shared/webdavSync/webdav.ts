@@ -537,6 +537,7 @@ export async function probeWebDavAccess(client: WebDavClient): Promise<void> {
   const path = `${directory}/${filename}`
   const expected = crypto.getRandomValues(new Uint8Array(32))
   let created = false
+  let passed = false
 
   await client.ensureCollection(directory)
   try {
@@ -550,11 +551,14 @@ export async function probeWebDavAccess(client: WebDavClient): Promise<void> {
     if (!listed.some((entry) => entry.name === filename)) {
       throw new WebDavError('unsupported', 'WebDAV cannot reliably enumerate unique files')
     }
+    passed = true
   } finally {
-    if (created) {
-      await client.delete(path, true).catch(() => undefined)
-      await client.delete(`${directory}/`, true).catch(() => undefined)
+    const cleanup = async () => {
+      if (created) await client.delete(path, true)
+      await client.delete(`${directory}/`, true)
     }
+    if (passed) await cleanup()
+    else await cleanup().catch(() => undefined)
   }
 }
 

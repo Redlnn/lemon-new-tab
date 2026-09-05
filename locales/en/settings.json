@@ -646,7 +646,7 @@
     "management": {
       "devices": "Devices",
       "history": "History",
-      "summary": "History, devices, encryption, and recovery",
+      "summary": "History, devices, and encryption",
       "title": "Sync management"
     },
     "messages": {
@@ -672,6 +672,7 @@
       "completed": "The damaged version was isolated and a repair version created",
       "corrupted": "The latest version is damaged; automatic sync stopped",
       "corruptedDescription": "Download the raw file first, then choose current local data or the previous complete remote version.",
+      "corruptionTitle": "Repair damaged data",
       "deleteEvidenceDescription": "The repair version will be uploaded and verified first. Only after it succeeds will the downloaded damaged cloud version be deleted.",
       "deleteEvidenceTitle": "Delete the damaged cloud version after repair?",
       "download": "Download damaged raw file",
@@ -679,8 +680,14 @@
       "healthy": "No repair is needed",
       "healthyDescription": "The latest version and sync state are healthy.",
       "local": "Use current local data",
+      "missingPayload": "The damaged revision payload is missing and cannot be downloaded. You can still repair it using local data or the previous complete version.",
       "previous": "Use previous complete remote version",
+      "removeWallpapersAction": "Stop syncing wallpapers and clean up cloud images",
+      "removeWallpapersCompleted": "Wallpaper sync stopped and unused cloud images cleaned up",
+      "removeWallpapersDescription": "A new version without wallpapers will be published, then cloud images no longer referenced by retained versions will be removed. Local wallpapers will remain.",
+      "removeWallpapersTitle": "Stop syncing wallpapers and clean up cloud images?",
       "revision": "Damaged version: {{id}}",
+      "retry": "Check again",
       "same": "Local data matches the previous complete version, which will be used automatically to create a repair version.",
       "size": "Raw file size: {{size}} bytes",
       "title": "Inspect and repair",
