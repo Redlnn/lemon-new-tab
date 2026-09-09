@@ -166,6 +166,7 @@
     "hour": "Saat",
     "openInNewTab": "Yeni Sekmede Aç",
     "openInNewWindow": "Yeni Pencerede Aç",
+    "openInIncognitoWindow": "Gizli Pencerede Aç",
     "sections": {
       "animation": "Animasyonlar",
       "appearance": "Görünüm",

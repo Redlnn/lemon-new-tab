@@ -166,6 +166,7 @@
     "hour": "Hour",
     "openInNewTab": "Open in New Tab",
     "openInNewWindow": "Open in New Window",
+    "openInIncognitoWindow": "Open in Incognito Window",
     "sections": {
       "animation": "Animations",
       "appearance": "Appearance",

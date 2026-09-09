@@ -166,6 +166,7 @@
     "hour": "小时",
     "openInNewTab": "在新标签页中打开",
     "openInNewWindow": "在新窗口中打开",
+    "openInIncognitoWindow": "在无痕窗口中打开",
     "sections": {
       "animation": "动画",
       "appearance": "外观",

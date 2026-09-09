@@ -57,6 +57,11 @@ export function useQuickLinkContextMenu(options: {
       browser.windows.create({ url: ctxItem.value.url })
   }
 
+  const ctxOpenInIncognitoWindow = (): void => {
+    if (ctxItem.value && isSafeUrl(ctxItem.value.url))
+      browser.windows.create({ incognito: true, url: ctxItem.value.url })
+  }
+
   const ctxCopyLink = (): void => {
     if (ctxItem.value) navigator.clipboard.writeText(ctxItem.value.url)
   }
@@ -125,6 +130,7 @@ export function useQuickLinkContextMenu(options: {
     setCtxContext,
     ctxOpenInNewTab,
     ctxOpenInNewWindow,
+    ctxOpenInIncognitoWindow,
     ctxCopyLink,
     ctxCreateBookmark,
     ctxUnpin,

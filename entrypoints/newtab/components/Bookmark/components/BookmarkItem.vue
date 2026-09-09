@@ -5,6 +5,7 @@ import { useDraggable, useDroppable } from '@dnd-kit/vue'
 import type { DropdownInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import Dismiss12Regular from '~icons/fluent/dismiss-12-regular'
+import Incognito16Regular from '~icons/fluent/incognito-16-regular'
 import Pin12Regular from '~icons/fluent/pin-12-regular'
 import EditOutlined from '~icons/ic/outline-edit'
 import ContentCopyRound from '~icons/ic/round-content-copy'
@@ -201,6 +202,11 @@ function openInNewWindow() {
   browser.windows.create({ url: props.node.url })
 }
 
+function openInIncognitoWindow() {
+  if (!props.node.url || !isSafeUrl(props.node.url)) return
+  browser.windows.create({ incognito: true, url: props.node.url })
+}
+
 function copyLink() {
   if (!props.node.url) return
   navigator.clipboard.writeText(props.node.url)
@@ -379,6 +385,9 @@ function collapseOther(_e: Event | undefined, all: boolean = false) {
             </el-dropdown-item>
             <el-dropdown-item :icon="OpenInNewRound" @click="openInNewWindow">
               <span>{{ t('settings:common.openInNewWindow') }}</span>
+            </el-dropdown-item>
+            <el-dropdown-item :icon="Incognito16Regular" @click="openInIncognitoWindow">
+              <span>{{ t('settings:common.openInIncognitoWindow') }}</span>
             </el-dropdown-item>
             <el-dropdown-item :icon="ContentCopyRound" divided @click="copyLink">
               <span>{{ t('settings:common.copyLink') }}</span>
