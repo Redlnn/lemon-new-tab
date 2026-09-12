@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useTranslation } from 'i18next-vue'
+import Globe from '~icons/fa6-solid/earth-americas'
+import Search from '~icons/fa6-solid/magnifying-glass'
 import TrashAlt from '~icons/fa6-solid/trash-can'
 
 import { BgType } from '@/shared/enums'
@@ -9,6 +11,7 @@ import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useSearchHistoryCache } from '@newtab/composables/useSearchHistoryCache'
 import { searchSuggestAPIs, searchSuggestCache } from '@newtab/shared/search'
+import { parseNavigableUrl } from '@newtab/shared/search/url'
 
 import SuggestListItem from './SuggestListItem.vue'
 
@@ -40,9 +43,26 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   doSearchWithText: [text: string]
+  navigateToUrl: [url: string]
   activeOptionChange: [id: string | undefined]
   expandedChange: [expanded: boolean]
 }>()
+
+type DisplayedSuggestion = { action: 'navigate' | 'search' | 'suggest'; text: string }
+
+const navigableUrl = computed(() => parseNavigableUrl(props.searchText))
+const displayedSuggestions = computed<DisplayedSuggestion[]>(() => {
+  const suggestions = searchSuggestions.value.slice(0, navigableUrl.value ? 8 : 10).map((text) => ({
+    action: 'suggest' as const,
+    text,
+  }))
+  if (!navigableUrl.value) return suggestions
+  return [
+    { action: 'navigate', text: navigableUrl.value.text },
+    { action: 'search', text: navigableUrl.value.text },
+    ...suggestions,
+  ]
+})
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.searchBar.transparent,
@@ -54,13 +74,13 @@ const suggestionAreaPerfClass = computed(() => [
   {
     'search-suggestion-area--shadow': settings.search.style.shadow,
     'search-suggestion-area--dark':
-      settings.background.bgType === BgType.None && searchSuggestions.value.length > 0,
+      settings.background.bgType === BgType.None && displayedSuggestions.value.length > 0,
   },
   perf('search-suggestion-area').value,
 ])
 
 const areaHeight = computed(() => {
-  const length = searchSuggestions.value.length
+  const length = displayedSuggestions.value.length
   if (length === 0) {
     return '0'
   }
@@ -70,11 +90,6 @@ const areaHeight = computed(() => {
   return isShowSearchHistories.value ? `${(length + 1) * 33}px` : `${length * 33}px`
 })
 
-const displayedSuggestions = computed(() =>
-  searchSuggestions.value.length > 10
-    ? searchSuggestions.value.slice(0, 10)
-    : searchSuggestions.value,
-)
 const activeOptionId = computed(() => {
   const index = currentActiveSuggest.value
   if (index === null || index >= displayedSuggestions.value.length) {
@@ -265,13 +280,23 @@ function clearActiveSuggest() {
 }
 
 function activateSuggest(index: number): string | null {
-  const nextText = displayedSuggestions.value[index]
-  if (!nextText) {
+  const nextItem = displayedSuggestions.value[index]
+  if (!nextItem) {
     return null
   }
 
   currentActiveSuggest.value = index
-  return nextText
+  return nextItem.text
+}
+
+function submitActiveSuggest() {
+  const index = currentActiveSuggest.value
+  if (index === null) return false
+  const item = displayedSuggestions.value[index]
+  if (!item) return false
+  if (item.action === 'navigate' && navigableUrl.value) emit('navigateToUrl', navigableUrl.value.url)
+  else emit('doSearchWithText', item.text)
+  return true
 }
 
 function hideSearchHistories() {
@@ -339,6 +364,7 @@ defineExpose({
   showSearchHistories,
   handleInput,
   navigateActiveSuggest,
+  submitActiveSuggest,
 })
 </script>
 
@@ -359,9 +385,21 @@ defineExpose({
       v-for="(item, index) in displayedSuggestions"
       :key="index"
       :id="`${listId}-option-${index}`"
-      :text="item"
+      :text="
+        item.action === 'navigate'
+          ? t('newtab:search.navigateTo', { url: item.text })
+          : item.action === 'search'
+            ? t('newtab:search.searchFor', { text: item.text })
+            : item.text
+      "
+      :icon="item.action === 'navigate' ? Globe : item.action === 'search' ? Search : undefined"
+      :muted="item.action !== 'suggest'"
       :active="currentActiveSuggest === index"
-      @click="emit('doSearchWithText', item)"
+      @click="
+        item.action === 'navigate' && navigableUrl
+          ? emit('navigateToUrl', navigableUrl.url)
+          : emit('doSearchWithText', item.text)
+      "
       @hover="currentActiveSuggest = index"
       @leave="currentActiveSuggest = currentActiveSuggest === index ? null : currentActiveSuggest"
     />
@@ -432,6 +470,21 @@ defineExpose({
     &--active {
       padding-left: 40px;
       background-color: var(--le-bg-color-overlay-search-subtle);
+    }
+
+    &--muted {
+      color: var(--el-text-color-secondary);
+    }
+
+    &-icon {
+      flex: none;
+      margin-right: 8px;
+    }
+
+    &-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 

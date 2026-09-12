@@ -146,7 +146,9 @@
     },
     "placeholder": "Ara",
     "purgeSearchHistory": "Arama Geçmişini Temizle",
-    "searchEngineNotFound": "Arama motoru bulunamadı"
+    "searchEngineNotFound": "Arama motoru bulunamadı",
+    "navigateTo": "{{url}} adresine git",
+    "searchFor": "{{text}} ara"
   },
   "sponsor": "Bu uzantı, kendi ihtiyaçlarımı çözmek için boş zamanlarımda tarafımdan oluşturuldu ve size de yardımcı olmasına çok sevindim! Beğendiyseniz, lütfen GitHub'da ⭐ vermeyi düşünün—bu benim için çok değerli. Fikirlerinizi veya geri bildirimlerinizi şu adrese göndermekten çekinmeyin: redlnn@outlook.com. Teşekkür ederim!",
   "time": {

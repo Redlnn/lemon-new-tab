@@ -146,7 +146,9 @@
     },
     "placeholder": "搜索",
     "purgeSearchHistory": "清除搜索历史",
-    "searchEngineNotFound": "未找到搜索引擎"
+    "searchEngineNotFound": "未找到搜索引擎",
+    "navigateTo": "跳转到{{url}}",
+    "searchFor": "搜索{{text}}"
   },
   "sponsor": "这个扩展是我利用业余时间开发的小工具，很开心能帮助到你！如果你喜欢它，不妨给个 Star ⭐ 来支持一下，这对我意义重大。如果有任何想法或建议，也欢迎通过邮箱联系我：redlnn@outlook.com。谢谢你的信任！",
   "time": {

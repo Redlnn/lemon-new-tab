@@ -146,7 +146,9 @@
     },
     "placeholder": "搜尋",
     "purgeSearchHistory": "清除搜尋歷史",
-    "searchEngineNotFound": "找不到搜尋引擎"
+    "searchEngineNotFound": "找不到搜尋引擎",
+    "navigateTo": "前往{{url}}",
+    "searchFor": "搜尋{{text}}"
   },
   "sponsor": "這個擴充功能是我利用業餘時間開發的小工具，很高興能幫助到你！如果你喜歡它，不妨給個 Star ⭐ 來支持一下，這對我意義重大。如果有任何想法或建議，也歡迎透過郵箱聯繫我：redlnn@outlook.com。謝謝你的信任！",
   "time": {

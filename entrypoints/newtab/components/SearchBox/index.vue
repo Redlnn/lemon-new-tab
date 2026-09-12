@@ -24,6 +24,7 @@ import {
   getSearchEngineUrl,
   searchEngines,
 } from '@newtab/shared/search'
+import { parseNavigableUrl } from '@newtab/shared/search/url'
 
 import SearchEngineMenu from './components/SearchEngineMenu.vue'
 import SearchSuggestionArea from './components/SearchSuggestionArea.vue'
@@ -37,6 +38,7 @@ type SearchSuggestionAreaController = {
     currentText: string,
     originText: string | null,
   ) => { searchText: string; originSearchText: string } | null
+  submitActiveSuggest: () => boolean
 }
 
 const searchBox = useTemplateRef('searchBox')
@@ -237,7 +239,19 @@ const doSearchWithText = async (text: string, newtab: boolean = false) => {
   suggestionArea.value?.clearSearchSuggestions()
 }
 
+function navigateToUrl(url: string) {
+  window.open(url, settings.search.openInNewTab ? '_blank' : '_self', 'noopener noreferrer')
+  suggestionArea.value?.clearSearchSuggestions()
+}
+
 function doSearch() {
+  if (suggestionArea.value?.submitActiveSuggest()) return
+  const navigableUrl = parseNavigableUrl(searchText.value)
+  if (navigableUrl) {
+    navigateToUrl(navigableUrl.url)
+    searchText.value = ''
+    return
+  }
   doSearchWithText(searchText.value)
   searchText.value = ''
 }
@@ -306,6 +320,7 @@ onMounted(() => {
       :search-text="searchText"
       :search-form-width="searchFormWidth"
       @do-search-with-text="doSearchWithText"
+      @navigate-to-url="navigateToUrl"
       @active-option-change="activeSuggestionOptionId = $event"
       @expanded-change="searchSuggestionsExpanded = $event"
     />
