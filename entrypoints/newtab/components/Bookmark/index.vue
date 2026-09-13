@@ -714,6 +714,7 @@ html.colorful .bookmark {
   &__arrow {
     display: flex;
     flex: 0 0 20px;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
     font-size: 20px;
@@ -730,6 +731,10 @@ html.colorful .bookmark {
     gap: 10px;
     align-items: center;
     min-width: 0;
+
+    .el-icon {
+      flex-shrink: 0;
+    }
   }
 
   .el-text {
@@ -749,12 +754,15 @@ html.colorful .bookmark {
   text-decoration: none;
 
   img {
+    flex-shrink: 0;
     height: 1em;
     margin-right: 10px;
     border-radius: var(--le-radius-micro, 3px);
   }
 
   .el-text {
+    flex-grow: 1;
+    flex-shrink: 1;
     width: stretch;
     font-size: inherit;
     line-height: 1.2em;
