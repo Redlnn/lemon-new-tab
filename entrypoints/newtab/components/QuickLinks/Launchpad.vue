@@ -11,7 +11,10 @@ import {
 } from '@dnd-kit/vue'
 import ElFocusTrap from 'element-plus/es/components/focus-trap/src/focus-trap.mjs'
 import { useTranslation } from 'i18next-vue'
+import SearchOutlined from '~icons/ant-design/search-outlined'
 import ChevronDown20Filled from '~icons/fluent/chevron-down-20-filled'
+import ChevronLeft20Filled from '~icons/fluent/chevron-left-20-filled'
+import ChevronRight20Filled from '~icons/fluent/chevron-right-20-filled'
 import ChevronUp20Filled from '~icons/fluent/chevron-up-20-filled'
 import Pin12Regular from '~icons/fluent/pin-12-regular'
 import AddRound from '~icons/ic/round-add'
@@ -626,11 +629,7 @@ onBeforeUnmount(() => {
               >
                 <template #prefix>
                   <el-icon :size="16">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path
-                        d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
-                      />
-                    </svg>
+                    <search-outlined />
                   </el-icon>
                 </template>
               </el-input>
@@ -1106,9 +1105,7 @@ onBeforeUnmount(() => {
                   :disabled="page === 0"
                   @click="prevPage"
                 >
-                  <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                    <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
-                  </svg>
+                  <ChevronLeft20Filled />
                 </button>
                 <div class="launchpad-dots">
                   <span
@@ -1126,9 +1123,7 @@ onBeforeUnmount(() => {
                   :disabled="page === pageCount - 1"
                   @click="nextPage"
                 >
-                  <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
-                  </svg>
+                  <ChevronRight20Filled />
                 </button>
               </div>
               <DragOverlay :drop-animation="null">
