@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { DragDropProvider, type DragEndEvent } from '@dnd-kit/vue'
 import { useTranslation } from 'i18next-vue'
-import Plus from '~icons/fa6-solid/plus'
+import Plus from '~icons/fa7-solid/plus'
 
 import type { BuiltInSearchEngineKey } from '@/shared/searchEngines'
 import { defaultSettings, useSettingsStore } from '@/shared/settings'

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FormInstance, UploadRequestOptions } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
-import Plus from '~icons/fa6-solid/plus'
+import Plus from '~icons/fa7-solid/plus'
 
 import { fetchFaviconWithCache } from '@/shared/media'
 

@@ -9,7 +9,7 @@ import {
 } from '@vueuse/core'
 
 import { useTranslation } from 'i18next-vue'
-import Search from '~icons/fa6-solid/magnifying-glass'
+import Search from '~icons/fa7-solid/magnifying-glass'
 
 import { BgType } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'

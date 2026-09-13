@@ -2,10 +2,10 @@
 import { useDateFormat, useNow } from '@vueuse/core'
 
 import { useTranslation } from 'i18next-vue'
-import Chrome from '~icons/fa6-brands/chrome'
-import Edge from '~icons/fa6-brands/edge'
-import Firefox from '~icons/fa6-brands/firefox-browser'
-import Github from '~icons/fa6-brands/github'
+import Chrome from '~icons/fa7-brands/chrome'
+import Edge from '~icons/fa7-brands/edge'
+import Firefox from '~icons/fa7-brands/firefox-browser'
+import Github from '~icons/fa7-brands/github'
 
 import { browser } from 'wxt/browser'
 

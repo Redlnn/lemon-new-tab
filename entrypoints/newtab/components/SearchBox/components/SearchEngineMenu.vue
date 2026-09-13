@@ -3,7 +3,7 @@ import { useTimeoutFn } from '@vueuse/core'
 
 import type { TooltipInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
-import Search from '~icons/fa6-solid/magnifying-glass'
+import Search from '~icons/fa7-solid/magnifying-glass'
 
 import { useSettingsStore } from '@/shared/settings'
 

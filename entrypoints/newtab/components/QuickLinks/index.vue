@@ -11,7 +11,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/vue'
 import { useTranslation } from 'i18next-vue'
-import PlusIcon from '~icons/fa6-solid/plus'
+import PlusIcon from '~icons/fa7-solid/plus'
 import ChevronLeft20Filled from '~icons/fluent/chevron-left-20-filled'
 import ChevronRight20Filled from '~icons/fluent/chevron-right-20-filled'
 

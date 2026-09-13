@@ -45,8 +45,8 @@
   "devDependencies": {
     "@iconify-json/ant-design": "^1.2.9",
     "@iconify-json/carbon": "^1.2.27",
-    "@iconify-json/fa6-brands": "^1.2.6",
-    "@iconify-json/fa6-solid": "^1.2.4",
+    "@iconify-json/fa7-brands": "^1.2.4",
+    "@iconify-json/fa7-solid": "^1.2.5",
     "@iconify-json/fluent": "^1.2.57",
     "@iconify-json/ic": "^1.2.4",
     "@types/chrome": "^0.2.9",
