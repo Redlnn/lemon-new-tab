@@ -7,6 +7,7 @@ const props = defineProps<{
   active: boolean
   icon?: Component
   prefix?: string
+  actionLabel?: string
 }>()
 
 const emit = defineEmits<{
@@ -35,5 +36,6 @@ const emit = defineEmits<{
     </el-icon>
     <span v-if="prefix" class="search-suggestion-area__item-prefix">{{ prefix }}&nbsp;</span>
     <span class="search-suggestion-area__item-text">{{ props.text }}</span>
+    <span v-if="actionLabel" class="search-suggestion-area__item-action">{{ actionLabel }}</span>
   </div>
 </template>

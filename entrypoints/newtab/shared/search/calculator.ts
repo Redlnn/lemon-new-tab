@@ -111,3 +111,7 @@ export function calculateExpression(input: string): number | null {
   const result = parseAdditive()
   return result === null || index !== tokens.length || !Number.isFinite(result) ? null : result
 }
+
+export function hasCalculationOperator(input: string): boolean {
+  return /[+\-*/^×÷]/.test(input)
+}

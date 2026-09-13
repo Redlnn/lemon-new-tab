@@ -147,7 +147,12 @@
     "placeholder": "Search",
     "purgeSearchHistory": "Clear Search History",
     "searchEngineNotFound": "Search engine not found",
+    "calculator": "Calculator",
     "calculationResult": "Result",
+    "clickToCopy": "Click to copy",
+    "open": "Open",
+    "savedWebsite": "Saved websites",
+    "mostVisited": "Most visited",
     "navigateTo": "Go to",
     "searchFor": "Search"
   },

@@ -147,7 +147,12 @@
     "placeholder": "搜尋",
     "purgeSearchHistory": "清除搜尋歷史",
     "searchEngineNotFound": "找不到搜尋引擎",
+    "calculator": "計算機",
     "calculationResult": "計算結果",
+    "clickToCopy": "點擊複製",
+    "open": "開啟",
+    "savedWebsite": "已收藏網站",
+    "mostVisited": "最常瀏覽",
     "navigateTo": "前往",
     "searchFor": "搜尋"
   },

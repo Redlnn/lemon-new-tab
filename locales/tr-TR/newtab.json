@@ -147,7 +147,12 @@
     "placeholder": "Ara",
     "purgeSearchHistory": "Arama Geçmişini Temizle",
     "searchEngineNotFound": "Arama motoru bulunamadı",
+    "calculator": "Hesap makinesi",
     "calculationResult": "Sonuç",
+    "clickToCopy": "Kopyalamak için tıklayın",
+    "open": "Aç",
+    "savedWebsite": "Kayıtlı web siteleri",
+    "mostVisited": "En çok ziyaret edilenler",
     "navigateTo": "Adrese git",
     "searchFor": "Ara"
   },

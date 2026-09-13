@@ -147,7 +147,12 @@
     "placeholder": "搜索",
     "purgeSearchHistory": "清除搜索历史",
     "searchEngineNotFound": "未找到搜索引擎",
+    "calculator": "计算器",
     "calculationResult": "计算结果",
+    "clickToCopy": "点击复制",
+    "open": "打开",
+    "savedWebsite": "已收藏网站",
+    "mostVisited": "最常访问",
     "navigateTo": "前往",
     "searchFor": "搜索"
   },

@@ -1,18 +1,23 @@
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
-import Calculator from '~icons/fa6-solid/calculator'
-import Globe from '~icons/fa6-solid/earth-americas'
-import Search from '~icons/fa6-solid/magnifying-glass'
-import TrashAlt from '~icons/fa6-solid/trash-can'
+import type { Component } from 'vue'
+import Calculation from '~icons/carbon/calculation'
+import Link from '~icons/carbon/link'
+import Search from '~icons/carbon/search'
+import TrashCan from '~icons/carbon/trash-can'
+import Open32Regular from '~icons/fluent/open-32-regular'
 
 import { BgType } from '@/shared/enums'
+import { useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useSearchHistoryCache } from '@newtab/composables/useSearchHistoryCache'
+import { getTopSites, rawTopSites } from '@newtab/components/QuickLinks/utils/topSites'
 import { searchSuggestAPIs, searchSuggestCache } from '@newtab/shared/search'
-import { calculateExpression } from '@newtab/shared/search/calculator'
+import { calculateExpression, hasCalculationOperator } from '@newtab/shared/search/calculator'
 import { parseNavigableUrl } from '@newtab/shared/search/url'
 
 import SuggestListItem from './SuggestListItem.vue'
@@ -21,6 +26,7 @@ const { t } = useTranslation()
 
 const focusStore = useFocusState()
 const settings = useSettingsStore()
+const quickLinksStore = useQuickLinksStore()
 const {
   histories: cachedHistories,
   ensureLoaded: ensureHistoryLoaded,
@@ -51,40 +57,120 @@ const emit = defineEmits<{
   expandedChange: [expanded: boolean]
 }>()
 
+type SuggestionAction =
+  | 'calculate'
+  | 'copy-expression'
+  | 'navigate'
+  | 'quick-link'
+  | 'search'
+  | 'suggest'
+  | 'top-site'
+type CopyAction = Extract<SuggestionAction, 'calculate' | 'copy-expression'>
+
 type DisplayedSuggestion = {
-  action: 'calculate' | 'navigate' | 'search' | 'suggest'
+  action: SuggestionAction
   text: string
+  url?: string
   inputText?: string
+  prefixKey?: string
+  actionLabelKey?: string
+  icon?: Component
+}
+
+const suggestionPresentation: Partial<
+  Record<SuggestionAction, Omit<DisplayedSuggestion, 'action' | 'text'>>
+> = {
+  calculate: {
+    prefixKey: 'newtab:search.calculationResult',
+    actionLabelKey: 'newtab:search.clickToCopy',
+    icon: Calculation,
+  },
+  'copy-expression': {
+    prefixKey: 'newtab:search.calculator',
+    actionLabelKey: 'newtab:search.clickToCopy',
+    icon: Calculation,
+  },
+  navigate: {
+    prefixKey: 'newtab:search.navigateTo',
+    icon: Link,
+  },
+  'quick-link': {
+    prefixKey: 'newtab:search.open',
+    actionLabelKey: 'newtab:search.savedWebsite',
+    icon: Open32Regular,
+  },
+  search: {
+    prefixKey: 'newtab:search.searchFor',
+    icon: Search,
+  },
+  'top-site': {
+    prefixKey: 'newtab:search.open',
+    actionLabelKey: 'newtab:search.mostVisited',
+    icon: Open32Regular,
+  },
+}
+
+function createSuggestion(
+  action: SuggestionAction,
+  text: string,
+  options?: Pick<DisplayedSuggestion, 'inputText' | 'url'>,
+): DisplayedSuggestion {
+  return { action, text, ...options, ...suggestionPresentation[action] }
 }
 
 const actionSourceText = computed(() => navigationSourceText.value ?? props.searchText)
 const navigableUrl = computed(() => parseNavigableUrl(actionSourceText.value))
-const calculationResult = computed(() => calculateExpression(actionSourceText.value))
+const calculationResult = computed(() =>
+  hasCalculationOperator(actionSourceText.value)
+    ? calculateExpression(actionSourceText.value)
+    : null,
+)
+const calculationText = computed(() => {
+  const expression = actionSourceText.value.trim().replace(/\s+/g, '').replace(/=$/, '')
+  return `${expression}=${calculationResult.value}`
+})
+const searchableLinks = computed(() => {
+  const query = actionSourceText.value.trim().toLocaleLowerCase()
+  if (!query) return []
+
+  const links: DisplayedSuggestion[] = []
+  const seenUrls = new Set<string>()
+  const addLink = (action: 'quick-link' | 'top-site', title: string, url: string) => {
+    if (seenUrls.has(url)) return
+    if (!`${title} ${url}`.toLocaleLowerCase().includes(query)) return
+    seenUrls.add(url)
+    links.push(createSuggestion(action, title || url, { url }))
+  }
+
+  for (const link of quickLinksStore.items) addLink('quick-link', link.title, link.url)
+  for (const site of rawTopSites.value) addLink('top-site', site.title || '', site.url)
+  return links
+})
 const shouldSuppressSearchSuggestions = computed(
   () => calculationResult.value !== null && actionSourceText.value.trim().endsWith('='),
 )
 const displayedSuggestions = computed<DisplayedSuggestion[]>(() => {
-  const actionCount = navigableUrl.value ? 2 : calculationResult.value === null ? 0 : 1
-  const suggestions = searchSuggestions.value.slice(0, 10 - actionCount).map((text) => ({
-    action: 'suggest' as const,
-    text,
-  }))
-  if (navigableUrl.value)
-    return [
-      { action: 'navigate', text: navigableUrl.value.text },
-      { action: 'search', text: navigableUrl.value.text },
-      ...suggestions,
+  let actionSuggestions: DisplayedSuggestion[] = []
+  if (navigableUrl.value) {
+    actionSuggestions = [
+      createSuggestion('navigate', navigableUrl.value.text),
+      createSuggestion('search', navigableUrl.value.text),
     ]
-  return calculationResult.value === null
-    ? suggestions
-    : [
-        {
-          action: 'calculate',
-          text: String(calculationResult.value),
-          inputText: actionSourceText.value,
-        },
-        ...suggestions,
-      ]
+  } else if (calculationResult.value !== null) {
+    actionSuggestions = [
+      createSuggestion('copy-expression', calculationText.value),
+      createSuggestion('calculate', String(calculationResult.value), {
+        inputText: actionSourceText.value,
+      }),
+    ]
+  }
+
+  const remainingCount = Math.max(0, 10 - actionSuggestions.length)
+  const suggestions = [
+    ...searchableLinks.value,
+    ...searchSuggestions.value.map((text) => createSuggestion('suggest', text)),
+  ].slice(0, remainingCount)
+  return [...actionSuggestions, ...suggestions]
 })
 
 const perf = usePerfClasses(() => ({
@@ -286,6 +372,15 @@ watch([() => settings.search.suggestionAPI, () => settings.search.suggestionsEna
   if (focusStore.isFocused && !shouldSuppressSearchSuggestions.value) showSuggestionsDebounced()
 })
 
+onMounted(() => {
+  void quickLinksStore.init()
+  if (settings.quickLinks.topSites || settings.dock.topSites) {
+    void getTopSites().catch((error) => {
+      console.warn('[search] Failed to load top sites:', error)
+    })
+  }
+})
+
 onUnmounted(() => {
   cancelSuggestionRequest()
 })
@@ -310,11 +405,35 @@ function submitActiveSuggest() {
   if (index === null) return false
   const item = displayedSuggestions.value[index]
   if (!item) return false
-  if (item.action === 'calculate') return false
-  if (item.action === 'navigate' && navigableUrl.value)
+  return activateSuggestion(item)
+}
+
+function isCopyAction(action: SuggestionAction): action is CopyAction {
+  return action === 'calculate' || action === 'copy-expression'
+}
+
+function activateSuggestion(item: DisplayedSuggestion) {
+  if (item.url) {
+    emit('navigateToUrl', item.url)
+  } else if (isCopyAction(item.action)) {
+    void copyCalculation(item.action)
+  } else if (item.action === 'navigate' && navigableUrl.value) {
     emit('navigateToUrl', navigableUrl.value.url)
-  else emit('doSearchWithText', item.text)
+  } else {
+    emit('doSearchWithText', item.text)
+  }
   return true
+}
+
+async function copyCalculation(action: 'calculate' | 'copy-expression') {
+  try {
+    await navigator.clipboard.writeText(
+      action === 'calculate' ? String(calculationResult.value) : calculationText.value,
+    )
+    ElMessage.success(t('newtab:yiyan.copied'))
+  } catch {
+    // 剪贴板不可用时不打断搜索框操作。
+  }
 }
 
 function hideSearchHistories() {
@@ -408,30 +527,11 @@ defineExpose({
       :key="index"
       :id="`${listId}-option-${index}`"
       :text="item.text"
-      :prefix="
-        item.action === 'calculate'
-          ? t('newtab:search.calculationResult')
-          : item.action === 'navigate'
-            ? t('newtab:search.navigateTo')
-            : item.action === 'search'
-              ? t('newtab:search.searchFor')
-              : undefined
-      "
-      :icon="
-        item.action === 'calculate'
-          ? Calculator
-          : item.action === 'navigate'
-            ? Globe
-            : item.action === 'search'
-              ? Search
-              : undefined
-      "
+      :prefix="item.prefixKey ? t(item.prefixKey) : undefined"
+      :icon="item.icon"
       :active="currentActiveSuggest === index"
-      @click="
-        item.action === 'navigate' && navigableUrl
-          ? emit('navigateToUrl', navigableUrl.url)
-          : item.action !== 'calculate' && emit('doSearchWithText', item.text)
-      "
+      :action-label="item.actionLabelKey ? t(item.actionLabelKey) : undefined"
+      @click="activateSuggestion(item)"
       @hover="currentActiveSuggest = index"
       @leave="currentActiveSuggest = currentActiveSuggest === index ? null : currentActiveSuggest"
     />
@@ -443,7 +543,7 @@ defineExpose({
       style="display: none"
       @click="clearSearchHistories()"
     >
-      <el-icon style="margin-right: 5px"><trash-alt /></el-icon>
+      <el-icon style="margin-right: 5px"><trash-can /></el-icon>
       <span>{{ t('newtab:search.purgeSearchHistory') }}</span>
     </div>
   </div>
@@ -526,6 +626,12 @@ defineExpose({
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    &-action {
+      flex: none;
+      margin-left: 12px;
+      color: var(--el-text-color-regular);
     }
   }
 
