@@ -1240,6 +1240,10 @@ onBeforeUnmount(() => {
   max-width: 1000px;
   overflow: auto;
 
+  .el-scrollbar {
+    height: fit-content;
+  }
+
   .el-scrollbar__view {
     padding-right: 10px;
   }
