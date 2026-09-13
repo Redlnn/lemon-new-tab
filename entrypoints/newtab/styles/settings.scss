@@ -95,49 +95,42 @@ html.dialog-transparent .settings__dialog {
   --settings-back-background: color-mix(
     in oklch,
     var(--el-fill-color-blank),
-    transparent var(--le-dialog-settings-back-transparency, var(--le-dialog-secondary-transparency))
+    transparent var(--le-dialog-secondary-transparency)
   );
   --settings-back-hover-background: color-mix(
     in oklch,
     var(--el-fill-color-blank),
-    transparent var(--le-dialog-settings-back-hover-transparency, var(--le-dialog-transparency))
+    transparent var(--le-dialog-transparency)
   );
   --settings-items-background: color-mix(
     in oklch,
     var(--el-bg-color),
-    transparent
-      var(--le-dialog-settings-items-transparency, var(--le-dialog-secondary-transparency))
+    transparent var(--le-dialog-secondary-transparency)
   );
   --settings-group-active-background: color-mix(
     in oklch,
     var(--el-fill-color-dark),
-    transparent var(--le-dialog-settings-group-transparency, var(--le-dialog-menu-transparency))
+    transparent var(--le-dialog-menu-transparency)
   );
   --settings-option-active-background: color-mix(
     in oklch,
     var(--el-color-primary-light-9),
-    transparent var(--le-dialog-settings-option-transparency, var(--le-dialog-menu-transparency))
+    transparent var(--le-dialog-menu-transparency)
   );
   --settings-option-background: color-mix(
     in oklch,
     var(--el-bg-color-page),
-    transparent
-      var(
-        --le-dialog-settings-option-background-transparency,
-        var(--le-dialog-secondary-transparency)
-      )
+    transparent var(--le-dialog-secondary-transparency)
   );
   --settings-menu-hover-background: color-mix(
     in oklch,
     var(--el-menu-hover-bg-color),
-    transparent
-      var(--le-dialog-settings-menu-hover-transparency, var(--le-dialog-menu-transparency))
+    transparent var(--le-dialog-menu-transparency)
   );
   --settings-menu-active-background: color-mix(
     in oklch,
     var(--el-color-primary-light-9),
-    transparent
-      var(--le-dialog-settings-menu-active-transparency, var(--le-dialog-menu-transparency))
+    transparent var(--le-dialog-menu-transparency)
   );
   --settings-aside-background: color-mix(
     in oklch,
@@ -150,7 +143,7 @@ html.dark.dialog-transparent .settings__dialog {
   --settings-group-active-background: color-mix(
     in oklch,
     var(--el-fill-color-dark),
-    transparent var(--le-dialog-settings-group-transparency, var(--le-dialog-menu-transparency))
+    transparent var(--le-dialog-menu-transparency)
   );
   --settings-aside-background: color-mix(
     in oklch,
@@ -163,50 +156,43 @@ html.colorful.dialog-transparent .settings__dialog {
   --settings-back-background: color-mix(
     in oklch,
     var(--el-color-primary-light-8),
-    transparent var(--le-dialog-settings-back-transparency, var(--le-dialog-secondary-transparency))
+    transparent var(--le-dialog-secondary-transparency)
   );
   --settings-back-hover-background: color-mix(
     in oklch,
     var(--el-color-primary-light-9),
-    transparent var(--le-dialog-settings-back-hover-transparency, var(--le-dialog-transparency))
+    transparent var(--le-dialog-transparency)
   );
   --settings-items-background: color-mix(
     in oklch,
     var(--el-color-primary-light-9),
-    transparent
-      var(--le-dialog-settings-items-transparency, var(--le-dialog-secondary-transparency))
+    transparent var(--le-dialog-secondary-transparency)
   );
   --settings-group-active-background: color-mix(
     in oklch,
     var(--el-color-primary-light-8),
-    transparent var(--le-dialog-settings-group-transparency, var(--le-dialog-menu-transparency))
+    transparent var(--le-dialog-menu-transparency)
   );
   --settings-aside-background: var(--le-bg-color-overlay-dialog-menu);
   --settings-option-active-background: color-mix(
     in oklch,
     var(--el-color-primary-light-8),
-    transparent var(--le-dialog-settings-option-transparency, var(--le-dialog-menu-transparency))
+    transparent var(--le-dialog-menu-transparency)
   );
   --settings-option-background: color-mix(
     in oklch,
     var(--el-fill-color-lighter),
-    transparent
-      var(
-        --le-dialog-settings-option-background-transparency,
-        var(--le-dialog-secondary-transparency)
-      )
+    transparent var(--le-dialog-secondary-transparency)
   );
   --settings-menu-hover-background: color-mix(
     in oklch,
     var(--el-color-primary-light-9),
-    transparent
-      var(--le-dialog-settings-menu-hover-transparency, var(--le-dialog-menu-transparency))
+    transparent var(--le-dialog-menu-transparency)
   );
   --settings-menu-active-background: color-mix(
     in oklch,
     var(--el-color-primary-light-9),
-    transparent
-      var(--le-dialog-settings-menu-active-transparency, var(--le-dialog-menu-transparency))
+    transparent var(--le-dialog-menu-transparency)
   );
 }
 
