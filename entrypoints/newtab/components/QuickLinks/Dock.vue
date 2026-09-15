@@ -14,6 +14,7 @@ import {
   type QuickLinkTarget,
 } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
+import { getBuiltInAppId, openBuiltInApp } from '@/shared/builtinApps'
 
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
@@ -40,6 +41,13 @@ const { t } = useTranslation()
 const focusStore = useFocusState()
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
+
+function openBuiltInItem(event: MouseEvent, item: { url: string }) {
+  const appId = getBuiltInAppId(item.url)
+  if (!appId) return
+  event.preventDefault()
+  openBuiltInApp(appId)
+}
 
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.quickLinks.transparent,
@@ -439,6 +447,7 @@ defineExpose({ refresh, toggleLaunchpad })
           :target="settings.dock.openInNewTab ? '_blank' : '_self'"
           :rel="settings.dock.openInNewTab ? 'noopener noreferrer' : undefined"
           @contextmenu.stop.prevent="onItemContextmenu($event, item, true, idx)"
+          @click="openBuiltInItem($event, item)"
         >
           <favicon-image :url="item.url" :favicon="item.favicon" :title="item.title" />
         </a>
@@ -481,6 +490,7 @@ defineExpose({ refresh, toggleLaunchpad })
           :target="settings.dock.openInNewTab ? '_blank' : '_self'"
           :rel="settings.dock.openInNewTab ? 'noopener noreferrer' : undefined"
           @contextmenu.stop.prevent="onItemContextmenu($event, item, false, j)"
+          @click="openBuiltInItem($event, item)"
           @trigger="onItemLongPress($event, item, false, j)"
         >
           <favicon-image :url="item.url" :favicon="item.favicon" :title="item.title" />

@@ -108,6 +108,8 @@
     "searchEnginePreference": "Search Engine Preference",
     "sponsor": "Sponsor"
   },
+  "builtinApps": { "title": "Built-in apps", "memo": "Memo", "add": "Add", "remove": "Remove" },
+  "memo": { "title": "Memo", "untitled": "Untitled memo", "create": "Create memo", "unsaved": "Save changes before leaving?", "delete": "Delete this memo?", "time": { "today": "Today, {{time}}", "yesterday": "Yesterday, {{time}}", "dayBeforeYesterday": "The day before yesterday, {{time}}" } },
   "notification": {
     "bing": {
       "message": "Please check the console output in developer tools.",

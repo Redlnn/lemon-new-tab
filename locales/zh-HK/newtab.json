@@ -108,6 +108,8 @@
     "searchEnginePreference": "搜尋引擎偏好",
     "sponsor": "支持我們"
   },
+  "builtinApps": { "title": "內置應用管理", "memo": "便簽", "add": "新增", "remove": "移除" },
+  "memo": { "title": "便簽", "untitled": "無標題便簽", "create": "建立便簽", "unsaved": "離開前儲存修改嗎？", "delete": "確定刪除此便簽嗎？", "time": { "today": "今日{{time}}", "yesterday": "琴日{{time}}", "dayBeforeYesterday": "前日{{time}}" } },
   "notification": {
     "bing": {
       "message": "請查看開發者工具中的主控台提示。",

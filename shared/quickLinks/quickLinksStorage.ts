@@ -9,6 +9,8 @@ export interface QuickLink {
   favicon?: string
   /** 仅显式用户选择的图标可进入 WebDAV 同步；缺失表示旧版来源不明。 */
   faviconSource?: 'automatic' | 'user-selected'
+  /** 内置应用入口；存在时不会按外部链接打开。 */
+  appId?: import('@/shared/builtinApps').BuiltInAppId
 }
 
 export interface QuickLinkGroup {
