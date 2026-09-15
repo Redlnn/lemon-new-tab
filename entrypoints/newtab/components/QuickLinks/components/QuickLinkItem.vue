@@ -8,6 +8,7 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { isTouchEvent } from '@newtab/shared/touch'
 import { isValidUrl } from '@newtab/shared/utils'
+import { getBuiltInAppId, openBuiltInApp } from '@/shared/builtinApps'
 
 import type { QuickLinkItemPresentation } from './quickLinkItemPresentation'
 
@@ -41,6 +42,13 @@ const showTitleInitialFallback = computed(
     Boolean(titleInitial.value),
 )
 const safeUrl = computed(() => (isValidUrl(props.url) ? props.url : '#'))
+const appId = computed(() => getBuiltInAppId(props.url))
+
+function openLink(event: MouseEvent) {
+  if (!appId.value) return
+  event.preventDefault()
+  openBuiltInApp(appId.value)
+}
 
 function openFocusedLink(event: KeyboardEvent) {
   if (event.code === 'Space' && props.keyboardDrag) return
@@ -71,6 +79,7 @@ function openFocusedLink(event: KeyboardEvent) {
       :rel="presentation.linkRel"
       :aria-label="title"
       @contextmenu.stop.prevent="onContextMenu"
+      @click="openLink"
     >
       <div class="quick-links__icon-container" :style="{ marginBottom: presentation.iconTitleGap }">
         <div
@@ -120,6 +129,7 @@ function openFocusedLink(event: KeyboardEvent) {
       :rel="presentation.linkRel"
       :aria-label="title"
       @contextmenu.stop.prevent="onContextMenu"
+      @click="openLink"
       @trigger="
         (e: PointerEvent) => {
           if (isTouchEvent(e)) onContextMenu?.(e)

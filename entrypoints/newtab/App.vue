@@ -35,18 +35,21 @@ import {
   AddQuickLinkDialog,
   BackgroundSwitcher,
   Bookmark,
+  BuiltinAppsDialog,
   Changelog,
   Faq,
   PermissionDialog,
   SearchEnginesSwitcher,
   SettingsPage,
   SyncRetirementDialog,
+  Memo,
   useLazyAppComponents,
 } from './composables/useLazyAppComponents'
 import { usePermission } from './composables/usePermission'
 import { useQuickLinksBootstrap } from './composables/useQuickLinksBootstrap'
 import { useRetiredCloudSync } from './composables/useRetiredCloudSync'
 import { useThemeWatcher } from './composables/useThemeWatcher'
+
 
 const BackgroundRef = ref<InstanceType<typeof Background>>()
 const QuickLinksRef = ref<InstanceType<typeof QuickLinks>>()
@@ -81,7 +84,19 @@ const {
   showBookmark,
   openAddQuickLinkDialog,
   openEditQuickLinkDialog,
+  memoMounted,
+  memoVisible,
+  builtinAppsMounted,
+  builtinAppsVisible,
+  showMemo,
+  showBuiltinApps,
 } = useLazyAppComponents()
+
+function handleBuiltInApp(event: Event) {
+  if ((event as CustomEvent<string>).detail === 'memo') showMemo()
+}
+onMounted(() => window.addEventListener('lemon-new-tab:open-built-in-app', handleBuiltInApp))
+onBeforeUnmount(() => window.removeEventListener('lemon-new-tab:open-built-in-app', handleBuiltInApp))
 
 const elLocale = useElementLang()
 const settings = useSettingsStore()
@@ -305,6 +320,7 @@ function toggleMinimalMode() {
         @open-search-engine-preference="showSearchEnginesSwitcher"
         @open-faq="showFaq"
         @open-background-switcher="showBackgroundSwitcher"
+        @open-builtin-apps="showBuiltinApps"
       />
       <bookmark-btn
         v-if="settings.bookmark.showBtn"
@@ -362,5 +378,7 @@ function toggleMinimalMode() {
       @download="downloadCloudData"
       @delete="deleteCloudData"
     />
+    <memo v-if="memoMounted" v-model="memoVisible" />
+    <builtin-apps-dialog v-if="builtinAppsMounted" v-model="builtinAppsVisible" />
   </el-config-provider>
 </template>

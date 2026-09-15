@@ -108,6 +108,8 @@
     "searchEnginePreference": "Arama Motoru Tercihi",
     "sponsor": "Destekçi"
   },
+  "builtinApps": { "title": "Yerleşik uygulamalar", "memo": "Not", "add": "Ekle", "remove": "Kaldır" },
+  "memo": { "title": "Not", "untitled": "Başlıksız not", "create": "Not oluştur", "unsaved": "Ayrılmadan önce değişiklikler kaydedilsin mi?", "delete": "Bu not silinsin mi?", "time": { "today": "Bugün {{time}}", "yesterday": "Dün {{time}}", "dayBeforeYesterday": "Önceki gün {{time}}" } },
   "notification": {
     "bing": {
       "message": "Geliştirici araçlarında konsol çıktısını kontrol edin.",

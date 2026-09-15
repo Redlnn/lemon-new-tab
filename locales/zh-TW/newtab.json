@@ -108,6 +108,8 @@
     "searchEnginePreference": "搜尋引擎偏好",
     "sponsor": "支持我們"
   },
+  "builtinApps": { "title": "內建應用程式管理", "memo": "便箋", "add": "新增", "remove": "移除" },
+  "memo": { "title": "便箋", "untitled": "無標題便箋", "create": "建立便箋", "unsaved": "離開前儲存修改嗎？", "delete": "確定刪除此便箋嗎？", "time": { "today": "今天{{time}}", "yesterday": "昨天{{time}}", "dayBeforeYesterday": "前天{{time}}" } },
   "notification": {
     "bing": {
       "message": "請查看開發人員工具的主控台訊息。",

@@ -71,6 +71,7 @@ function toStorageQuickLink(item: QuickLink): QuickLink {
     quickLink.favicon = item.favicon
     if (item.faviconSource !== undefined) quickLink.faviconSource = item.faviconSource
   }
+  if (item.appId !== undefined) quickLink.appId = item.appId
   return quickLink
 }
 

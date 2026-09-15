@@ -7,6 +7,7 @@ export interface QuickLinkDisplayItem {
   url: string
   title: string
   favicon?: string
+  appId?: QuickLink['appId']
   isPinned: boolean
   originalIndex: number
   groupId?: string
@@ -27,6 +28,7 @@ export function buildQuickLinkDisplayItems(
       url: site.url,
       title: site.title,
       favicon: site.favicon,
+      appId: site.appId,
       isPinned: true,
       originalIndex: i,
     }
@@ -56,6 +58,7 @@ export function buildQuickLinkGroupItems(group: QuickLinkGroup): QuickLinkDispla
       url: item.url,
       title: item.title,
       favicon: item.favicon,
+      appId: item.appId,
       isPinned: true,
       originalIndex: i,
       groupId: group.id,

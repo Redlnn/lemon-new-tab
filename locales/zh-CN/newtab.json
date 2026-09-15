@@ -108,6 +108,8 @@
     "searchEnginePreference": "搜索引擎偏好",
     "sponsor": "支持我们"
   },
+  "builtinApps": { "title": "内置应用管理", "memo": "便签", "add": "添加", "remove": "移除" },
+  "memo": { "title": "便签", "untitled": "无标题便签", "create": "创建便签", "unsaved": "离开前保存修改吗？", "delete": "确定删除此便签吗？", "time": { "today": "今天{{time}}", "yesterday": "昨天{{time}}", "dayBeforeYesterday": "前天{{time}}" } },
   "notification": {
     "bing": {
       "message": "请检查开发者工具中的控制台提示。",
