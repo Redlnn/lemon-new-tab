@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
-const projectRoot = fileURLToPath(new URL('../../../', import.meta.url))
+// examples/ -> extension-browser-debugging/ -> skills/ -> .agents/ -> project root
+const projectRoot = fileURLToPath(new URL('../../../../', import.meta.url))
 const profileRoot = await mkdtemp(join(tmpdir(), 'lemon-extension-qa-'))
 const extension = join(projectRoot, '.output', 'chrome-mv3')
 
