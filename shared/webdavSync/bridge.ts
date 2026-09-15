@@ -286,7 +286,7 @@ export function setupOnlineSyncTrigger(): () => void {
 
 export function isWebDavSyncMessage(value: unknown): value is WebDavSyncMessage {
   if (!value || typeof value !== 'object') return false
-  const type = (value as { type?: unknown }).type
+  const { type } = value as { type?: unknown }
   if (type === 'webdav-sync:preview-connection') {
     return Boolean((value as { input?: unknown }).input)
   }
