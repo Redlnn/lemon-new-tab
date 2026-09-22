@@ -5,6 +5,7 @@ import {
   preserveUnknownSyncSettings,
   stripExcludedSyncSettings,
 } from './settingsWhitelist.ts'
+import { normalizeSnapshotOrder } from './snapshotOrder.ts'
 import type {
   JsonObject,
   SyncCustomSearchEngineDataV1,
@@ -132,7 +133,7 @@ export function mergeImportedSnapshot(
   if (!result.ui) delete result.ui
   if (!result.optional) delete result.optional
   pruneInlineImages(result)
-  return result
+  return normalizeSnapshotOrder(result)
 }
 
 function toLocalQuickLink(
@@ -174,8 +175,9 @@ export function materializeQuickLinks(
       toLocalQuickLink(item, currentById.get(item.id), includeIcons, images),
     ]),
   )
+  const groupsById = new Map(snapshot.groups.map((group) => [group.id, group]))
   const groups = snapshot.groupOrder.map((groupId) => {
-    const group = snapshot.groups.find((item) => item.id === groupId)
+    const group = groupsById.get(groupId)
     if (!group) throw new Error('Validated Quick Link group is missing')
     return {
       id: group.id,
@@ -249,7 +251,7 @@ export function preserveExcludedScope(
   preserveOptionalField(result, baseline, 'wallpapers', !scope.wallpapers)
   preserveOptionalField(result, baseline, 'onlineWallpaperUrl', !scope.onlineWallpaperUrl)
   pruneInlineImages(result, baseline)
-  return result
+  return normalizeSnapshotOrder(result)
 }
 
 /** 生成应用远端快照后的校验目标，保留远端未携带的本机字段。 */
@@ -286,7 +288,7 @@ export function expectedAppliedSnapshot(
     else delete result.settings
   }
   pruneInlineImages(result)
-  return result
+  return normalizeSnapshotOrder(result)
 }
 
 export function preserveBaselineWallpapers(
@@ -302,7 +304,7 @@ export function preserveBaselineWallpapers(
     delete result.optional.wallpapers
     if (Object.keys(result.optional).length === 0) delete result.optional
   }
-  return result
+  return normalizeSnapshotOrder(result)
 }
 
 function preserveOptionalField(

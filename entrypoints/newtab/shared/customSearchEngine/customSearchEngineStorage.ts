@@ -1,5 +1,7 @@
 import { storage } from '#imports'
 
+import { coordinateStorage } from '@/shared/storage/syncWrite'
+
 interface CustomSearchEngine {
   id: string
   name: string
@@ -13,9 +15,8 @@ export interface CustomSearchEngineStorage {
 
 export const defaultCustomSearchEngine: CustomSearchEngineStorage = { items: [] }
 
-export const customSearchEngineStorage = storage.defineItem<CustomSearchEngineStorage>(
-  'local:customSearchEngine',
-  {
-    fallback: structuredClone(defaultCustomSearchEngine),
-  },
-)
+const rawStorage = storage.defineItem<CustomSearchEngineStorage>('local:customSearchEngine', {
+  fallback: structuredClone(defaultCustomSearchEngine),
+})
+
+export const customSearchEngineStorage = coordinateStorage(rawStorage)

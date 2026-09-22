@@ -1,5 +1,7 @@
 import { browser, storage } from '#imports'
 
+import { coordinateStorage } from '@/shared/storage/syncWrite'
+
 import { migrateWallpaperLibrary } from '../wallpaperLibrary'
 
 import { type CURRENT_CONFIG_SCHEMA, CURRENT_CONFIG_VERSION } from './current'
@@ -83,7 +85,7 @@ async function getCurrentSettings() {
 }
 
 // WXT 会记录迁移失败后继续返回旧值；阻止调用方把未迁移的数据当作当前配置保存。
-export const settingsStorage = {
+const currentSettingsStorage = {
   ...storedSettings,
   async getValue() {
     return (await getCurrentSettings()).value
@@ -100,3 +102,5 @@ export const settingsStorage = {
     })
   },
 }
+
+export const settingsStorage = coordinateStorage(currentSettingsStorage)

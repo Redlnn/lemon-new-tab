@@ -3,6 +3,7 @@ import { browser } from 'wxt/browser'
 
 import { idbClear, idbDelete, idbGet, idbSet, idbSetMany } from '@/shared/storage/idb'
 
+import { normalizeSnapshotOrder } from './snapshotOrder.ts'
 import type {
   LocalSyncStateV1,
   SyncConflict,
@@ -82,6 +83,7 @@ interface StoredWebDavSecretV1 {
 }
 
 export interface PendingApplyV1 {
+  localBefore?: SyncSnapshotV1
   version: 1
   operationId: string
   wallpaperSignature?: string
@@ -255,11 +257,48 @@ export function setStoredEncryptionKey(
 export async function getBaseline(): Promise<SyncSnapshotV1 | undefined> {
   const snapshot = (await idbGet('webdavSync', BASELINE_KEY)) as SyncSnapshotV1 | undefined
   if (!snapshot) return undefined
-  return { ...snapshot, scope: normalizeScope(snapshot.scope) }
+  return normalizeSnapshotOrder({ ...snapshot, scope: normalizeScope(snapshot.scope) })
 }
 
 export function setBaseline(snapshot: SyncSnapshotV1): Promise<void> {
   return idbSet('webdavSync', BASELINE_KEY, snapshot)
+}
+
+export interface PublishRecovery {
+  operationId: string
+  revisionId: string
+  snapshotHash: string
+  expectedLocal: SyncSnapshotV1
+}
+
+export function getPublishRecovery() {
+  return idbGet('webdavSync', 'publish-recovery') as Promise<PublishRecovery | undefined>
+}
+
+export function setPublishRecovery(value: PublishRecovery) {
+  return idbSet('webdavSync', 'publish-recovery', value)
+}
+
+export function clearPublishRecovery() {
+  return idbDelete('webdavSync', 'publish-recovery')
+}
+
+export interface AppliedSyncSnapshot {
+  operationId: string
+  revisionId: string
+  snapshot: SyncSnapshotV1
+}
+
+export function getAppliedSyncSnapshot() {
+  return idbGet('webdavSync', 'applied-sync-snapshot') as Promise<AppliedSyncSnapshot | undefined>
+}
+
+export function setAppliedSyncSnapshot(value: AppliedSyncSnapshot) {
+  return idbSet('webdavSync', 'applied-sync-snapshot', value)
+}
+
+export function clearAppliedSyncSnapshot() {
+  return idbDelete('webdavSync', 'applied-sync-snapshot')
 }
 
 export function getPendingApply(): Promise<PendingApplyV1 | undefined> {

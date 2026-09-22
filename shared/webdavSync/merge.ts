@@ -4,6 +4,7 @@ import {
   pickSyncSettings,
   preserveUnknownSyncSettings,
 } from './settingsWhitelist.ts'
+import { normalizeSnapshotOrder } from './snapshotOrder.ts'
 import type {
   JsonObject,
   JsonValue,
@@ -482,6 +483,9 @@ export function mergeSyncSnapshots(
   local: SyncSnapshotV1,
   remote: SyncSnapshotV1,
 ): ThreeWayMergeResult {
+  base = normalizeSnapshotOrder(base)
+  local = normalizeSnapshotOrder(local)
+  remote = normalizeSnapshotOrder(remote)
   const conflicts: SyncConflict[] = []
   const hasSettings = Boolean(base.settings || local.settings || remote.settings)
   const normalizedRemoteSettings = normalizeRemoteSyncSettings(

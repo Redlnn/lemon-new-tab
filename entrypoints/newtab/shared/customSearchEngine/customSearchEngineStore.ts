@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 
+import { createDraftWriter } from '@/shared/storage/syncWrite'
+
 import {
   customSearchEngineStorage,
   type CustomSearchEngineStorage,
@@ -15,13 +17,22 @@ export const useCustomSearchEngineStore = defineStore('customSearchEngine', () =
     items.value = nextItems
   }
 
+  const writer = createDraftWriter(
+    customSearchEngineStorage.raw,
+    () => ({ items: toRaw(items.value) }),
+    (value) => applyItems(value.items),
+    defaultCustomSearchEngine,
+  )
+  const stopWatch = customSearchEngineStorage.watch((value) => value && writer.receive(value))
+  onScopeDispose(stopWatch)
+
   const init = async () => {
     if (loaded.value) return
     if (initTask) return await initTask
 
     initTask = (async () => {
       const data = await customSearchEngineStorage.getValue()
-      applyItems(data.items)
+      writer.reset(data)
       loaded.value = true
     })()
 
@@ -46,7 +57,7 @@ export const useCustomSearchEngineStore = defineStore('customSearchEngine', () =
         await init()
       }
     }
-    await customSearchEngineStorage.setValue({ items: toRaw(items.value) })
+    await writer.save()
   }
 
   return { items, loaded, init, replace, save }

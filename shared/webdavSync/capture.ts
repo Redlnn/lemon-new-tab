@@ -8,6 +8,7 @@ import {
   type CaptureContext,
 } from './catalog.ts'
 import { pickSyncSettings } from './settingsWhitelist.ts'
+import { normalizeSnapshotOrder } from './snapshotOrder.ts'
 import type {
   LocalResourceOmission,
   SyncCustomSearchEngineV1,
@@ -52,7 +53,7 @@ export function captureSyncSnapshot(context: CaptureContext): SyncSnapshotV1 {
     const url = onlineWallpaperUrl(context.settings)
     if (url !== undefined) snapshot.optional = { ...snapshot.optional, onlineWallpaperUrl: url }
   }
-  return snapshot
+  return normalizeSnapshotOrder(snapshot)
 }
 
 interface BaseImageCandidate {

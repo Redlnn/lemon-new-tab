@@ -1,6 +1,8 @@
 import { storage } from '#imports'
 import { browser } from 'wxt/browser'
 
+import { coordinateStorage, withSyncWriteLock } from '@/shared/storage/syncWrite'
+
 export interface QuickLink {
   /** 同步实体 ID；旧数据会在首次读取时补齐并持久化。 */
   id?: string
@@ -27,9 +29,11 @@ export const MAX_QUICK_LINK_GROUP_NAME_LENGTH = 24
 
 export const defaultQuickLinksData: QuickLinksData = { items: [], groups: [] }
 
-export const quickLinksStorage = storage.defineItem<QuickLinksData>('local:quickLinks', {
+const rawStorage = storage.defineItem<QuickLinksData>('local:quickLinks', {
   fallback: structuredClone(defaultQuickLinksData),
 })
+
+export const quickLinksStorage = coordinateStorage(rawStorage)
 
 export function ensureQuickLinksStableIds(data: QuickLinksData): {
   changed: boolean
@@ -62,11 +66,12 @@ export function ensureQuickLinksStableIds(data: QuickLinksData): {
   return { changed, value }
 }
 
-export async function getQuickLinksStorageValue(): Promise<QuickLinksData> {
+export async function getQuickLinksStorageValue(lockHeld = false): Promise<QuickLinksData> {
+  if (!lockHeld) return withSyncWriteLock(() => getQuickLinksStorageValue(true))
   const current = await storage.getItem<QuickLinksData>(quickLinksStorage.key)
   if (current !== null) {
     const normalized = ensureQuickLinksStableIds(current)
-    if (normalized.changed) await quickLinksStorage.setValue(normalized.value)
+    if (normalized.changed) await quickLinksStorage.raw.setValue(normalized.value)
     return normalized.value
   }
 
@@ -78,11 +83,11 @@ export async function getQuickLinksStorageValue(): Promise<QuickLinksData> {
     Array.isArray((legacyValue as QuickLinksData).items)
   ) {
     const migrated = ensureQuickLinksStableIds(legacyValue as QuickLinksData).value
-    await quickLinksStorage.setValue(migrated)
+    await quickLinksStorage.raw.setValue(migrated)
     return migrated
   }
 
   const empty = structuredClone(defaultQuickLinksData)
-  await quickLinksStorage.setValue(empty)
+  await quickLinksStorage.raw.setValue(empty)
   return empty
 }

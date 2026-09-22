@@ -3,8 +3,10 @@ import { defineStore } from 'pinia'
 import i18next from 'i18next'
 
 import { useSettingsStore } from '@/shared/settings'
+import { createDraftWriter } from '@/shared/storage/syncWrite'
 import { normalizeUrlForDedup } from '@/shared/url'
 
+import { rebaseQuickLinkChanges } from './localChanges'
 import { flattenQuickLinkGroups, moveQuickLinkArrayItem } from './quickLinkAlgorithms'
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
@@ -101,7 +103,6 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   const groupState = ref<QuickLinkGroup[]>(structuredClone(defaultQuickLinksData.groups ?? []))
   const loaded = ref(false)
   let initTask: Promise<void> | null = null
-  const localSaveHashes: string[] = []
 
   const items = computed<readonly QuickLink[]>(() =>
     groupState.value.length > 0 ? flattenQuickLinkGroups(groupState.value) : flatItems.value,
@@ -205,12 +206,14 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     return { items: flatItems.value.map(toStorageQuickLink), groups: [] }
   }
 
-  const persistSnapshot = async (snapshot: QuickLinksData) => {
-    const hash = JSON.stringify(snapshot)
-    localSaveHashes.push(hash)
-    if (localSaveHashes.length > 8) localSaveHashes.shift()
-    await quickLinksStorage.setValue(snapshot)
-  }
+  const writer = createDraftWriter(
+    quickLinksStorage.raw,
+    () => getSnapshot(groupState.value.length > 0),
+    (value) => applyItems(value.items, value.groups),
+    defaultQuickLinksData,
+    rebaseQuickLinkChanges,
+  )
+  const persistSnapshot = (snapshot: QuickLinksData) => writer.save(snapshot)
 
   const init = async () => {
     if (loaded.value) return
@@ -218,7 +221,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
 
     initTask = (async () => {
       const quickLinksData = await getQuickLinksStorageValue()
-      applyItems(quickLinksData.items, quickLinksData.groups)
+      writer.reset(quickLinksData)
       loaded.value = true
     })()
 
@@ -239,13 +242,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
 
   const stopStorageWatch = quickLinksStorage.watch((newValue) => {
     if (!newValue) return
-    const hash = JSON.stringify(newValue)
-    const localSaveIndex = localSaveHashes.indexOf(hash)
-    if (localSaveIndex >= 0) {
-      localSaveHashes.splice(localSaveIndex, 1)
-      return
-    }
-    replace(newValue)
+    writer.receive(newValue)
   })
   onScopeDispose(stopStorageWatch)
 

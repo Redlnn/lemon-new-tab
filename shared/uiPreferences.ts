@@ -1,5 +1,7 @@
 import { storage } from '#imports'
 
+import { coordinateStorage } from '@/shared/storage/syncWrite'
+
 import type { ColorModePreference } from './webdavSync/types.ts'
 
 export interface UiPreferencesV1 {
@@ -10,24 +12,21 @@ export interface UiPreferencesV1 {
 
 const defaultUiPreferences: UiPreferencesV1 = { version: 1 }
 
-export const uiPreferencesStorage = storage.defineItem<UiPreferencesV1>('local:uiPreferences', {
+const rawStorage = storage.defineItem<UiPreferencesV1>('local:uiPreferences', {
   fallback: structuredClone(defaultUiPreferences),
 })
 
-let patchTask = Promise.resolve<UiPreferencesV1>(structuredClone(defaultUiPreferences))
+export const uiPreferencesStorage = coordinateStorage(rawStorage)
 
 export function getUiPreferences(): Promise<UiPreferencesV1> {
   return uiPreferencesStorage.getValue()
 }
 
-export function patchUiPreferences(
-  patch: Partial<Omit<UiPreferencesV1, 'version'>>,
-): Promise<UiPreferencesV1> {
-  patchTask = patchTask.then(async () => {
-    const current = await uiPreferencesStorage.getValue()
-    const next = { ...current, ...patch, version: 1 as const }
-    await uiPreferencesStorage.setValue(next)
-    return next
-  })
-  return patchTask
+export function patchUiPreferences(patch: Partial<Omit<UiPreferencesV1, 'version'>>) {
+  const changes = structuredClone(patch)
+  return uiPreferencesStorage.updateValue((current) => ({
+    ...current,
+    ...changes,
+    version: 1 as const,
+  }))
 }

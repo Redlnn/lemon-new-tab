@@ -6,13 +6,18 @@ import {
   type QuickLinksData,
 } from '@/shared/quickLinks'
 import { migrateSettingsToCurrent, type MigratableSettings } from '@/shared/settings'
+import { withSyncWriteLock } from '@/shared/storage/syncWrite'
 import { getUiPreferences } from '@/shared/uiPreferences'
 
 import { customSearchEngineStorage } from '@newtab/shared/customSearchEngine/customSearchEngineStorage'
 
 import { mergeImportedSnapshot } from './apply.ts'
 import { parseJsonBackup, serializeJsonBackup, type ParsedLocalBackup } from './backupFormat.ts'
-import { captureBrowserSyncSnapshotResult, prepareAndApplyBrowserSnapshot } from './browserData.ts'
+import {
+  captureBrowserSyncSnapshotResult,
+  prepareBrowserApply,
+  applyPreparedBrowserSnapshot,
+} from './browserData.ts'
 import { captureSyncSnapshot, deduplicateInlineImages } from './capture.ts'
 import { DEFAULT_SYNC_SCOPE } from './localState.ts'
 import type { SyncScopePreferences, SyncSnapshotV1 } from './types.ts'
@@ -65,25 +70,22 @@ export async function prepareBrowserImport(file: Blob): Promise<PreparedBrowserI
   }
 }
 
-export async function mergePreparedBrowserImport(
-  input: PreparedBrowserImport,
-  scope: SyncScopePreferences,
-): Promise<SyncSnapshotV1> {
-  const current = await captureBrowserSyncSnapshotResult(scope)
-  return mergeImportedSnapshot(current.snapshot, input.snapshot)
-}
-
 export async function applyPreparedBrowserImport(
   input: PreparedBrowserImport,
-  snapshot: SyncSnapshotV1 = input.snapshot,
+  mergeScope?: SyncScopePreferences,
 ): Promise<void> {
-  await prepareAndApplyBrowserSnapshot(
-    crypto.randomUUID(),
-    crypto.randomUUID(),
-    snapshot,
-    snapshot.scope,
-  )
-  if (input.legacyIcons) await restoreLegacyIcons(input.legacyIcons)
+  return withSyncWriteLock(async () => {
+    const snapshot = mergeScope
+      ? mergeImportedSnapshot(
+          (await captureBrowserSyncSnapshotResult(mergeScope, undefined, true)).snapshot,
+          input.snapshot,
+        )
+      : input.snapshot
+    await applyPreparedBrowserSnapshot(
+      await prepareBrowserApply(crypto.randomUUID(), crypto.randomUUID(), snapshot, snapshot.scope),
+    )
+    if (input.legacyIcons) await restoreLegacyIcons(input.legacyIcons)
+  })
 }
 
 function inferImportScope(snapshot: SyncSnapshotV1): SyncScopePreferences {
@@ -178,7 +180,7 @@ function collectLegacyIcons(
 
 async function restoreLegacyIcons(icons: LegacyLocalIcons): Promise<void> {
   const [quickLinks, searchEngines] = await Promise.all([
-    getQuickLinksStorageValue(),
+    getQuickLinksStorageValue(true),
     customSearchEngineStorage.getValue(),
   ])
   let quickLinksChanged = false
@@ -207,8 +209,10 @@ async function restoreLegacyIcons(icons: LegacyLocalIcons): Promise<void> {
     }),
   }
   await Promise.all([
-    quickLinksChanged ? quickLinksStorage.setValue(restoredQuickLinks) : undefined,
-    searchEnginesChanged ? customSearchEngineStorage.setValue(restoredSearchEngines) : undefined,
+    quickLinksChanged ? quickLinksStorage.raw.setValue(restoredQuickLinks) : undefined,
+    searchEnginesChanged
+      ? customSearchEngineStorage.raw.setValue(restoredSearchEngines)
+      : undefined,
   ])
 }
 
