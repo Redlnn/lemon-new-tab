@@ -42,7 +42,7 @@ import {
   SearchEnginesSwitcher,
   SettingsPage,
   SyncRetirementDialog,
-  Memo,
+  Note,
   useLazyAppComponents,
 } from './composables/useLazyAppComponents'
 import { usePermission } from './composables/usePermission'
@@ -84,16 +84,16 @@ const {
   showBookmark,
   openAddQuickLinkDialog,
   openEditQuickLinkDialog,
-  memoMounted,
-  memoVisible,
+  noteMounted,
+  noteVisible,
   builtinAppsMounted,
   builtinAppsVisible,
-  showMemo,
+  showNote,
   showBuiltinApps,
 } = useLazyAppComponents()
 
 function handleBuiltInApp(event: Event) {
-  if ((event as CustomEvent<string>).detail === 'memo') showMemo()
+  if ((event as CustomEvent<string>).detail === 'note') showNote()
 }
 onMounted(() => window.addEventListener('lemon-new-tab:open-built-in-app', handleBuiltInApp))
 onBeforeUnmount(() => window.removeEventListener('lemon-new-tab:open-built-in-app', handleBuiltInApp))
@@ -378,7 +378,7 @@ function toggleMinimalMode() {
       @download="downloadCloudData"
       @delete="deleteCloudData"
     />
-    <memo v-if="memoMounted" v-model="memoVisible" />
+    <note v-if="noteMounted" v-model="noteVisible" />
     <builtin-apps-dialog v-if="builtinAppsMounted" v-model="builtinAppsVisible" />
   </el-config-provider>
 </template>

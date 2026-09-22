@@ -261,6 +261,7 @@ function displayTitle(
   if (path === 'customSearchEngines.order')
     return t('webdavSync.conflicts.fields.searchEngineOrder')
   if (path === 'customSearchEngines') return t('webdavSync.conflicts.categories.search-engines')
+  if (path.startsWith('notes')) return t('webdavSync.scope.notes')
   if (path === 'optional.blockedTopSites')
     return t('webdavSync.conflicts.categories.blocked-top-sites')
   if (path.startsWith('optional.wallpapers.rotation')) return t('background.library.rotation')
@@ -285,6 +286,7 @@ export function displaySyncCategory(
   t: ConflictTranslator,
 ): string {
   if (category === 'quick-links') return t('quickLinks.title')
+  if (category === 'notes') return t('webdavSync.scope.notes')
   if (category === 'scope') return t('webdavSync.scope.title')
   if (category === 'wallpaper') return t('webdavSync.conflicts.fields.wallpaper')
   return t(`webdavSync.conflicts.categories.${category}`)

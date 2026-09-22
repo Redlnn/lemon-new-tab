@@ -36,10 +36,10 @@ export function useQuickLinksBootstrap() {
       if (!legacy.quickLinks && !legacy.bookmark && quickLinksStore.items.length === 0) {
         await quickLinksStore.insertFlatQuickLink({
           quickLink: {
-            url: builtInAppUrl('memo'),
-            title: i18next.t('newtab:builtinApps.memo'),
-            favicon: builtInApps.memo.icon,
-            appId: 'memo',
+            url: builtInAppUrl('note'),
+            title: i18next.t('newtab:builtinApps.note'),
+            icon: builtInApps.note.icon,
+            appId: 'note',
           },
           index: 0,
         })

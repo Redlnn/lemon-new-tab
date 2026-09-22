@@ -14,7 +14,7 @@ import {
   type QuickLinkTarget,
 } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
-import { getBuiltInAppId, openBuiltInApp } from '@/shared/builtinApps'
+import { openBuiltInApp, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
@@ -42,8 +42,8 @@ const focusStore = useFocusState()
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
 
-function openBuiltInItem(event: MouseEvent, item: { url: string }) {
-  const appId = getBuiltInAppId(item.url)
+function openBuiltInItem(event: MouseEvent, item: { url: string; appId?: BuiltInAppId }) {
+  const appId = resolveBuiltInAppId(item)
   if (!appId) return
   event.preventDefault()
   openBuiltInApp(appId)
@@ -449,7 +449,12 @@ defineExpose({ refresh, toggleLaunchpad })
           @contextmenu.stop.prevent="onItemContextmenu($event, item, true, idx)"
           @click="openBuiltInItem($event, item)"
         >
-          <favicon-image :url="item.url" :favicon="item.favicon" :title="item.title" />
+          <favicon-image
+            :url="item.url"
+            :favicon="item.favicon"
+            :icon="item.icon"
+            :title="item.title"
+          />
         </a>
       </el-tooltip>
       <div
@@ -493,7 +498,11 @@ defineExpose({ refresh, toggleLaunchpad })
           @click="openBuiltInItem($event, item)"
           @trigger="onItemLongPress($event, item, false, j)"
         >
-          <favicon-image :url="item.url" :favicon="item.favicon" :title="item.title" />
+          <favicon-image
+            :url="item.url"
+            :favicon="item.favicon"
+            :title="item.title"
+          />
         </OnLongPress>
       </el-tooltip>
       <div v-if="j !== visibleTopSites.length - 1" class="dock-gap" :ref="setScalableRef"></div>
@@ -607,6 +616,7 @@ html.colorful .dock:not(.dock--opacity) {
     background-color var(--el-transition-duration-fast) ease;
 
   img,
+  .favicon-image__component,
   .favicon-image__title-initial {
     width: 75%;
     width: var(--item-ratio);

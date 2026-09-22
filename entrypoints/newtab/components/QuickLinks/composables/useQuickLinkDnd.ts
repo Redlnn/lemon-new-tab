@@ -28,6 +28,8 @@ export type QuickLinkDndData =
       url: string
       title: string
       favicon?: string
+      icon?: QuickLink['icon']
+      appId?: QuickLink['appId']
       isPinned: boolean
       origin: 'pinned' | 'top-sites'
       pageIndex?: number
@@ -342,6 +344,8 @@ export function getQuickLinkFromDndData(
     url: source.url,
     title: source.title,
     favicon: source.favicon,
+    icon: source.icon,
+    appId: source.appId,
     faviconSource: source.origin === 'top-sites' && source.favicon ? 'automatic' : undefined,
   }
 }

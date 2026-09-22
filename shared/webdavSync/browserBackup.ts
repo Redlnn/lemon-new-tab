@@ -1,3 +1,4 @@
+import { withNotesLock } from '@/shared/notes'
 import {
   ensureQuickLinksStableIds,
   getQuickLinksStorageValue,
@@ -35,6 +36,7 @@ export async function createBrowserJsonBackup() {
   const capture = await captureBrowserSyncSnapshotResult({
     settings: true,
     quickLinks: true,
+    notes: true,
     customSearchEngines: true,
     uiPreferences: true,
     blockedTopSites: true,
@@ -77,19 +79,22 @@ export async function applyPreparedBrowserImport(
   input: PreparedBrowserImport,
   snapshot: SyncSnapshotV1 = input.snapshot,
 ): Promise<void> {
-  await prepareAndApplyBrowserSnapshot(
-    crypto.randomUUID(),
-    crypto.randomUUID(),
-    snapshot,
-    snapshot.scope,
-  )
-  if (input.legacyIcons) await restoreLegacyIcons(input.legacyIcons)
+  return withNotesLock(async () => {
+    await prepareAndApplyBrowserSnapshot(
+      crypto.randomUUID(),
+      crypto.randomUUID(),
+      snapshot,
+      snapshot.scope,
+    )
+    if (input.legacyIcons) await restoreLegacyIcons(input.legacyIcons)
+  })
 }
 
 function inferImportScope(snapshot: SyncSnapshotV1): SyncScopePreferences {
   return {
     settings: Boolean(snapshot.settings),
     quickLinks: Boolean(snapshot.quickLinks),
+    notes: Boolean(snapshot.notes),
     customSearchEngines: Boolean(snapshot.customSearchEngines),
     uiPreferences: Boolean(snapshot.ui),
     blockedTopSites: Boolean(snapshot.optional?.blockedTopSites),

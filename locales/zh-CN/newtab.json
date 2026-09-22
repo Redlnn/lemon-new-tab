@@ -1,7 +1,4 @@
 {
-  "about": {
-    "yiyanProvider": "一言API由 {api} 提供"
-  },
   "a11y": {
     "actions": "页面操作",
     "addQuickLinksGroup": "添加快速导航分组",
@@ -21,6 +18,9 @@
     "refreshBackground": "刷新背景",
     "searchInput": "搜索关键词",
     "searchSuggestions": "搜索建议"
+  },
+  "about": {
+    "yiyanProvider": "一言API由 {api} 提供"
   },
   "bookmark": {
     "404": "什么都没找到",
@@ -55,6 +55,12 @@
       "msg": "非常抱歉，检测到不受支持的历史设置版本。为保证扩展功能正常运行，请清除扩展数据并刷新。",
       "title": "不支持的配置版本"
     }
+  },
+  "builtinApps": {
+    "add": "添加",
+    "note": "便签",
+    "remove": "移除",
+    "title": "内置应用管理"
   },
   "changelog": {
     "hideMajor": "不显示大版本更新日志",
@@ -101,6 +107,29 @@
       "title": "启动台"
     }
   },
+  "note": {
+    "backToList": "返回便签列表",
+    "create": "创建便签",
+    "deleteConfirm": "确定删除「{{title}}」吗？",
+    "discard": "放弃修改",
+    "edit": "编辑便签",
+    "empty": "从列表选择便签，或新建一条便签。",
+    "export": "导出图片",
+    "exportFailed": "无法导出便签图片",
+    "exported": "便签图片已导出",
+    "listEmpty": "还没有便签",
+    "pin": "置顶",
+    "time": {
+      "dayBeforeYesterday": "前天{{time}}",
+      "today": "今天{{time}}",
+      "yesterday": "昨天{{time}}"
+    },
+    "title": "便签",
+    "toggleSource": "切换源码编辑",
+    "unpin": "取消置顶",
+    "unsaved": "离开前保存修改吗？",
+    "untitled": "无标题便签"
+  },
   "menu": {
     "about": "关于",
     "backgroundPreference": "背景偏好设置",
@@ -108,8 +137,6 @@
     "searchEnginePreference": "搜索引擎偏好",
     "sponsor": "支持我们"
   },
-  "builtinApps": { "title": "内置应用管理", "memo": "便签", "add": "添加", "remove": "移除" },
-  "memo": { "title": "便签", "untitled": "无标题便签", "create": "创建便签", "unsaved": "离开前保存修改吗？", "delete": "确定删除此便签吗？", "time": { "today": "今天{{time}}", "yesterday": "昨天{{time}}", "dayBeforeYesterday": "前天{{time}}" } },
   "notification": {
     "bing": {
       "message": "请检查开发者工具中的控制台提示。",
@@ -132,45 +159,6 @@
       "message": "感谢安装柠檬起始页！你可以在右下角的设置中自定义你的新标签页。",
       "title": "欢迎使用柠檬起始页"
     }
-  },
-  "search": {
-    "engineMenu": {
-      "current": "当前",
-      "tipPrefix": "Tip：按下",
-      "tipSuffix": "切换搜索引擎"
-    },
-    "engines": {
-      "baidu": "百度",
-      "bing": "必应",
-      "duckduckgo": "DuckDuckGo",
-      "google": "Google",
-      "yandex": "Yandex"
-    },
-    "placeholder": "搜索",
-    "purgeSearchHistory": "清除搜索历史",
-    "searchEngineNotFound": "未找到搜索引擎",
-    "calculator": "计算器",
-    "calculationResult": "计算结果",
-    "clickToCopy": "点击复制",
-    "open": "打开",
-    "savedWebsite": "已收藏网站",
-    "mostVisited": "最常访问",
-    "navigateTo": "前往",
-    "searchFor": "搜索"
-  },
-  "sponsor": "这个扩展是我利用业余时间开发的小工具，很开心能帮助到你！如果你喜欢它，不妨给个 Star ⭐ 来支持一下，这对我意义重大。如果有任何想法或建议，也欢迎通过邮箱联系我：redlnn@outlook.com。谢谢你的信任！",
-  "time": {
-    "afternoon": "下午",
-    "dawn": "凌晨",
-    "dusk": "傍晚",
-    "evening": "晚上",
-    "lateNight": "深夜",
-    "morning": "早上",
-    "noon": "中午"
-  },
-  "title": "新标签页",
-  "yiyan": {
-    "copied": "已复制到剪贴板"
   },
   "quickLinks": {
     "addDialog": {
@@ -198,16 +186,55 @@
       "untitled": "分组 {{index}}"
     },
     "hide": "隐藏",
-    "moveError": "移动失败",
-    "moveLeft": "左移",
-    "moveRight": "右移",
     "hideTopMessage": {
       "content": "已隐藏该最常访问网站",
       "restoreDefault": "恢复默认",
       "restoreSuccess": "已恢复默认最常访问网站"
     },
+    "moveError": "移动失败",
+    "moveLeft": "左移",
+    "moveRight": "右移",
     "pin": "置顶",
     "unpin": "取消置顶",
     "unpinMessage": "已取消置顶该链接"
+  },
+  "search": {
+    "calculationResult": "计算结果",
+    "calculator": "计算器",
+    "clickToCopy": "点击复制",
+    "engineMenu": {
+      "current": "当前",
+      "tipPrefix": "Tip：按下",
+      "tipSuffix": "切换搜索引擎"
+    },
+    "engines": {
+      "baidu": "百度",
+      "bing": "必应",
+      "duckduckgo": "DuckDuckGo",
+      "google": "Google",
+      "yandex": "Yandex"
+    },
+    "mostVisited": "最常访问",
+    "navigateTo": "前往",
+    "open": "打开",
+    "placeholder": "搜索",
+    "purgeSearchHistory": "清除搜索历史",
+    "savedWebsite": "已收藏网站",
+    "searchEngineNotFound": "未找到搜索引擎",
+    "searchFor": "搜索"
+  },
+  "sponsor": "这个扩展是我利用业余时间开发的小工具，很开心能帮助到你！如果你喜欢它，不妨给个 Star ⭐ 来支持一下，这对我意义重大。如果有任何想法或建议，也欢迎通过邮箱联系我：redlnn@outlook.com。谢谢你的信任！",
+  "time": {
+    "afternoon": "下午",
+    "dawn": "凌晨",
+    "dusk": "傍晚",
+    "evening": "晚上",
+    "lateNight": "深夜",
+    "morning": "早上",
+    "noon": "中午"
+  },
+  "title": "新标签页",
+  "yiyan": {
+    "copied": "已复制到剪贴板"
   }
 }

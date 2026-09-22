@@ -33,6 +33,7 @@ export function compareSyncSnapshots(
       current.quickLinks as unknown as JsonValue,
       target.quickLinks as unknown as JsonValue,
     ],
+    ['notes', 'notes', current.notes as unknown as JsonValue, target.notes as unknown as JsonValue],
     [
       'search-engines',
       'customSearchEngines',

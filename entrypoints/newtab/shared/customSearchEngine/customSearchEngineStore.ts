@@ -41,10 +41,8 @@ export const useCustomSearchEngineStore = defineStore('customSearchEngine', () =
     if (data) {
       applyItems(data.items)
       loaded.value = true
-    } else {
-      if (!loaded.value) {
-        await init()
-      }
+    } else if (!loaded.value) {
+      await init()
     }
     await customSearchEngineStorage.setValue({ items: toRaw(items.value) })
   }

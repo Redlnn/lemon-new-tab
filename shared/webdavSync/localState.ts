@@ -14,6 +14,7 @@ import type { WebDavConnection } from './webdav.ts'
 export const DEFAULT_SYNC_SCOPE: Readonly<SyncScopePreferences> = {
   settings: true,
   quickLinks: true,
+  notes: true,
   customSearchEngines: true,
   uiPreferences: true,
   blockedTopSites: false,
@@ -27,6 +28,7 @@ function normalizeScope(value: Partial<SyncScopePreferences> | undefined): SyncS
     settings: typeof value?.settings === 'boolean' ? value.settings : DEFAULT_SYNC_SCOPE.settings,
     quickLinks:
       typeof value?.quickLinks === 'boolean' ? value.quickLinks : DEFAULT_SYNC_SCOPE.quickLinks,
+    notes: typeof value?.notes === 'boolean' ? value.notes : DEFAULT_SYNC_SCOPE.notes,
     customSearchEngines:
       typeof value?.customSearchEngines === 'boolean'
         ? value.customSearchEngines
@@ -91,6 +93,7 @@ export interface PendingApplyV1 {
     | 'wallpapers'
     | 'settings'
     | 'quick-links'
+    | 'notes'
     | 'search-engines'
     | 'ui'
     | 'optional'

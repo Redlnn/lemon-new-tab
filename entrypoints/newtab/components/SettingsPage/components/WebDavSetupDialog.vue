@@ -418,6 +418,12 @@ watch(
               </label>
               <label>
                 <span>
+                  <strong>{{ t('webdavSync.scope.notes') }}</strong>
+                </span>
+                <el-switch v-model="scope.notes" />
+              </label>
+              <label>
+                <span>
                   <strong>{{ t('webdavSync.scope.customSearchEngines') }}</strong>
                 </span>
                 <el-switch v-model="scope.customSearchEngines" />

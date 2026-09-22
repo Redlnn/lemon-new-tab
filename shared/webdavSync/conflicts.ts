@@ -12,6 +12,7 @@ import { validateSyncSnapshot } from './validation.ts'
 type EntityValue = { id: string; [key: string]: JsonValue }
 type QuickLinks = NonNullable<SyncSnapshotV1['quickLinks']>
 type SearchEngines = NonNullable<SyncSnapshotV1['customSearchEngines']>
+type Notes = NonNullable<SyncSnapshotV1['notes']>
 
 function quickLinks(snapshot: SyncSnapshotV1): QuickLinks {
   if (!snapshot.quickLinks) throw new TypeError('Quick Link conflict has no data')
@@ -21,6 +22,11 @@ function quickLinks(snapshot: SyncSnapshotV1): QuickLinks {
 function searchEngines(snapshot: SyncSnapshotV1): SearchEngines {
   if (!snapshot.customSearchEngines) throw new TypeError('Search engine conflict has no data')
   return snapshot.customSearchEngines
+}
+
+function notes(snapshot: SyncSnapshotV1): Notes {
+  if (!snapshot.notes) throw new TypeError('Note conflict has no data')
+  return snapshot.notes
 }
 
 export function resolveSyncConflicts(input: {
@@ -84,13 +90,14 @@ export function readConflictValue(
   snapshot: SyncSnapshotV1,
   conflict: SyncConflict,
 ): JsonValue | undefined {
-  const path = conflict.path
+  const { path } = conflict
   for (const [prefix, items] of [
     ['optional.wallpapers.light.items.', snapshot.optional?.wallpapers?.light?.items],
     ['optional.wallpapers.dark.items.', snapshot.optional?.wallpapers?.dark?.items],
     ['quickLinks.items.', snapshot.quickLinks?.items],
     ['quickLinks.groups.', snapshot.quickLinks?.groups],
     ['customSearchEngines.items.', snapshot.customSearchEngines?.items],
+    ['notes.items.', snapshot.notes?.items],
   ] as const) {
     if (!path.startsWith(prefix)) continue
     const [id, ...keys] = path.slice(prefix.length).split('.')
@@ -114,7 +121,11 @@ export function applyConflictCandidate(
   conflict: SyncConflict,
   value = readConflictValue(source, conflict),
 ): void {
-  if (conflict.kind === 'delete-vs-modify' || conflict.kind === 'simultaneous-create') {
+  if (
+    conflict.kind === 'delete-vs-modify' ||
+    conflict.kind === 'simultaneous-create' ||
+    /^notes\.items\.[^.]+$/.test(conflict.path)
+  ) {
     applyEntity(target, source, conflict, value)
   } else {
     applyPathValue(target, conflict.path, value, value !== undefined)
@@ -153,6 +164,9 @@ function entityTarget(
       order: engines.order,
     }
   }
+  if (conflict.path.startsWith('notes.items.')) {
+    return { items: notes(snapshot).items as unknown as EntityValue[], order: [] }
+  }
   throw new TypeError(`Unsupported entity conflict: ${conflict.path}`)
 }
 
@@ -162,7 +176,9 @@ function entityId(conflict: SyncConflict): string {
     ? 'quickLinks.items.'
     : conflict.path.startsWith('quickLinks.groups.')
       ? 'quickLinks.groups.'
-      : 'customSearchEngines.items.'
+      : conflict.path.startsWith('notes.items.')
+        ? 'notes.items.'
+        : 'customSearchEngines.items.'
   return conflict.path.slice(prefix.length)
 }
 
@@ -210,17 +226,20 @@ function keepBothEntities(
   }
   const localValue = Object.hasOwn(conflict, 'local') ? conflict.local : undefined
   const remoteValue = Object.hasOwn(conflict, 'remote') ? conflict.remote : undefined
-  const modified =
-    conflict.kind === 'simultaneous-create' ? remoteValue : (localValue ?? remoteValue)
+  const duplicateRemote = conflict.kind === 'simultaneous-create' || conflict.kind === 'field'
+  const modified = duplicateRemote ? remoteValue : (localValue ?? remoteValue)
   if (!modified || typeof modified !== 'object' || Array.isArray(modified)) {
     throw new TypeError('Conflict has no entity to duplicate')
   }
   if (conflict.kind === 'delete-vs-modify') {
     removeEntity(destination, target, conflict, originalId)
+  } else if (conflict.kind === 'field') {
+    // 便签字段冲突已聚合为整个实体，保留本机原文并复制远端原文。
+    applyEntity(target, local, conflict, localValue)
   }
   const duplicate = { ...(structuredClone(modified) as JsonObject), id: duplicateId } as EntityValue
   destination.items.push(duplicate)
-  const source = conflict.kind === 'simultaneous-create' || !localValue ? remote : local
+  const source = duplicateRemote || !localValue ? remote : local
   insertEntityOrder(destination.order, target, source, conflict, originalId, duplicateId)
 }
 
@@ -241,12 +260,10 @@ function removeEntity(
     for (const group of links!.groups) {
       group.itemIds = group.itemIds.filter((item) => item !== id)
     }
-  } else if (conflict.path.startsWith('quickLinks.groups.')) {
-    if (removedGroup) {
-      for (const itemId of removedGroup.itemIds) {
-        if (!links!.rootOrder.includes(itemId)) {
-          links!.rootOrder.push(itemId)
-        }
+  } else if (conflict.path.startsWith('quickLinks.groups.') && removedGroup) {
+    for (const itemId of removedGroup.itemIds) {
+      if (!links!.rootOrder.includes(itemId)) {
+        links!.rootOrder.push(itemId)
       }
     }
   }
@@ -289,6 +306,7 @@ function insertEntityOrder(
     )
     return
   }
+  if (conflict.path.startsWith('notes.items.')) return
   const sourceOrder = searchEngines(source).order
   insertAfterSource(fallbackOrder, sourceOrder, sourceId, insertedId)
 }
@@ -356,6 +374,15 @@ function applyPathValue(
     )
     return
   }
+  if (path.startsWith('notes.items.')) {
+    applyEntityField(
+      notes(snapshot).items as unknown as EntityValue[],
+      path.slice('notes.items.'.length),
+      value,
+      present,
+    )
+    return
+  }
   if (path === 'customSearchEngines.order') {
     searchEngines(snapshot).order = present && Array.isArray(value) ? ([...value] as string[]) : []
     return
@@ -370,6 +397,7 @@ function applyPathValue(
       'scope',
       'quickLinks',
       'customSearchEngines',
+      'notes',
       'inlineImages',
     ].includes(root)
   ) {

@@ -1,7 +1,4 @@
 {
-  "about": {
-    "yiyanProvider": "Chinese poetry API provided by {api}"
-  },
   "a11y": {
     "actions": "Page actions",
     "addQuickLinksGroup": "Add Quick Links group",
@@ -21,6 +18,9 @@
     "refreshBackground": "Refresh background",
     "searchInput": "Search keywords",
     "searchSuggestions": "Search suggestions"
+  },
+  "about": {
+    "yiyanProvider": "Chinese poetry API provided by {api}"
   },
   "bookmark": {
     "404": "Nothing found",
@@ -55,6 +55,12 @@
       "msg": "We’re sorry, but an unsupported legacy settings version was detected. To ensure the extension functions properly, please clear the extension data and refresh.",
       "title": "Unsupported Settings Version"
     }
+  },
+  "builtinApps": {
+    "add": "Add",
+    "note": "Note",
+    "remove": "Remove",
+    "title": "Built-in apps"
   },
   "changelog": {
     "hideMajor": "Hide major update changelog",
@@ -101,6 +107,29 @@
       "title": "Launchpad"
     }
   },
+  "note": {
+    "backToList": "Back to note list",
+    "create": "Create note",
+    "deleteConfirm": "Delete “{{title}}”?",
+    "discard": "Discard",
+    "edit": "Edit note",
+    "empty": "Choose a note from the list or create a new one.",
+    "export": "Export image",
+    "exportFailed": "Unable to export note image",
+    "exported": "Note image exported",
+    "listEmpty": "No notes yet",
+    "pin": "Pin",
+    "time": {
+      "dayBeforeYesterday": "The day before yesterday, {{time}}",
+      "today": "Today, {{time}}",
+      "yesterday": "Yesterday, {{time}}"
+    },
+    "title": "Note",
+    "toggleSource": "Toggle source editor",
+    "unpin": "Unpin",
+    "unsaved": "Save changes before leaving?",
+    "untitled": "Untitled note"
+  },
   "menu": {
     "about": "About",
     "backgroundPreference": "Background Preference",
@@ -108,8 +137,6 @@
     "searchEnginePreference": "Search Engine Preference",
     "sponsor": "Sponsor"
   },
-  "builtinApps": { "title": "Built-in apps", "memo": "Memo", "add": "Add", "remove": "Remove" },
-  "memo": { "title": "Memo", "untitled": "Untitled memo", "create": "Create memo", "unsaved": "Save changes before leaving?", "delete": "Delete this memo?", "time": { "today": "Today, {{time}}", "yesterday": "Yesterday, {{time}}", "dayBeforeYesterday": "The day before yesterday, {{time}}" } },
   "notification": {
     "bing": {
       "message": "Please check the console output in developer tools.",
@@ -132,45 +159,6 @@
       "message": "Thanks for installing Lemon New Tab! Customize your new tab page in the settings (bottom-right corner).",
       "title": "Welcome to Lemon New Tab"
     }
-  },
-  "search": {
-    "engineMenu": {
-      "current": "Current",
-      "tipPrefix": "Tip: Press",
-      "tipSuffix": "to switch search engine."
-    },
-    "engines": {
-      "baidu": "Baidu",
-      "bing": "Bing",
-      "duckduckgo": "DuckDuckGo",
-      "google": "Google",
-      "yandex": "Yandex"
-    },
-    "placeholder": "Search",
-    "purgeSearchHistory": "Clear Search History",
-    "searchEngineNotFound": "Search engine not found",
-    "calculator": "Calculator",
-    "calculationResult": "Result",
-    "clickToCopy": "Click to copy",
-    "open": "Open",
-    "savedWebsite": "Saved websites",
-    "mostVisited": "Most visited",
-    "navigateTo": "Go to",
-    "searchFor": "Search"
-  },
-  "sponsor": "This extension was created by me in my spare time to solve my own needs, and I'm thrilled it helps you too! If you enjoy it, please consider giving it a ⭐ on GitHub—it means a lot to me. Feel free to share your ideas or feedback at: redlnn@outlook.com. Thank you!",
-  "time": {
-    "afternoon": "",
-    "dawn": "",
-    "dusk": "",
-    "evening": "",
-    "lateNight": "",
-    "morning": "",
-    "noon": ""
-  },
-  "title": "New Tab",
-  "yiyan": {
-    "copied": "Copied to clipboard"
   },
   "quickLinks": {
     "addDialog": {
@@ -198,16 +186,55 @@
       "untitled": "Group {{index}}"
     },
     "hide": "Hide",
-    "moveError": "Move failed",
-    "moveLeft": "Move left",
-    "moveRight": "Move right",
     "hideTopMessage": {
       "content": "Most visited site hidden.",
       "restoreDefault": "Restore default",
       "restoreSuccess": "Default most visited site restored"
     },
+    "moveError": "Move failed",
+    "moveLeft": "Move left",
+    "moveRight": "Move right",
     "pin": "Pin",
     "unpin": "Unpin",
     "unpinMessage": "Link unpinned."
+  },
+  "search": {
+    "calculationResult": "Result",
+    "calculator": "Calculator",
+    "clickToCopy": "Click to copy",
+    "engineMenu": {
+      "current": "Current",
+      "tipPrefix": "Tip: Press",
+      "tipSuffix": "to switch search engine."
+    },
+    "engines": {
+      "baidu": "Baidu",
+      "bing": "Bing",
+      "duckduckgo": "DuckDuckGo",
+      "google": "Google",
+      "yandex": "Yandex"
+    },
+    "mostVisited": "Most visited",
+    "navigateTo": "Go to",
+    "open": "Open",
+    "placeholder": "Search",
+    "purgeSearchHistory": "Clear Search History",
+    "savedWebsite": "Saved websites",
+    "searchEngineNotFound": "Search engine not found",
+    "searchFor": "Search"
+  },
+  "sponsor": "This extension was created by me in my spare time to solve my own needs, and I'm thrilled it helps you too! If you enjoy it, please consider giving it a ⭐ on GitHub—it means a lot to me. Feel free to share your ideas or feedback at: redlnn@outlook.com. Thank you!",
+  "time": {
+    "afternoon": "",
+    "dawn": "",
+    "dusk": "",
+    "evening": "",
+    "lateNight": "",
+    "morning": "",
+    "noon": ""
+  },
+  "title": "New Tab",
+  "yiyan": {
+    "copied": "Copied to clipboard"
   }
 }

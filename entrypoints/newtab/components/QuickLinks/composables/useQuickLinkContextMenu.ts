@@ -3,6 +3,7 @@ import { useTranslation } from 'i18next-vue'
 import { browser } from '#imports'
 
 import { useQuickLinksStore, type QuickLinkTarget } from '@/shared/quickLinks'
+import { resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 
 import { openUrlInIncognitoWindow } from '@newtab/shared/incognito'
 import { isSafeUrl } from '@newtab/shared/utils'
@@ -13,6 +14,7 @@ import { blockSite } from '../utils/topSites'
 export type CtxQuickLinkItem = {
   url: string
   title: string
+  appId?: BuiltInAppId
   isPinned: boolean
   originalIndex: number
   groupId?: string
@@ -50,25 +52,25 @@ export function useQuickLinkContextMenu(options: {
   }
 
   const ctxOpenInNewTab = (): void => {
-    if (ctxItem.value) openQuickLinkUrl(ctxItem.value.url, '_blank')
+    if (ctxItem.value && !resolveBuiltInAppId(ctxItem.value)) openQuickLinkUrl(ctxItem.value.url, '_blank')
   }
 
   const ctxOpenInNewWindow = (): void => {
-    if (ctxItem.value && isSafeUrl(ctxItem.value.url))
+    if (ctxItem.value && !resolveBuiltInAppId(ctxItem.value) && isSafeUrl(ctxItem.value.url))
       browser.windows.create({ url: ctxItem.value.url })
   }
 
   const ctxOpenInIncognitoWindow = async (): Promise<void> => {
-    if (ctxItem.value && isSafeUrl(ctxItem.value.url))
+    if (ctxItem.value && !resolveBuiltInAppId(ctxItem.value) && isSafeUrl(ctxItem.value.url))
       await openUrlInIncognitoWindow(ctxItem.value.url)
   }
 
   const ctxCopyLink = (): void => {
-    if (ctxItem.value) navigator.clipboard.writeText(ctxItem.value.url)
+    if (ctxItem.value && !resolveBuiltInAppId(ctxItem.value)) navigator.clipboard.writeText(ctxItem.value.url)
   }
 
   const ctxCreateBookmark = async (): Promise<void> => {
-    if (!ctxItem.value) return
+    if (!ctxItem.value || resolveBuiltInAppId(ctxItem.value)) return
     const { url, title } = ctxItem.value
     if (!isSafeUrl(url)) return
     const res = await browser.bookmarks.search({ url })
@@ -86,7 +88,7 @@ export function useQuickLinkContextMenu(options: {
   }
 
   const ctxUnpin = async (): Promise<void> => {
-    if (!ctxItem.value?.isPinned) return
+    if (!ctxItem.value?.isPinned || resolveBuiltInAppId(ctxItem.value)) return
     await removeQuickLink(
       ctxItem.value.groupId
         ? { groupId: ctxItem.value.groupId, index: ctxItem.value.originalIndex }

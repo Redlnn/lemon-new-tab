@@ -62,6 +62,11 @@ export function deriveSnapshotTombstones(
     next.quickLinks?.items.map((item) => item.id) ?? [],
   )
   appendDeleted(
+    'note',
+    base.notes?.items.map((item) => item.id) ?? [],
+    next.notes?.items.map((item) => item.id) ?? [],
+  )
+  appendDeleted(
     'quick-link-group',
     base.quickLinks?.groups.map((item) => item.id) ?? [],
     next.quickLinks?.groups.map((item) => item.id) ?? [],

@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser'
 
+import { withNotesLock } from '@/shared/notes'
 import { CURRENT_CONFIG_VERSION } from '@/shared/settings'
 import { readWallpaperLibrary, wallpaperLibrarySignature } from '@/shared/wallpaperLibrary'
 
@@ -251,72 +252,75 @@ export async function finalizeSnapshot(input: {
   wallpapers?: IncomingWallpaperResources
   preserveLocalWallpapers?: boolean
 }): Promise<void> {
-  const wallpaperSignature = wallpaperLibrarySignature(await readWallpaperLibrary())
-  const capture = await captureBrowserSyncSnapshotResult(
-    input.expectedLocal.scope,
-    input.expectedLocal,
-  )
-  const local = preserveExcludedScope(
-    capture.snapshot,
-    input.expectedLocal,
-    input.expectedLocal.scope,
-  )
-  if (!jsonEquals(local, input.expectedLocal)) {
-    throw new WebDavError(
-      'precondition',
-      'Local data changed before applying the synchronized snapshot',
+  return withNotesLock(async () => {
+    const wallpaperSignature = wallpaperLibrarySignature(await readWallpaperLibrary())
+    const capture = await captureBrowserSyncSnapshotResult(
+      input.expectedLocal.scope,
+      input.expectedLocal,
     )
-  }
-  if (input.apply) {
-    const verificationScope = input.preserveLocalWallpapers
-      ? { ...input.snapshot.scope, wallpapers: false }
-      : input.snapshot.scope
-    const expected = preserveExcludedScope(
-      expectedAppliedSnapshot(
-        capture.resourceOmissions.length === 0 &&
-          jsonEquals(input.expectedLocal.scope, input.snapshot.scope)
-          ? capture.snapshot
-          : await captureBrowserSyncSnapshot(input.snapshot.scope),
+    const local = preserveExcludedScope(
+      capture.snapshot,
+      input.expectedLocal,
+      input.expectedLocal.scope,
+    )
+    if (!jsonEquals(local, input.expectedLocal)) {
+      throw new WebDavError(
+        'precondition',
+        'Local data changed before applying the synchronized snapshot',
+      )
+    }
+    if (input.apply) {
+      const verificationScope = input.preserveLocalWallpapers
+        ? { ...input.snapshot.scope, wallpapers: false }
+        : input.snapshot.scope
+      const expected = preserveExcludedScope(
+        expectedAppliedSnapshot(
+          capture.resourceOmissions.length === 0 &&
+            jsonEquals(input.expectedLocal.scope, input.snapshot.scope)
+            ? capture.snapshot
+            : await captureBrowserSyncSnapshot(input.snapshot.scope),
+          input.snapshot,
+        ),
         input.snapshot,
-      ),
-      input.snapshot,
-      verificationScope,
-    )
+        verificationScope,
+      )
+      await patchSyncState({
+        pending: {
+          operationId: input.operationId,
+          phase: 'applying-local',
+          revisionId: input.revisionId,
+          startedAt: new Date().toISOString(),
+        },
+        scope: { ...input.snapshot.scope },
+      })
+      await prepareAndApplyBrowserSnapshot(
+        input.operationId,
+        input.revisionId,
+        input.snapshot,
+        input.snapshot.scope,
+        input.wallpapers,
+        wallpaperSignature,
+      )
+      const captured = (
+        await captureBrowserSyncSnapshotResult(input.snapshot.scope, input.snapshot)
+      ).snapshot
+      const applied = preserveExcludedScope(captured, input.snapshot, verificationScope)
+      if (!jsonEquals(applied, expected)) {
+        throw new WebDavError('precondition', 'Applied local snapshot did not pass verification')
+      }
+    }
+
+    await setBaseline(input.snapshot)
+    await clearStoredConflict()
     await patchSyncState({
-      pending: {
-        operationId: input.operationId,
-        phase: 'applying-local',
-        revisionId: input.revisionId,
-        startedAt: new Date().toISOString(),
-      },
+      baseRevisionId: input.revisionId,
+      lastSuccessAt: new Date().toISOString(),
+      lastError: undefined,
+      paused: false,
+      pauseReason: undefined,
+      pending: undefined,
       scope: { ...input.snapshot.scope },
     })
-    await prepareAndApplyBrowserSnapshot(
-      input.operationId,
-      input.revisionId,
-      input.snapshot,
-      input.snapshot.scope,
-      input.wallpapers,
-      wallpaperSignature,
-    )
-    const captured = (await captureBrowserSyncSnapshotResult(input.snapshot.scope, input.snapshot))
-      .snapshot
-    const applied = preserveExcludedScope(captured, input.snapshot, verificationScope)
-    if (!jsonEquals(applied, expected)) {
-      throw new WebDavError('precondition', 'Applied local snapshot did not pass verification')
-    }
-  }
-
-  await setBaseline(input.snapshot)
-  await clearStoredConflict()
-  await patchSyncState({
-    baseRevisionId: input.revisionId,
-    lastSuccessAt: new Date().toISOString(),
-    lastError: undefined,
-    paused: false,
-    pauseReason: undefined,
-    pending: undefined,
-    scope: { ...input.snapshot.scope },
   })
 }
 
@@ -673,6 +677,7 @@ export async function readWallpaperAsset(
 const SCOPE_KEYS = [
   'settings',
   'quickLinks',
+  'notes',
   'customSearchEngines',
   'uiPreferences',
   'blockedTopSites',

@@ -12,6 +12,7 @@ import type {
   SyncCustomSearchEngineV1,
   SyncQuickLinkGroupV1,
   SyncQuickLinkV1,
+  SyncNoteV1,
   SyncSnapshotV1,
   ThreeWayMergeResult,
 } from './types.ts'
@@ -366,6 +367,59 @@ function mergeSearchEngines(
   }
 }
 
+function mergeNotes(
+  base: NonNullable<SyncSnapshotV1['notes']>,
+  local: NonNullable<SyncSnapshotV1['notes']>,
+  remote: NonNullable<SyncSnapshotV1['notes']>,
+  conflicts: SyncConflict[],
+): NonNullable<SyncSnapshotV1['notes']> {
+  const baseById = toEntityMap(base.items)
+  const localById = toEntityMap(local.items)
+  const remoteById = toEntityMap(remote.items)
+  const normalizeMetadata = (items: readonly SyncNoteV1[]) =>
+    items.map((item) => {
+      const original = baseById.get(item.id)
+      return original
+        ? { ...item, createdAt: original.createdAt, updatedAt: original.updatedAt }
+        : item
+    })
+  const conflictOffset = conflicts.length
+  const items = mergeEntities<SyncNoteV1>(
+    'notes',
+    'notes.items',
+    base.items,
+    normalizeMetadata(local.items),
+    normalizeMetadata(remote.items),
+    conflicts,
+  )
+  // 字段冲突按便签合并；实体级的删除/修改与同时创建冲突保留原始语义。
+  const noteConflicts = new Map<string, SyncConflict>()
+  for (const conflict of conflicts.splice(conflictOffset)) {
+    const id = conflict.path.slice('notes.items.'.length).split('.')[0]!
+    noteConflicts.set(id, conflict)
+  }
+  for (const [id, conflict] of noteConflicts) {
+    addConflict(
+      conflicts,
+      'notes',
+      conflict.kind,
+      `notes.items.${id}`,
+      (baseById.get(id) ?? MISSING) as MaybeJson,
+      (localById.get(id) ?? MISSING) as MaybeJson,
+      (remoteById.get(id) ?? MISSING) as MaybeJson,
+      true,
+    )
+  }
+  return {
+    items: items.map((item) => {
+      const timestamps = [baseById.get(item.id), localById.get(item.id), remoteById.get(item.id)]
+        .filter((value): value is SyncNoteV1 => Boolean(value))
+        .map((value) => value.updatedAt)
+      return { ...item, updatedAt: timestamps.sort().at(-1) ?? item.updatedAt }
+    }),
+  }
+}
+
 function mergeOptional(
   base: SyncSnapshotV1['optional'],
   local: SyncSnapshotV1['optional'],
@@ -544,6 +598,17 @@ export function mergeSyncSnapshots(
           remote.customSearchEngines ? canonicalize(remote.customSearchEngines) : MISSING,
           conflicts,
         )
+  const notes =
+    base.notes && local.notes && remote.notes
+      ? mergeNotes(base.notes, local.notes, remote.notes, conflicts)
+      : mergeJson(
+          'notes',
+          'notes',
+          base.notes ? canonicalize(base.notes) : MISSING,
+          local.notes ? canonicalize(local.notes) : MISSING,
+          remote.notes ? canonicalize(remote.notes) : MISSING,
+          conflicts,
+        )
   const snapshot: SyncSnapshotV1 = {
     scope,
     optional: mergeOptional(base.optional, local.optional, remote.optional, conflicts),
@@ -553,6 +618,7 @@ export function mergeSyncSnapshots(
   if (searchEngines !== MISSING) {
     snapshot.customSearchEngines = searchEngines as SyncSnapshotV1['customSearchEngines']
   }
+  if (notes !== MISSING) snapshot.notes = notes as SyncSnapshotV1['notes']
   if (ui !== MISSING) snapshot.ui = ui as SyncSnapshotV1['ui']
   const usedImages = new Set(
     [

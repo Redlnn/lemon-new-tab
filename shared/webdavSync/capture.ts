@@ -35,6 +35,9 @@ export function captureSyncSnapshot(context: CaptureContext): SyncSnapshotV1 {
   if (context.scope.quickLinks) {
     snapshot.quickLinks = toSyncQuickLinks(context.quickLinks, context.scope.userIcons)
   }
+  if (context.scope.notes && context.notes) {
+    snapshot.notes = { items: context.notes.notes.map((note) => ({ ...note })) }
+  }
   if (context.scope.customSearchEngines) {
     snapshot.customSearchEngines = toSyncCustomSearchEngines(
       context.customSearchEngines,

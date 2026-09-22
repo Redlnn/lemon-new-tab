@@ -15,6 +15,7 @@ export const MAX_SYNC_SNAPSHOT_BYTES = 10 * 1024 * 1024
 export type SyncCatalogKey =
   | 'settings'
   | 'quickLinks'
+  | 'notes'
   | 'customSearchEngines'
   | 'ui.language'
   | 'ui.colorMode'
@@ -37,6 +38,7 @@ export interface CapturableQuickLink {
   title: string
   favicon?: string
   faviconSource?: 'automatic' | 'user-selected'
+  appId?: import('@/shared/builtinApps').BuiltInAppId
 }
 
 export interface CapturableQuickLinkGroup {
@@ -57,6 +59,7 @@ export interface CaptureContext {
   ui: NonNullable<SyncSnapshotV1['ui']>
   scope: SyncScopePreferences
   blockedTopSites?: string[]
+  notes?: { notes: import('@/shared/notes').NoteRecord[] }
 }
 
 export interface WallpaperAvailabilityContext {
@@ -129,6 +132,10 @@ export function getSyncAvailability(
     return context.scope.quickLinks
       ? included()
       : excludedByUser('sync.availability.quickLinksScopeDisabled')
+  if (key === 'notes')
+    return context.scope.notes
+      ? included()
+      : excludedByUser('sync.availability.notesScopeDisabled')
   if (key === 'customSearchEngines')
     return context.scope.customSearchEngines
       ? included()
@@ -191,6 +198,7 @@ export function toSyncQuickLinks(
       id: item.id,
       url: item.url,
       title: item.title,
+      ...(item.appId ? { appId: item.appId } : {}),
       ...(includeUserSelectedIcons && item.faviconSource === 'user-selected' && item.favicon
         ? { favicon: item.favicon }
         : {}),

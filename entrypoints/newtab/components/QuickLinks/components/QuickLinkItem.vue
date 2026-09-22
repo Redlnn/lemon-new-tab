@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Component } from 'vue'
+
 import { OnLongPress } from '@vueuse/components'
 
 import Pin12Regular from '~icons/fluent/pin-12-regular'
@@ -8,7 +10,7 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { isTouchEvent } from '@newtab/shared/touch'
 import { isValidUrl } from '@newtab/shared/utils'
-import { getBuiltInAppId, openBuiltInApp } from '@/shared/builtinApps'
+import { openBuiltInApp, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 
 import type { QuickLinkItemPresentation } from './quickLinkItemPresentation'
 
@@ -17,6 +19,8 @@ const props = defineProps<{
   title: string
   pined?: boolean
   favicon?: string
+  icon?: Component
+  appId?: BuiltInAppId
   presentation: QuickLinkItemPresentation
   onContextMenu?: (event: MouseEvent | PointerEvent) => void
   keyboardDrag?: boolean
@@ -25,11 +29,13 @@ const props = defineProps<{
 const settings = useSettingsStore()
 // 用户保存的图标不参与解析，移除后才恢复对链接 favicon 的获取。
 const faviconDisplay = getFaviconDisplay(
-  computed(() => (props.favicon ? null : props.url)),
+  computed(() => (props.favicon || props.icon ? null : props.url)),
   computed(() => !settings.quickLinks.fallbackToTitleInitial),
 )
 const iconUrl = computed(() => props.favicon || faviconDisplay.value.src)
-const iconPending = computed(() => !props.favicon && faviconDisplay.value.state === 'pending')
+const iconPending = computed(
+  () => !props.favicon && !props.icon && faviconDisplay.value.state === 'pending',
+)
 const titleInitial = computed(() => {
   const title = props.title.trim()
   return title ? String.fromCodePoint(title.codePointAt(0)!) : ''
@@ -38,11 +44,12 @@ const showTitleInitialFallback = computed(
   () =>
     settings.quickLinks.fallbackToTitleInitial &&
     !props.favicon &&
+    !props.icon &&
     faviconDisplay.value.state === 'fallback' &&
     Boolean(titleInitial.value),
 )
 const safeUrl = computed(() => (isValidUrl(props.url) ? props.url : '#'))
-const appId = computed(() => getBuiltInAppId(props.url))
+const appId = computed(() => resolveBuiltInAppId(props))
 
 function openLink(event: MouseEvent) {
   if (!appId.value) return
@@ -95,7 +102,11 @@ function openFocusedLink(event: KeyboardEvent) {
           class="quick-links__icon"
           :class="[presentation.iconClass, { border: presentation.iconBorder }]"
         >
+          <span v-if="icon" class="span">
+            <component :is="icon" aria-hidden="true" />
+          </span>
           <span
+            v-else
             class="span"
             :class="{
               'span--pending': iconPending,
@@ -150,7 +161,11 @@ function openFocusedLink(event: KeyboardEvent) {
           class="quick-links__icon"
           :class="[presentation.iconClass, { border: presentation.iconBorder }]"
         >
+          <span v-if="icon" class="span">
+            <component :is="icon" aria-hidden="true" />
+          </span>
           <span
+            v-else
             class="span"
             :class="{
               'span--pending': iconPending,
