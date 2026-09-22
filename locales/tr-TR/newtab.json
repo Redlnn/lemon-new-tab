@@ -1,7 +1,4 @@
 {
-  "about": {
-    "yiyanProvider": "Çin şiiri API'si {api} tarafından sağlanmaktadır"
-  },
   "a11y": {
     "actions": "Sayfa eylemleri",
     "addQuickLinksGroup": "Hızlı Bağlantı grubu ekle",
@@ -21,6 +18,9 @@
     "refreshBackground": "Arka planı yenile",
     "searchInput": "Anahtar kelimeleri ara",
     "searchSuggestions": "Arama önerileri"
+  },
+  "about": {
+    "yiyanProvider": "Çin şiiri API'si {api} tarafından sağlanmaktadır"
   },
   "bookmark": {
     "404": "Hiçbir şey bulunamadı",
@@ -55,6 +55,12 @@
       "msg": "Üzgünüz, ancak desteklenmeyen eski bir ayarlar sürümü tespit edildi. Uzantının düzgün çalışmasını sağlamak için lütfen uzantı verilerini temizleyin ve yenileyin.",
       "title": "Desteklenmeyen Ayarlar Sürümü"
     }
+  },
+  "builtinApps": {
+    "add": "Ekle",
+    "note": "Not",
+    "remove": "Kaldır",
+    "title": "Yerleşik uygulamalar"
   },
   "changelog": {
     "hideMajor": "Büyük sürüm güncelleme bildirimini gizle",
@@ -101,6 +107,29 @@
       "title": "Başlatıcı"
     }
   },
+  "note": {
+    "backToList": "Not listesine dön",
+    "create": "Not oluştur",
+    "deleteConfirm": "“{{title}}” silinsin mi?",
+    "discard": "Vazgeç",
+    "edit": "Notu düzenle",
+    "empty": "Listeden bir not seçin veya yeni bir not oluşturun.",
+    "export": "Resmi dışa aktar",
+    "exportFailed": "Not resmi dışa aktarılamadı",
+    "exported": "Not resmi dışa aktarıldı",
+    "listEmpty": "Henüz not yok",
+    "pin": "Sabitle",
+    "time": {
+      "dayBeforeYesterday": "Önceki gün {{time}}",
+      "today": "Bugün {{time}}",
+      "yesterday": "Dün {{time}}"
+    },
+    "title": "Not",
+    "toggleSource": "Kaynak düzenleyiciyi değiştir",
+    "unpin": "Sabitlemeyi kaldır",
+    "unsaved": "Ayrılmadan önce değişiklikler kaydedilsin mi?",
+    "untitled": "Başlıksız not"
+  },
   "menu": {
     "about": "Hakkında",
     "backgroundPreference": "Arka Plan Tercihi",
@@ -131,45 +160,6 @@
       "title": "Lemon New Tab'e Hoş Geldiniz"
     }
   },
-  "search": {
-    "engineMenu": {
-      "current": "Mevcut",
-      "tipPrefix": "İpucu: Arama motorunu değiştirmek için",
-      "tipSuffix": "tuşuna basın."
-    },
-    "engines": {
-      "baidu": "Baidu",
-      "bing": "Bing",
-      "duckduckgo": "DuckDuckGo",
-      "google": "Google",
-      "yandex": "Yandex"
-    },
-    "placeholder": "Ara",
-    "purgeSearchHistory": "Arama Geçmişini Temizle",
-    "searchEngineNotFound": "Arama motoru bulunamadı",
-    "calculator": "Hesap makinesi",
-    "calculationResult": "Sonuç",
-    "clickToCopy": "Kopyalamak için tıklayın",
-    "open": "Aç",
-    "savedWebsite": "Kayıtlı web siteleri",
-    "mostVisited": "En çok ziyaret edilenler",
-    "navigateTo": "Adrese git",
-    "searchFor": "Ara"
-  },
-  "sponsor": "Bu uzantı, kendi ihtiyaçlarımı çözmek için boş zamanlarımda tarafımdan oluşturuldu ve size de yardımcı olmasına çok sevindim! Beğendiyseniz, lütfen GitHub'da ⭐ vermeyi düşünün—bu benim için çok değerli. Fikirlerinizi veya geri bildirimlerinizi şu adrese göndermekten çekinmeyin: redlnn@outlook.com. Teşekkür ederim!",
-  "time": {
-    "afternoon": "",
-    "dawn": "",
-    "dusk": "",
-    "evening": "",
-    "lateNight": "",
-    "morning": "",
-    "noon": ""
-  },
-  "title": "Yeni Sekme",
-  "yiyan": {
-    "copied": "Panoya kopyalandı"
-  },
   "quickLinks": {
     "addDialog": {
       "extensionIconTip": "Geçerli sayfayı Hızlı Bağlantılara eklemek için tarayıcı uzantıları menüsündeki simgeye de tıklayabilirsiniz.",
@@ -196,16 +186,55 @@
       "untitled": "Grup {{index}}"
     },
     "hide": "Gizle",
-    "moveError": "Taşıma başarısız",
-    "moveLeft": "Sola taşı",
-    "moveRight": "Sağa taşı",
     "hideTopMessage": {
       "content": "En çok ziyaret edilen site gizlendi.",
       "restoreDefault": "Varsayılanı geri yükle",
       "restoreSuccess": "Varsayılan en çok ziyaret edilen site geri yüklendi"
     },
+    "moveError": "Taşıma başarısız",
+    "moveLeft": "Sola taşı",
+    "moveRight": "Sağa taşı",
     "pin": "Sabitle",
     "unpin": "Sabitlemeyi kaldır",
     "unpinMessage": "Bağlantının sabitlemesi kaldırıldı."
+  },
+  "search": {
+    "calculationResult": "Sonuç",
+    "calculator": "Hesap makinesi",
+    "clickToCopy": "Kopyalamak için tıklayın",
+    "engineMenu": {
+      "current": "Mevcut",
+      "tipPrefix": "İpucu: Arama motorunu değiştirmek için",
+      "tipSuffix": "tuşuna basın."
+    },
+    "engines": {
+      "baidu": "Baidu",
+      "bing": "Bing",
+      "duckduckgo": "DuckDuckGo",
+      "google": "Google",
+      "yandex": "Yandex"
+    },
+    "mostVisited": "En çok ziyaret edilenler",
+    "navigateTo": "Adrese git",
+    "open": "Aç",
+    "placeholder": "Ara",
+    "purgeSearchHistory": "Arama Geçmişini Temizle",
+    "savedWebsite": "Kayıtlı web siteleri",
+    "searchEngineNotFound": "Arama motoru bulunamadı",
+    "searchFor": "Ara"
+  },
+  "sponsor": "Bu uzantı, kendi ihtiyaçlarımı çözmek için boş zamanlarımda tarafımdan oluşturuldu ve size de yardımcı olmasına çok sevindim! Beğendiyseniz, lütfen GitHub'da ⭐ vermeyi düşünün—bu benim için çok değerli. Fikirlerinizi veya geri bildirimlerinizi şu adrese göndermekten çekinmeyin: redlnn@outlook.com. Teşekkür ederim!",
+  "time": {
+    "afternoon": "",
+    "dawn": "",
+    "dusk": "",
+    "evening": "",
+    "lateNight": "",
+    "morning": "",
+    "noon": ""
+  },
+  "title": "Yeni Sekme",
+  "yiyan": {
+    "copied": "Panoya kopyalandı"
   }
 }

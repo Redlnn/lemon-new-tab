@@ -107,7 +107,7 @@ export async function addWallpaper(
       if (original) hashes.set(existing.id, await sha256Hex(await original.arrayBuffer()))
     }
   }
-  let id = item.id
+  let { id } = item
   await updateWallpaperLibrary(async (library, tx) => {
     for (const existing of library[variant].items) existing.sha256 ??= hashes.get(existing.id)
 
@@ -144,7 +144,7 @@ export async function removeWallpapers(variant: WallpaperVariant, ids: readonly 
 
 export async function reorderWallpapers(variant: WallpaperVariant, ids: readonly string[]) {
   return updateWallpaperLibrary((library) => {
-    const items = library[variant].items
+    const { items } = library[variant]
     const order = new Map(ids.map((id, index) => [id, index]))
     items.sort((a, b) => (order.get(a.id) ?? ids.length) - (order.get(b.id) ?? ids.length))
   })

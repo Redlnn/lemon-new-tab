@@ -1,3 +1,4 @@
+import { noteStorage, withNotesLock } from '@/shared/notes'
 import { getQuickLinksStorageValue, quickLinksStorage } from '@/shared/quickLinks'
 import type { CURRENT_CONFIG_SCHEMA } from '@/shared/settings'
 import { normalizeCurrentSettings, settingsStorage } from '@/shared/settings'
@@ -55,12 +56,13 @@ export async function captureBrowserSyncSnapshotResult(
   scope: SyncScopePreferences,
   baseline?: SyncSnapshotV1,
 ): Promise<BrowserSyncCaptureResult> {
-  const [settings, quickLinks, searchEngines, ui, blockedTopSites] = await Promise.all([
+  const [settings, quickLinks, searchEngines, ui, blockedTopSites, notes] = await Promise.all([
     settingsStorage.getValue(),
     getQuickLinksStorageValue(),
     customSearchEngineStorage.getValue(),
     getUiPreferences(),
     scope.blockedTopSites ? blockedTopSitesStorage.getValue() : undefined,
+    scope.notes ? noteStorage.getValue() : undefined,
   ])
 
   const snapshot = captureSyncSnapshot({
@@ -73,6 +75,7 @@ export async function captureBrowserSyncSnapshotResult(
     },
     scope,
     blockedTopSites,
+    notes,
   })
   const resourceOmissions = await deduplicateInlineImages(snapshot, baseline)
   if (scope.wallpapers) {
@@ -179,6 +182,11 @@ async function writeQuickLinks(
   await quickLinksStorage.setValue(
     materializeQuickLinks(snapshot.quickLinks, current, scope.userIcons, snapshot.inlineImages),
   )
+}
+
+async function writeNotes(snapshot: SyncSnapshotV1, scope: SyncScopePreferences): Promise<void> {
+  if (scope.notes && snapshot.notes)
+    await noteStorage.setValue({ notes: structuredClone(snapshot.notes.items) })
 }
 
 async function writeOptional(snapshot: SyncSnapshotV1, scope: SyncScopePreferences): Promise<void> {
@@ -325,6 +333,11 @@ async function continueApply(pending: PendingApplyV1, scope: SyncScopePreference
     await setPendingApply(pending)
   }
   if (pending.phase === 'quick-links') {
+    await writeNotes(pending.snapshot, scope)
+    pending = { ...pending, phase: 'notes' }
+    await setPendingApply(pending)
+  }
+  if (pending.phase === 'notes') {
     const engines = pending.snapshot.customSearchEngines
     if (scope.customSearchEngines && engines) {
       const current = await customSearchEngineStorage.getValue()
@@ -365,6 +378,7 @@ export type IncomingWallpaperResources = Record<
   { variant: WallpaperVariant; itemId: string; assetId: string; blob: Blob; sha256: string }
 >
 
+/** 调用方持有便签锁，覆盖同步校验及整个落盘过程，避免检查后发生并发写入。 */
 export async function prepareAndApplyBrowserSnapshot(
   operationId: string,
   revisionId: string,
@@ -431,25 +445,27 @@ export async function getLocalWallpaperBlob(
   return undefined
 }
 export async function resumePendingBrowserApply(): Promise<boolean> {
-  const pending = await getPendingApply()
-  if (!pending) return false
-  // 尚未提交的旧应用计划遇到本机编辑时，撤销暂存计划，交回正常三方合并。
-  // 已提交的计划必须继续依赖事务标记恢复，不能重复删除后来新增的素材。
-  if (
-    pending.phase === 'validated' &&
-    pending.wallpaperSignature &&
-    !(await idbGet('wallpaperLibrary', `applied:${pending.operationId}`)) &&
-    pending.wallpaperSignature !== wallpaperLibrarySignature(await readWallpaperLibrary())
-  ) {
-    for (const wallpaper of Object.values(pending.wallpapers ?? {}))
-      await idbDelete('webdavSync', wallpaper.temporaryKey)
-    await clearPendingApply()
-    return false
-  }
-  const validation = validateSyncSnapshot(pending.snapshot)
-  if (!validation.ok) throw new Error(validation.error)
-  await continueApply({ ...pending, snapshot: validation.value }, pending.scope)
-  return true
+  return withNotesLock(async () => {
+    const pending = await getPendingApply()
+    if (!pending) return false
+    // 尚未提交的旧应用计划遇到本机编辑时，撤销暂存计划，交回正常三方合并。
+    // 已提交的计划必须继续依赖事务标记恢复，不能重复删除后来新增的素材。
+    if (
+      pending.phase === 'validated' &&
+      pending.wallpaperSignature &&
+      !(await idbGet('wallpaperLibrary', `applied:${pending.operationId}`)) &&
+      pending.wallpaperSignature !== wallpaperLibrarySignature(await readWallpaperLibrary())
+    ) {
+      for (const wallpaper of Object.values(pending.wallpapers ?? {}))
+        await idbDelete('webdavSync', wallpaper.temporaryKey)
+      await clearPendingApply()
+      return false
+    }
+    const validation = validateSyncSnapshot(pending.snapshot)
+    if (!validation.ok) throw new Error(validation.error)
+    await continueApply({ ...pending, snapshot: validation.value }, pending.scope)
+    return true
+  })
 }
 
 function isAnimatedImage(bytes: Uint8Array, mimeType: string): boolean {

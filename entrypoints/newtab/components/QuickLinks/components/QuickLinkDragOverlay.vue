@@ -20,7 +20,13 @@ const iconUrl = computed(() => {
     :class="`quick-link-dnd-overlay--${data.source}`"
   >
     <div class="quick-link-dnd-overlay__icon">
-      <span :style="{ backgroundImage: `url(${iconUrl})` }"></span>
+      <component
+        v-if="data.icon"
+        :is="data.icon"
+        class="quick-link-dnd-overlay__icon-component"
+        aria-hidden="true"
+      />
+      <span v-else :style="{ backgroundImage: `url(${iconUrl})` }"></span>
     </div>
     <div class="quick-link-dnd-overlay__title">{{ data.title }}</div>
   </div>

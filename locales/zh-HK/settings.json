@@ -19,6 +19,35 @@
     "change": "更改背景",
     "custom": "自訂",
     "fasterBgAnim": "啟動時更快地顯示背景",
+    "library": {
+      "add": "新增",
+      "clearPreviews": "清除預覽快取",
+      "collapse": "收起",
+      "confirmRemove": "移除選取的 {{count}} 個桌布？",
+      "dark": "深色模式",
+      "done": "完成",
+      "download": "下載",
+      "dragAddHint": "拖入圖片或影片以新增",
+      "empty": "新增圖片或影片，支援一次選取多個檔案或拖入。",
+      "expand": "展開全部",
+      "group": "桌布分組",
+      "image": "圖片",
+      "importFailed": "有 {{count}} 個檔案無法新增，其餘檔案已保留。",
+      "inherit": "未設定深色模式桌布時，將自動使用淺色模式桌布。",
+      "light": "淺色模式",
+      "loading": "正在讀取資訊",
+      "manage": "管理",
+      "order": "輪播順序",
+      "ordered": "依清單順序",
+      "random": "隨機",
+      "remove": "移除",
+      "reset": "恢復預設",
+      "rotation": "桌布輪播",
+      "solid": "純色背景",
+      "sortHint": "拖曳排序",
+      "unavailable": "無法讀取",
+      "video": "影片"
+    },
     "mask": {
       "color": "遮罩顏色",
       "enable": "啟用遮罩"
@@ -79,35 +108,6 @@
         "title": "檔案過大"
       },
       "unknownSource": "使用來自不明來源的圖片作背景可能會危及你的裝置安全，是否繼續？"
-    },
-    "library": {
-      "solid": "純色背景",
-      "light": "淺色模式",
-      "dark": "深色模式",
-      "reset": "恢復預設",
-      "group": "桌布分組",
-      "download": "下載",
-      "add": "新增",
-      "manage": "管理",
-      "done": "完成",
-      "remove": "移除",
-      "expand": "展開全部",
-      "collapse": "收起",
-      "inherit": "未設定深色模式桌布時，將自動使用淺色模式桌布。",
-      "empty": "新增圖片或影片，支援一次選取多個檔案或拖入。",
-      "rotation": "桌布輪播",
-      "order": "輪播順序",
-      "random": "隨機",
-      "ordered": "依清單順序",
-      "image": "圖片",
-      "video": "影片",
-      "loading": "正在讀取資訊",
-      "unavailable": "無法讀取",
-      "dragAddHint": "拖入圖片或影片以新增",
-      "sortHint": "拖曳排序",
-      "importFailed": "有 {{count}} 個檔案無法新增，其餘檔案已保留。",
-      "confirmRemove": "移除選取的 {{count}} 個桌布？",
-      "clearPreviews": "清除預覽快取"
     }
   },
   "bookmark": {
@@ -163,13 +163,13 @@
   "common": {
     "copyLink": "複製連結網址",
     "hour": "個鈡",
+    "incognitoPermission": {
+      "message": "請在 Firefox 附加元件管理員中允許此擴充功能在隱私視窗中執行，然後再試一次。",
+      "title": "需要無痕模式權限"
+    },
+    "openInIncognitoWindow": "在無痕視窗中開啟",
     "openInNewTab": "在新分頁中開啟",
     "openInNewWindow": "在新視窗中開啟",
-    "openInIncognitoWindow": "在無痕視窗中開啟",
-    "incognitoPermission": {
-      "title": "需要無痕模式權限",
-      "message": "請在 Firefox 附加元件管理員中允許此擴充功能在隱私視窗中執行，然後再試一次。"
-    },
     "sections": {
       "animation": "動畫",
       "appearance": "外觀",
@@ -447,10 +447,10 @@
       "uiScopeDisabled": "語言與色彩模式同步已關閉，只保存在此裝置。",
       "userIconsScopeDisabled": "使用者選擇的圖示只保存在此裝置，可在進階同步範圍中開啟。",
       "wallpaperFailed": "桌布未通過上傳或完整性驗證，其他資料仍會同步。",
+      "wallpaperPartial": "僅同步 20 MiB 以內的可用靜態圖片；影片、動態圖片及其他略過項目保留在本機。",
       "wallpaperScopeDisabled": "本機圖片桌布只保存在此裝置，可在 WebDAV 同步範圍中開啟。",
       "wallpaperTooLarge": "圖片超過 20 MB，桌布未同步；其他資料仍會同步。",
-      "wallpaperVideo": "影片桌布不會透過 WebDAV 同步。",
-      "wallpaperPartial": "僅同步 20 MiB 以內的可用靜態圖片；影片、動態圖片及其他略過項目保留在本機。"
+      "wallpaperVideo": "影片桌布不會透過 WebDAV 同步。"
     }
   },
   "theme": {
@@ -535,9 +535,9 @@
         "searchEngineUrl": "搜尋引擎網址",
         "wallpaper": "桌布",
         "wallpaperDark": "深色桌布",
+        "wallpaperFixed": "固定桌布",
         "wallpaperLight": "淺色桌布",
-        "wallpaperOrder": "桌布排列順序",
-        "wallpaperFixed": "固定桌布"
+        "wallpaperOrder": "桌布排列順序"
       },
       "finish": "建立合併版本",
       "local": "保留本機資料",
@@ -699,8 +699,8 @@
       "removeWallpapersCompleted": "已停止同步桌布並清理不再使用的雲端圖片",
       "removeWallpapersDescription": "系統會發佈一個不含桌布的新版本，再清理不再被保留版本引用的雲端圖片。本機桌布不會被刪除。",
       "removeWallpapersTitle": "停止同步桌布並清理雲端圖片？",
-      "revision": "損壞版本：{{id}}",
       "retry": "重新檢查",
+      "revision": "損壞版本：{{id}}",
       "same": "本機資料與上一完整版本相同，將自動使用上一版本建立修復版本。",
       "size": "原始檔案大小：{{size}} 位元組",
       "title": "檢查與修復",
@@ -711,6 +711,7 @@
     "scope": {
       "blockedTopSites": "隱藏的常用網站",
       "customSearchEngines": "自訂搜尋引擎",
+      "notes": "便簽",
       "onlineWallpaperUrl": "線上桌布網址",
       "onlineWallpaperUrlNote": "網址可能包含存取 Token。",
       "settings": "基本設定",

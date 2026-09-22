@@ -28,6 +28,7 @@ import { initializeBookmarkCache } from './bookmarkCache'
 const SYNC_DATA_KEYS = new Set([
   'settings',
   'quickLinks',
+  'notes',
   'customSearchEngine',
   'uiPreferences',
   'blockedTopStites',

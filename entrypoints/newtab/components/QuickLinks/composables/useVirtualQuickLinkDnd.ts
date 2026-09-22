@@ -26,7 +26,7 @@ export function useVirtualQuickLinkDnd() {
   let keyboard = false
   let frame = 0
 
-  function locate() {
+  const locate = () => {
     if (!pointer || keyboard) return
     let next: typeof preview.value = null
     for (const grid of grids.values()) {
@@ -42,7 +42,7 @@ export function useVirtualQuickLinkDnd() {
     }
   }
 
-  function start(event: DragStartEvent) {
+  const start = (event: DragStartEvent) => {
     const data = getDndData(event.operation.source)
     if (data?.kind !== 'quick-link') return
     source.value = data
@@ -60,7 +60,7 @@ export function useVirtualQuickLinkDnd() {
     frame = requestAnimationFrame(track)
   }
 
-  function move(event: DragMoveEvent) {
+  const move = (event: DragMoveEvent) => {
     if (!source.value) return
     if (!keyboard) {
       if (event.nativeEvent instanceof PointerEvent) {
@@ -70,7 +70,7 @@ export function useVirtualQuickLinkDnd() {
     }
     event.preventDefault()
     if (!(event.nativeEvent instanceof KeyboardEvent) || !preview.value) return
-    const key = event.nativeEvent.key
+    const { key } = event.nativeEvent
     const next = { ...preview.value }
     const enabled = [...grids.values()].filter((grid) => grid.enabled())
     if (event.nativeEvent.altKey && (key === 'ArrowLeft' || key === 'ArrowRight')) {
@@ -95,7 +95,7 @@ export function useVirtualQuickLinkDnd() {
     void grid.reveal(next.index)
   }
 
-  function destination(event: DragEndEvent) {
+  const destination = (event: DragEndEvent) => {
     cancelAnimationFrame(frame)
     locate()
     const drop = preview.value
@@ -122,7 +122,7 @@ export function useVirtualQuickLinkDnd() {
     return { groupId: grid.groupId, storeIndex }
   }
 
-  async function finish(restoreFocus = true) {
+  const finish = async (restoreFocus = true) => {
     cancelAnimationFrame(frame)
     const oldSource = source.value
     if (restoreFocus && keyboard && oldSource) {

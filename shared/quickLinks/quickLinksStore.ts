@@ -4,6 +4,7 @@ import i18next from 'i18next'
 
 import { useSettingsStore } from '@/shared/settings'
 import { normalizeUrlForDedup } from '@/shared/url'
+import { builtInApps, builtInAppUrl, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 
 import { flattenQuickLinkGroups, moveQuickLinkArrayItem } from './quickLinkAlgorithms'
 import {
@@ -71,7 +72,13 @@ function toStorageQuickLink(item: QuickLink): QuickLink {
     quickLink.favicon = item.favicon
     if (item.faviconSource !== undefined) quickLink.faviconSource = item.faviconSource
   }
+  if (item.appId !== undefined) quickLink.appId = item.appId
   return quickLink
+}
+
+function withRuntimeIcon(item: QuickLink): QuickLink {
+  const appId = resolveBuiltInAppId(item)
+  return appId ? { ...item, appId, icon: builtInApps[appId].icon } : item
 }
 
 function toStorageQuickLinkGroup(group: QuickLinkGroup): QuickLinkGroup {
@@ -87,7 +94,8 @@ function isSameQuickLink(current: QuickLink, next: QuickLink): boolean {
     current.url === next.url &&
     current.title === next.title &&
     current.favicon === next.favicon &&
-    current.faviconSource === next.faviconSource
+    current.faviconSource === next.faviconSource &&
+    current.appId === next.appId
   )
 }
 
@@ -183,7 +191,13 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     groupedUrlIndex.value.get(normalizeUrlForDedup(url)) ?? null
 
   const applyItems = (nextItems: QuickLinksData['items'], nextGroups?: QuickLinkGroup[]) => {
-    const normalized = ensureQuickLinksStableIds({ items: nextItems, groups: nextGroups })
+    const normalized = ensureQuickLinksStableIds({
+      items: nextItems.map(withRuntimeIcon),
+      groups: nextGroups?.map((group) => ({
+        ...group,
+        items: group.items.map(withRuntimeIcon),
+      })),
+    })
     const sanitizedGroups = sanitizeGroups(normalized.value.groups)
     if (sanitizedGroups.length > 0) {
       groupState.value = sanitizedGroups
@@ -274,21 +288,21 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
       return
     }
 
-    const storageItems = flatItems.value.map(toStorageQuickLink)
+    const runtimeItems = flatItems.value.map(withRuntimeIcon)
 
     if (groupState.value.length === 0) {
       groupState.value = [
         {
           id: DEFAULT_QUICK_LINK_GROUP_ID,
           name: getDefaultGroupName(),
-          items: storageItems,
+          items: runtimeItems,
         },
       ]
     } else if (defaultGroup) {
-      defaultGroup.items = storageItems
+      defaultGroup.items = runtimeItems
     } else {
       const group = ensureDefaultGroup()
-      if (!hasGroupedItems) group.items = storageItems
+      if (!hasGroupedItems) group.items = runtimeItems
     }
     flatItems.value = []
     // 直接写入，避免设置开关尚未更新时 save() 将刚创建的分组清空。
@@ -517,6 +531,29 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     return getGroup(target.groupId)?.items[target.index]
   }
 
+  const setBuiltInAppEnabled = async (id: BuiltInAppId, enabled: boolean) => {
+    await init()
+    const matches = (item: QuickLink) => resolveBuiltInAppId(item) === id
+    const createItem = (): QuickLink => ({
+      id: crypto.randomUUID(),
+      url: builtInAppUrl(id),
+      title: i18next.t(`newtab:${builtInApps[id].titleKey}`),
+      icon: builtInApps[id].icon,
+      appId: id,
+    })
+    if (groupState.value.length > 0) {
+      const existing = groupState.value.flatMap((group) => group.items).find(matches)
+      for (const group of groupState.value) group.items = group.items.filter((item) => !matches(item))
+      if (enabled) ensureDefaultGroup().items.unshift(existing ?? createItem())
+      await save()
+      return
+    }
+    const existing = flatItems.value.find(matches)
+    flatItems.value = flatItems.value.filter((item) => !matches(item))
+    if (enabled) flatItems.value.unshift(existing ?? createItem())
+    await save(undefined, { groupingEnabled: false })
+  }
+
   return {
     items,
     groups,
@@ -547,5 +584,6 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     insertFlatQuickLink,
     getQuickLink,
     getSnapshot,
+    setBuiltInAppEnabled,
   }
 })

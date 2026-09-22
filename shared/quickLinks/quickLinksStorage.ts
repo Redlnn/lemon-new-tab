@@ -1,5 +1,6 @@
 import { storage } from '#imports'
 import { browser } from 'wxt/browser'
+import type { Component } from 'vue'
 
 export interface QuickLink {
   /** 同步实体 ID；旧数据会在首次读取时补齐并持久化。 */
@@ -7,8 +8,12 @@ export interface QuickLink {
   url: string
   title: string
   favicon?: string
+  /** 仅运行时使用的组件图标；持久化时由 appId 重新解析。 */
+  icon?: Component
   /** 仅显式用户选择的图标可进入 WebDAV 同步；缺失表示旧版来源不明。 */
   faviconSource?: 'automatic' | 'user-selected'
+  /** 内置应用入口；存在时不会按外部链接打开。 */
+  appId?: import('@/shared/builtinApps').BuiltInAppId
 }
 
 export interface QuickLinkGroup {
@@ -38,7 +43,7 @@ export function ensureQuickLinksStableIds(data: QuickLinksData): {
   let changed = false
   const seenIds = new Set<string>()
   const normalizeItem = (item: QuickLink): QuickLink => {
-    let id = item.id
+    let { id } = item
     if (!id || seenIds.has(id)) {
       id = crypto.randomUUID()
       changed = true
