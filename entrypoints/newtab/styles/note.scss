@@ -1,42 +1,40 @@
-.memo__dialog.el-dialog {
-  --memo-item-background: var(--le-bg-color-overlay-opacity-60);
-  --memo-item-hover-background: var(--le-bg-color-overlay-opacity-30);
-  --memo-item-active-background: var(--el-color-primary-light-9);
+.note__dialog.el-dialog {
+  --note-back-background: color-mix(
+    in oklch,
+    var(--el-fill-color-blank),
+    transparent var(--le-dialog-secondary-transparency)
+  );
+  --note-item-background: var(--le-bg-color-overlay-opacity-60);
+  --note-item-hover-background: var(--le-bg-color-overlay-opacity-30);
+  --note-item-active-background: var(--el-color-primary-light-9);
   display: flex;
   flex-direction: column;
-
   max-width: 93%;
   min-height: 560px;
   max-height: 93%;
   padding: 0;
   overflow: hidden;
-  background-color: var(--le-dialog-background, var(--memo-dialog-background));
+  background-color: var(--le-dialog-background, var(--note-dialog-background));
   box-shadow: 0 0 15px 0 var(--le-bg-color-page-opacity-60);
   transition: background-color var(--el-transition-duration-fast) ease;
-
-  --memo-back-background: color-mix(
-    in oklch,
-    var(--el-fill-color-blank),
-    transparent var(--le-dialog-secondary-transparency)
-  );
 }
 
-// html.dark:not(.colorful) .memo__dialog {
+// html.dark:not(.colorful) .note__dialog {
 // }
 
-// html.colorful .memo__dialog {
+// html.colorful .note__dialog {
 // }
 
-// html.dialog-transparent .memo__dialog {
+// html.dialog-transparent .note__dialog {
 // }
 
-// html.dark.dialog-transparent .memo__dialog {
+// html.dark.dialog-transparent .note__dialog {
 // }
 
-// html.colorful.dialog-transparent .memo__dialog {
+// html.colorful.dialog-transparent .note__dialog {
 // }
 
-.memo-header {
+.note-header {
   z-index: 1;
   display: flex;
   flex-shrink: 0;
@@ -59,7 +57,7 @@
     position: static;
 
     &:hover {
-      background-color: var(--memo-close-hover-background);
+      background-color: var(--note-close-hover-background);
       box-shadow: var(--el-box-shadow-light);
     }
   }
@@ -69,7 +67,7 @@
     font-size: 16px;
   }
 
-  .memo-back-btn {
+  .note-back-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -78,7 +76,7 @@
     margin-right: 20px;
     color: var(--el-text-color-secondary);
     cursor: pointer;
-    background-color: var(--memo-back-background);
+    background-color: var(--note-back-background);
     border: none;
     border-radius: var(--le-radius-surface, 15px);
     box-shadow: var(--el-box-shadow-light);
@@ -91,7 +89,7 @@
     &:not(:disabled):hover,
     &:focus-visible {
       color: var(--el-text-color-primary);
-      background-color: var(--memo-back-hover-background);
+      background-color: var(--note-back-hover-background);
     }
 
     &:focus-visible {

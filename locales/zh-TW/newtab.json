@@ -1,7 +1,4 @@
 {
-  "about": {
-    "yiyanProvider": "一言API由 {api} 提供 "
-  },
   "a11y": {
     "actions": "頁面操作",
     "addQuickLinksGroup": "新增快速連結分組",
@@ -21,6 +18,9 @@
     "refreshBackground": "重新整理背景",
     "searchInput": "搜尋關鍵字",
     "searchSuggestions": "搜尋建議"
+  },
+  "about": {
+    "yiyanProvider": "一言API由 {api} 提供 "
   },
   "bookmark": {
     "404": "什麼都沒找到",
@@ -55,6 +55,12 @@
       "msg": "非常抱歉，偵測到不支援的舊版設定。為確保擴充功能正常運作，請清除擴充功能資料並重新整理。",
       "title": "不支援的設定版本"
     }
+  },
+  "builtinApps": {
+    "add": "新增",
+    "note": "便箋",
+    "remove": "移除",
+    "title": "內建應用程式管理"
   },
   "changelog": {
     "hideMajor": "不顯示大版本更新日誌",
@@ -101,6 +107,29 @@
       "title": "啟動台"
     }
   },
+  "note": {
+    "backToList": "返回便箋列表",
+    "create": "建立便箋",
+    "deleteConfirm": "確定刪除「{{title}}」嗎？",
+    "discard": "放棄修改",
+    "edit": "編輯便箋",
+    "empty": "從列表選擇便箋，或建立一則新便箋。",
+    "export": "匯出圖片",
+    "exportFailed": "無法匯出便箋圖片",
+    "exported": "便箋圖片已匯出",
+    "listEmpty": "尚無便箋",
+    "pin": "置頂",
+    "time": {
+      "dayBeforeYesterday": "前天{{time}}",
+      "today": "今天{{time}}",
+      "yesterday": "昨天{{time}}"
+    },
+    "title": "便箋",
+    "toggleSource": "切換原始碼編輯",
+    "unpin": "取消置頂",
+    "unsaved": "離開前儲存修改嗎？",
+    "untitled": "無標題便箋"
+  },
   "menu": {
     "about": "關於",
     "backgroundPreference": "背景偏好設定",
@@ -108,8 +137,6 @@
     "searchEnginePreference": "搜尋引擎偏好",
     "sponsor": "支持我們"
   },
-  "builtinApps": { "title": "內建應用程式管理", "memo": "便箋", "add": "新增", "remove": "移除" },
-  "memo": { "title": "便箋", "untitled": "無標題便箋", "create": "建立便箋", "unsaved": "離開前儲存修改嗎？", "delete": "確定刪除此便箋嗎？", "time": { "today": "今天{{time}}", "yesterday": "昨天{{time}}", "dayBeforeYesterday": "前天{{time}}" } },
   "notification": {
     "bing": {
       "message": "請查看開發人員工具的主控台訊息。",
@@ -132,45 +159,6 @@
       "message": "感謝安裝檸檬起始頁！你可以在右下角的設定中自訂你的新分頁。",
       "title": "歡迎使用檸檬起始頁"
     }
-  },
-  "search": {
-    "engineMenu": {
-      "current": "當前",
-      "tipPrefix": "Tip：按下",
-      "tipSuffix": "切換搜尋引擎"
-    },
-    "engines": {
-      "baidu": "百度",
-      "bing": "Bing",
-      "duckduckgo": "DuckDuckGo",
-      "google": "Google",
-      "yandex": "Yandex"
-    },
-    "placeholder": "搜尋",
-    "purgeSearchHistory": "清除搜尋歷史",
-    "searchEngineNotFound": "找不到搜尋引擎",
-    "calculator": "計算機",
-    "calculationResult": "計算結果",
-    "clickToCopy": "點擊複製",
-    "open": "開啟",
-    "savedWebsite": "已收藏網站",
-    "mostVisited": "最常瀏覽",
-    "navigateTo": "前往",
-    "searchFor": "搜尋"
-  },
-  "sponsor": "這個擴充功能是我利用業餘時間開發的小工具，很高興能幫助到你！如果你喜歡它，不妨給個 Star ⭐ 來支持一下，這對我意義重大。如果有任何想法或建議，也歡迎透過郵箱聯繫我：redlnn@outlook.com。謝謝你的信任！",
-  "time": {
-    "afternoon": "下午",
-    "dawn": "凌晨",
-    "dusk": "傍晚",
-    "evening": "晚上",
-    "lateNight": "深夜",
-    "morning": "早上",
-    "noon": "中午"
-  },
-  "title": "新分頁",
-  "yiyan": {
-    "copied": "已複製到剪貼板"
   },
   "quickLinks": {
     "addDialog": {
@@ -198,16 +186,55 @@
       "untitled": "分組 {{index}}"
     },
     "hide": "隱藏",
-    "moveError": "移動失敗",
-    "moveLeft": "左移",
-    "moveRight": "右移",
     "hideTopMessage": {
       "content": "已隱藏該最常造訪網站",
       "restoreDefault": "還原預設",
       "restoreSuccess": "已還原預設最常造訪網站"
     },
+    "moveError": "移動失敗",
+    "moveLeft": "左移",
+    "moveRight": "右移",
     "pin": "釘選",
     "unpin": "取消釘選",
     "unpinMessage": "已取消釘選該連結"
+  },
+  "search": {
+    "calculationResult": "計算結果",
+    "calculator": "計算機",
+    "clickToCopy": "點擊複製",
+    "engineMenu": {
+      "current": "當前",
+      "tipPrefix": "Tip：按下",
+      "tipSuffix": "切換搜尋引擎"
+    },
+    "engines": {
+      "baidu": "百度",
+      "bing": "Bing",
+      "duckduckgo": "DuckDuckGo",
+      "google": "Google",
+      "yandex": "Yandex"
+    },
+    "mostVisited": "最常瀏覽",
+    "navigateTo": "前往",
+    "open": "開啟",
+    "placeholder": "搜尋",
+    "purgeSearchHistory": "清除搜尋歷史",
+    "savedWebsite": "已收藏網站",
+    "searchEngineNotFound": "找不到搜尋引擎",
+    "searchFor": "搜尋"
+  },
+  "sponsor": "這個擴充功能是我利用業餘時間開發的小工具，很高興能幫助到你！如果你喜歡它，不妨給個 Star ⭐ 來支持一下，這對我意義重大。如果有任何想法或建議，也歡迎透過郵箱聯繫我：redlnn@outlook.com。謝謝你的信任！",
+  "time": {
+    "afternoon": "下午",
+    "dawn": "凌晨",
+    "dusk": "傍晚",
+    "evening": "晚上",
+    "lateNight": "深夜",
+    "morning": "早上",
+    "noon": "中午"
+  },
+  "title": "新分頁",
+  "yiyan": {
+    "copied": "已複製到剪貼板"
   }
 }

@@ -101,6 +101,7 @@ function isQuickLinks(value: unknown, images: Readonly<Record<string, string>>):
         isEntityId(item.id) &&
         typeof item.url === 'string' &&
         typeof item.title === 'string' &&
+        (item.appId === undefined || item.appId === 'note') &&
         (item.faviconHash === undefined ||
           (typeof item.faviconHash === 'string' && Object.hasOwn(images, item.faviconHash))) &&
         item.favicon === undefined,
@@ -135,6 +136,24 @@ function isQuickLinks(value: unknown, images: Readonly<Record<string, string>>):
   if (!isUniqueIdList(value.rootOrder, itemIds)) return false
   const referencedItems = [...value.rootOrder, ...typedGroups.flatMap((group) => group.itemIds)]
   return referencedItems.length === itemIds.size && new Set(referencedItems).size === itemIds.size
+}
+
+function isNotes(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.items) &&
+    value.items.every(
+      (item) =>
+        isRecord(item) &&
+        isUuid(item.id) &&
+        (item.title === undefined || typeof item.title === 'string') &&
+        typeof item.markdown === 'string' &&
+        (item.pinned === undefined || typeof item.pinned === 'boolean') &&
+        isDate(item.createdAt) &&
+        isDate(item.updatedAt),
+    ) &&
+    hasUniqueIds(value.items as Array<{ id: string }>)
+  )
 }
 
 function isCustomSearchEngines(value: unknown, images: Readonly<Record<string, string>>): boolean {
@@ -229,7 +248,7 @@ function isWallpapers(value: unknown): boolean {
 
 export function isSyncScope(value: unknown): value is SyncScopePreferences {
   if (!isRecord(value)) return false
-  const keys: Array<keyof SyncScopePreferences> = [
+  const keys: Array<Exclude<keyof SyncScopePreferences, 'notes'>> = [
     'settings',
     'quickLinks',
     'customSearchEngines',
@@ -240,7 +259,9 @@ export function isSyncScope(value: unknown): value is SyncScopePreferences {
     'userIcons',
   ]
   return (
-    keys.every((key) => typeof value[key] === 'boolean') && keys.some((key) => value[key] === true)
+    keys.every((key) => typeof value[key] === 'boolean') &&
+    (value.notes === undefined || typeof value.notes === 'boolean') &&
+    (value.notes === true || keys.some((key) => value[key] === true))
   )
 }
 
@@ -287,6 +308,7 @@ function isSyncSnapshot(value: unknown): boolean {
   )
     return false
   if (value.quickLinks !== undefined && !isQuickLinks(value.quickLinks, images)) return false
+  if (value.notes !== undefined && !isNotes(value.notes)) return false
   if (
     value.customSearchEngines !== undefined &&
     !isCustomSearchEngines(value.customSearchEngines, images)
@@ -439,5 +461,6 @@ export function validateSyncRevision(value: unknown): ValidationResult<SyncRevis
     return invalid('Revision contains duplicate assets')
   }
   if (!isHash(value.snapshotHash)) return invalid('Revision snapshot hash is invalid')
+  // 校验不能补写默认值，否则旧 revision 的内容哈希和 commit scope 会失配。
   return { ok: true, value: value as unknown as SyncRevisionV1 }
 }

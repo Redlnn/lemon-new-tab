@@ -29,7 +29,7 @@ import {
   type QuickLinkTarget,
 } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
-import { getBuiltInAppId, openBuiltInApp } from '@/shared/builtinApps'
+import { openBuiltInApp, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 import { toggleDocumentClass } from '@/shared/theme'
 
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
@@ -91,8 +91,8 @@ type GroupView = {
 const { t } = useTranslation()
 const settings = useSettingsStore()
 
-function openBuiltInItem(event: MouseEvent, item: { url: string }) {
-  const appId = getBuiltInAppId(item.url)
+function openBuiltInItem(event: MouseEvent, item: { url: string; appId?: BuiltInAppId }) {
+  const appId = resolveBuiltInAppId(item)
   if (!appId) return
   event.preventDefault()
   openBuiltInApp(appId)
@@ -388,6 +388,8 @@ function toGroupedDisplayItem(item: QuickLink, index: number, groupId: string) {
     url: item.url,
     title: item.title,
     favicon: item.favicon,
+    icon: item.icon,
+    appId: item.appId,
     isPinned: true,
     originalIndex: index,
     groupId,
@@ -774,6 +776,8 @@ onBeforeUnmount(() => {
                             url: item.url,
                             title: item.title,
                             favicon: item.favicon,
+                            icon: item.icon,
+                            appId: item.appId,
                             isPinned: true,
                             origin: 'pinned',
                           }"
@@ -794,6 +798,7 @@ onBeforeUnmount(() => {
                               <favicon-image
                                 :url="item.url"
                                 :favicon="item.favicon"
+                                :icon="item.icon"
                                 :title="item.title"
                                 :alt="item.title"
                               />
@@ -873,6 +878,8 @@ onBeforeUnmount(() => {
                             url: item.url,
                             title: item.title,
                             favicon: item.favicon,
+                            icon: item.icon,
+                            appId: item.appId,
                             isPinned: false,
                             origin: 'top-sites',
                           }"
@@ -892,6 +899,7 @@ onBeforeUnmount(() => {
                               <favicon-image
                                 :url="item.url"
                                 :favicon="item.favicon"
+                                :icon="item.icon"
                                 :title="item.title"
                                 :alt="item.title"
                               />
@@ -941,6 +949,7 @@ onBeforeUnmount(() => {
                         <favicon-image
                           :url="item.url"
                           :favicon="item.favicon"
+                          :icon="item.icon"
                           :title="item.title"
                           :alt="item.title"
                         />
@@ -998,6 +1007,8 @@ onBeforeUnmount(() => {
                         url: item.url,
                         title: item.title,
                         favicon: item.favicon,
+                        icon: item.icon,
+                        appId: item.appId,
                         isPinned: true,
                         origin: 'pinned',
                         pageIndex: page,
@@ -1017,6 +1028,7 @@ onBeforeUnmount(() => {
                           <favicon-image
                             :url="item.url"
                             :favicon="item.favicon"
+                            :icon="item.icon"
                             :title="item.title"
                             :alt="item.title"
                           />
@@ -1046,6 +1058,8 @@ onBeforeUnmount(() => {
                         url: item.url,
                         title: item.title,
                         favicon: item.favicon,
+                        icon: item.icon,
+                        appId: item.appId,
                         isPinned: false,
                         origin: 'top-sites',
                         pageIndex: page,
@@ -1064,6 +1078,7 @@ onBeforeUnmount(() => {
                           <favicon-image
                             :url="item.url"
                             :favicon="item.favicon"
+                            :icon="item.icon"
                             :title="item.title"
                             :alt="item.title"
                           />
@@ -1393,6 +1408,7 @@ onBeforeUnmount(() => {
     }
 
     img,
+    .favicon-image__component,
     .favicon-image__title-initial {
       width: 75%;
       height: 75%;

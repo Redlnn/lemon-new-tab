@@ -19,6 +19,35 @@
     "change": "Change background",
     "custom": "Custom",
     "fasterBgAnim": "Faster background display on startup",
+    "library": {
+      "add": "Add",
+      "clearPreviews": "Clear preview cache",
+      "collapse": "Collapse",
+      "confirmRemove": "Remove the {{count}} selected wallpapers?",
+      "dark": "Dark mode",
+      "done": "Done",
+      "download": "Download",
+      "dragAddHint": "Drag images or videos here to add them",
+      "empty": "Add images or videos. Select multiple files or drop them here.",
+      "expand": "Show all",
+      "group": "Wallpaper group",
+      "image": "Image",
+      "importFailed": "{{count}} files could not be added. Other files were kept.",
+      "inherit": "When no dark mode wallpapers are set, light mode wallpapers will be used automatically.",
+      "light": "Light mode",
+      "loading": "Reading details",
+      "manage": "Manage",
+      "order": "Rotation order",
+      "ordered": "List order",
+      "random": "Random",
+      "remove": "Remove",
+      "reset": "Reset",
+      "rotation": "Wallpaper rotation",
+      "solid": "Solid color",
+      "sortHint": "Drag to reorder",
+      "unavailable": "Unavailable",
+      "video": "Video"
+    },
     "mask": {
       "color": "Mask color",
       "enable": "Enable mask"
@@ -79,35 +108,6 @@
         "title": "Large File Warning"
       },
       "unknownSource": "Using images from unknown sources as backgrounds may expose your device to attacks. Do you want to continue?"
-    },
-    "library": {
-      "solid": "Solid color",
-      "light": "Light mode",
-      "dark": "Dark mode",
-      "reset": "Reset",
-      "group": "Wallpaper group",
-      "download": "Download",
-      "add": "Add",
-      "manage": "Manage",
-      "done": "Done",
-      "remove": "Remove",
-      "expand": "Show all",
-      "collapse": "Collapse",
-      "inherit": "When no dark mode wallpapers are set, light mode wallpapers will be used automatically.",
-      "empty": "Add images or videos. Select multiple files or drop them here.",
-      "rotation": "Wallpaper rotation",
-      "order": "Rotation order",
-      "random": "Random",
-      "ordered": "List order",
-      "image": "Image",
-      "video": "Video",
-      "loading": "Reading details",
-      "unavailable": "Unavailable",
-      "dragAddHint": "Drag images or videos here to add them",
-      "sortHint": "Drag to reorder",
-      "importFailed": "{{count}} files could not be added. Other files were kept.",
-      "confirmRemove": "Remove the {{count}} selected wallpapers?",
-      "clearPreviews": "Clear preview cache"
     }
   },
   "bookmark": {
@@ -163,13 +163,13 @@
   "common": {
     "copyLink": "Copy Link Address",
     "hour": "Hour",
+    "incognitoPermission": {
+      "message": "To open a private window, allow this extension to run in private windows in Firefox Add-ons Manager, then try again.",
+      "title": "Private Browsing Permission Required"
+    },
+    "openInIncognitoWindow": "Open in Incognito Window",
     "openInNewTab": "Open in New Tab",
     "openInNewWindow": "Open in New Window",
-    "openInIncognitoWindow": "Open in Incognito Window",
-    "incognitoPermission": {
-      "title": "Private Browsing Permission Required",
-      "message": "To open a private window, allow this extension to run in private windows in Firefox Add-ons Manager, then try again."
-    },
     "sections": {
       "animation": "Animations",
       "appearance": "Appearance",
@@ -447,10 +447,10 @@
       "uiScopeDisabled": "Language and color mode stay on this device because their sync category is off.",
       "userIconsScopeDisabled": "User-selected icons stay on this device. You can include them in Advanced sync scope.",
       "wallpaperFailed": "The wallpaper did not pass upload or integrity checks. Other data will still sync.",
+      "wallpaperPartial": "Only available static images up to 20 MiB sync. Videos, animated images, and other skipped files stay on this device.",
       "wallpaperScopeDisabled": "Local image wallpapers stay on this device. You can include them in the WebDAV sync scope.",
       "wallpaperTooLarge": "This image is over 20 MB, so the wallpaper is not synced. Other data will still sync.",
-      "wallpaperVideo": "Video wallpapers are not synced through WebDAV.",
-      "wallpaperPartial": "Only available static images up to 20 MiB sync. Videos, animated images, and other skipped files stay on this device."
+      "wallpaperVideo": "Video wallpapers are not synced through WebDAV."
     }
   },
   "theme": {
@@ -535,9 +535,9 @@
         "searchEngineUrl": "Search engine address",
         "wallpaper": "Wallpaper",
         "wallpaperDark": "Dark wallpaper",
+        "wallpaperFixed": "Fixed wallpaper",
         "wallpaperLight": "Light wallpaper",
-        "wallpaperOrder": "Wallpaper list order",
-        "wallpaperFixed": "Fixed wallpaper"
+        "wallpaperOrder": "Wallpaper list order"
       },
       "finish": "Create merge version",
       "local": "Keep local data",
@@ -699,8 +699,8 @@
       "removeWallpapersCompleted": "Wallpaper sync stopped and unused cloud images cleaned up",
       "removeWallpapersDescription": "A new version without wallpapers will be published, then cloud images no longer referenced by retained versions will be removed. Local wallpapers will remain.",
       "removeWallpapersTitle": "Stop syncing wallpapers and clean up cloud images?",
-      "revision": "Damaged version: {{id}}",
       "retry": "Check again",
+      "revision": "Damaged version: {{id}}",
       "same": "Local data matches the previous complete version, which will be used automatically to create a repair version.",
       "size": "Raw file size: {{size}} bytes",
       "title": "Inspect and repair",
@@ -711,6 +711,7 @@
     "scope": {
       "blockedTopSites": "Hidden frequently visited sites",
       "customSearchEngines": "Custom search engines",
+      "notes": "Notes",
       "onlineWallpaperUrl": "Online wallpaper address",
       "onlineWallpaperUrlNote": "The address may contain a access token.",
       "settings": "Baisc Settings",

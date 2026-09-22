@@ -239,7 +239,7 @@ const tagType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'info'
         <div class="settings__theme">
           <el-select
             v-model="settings.theme.primaryColor"
-            style="width: 150px"
+            style="width: 183px"
             popper-class="settings-item-popper"
             :show-arrow="false"
             :disabled="settings.theme.monetColor"

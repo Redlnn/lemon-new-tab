@@ -649,6 +649,12 @@ html.light .quick-links {
       background-size: contain;
       border-radius: calc(var(--le-radius-base, 20px) * 0.3);
     }
+
+    .quick-link-dnd-overlay__icon-component {
+      width: 70%;
+      height: 70%;
+      border-radius: calc(var(--le-radius-base, 20px) * 0.3);
+    }
   }
 
   &__title {

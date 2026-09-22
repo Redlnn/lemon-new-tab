@@ -920,6 +920,8 @@ defineExpose({ refresh, getActiveGroupId })
                     url: item.url,
                     title: item.title,
                     favicon: item.favicon,
+                    icon: item.icon,
+                    appId: item.appId,
                     isPinned: item.isPinned,
                     origin: getItemDndOrigin(item),
                   }"
@@ -931,6 +933,8 @@ defineExpose({ refresh, getActiveGroupId })
                     :url="item.url"
                     :title="item.title"
                     :favicon="item.favicon"
+                    :icon="item.icon"
+                    :app-id="item.appId"
                     :pined="item.isPinned"
                     :presentation="quickLinkItemPresentation"
                     :on-context-menu="(e) => openCtxMenu(e, item)"
@@ -1057,12 +1061,15 @@ defineExpose({ refresh, getActiveGroupId })
                       item.url,
                       item.title,
                       item.favicon,
+                      item.icon,
                       item.isPinned,
                       quickLinkItemPresentation,
                     ]"
                     :url="item.url"
                     :title="item.title"
                     :favicon="item.favicon"
+                    :icon="item.icon"
+                    :app-id="item.appId"
                     :pined="item.isPinned"
                     :presentation="quickLinkItemPresentation"
                     :on-context-menu="(e) => openCtxMenu(e, item)"
@@ -1136,6 +1143,8 @@ defineExpose({ refresh, getActiveGroupId })
                         url: item.url,
                         title: item.title,
                         favicon: item.favicon,
+                        icon: item.icon,
+                        appId: item.appId,
                         isPinned: item.isPinned,
                         origin: getItemDndOrigin(item),
                         pageIndex: currentPageData?.pageInGroup,
@@ -1146,6 +1155,8 @@ defineExpose({ refresh, getActiveGroupId })
                         :url="item.url"
                         :title="item.title"
                         :favicon="item.favicon"
+                        :icon="item.icon"
+                        :app-id="item.appId"
                         :pined="item.isPinned"
                         :presentation="quickLinkItemPresentation"
                         :on-context-menu="(e) => openCtxMenu(e, item)"
@@ -1178,12 +1189,15 @@ defineExpose({ refresh, getActiveGroupId })
                       item.url,
                       item.title,
                       item.favicon,
+                      item.icon,
                       item.isPinned,
                       quickLinkItemPresentation,
                     ]"
                     :url="item.url"
                     :title="item.title"
                     :favicon="item.favicon"
+                    :icon="item.icon"
+                    :app-id="item.appId"
                     :pined="item.isPinned"
                     :presentation="quickLinkItemPresentation"
                     :on-context-menu="(e) => openCtxMenu(e, item)"

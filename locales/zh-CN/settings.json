@@ -19,6 +19,35 @@
     "change": "更改背景",
     "custom": "自定义",
     "fasterBgAnim": "启动时更快地显示背景",
+    "library": {
+      "add": "添加",
+      "clearPreviews": "清理预览缓存",
+      "collapse": "收起",
+      "confirmRemove": "移除选中的 {{count}} 个壁纸？",
+      "dark": "深色模式",
+      "done": "完成",
+      "download": "下载",
+      "dragAddHint": "拖入图片或视频添加",
+      "empty": "添加图片或视频，支持一次选择多个文件或拖入。",
+      "expand": "展开全部",
+      "group": "壁纸分组",
+      "image": "图片",
+      "importFailed": "有 {{count}} 个文件未能添加，其余文件已保留。",
+      "inherit": "未设置深色模式壁纸时，将自动使用浅色模式壁纸。",
+      "light": "浅色模式",
+      "loading": "信息读取中",
+      "manage": "管理",
+      "order": "轮换顺序",
+      "ordered": "按列表顺序",
+      "random": "随机",
+      "remove": "移除",
+      "reset": "恢复默认",
+      "rotation": "壁纸轮换",
+      "solid": "纯色背景",
+      "sortHint": "拖动排序",
+      "unavailable": "无法读取",
+      "video": "视频"
+    },
     "mask": {
       "color": "遮罩颜色",
       "enable": "启用遮罩"
@@ -79,35 +108,6 @@
         "title": "文件过大"
       },
       "unknownSource": "使用未知来源的图片作为背景可能会使你的设备遭到攻击，是否继续？"
-    },
-    "library": {
-      "solid": "纯色背景",
-      "light": "浅色模式",
-      "dark": "深色模式",
-      "reset": "恢复默认",
-      "group": "壁纸分组",
-      "download": "下载",
-      "add": "添加",
-      "manage": "管理",
-      "done": "完成",
-      "remove": "移除",
-      "expand": "展开全部",
-      "collapse": "收起",
-      "inherit": "未设置深色模式壁纸时，将自动使用浅色模式壁纸。",
-      "empty": "添加图片或视频，支持一次选择多个文件或拖入。",
-      "rotation": "壁纸轮换",
-      "order": "轮换顺序",
-      "random": "随机",
-      "ordered": "按列表顺序",
-      "image": "图片",
-      "video": "视频",
-      "loading": "信息读取中",
-      "unavailable": "无法读取",
-      "dragAddHint": "拖入图片或视频添加",
-      "sortHint": "拖动排序",
-      "importFailed": "有 {{count}} 个文件未能添加，其余文件已保留。",
-      "confirmRemove": "移除选中的 {{count}} 个壁纸？",
-      "clearPreviews": "清理预览缓存"
     }
   },
   "bookmark": {
@@ -163,13 +163,13 @@
   "common": {
     "copyLink": "复制链接地址",
     "hour": "小时",
+    "incognitoPermission": {
+      "message": "请在 Firefox 附加组件管理器中允许此扩展在隐私窗口中运行，然后重试。",
+      "title": "需要无痕模式权限"
+    },
+    "openInIncognitoWindow": "在无痕窗口中打开",
     "openInNewTab": "在新标签页中打开",
     "openInNewWindow": "在新窗口中打开",
-    "openInIncognitoWindow": "在无痕窗口中打开",
-    "incognitoPermission": {
-      "title": "需要无痕模式权限",
-      "message": "请在 Firefox 附加组件管理器中允许此扩展在隐私窗口中运行，然后重试。"
-    },
     "sections": {
       "animation": "动画",
       "appearance": "外观",
@@ -447,10 +447,10 @@
       "uiScopeDisabled": "语言和颜色模式同步已关闭，仅保存在此设备。",
       "userIconsScopeDisabled": "用户选择的图标仅保存在此设备。可在高级同步范围中开启。",
       "wallpaperFailed": "壁纸文件未通过上传或完整性校验，其他数据仍会同步。",
+      "wallpaperPartial": "仅同步 20 MiB 以内的可用静态图片；视频、动态图及其他跳过项保留在本机。",
       "wallpaperScopeDisabled": "本地图片壁纸仅保存在此设备。可在 WebDAV 同步范围中开启。",
       "wallpaperTooLarge": "图片超过 20 MB，壁纸未同步；其他数据仍会同步。",
-      "wallpaperVideo": "视频壁纸不会通过 WebDAV 同步。",
-      "wallpaperPartial": "仅同步 20 MiB 以内的可用静态图片；视频、动态图及其他跳过项保留在本机。"
+      "wallpaperVideo": "视频壁纸不会通过 WebDAV 同步。"
     }
   },
   "theme": {
@@ -535,9 +535,9 @@
         "searchEngineUrl": "搜索引擎地址",
         "wallpaper": "壁纸",
         "wallpaperDark": "深色壁纸",
+        "wallpaperFixed": "固定壁纸",
         "wallpaperLight": "浅色壁纸",
-        "wallpaperOrder": "壁纸排列顺序",
-        "wallpaperFixed": "固定壁纸"
+        "wallpaperOrder": "壁纸排列顺序"
       },
       "finish": "创建合并版本",
       "local": "保留本地数据",
@@ -699,8 +699,8 @@
       "removeWallpapersCompleted": "已停止同步壁纸并清理不再使用的云端图片",
       "removeWallpapersDescription": "系统会发布一个不含壁纸的新版本，再清理不再被保留版本引用的云端图片。本机壁纸不会被删除。",
       "removeWallpapersTitle": "停止同步壁纸并清理云端图片？",
-      "revision": "损坏版本：{{id}}",
       "retry": "重新检查",
+      "revision": "损坏版本：{{id}}",
       "same": "本机数据与上一完整版本相同，将自动使用上一版本创建修复版本。",
       "size": "原始文件大小：{{size}} 字节",
       "title": "检查与修复",
@@ -711,6 +711,7 @@
     "scope": {
       "blockedTopSites": "隐藏的最常访问站点",
       "customSearchEngines": "自定义搜索引擎",
+      "notes": "便签",
       "onlineWallpaperUrl": "在线壁纸地址",
       "onlineWallpaperUrlNote": "可能会包含访问 Token。",
       "settings": "基础设置",

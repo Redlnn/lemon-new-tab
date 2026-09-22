@@ -15,6 +15,7 @@ import OpenInNewRound from '~icons/ic/round-open-in-new'
 
 import type { QuickLinkTarget } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
+import { resolveBuiltInAppId } from '@/shared/builtinApps'
 
 import { useQuickLinkContextMenu } from '../composables/useQuickLinkContextMenu'
 import type { CtxQuickLinkItem } from '../composables/useQuickLinkContextMenu'
@@ -72,6 +73,7 @@ const {
   onPin: (item) => props.onPin?.(item),
   onMove: (item) => props.onMove?.(item),
 })
+const isBuiltInApp = computed(() => Boolean(ctxItem.value && resolveBuiltInAppId(ctxItem.value)))
 
 function open(
   event: MouseEvent | PointerEvent | TouchEvent,
@@ -122,23 +124,23 @@ defineExpose({ open, close })
   >
     <template #dropdown>
       <el-dropdown-menu class="noselect">
-        <el-dropdown-item :icon="OpenInNewRound" @click="ctxOpenInNewTab">
+        <el-dropdown-item v-if="!isBuiltInApp" :icon="OpenInNewRound" @click="ctxOpenInNewTab">
           <span>{{ t('settings:common.openInNewTab') }}</span>
         </el-dropdown-item>
-        <el-dropdown-item :icon="OpenInNewRound" @click="ctxOpenInNewWindow">
+        <el-dropdown-item v-if="!isBuiltInApp" :icon="OpenInNewRound" @click="ctxOpenInNewWindow">
           <span>{{ t('settings:common.openInNewWindow') }}</span>
         </el-dropdown-item>
-        <el-dropdown-item :icon="Incognito16Regular" @click="ctxOpenInIncognitoWindow">
+        <el-dropdown-item v-if="!isBuiltInApp" :icon="Incognito16Regular" @click="ctxOpenInIncognitoWindow">
           <span>{{ t('settings:common.openInIncognitoWindow') }}</span>
         </el-dropdown-item>
-        <el-dropdown-item :icon="ContentCopyRound" @click="ctxCopyLink">
+        <el-dropdown-item v-if="!isBuiltInApp" :icon="ContentCopyRound" @click="ctxCopyLink">
           <span>{{ t('settings:common.copyLink') }}</span>
         </el-dropdown-item>
-        <el-dropdown-item :icon="Star12Regular" @click="ctxCreateBookmark">
+        <el-dropdown-item v-if="!isBuiltInApp" :icon="Star12Regular" @click="ctxCreateBookmark">
           <span>{{ t('quickLinks.bookmark.add') }}</span>
         </el-dropdown-item>
         <template v-if="ctxItem?.isPinned">
-          <el-dropdown-item v-if="showEdit" :icon="Edit16Regular" divided @click="ctxEdit">
+          <el-dropdown-item v-if="showEdit && !isBuiltInApp" :icon="Edit16Regular" divided @click="ctxEdit">
             <span>{{ t('common.edit') }}</span>
           </el-dropdown-item>
           <el-dropdown-item

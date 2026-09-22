@@ -47,6 +47,7 @@ const updatingScope = ref<keyof SyncScopePreferences | null>(null)
 const scopeKeys = [
   'settings',
   'quickLinks',
+  'notes',
   'customSearchEngines',
   'uiPreferences',
   'blockedTopSites',
