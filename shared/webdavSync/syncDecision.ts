@@ -2,6 +2,7 @@ import { jsonEquals } from './canonical.ts'
 import { applyConflictCandidate, readConflictValue } from './conflicts.ts'
 import { mergeSyncSnapshots } from './merge.ts'
 import { normalizeRemoteSyncSettings } from './settingsWhitelist.ts'
+import { normalizeSnapshotOrder } from './snapshotOrder.ts'
 import type {
   AssetReferenceV1,
   SyncConflict,
@@ -282,6 +283,11 @@ export function decideSynchronization(input: {
   local: SyncSnapshotV1
   revisions: readonly SyncRevisionV1[]
 }): SyncDecision {
+  input = {
+    ...input,
+    baseline: normalizeSnapshotOrder(input.baseline),
+    local: normalizeSnapshotOrder(input.local),
+  }
   const builtRemote = buildRemoteState(input.baseRevisionId, input.baseline, input.revisions)
   if (!builtRemote) {
     return {

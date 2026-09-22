@@ -6,9 +6,12 @@ export async function readWallpaperMetadata(
   const url = URL.createObjectURL(blob)
   const video = blob.type.startsWith('video/')
   const element = video ? document.createElement('video') : new Image()
+  let timer: ReturnType<typeof setTimeout> | undefined
   try {
+    // 媒体元素只加载本次创建的 Blob URL。
+    if (!url.startsWith('blob:')) throw new Error('Invalid media URL')
     await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('Media metadata timed out')), 15000)
+      timer = setTimeout(() => reject(new Error('Media metadata timed out')), 15000)
       const loaded = () => {
         clearTimeout(timer)
         resolve()
@@ -44,12 +47,12 @@ export async function readWallpaperMetadata(
     )
     return { metadata, thumbnail: thumbnail ?? undefined }
   } finally {
+    clearTimeout(timer)
     element.onerror = null
-    if (element instanceof HTMLVideoElement) {
-      element.onloadeddata = null
-      element.removeAttribute('src')
-      element.load()
-    }
+    if (element instanceof HTMLVideoElement) element.onloadeddata = null
+    else element.onload = null
+    element.removeAttribute('src')
+    if (element instanceof HTMLVideoElement) element.load()
     URL.revokeObjectURL(url)
   }
 }

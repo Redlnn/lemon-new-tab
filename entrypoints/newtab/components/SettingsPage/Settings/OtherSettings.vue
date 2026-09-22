@@ -21,7 +21,6 @@ import {
 import {
   applyPreparedBrowserImport,
   createBrowserJsonBackup,
-  mergePreparedBrowserImport,
   prepareBrowserImport,
 } from '@/shared/webdavSync/browserBackup'
 
@@ -358,8 +357,7 @@ async function handleFileChange(event: Event) {
       if (state.configured) await disconnectBeforeReplacement()
       await applyPreparedBrowserImport(prepared)
     } else {
-      const merged = await mergePreparedBrowserImport(prepared, state.scope)
-      await applyPreparedBrowserImport(prepared, merged)
+      await applyPreparedBrowserImport(prepared, state.scope)
       sendSyncDataChanged()
     }
     ElMessage.success(t('other.importExport.importSuccess'))

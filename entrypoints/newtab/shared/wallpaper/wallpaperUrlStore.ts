@@ -10,8 +10,8 @@ export const useWallpaperUrlStore = defineStore('wallpaperUrl', () => {
   const bingUrl = ref('')
   let resolvedId = ''
   let pending: { id: string; task: Promise<typeof bingUrl> } | undefined
-  async function getUrl() {
-    const id = settings.background.bing.id
+  const getUrl = async () => {
+    const { id } = settings.background.bing
     if (resolvedId === id && bingUrl.value) return bingUrl
     if (pending?.id === id) return pending.task
     const task = (async () => {

@@ -103,24 +103,14 @@ function showBlockedMessage(url: string, reloadFunc: () => Promise<void>) {
 }
 
 async function blockSite(url: string, reloadFunc: () => Promise<void>) {
-  const list = await blockedTopSitesStorage.getValue()
-  if (list.includes(url)) {
-    return
-  }
-  await blockedTopSitesStorage.setValue([...list, url])
+  await blockedTopSitesStorage.updateValue((list) => (list.includes(url) ? list : [...list, url]))
   invalidateTopSitesCache()
   showBlockedMessage(url, reloadFunc)
 }
 
 async function restoreBlockedSite(url: string) {
-  const list = await blockedTopSitesStorage.getValue()
-  const index = list.indexOf(url)
-  if (index !== -1) {
-    const next = list.slice()
-    next.splice(index, 1)
-    await blockedTopSitesStorage.setValue(next)
-    invalidateTopSitesCache()
-  }
+  await blockedTopSitesStorage.updateValue((list) => list.filter((item) => item !== url))
+  invalidateTopSitesCache()
 }
 
 export { blockSite, getTopSites, invalidateTopSitesCache }

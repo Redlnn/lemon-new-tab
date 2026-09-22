@@ -277,6 +277,7 @@ function toggleMinimalMode() {
       class="app"
       :class="mainClass"
       :aria-label="t('a11y.main')"
+      @click.self="isOnlyTouchDevice && handleBackgroundContextMenu()"
       @contextmenu.prevent="handleBackgroundContextMenu"
       @dblclick.self="toggleMinimalMode"
     >
@@ -285,6 +286,7 @@ function toggleMinimalMode() {
         class="app__content"
         :style="contentStyle"
         :inert="minimalMode || undefined"
+        @click.self="isOnlyTouchDevice && handleBackgroundContextMenu()"
         @dblclick.self="toggleMinimalMode"
       >
         <search-box v-if="settings.search.enabled" @contextmenu.stop />
