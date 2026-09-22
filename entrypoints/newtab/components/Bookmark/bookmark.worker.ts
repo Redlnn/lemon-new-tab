@@ -21,16 +21,15 @@ function resultNodes(nodes: BookmarkTreeNode[]): BookmarkResultNode[] {
 
 let tree: BookmarkTreeNode[] = []
 // 扁平索引：id -> { node, parents, titleLower, urlLower }
-let indexMap: Record<
-  string,
-  {
-    node: BookmarkTreeNode
-    parents: string[]
-    titleLower: string
-    urlLower: string
-    isFolder: boolean
-  }
-> = {}
+type BookmarkIndexEntry = {
+  node: BookmarkTreeNode
+  parents: string[]
+  titleLower: string
+  urlLower: string
+  isFolder: boolean
+}
+
+let indexMap = new Map<string, BookmarkIndexEntry>()
 
 let cachedAllIds: string[] = []
 const collatorCache = new Map<string, Intl.Collator>()
@@ -180,7 +179,7 @@ function createRebuild(
 // --------------------------------------------------------------------------
 
 function buildIndex() {
-  const map: typeof indexMap = {}
+  const map = new Map<string, BookmarkIndexEntry>()
 
   const stack: Array<{ nodes: BookmarkTreeNode[]; parents: string[] }> = [
     { nodes: tree, parents: [] },
@@ -191,13 +190,13 @@ function buildIndex() {
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i]!
       const isFolder = node.children !== undefined
-      map[node.id] = {
+      map.set(node.id, {
         node,
         parents,
         titleLower: (node.title || '').toLowerCase(),
         urlLower: node.url ? node.url.toLowerCase() : '',
         isFolder,
-      }
+      })
 
       if (isFolder && node.children!.length) {
         stack.push({ nodes: node.children!, parents: [...parents, node.id] })
@@ -206,7 +205,7 @@ function buildIndex() {
   }
 
   indexMap = map
-  cachedAllIds = Object.keys(map)
+  cachedAllIds = Array.from(map.keys())
 
   resetQueryCaches()
 }
@@ -267,7 +266,7 @@ function filter(query: string, mode: SortMode) {
   // 2) 在候选中找出直接匹配的节点 id
   const matchedIds = new Set<string>()
   for (const id of candidateIds) {
-    const entry = indexMap[id]
+    const entry = indexMap.get(id)
     if (!entry) continue
     if (entry.titleLower.includes(q) || (entry.urlLower && entry.urlLower.includes(q))) {
       matchedIds.add(id)
@@ -288,7 +287,7 @@ function filter(query: string, mode: SortMode) {
 
   // 先收集所有祖先
   for (const id of matchedIds) {
-    const parents = indexMap[id]?.parents
+    const parents = indexMap.get(id)?.parents
     if (parents) {
       for (let i = 0; i < parents.length; i++) keepIds.add(parents[i]!)
     }
@@ -296,7 +295,7 @@ function filter(query: string, mode: SortMode) {
 
   // 再为匹配到的文件夹添加所有后代
   for (const id of matchedIds) {
-    const entry = indexMap[id]
+    const entry = indexMap.get(id)
     if (!entry?.isFolder || !entry.node.children?.length) continue
 
     const stack = entry.node.children.slice()
@@ -358,12 +357,16 @@ self.onmessage = (e: MessageEvent) => {
         break
 
       case 'PATCH': {
-        const entry = indexMap[payload.id]
+        const entry = indexMap.get(payload.id)
         if (payload.baseVersion !== treeVersion || !entry) {
           self.postMessage({ type: 'RESYNC_REQUIRED', version: payload.version })
           break
         }
-        Object.assign(entry.node, payload.changes)
+        const { changes } = payload
+        if (changes && typeof changes === 'object') {
+          if (typeof changes.title === 'string') entry.node.title = changes.title
+          if (typeof changes.url === 'string') entry.node.url = changes.url
+        }
         entry.titleLower = (entry.node.title || '').toLowerCase()
         entry.urlLower = (entry.node.url || '').toLowerCase()
         treeVersion = payload.version
