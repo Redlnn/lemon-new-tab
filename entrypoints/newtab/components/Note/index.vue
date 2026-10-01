@@ -410,34 +410,37 @@ onScopeDispose(unwatchNotes)
     <div class="note-layout">
       <aside v-if="showAside" class="note-aside-wrapper">
         <div class="note-aside">
-          <el-button :icon="Plus" type="primary" class="note-create" plain @click="createNote">{{
-            t('note.create')
-          }}</el-button>
-          <div class="note-aside-list">
-            <button
-              v-for="{ note, title, time } in noteItems"
-              :key="note.id"
-              class="note-aside-item"
-              :class="{ 'is-active': selected?.id === note.id }"
-              @click="selectNote(note)"
-              @contextmenu.prevent="openMenu($event, note)"
-            >
-              <span class="note-aside-title"
-                ><component :is="Pin" v-if="note.pinned" class="note-pin-icon" />{{ title }}</span
+          <el-button :icon="Plus" type="primary" class="note-create" plain @click="createNote">
+            {{ t('note.create') }}
+          </el-button>
+          <el-scrollbar>
+            <div class="note-aside-list">
+              <button
+                v-for="{ note, title, time } in noteItems"
+                :key="note.id"
+                class="note-aside-item"
+                :class="{ 'is-active': selected?.id === note.id }"
+                @click="selectNote(note)"
+                @contextmenu.prevent="openMenu($event, note)"
               >
-              <span class="note-aside-modified-time">{{ time }}</span>
-            </button>
-            <p v-if="notes.length === 0" class="note-list-empty">{{ t('note.listEmpty') }}</p>
-          </div>
+                <span class="note-aside-title">
+                  <component :is="Pin" v-if="note.pinned" class="note-pin-icon" />
+                  {{ title }}
+                </span>
+                <span class="note-aside-modified-time">{{ time }}</span>
+              </button>
+              <p v-if="notes.length === 0" class="note-list-empty">{{ t('note.listEmpty') }}</p>
+            </div>
+          </el-scrollbar>
         </div>
       </aside>
       <main v-if="!isCompact || mode !== 'list'" class="note-main">
         <template v-if="mode === 'idle'">
           <section class="note-empty-state">
             <p>{{ t('note.empty') }}</p>
-            <el-button :icon="Plus" type="primary" @click="createNote">{{
-              t('note.create')
-            }}</el-button>
+            <el-button :icon="Plus" type="primary" @click="createNote">
+              {{ t('note.create') }}
+            </el-button>
           </section>
         </template>
         <template v-else>
@@ -510,9 +513,8 @@ onScopeDispose(unwatchNotes)
       @mouseleave="menuNote = null"
     >
       <button @click="togglePinned">
-        <component :is="menuNote.pinned ? PinOff : Pin" />{{
-          t(menuNote.pinned ? 'note.unpin' : 'note.pin')
-        }}
+        <component :is="menuNote.pinned ? PinOff : Pin" />
+        {{ t(menuNote.pinned ? 'note.unpin' : 'note.pin') }}
       </button>
       <button class="is-danger" @click="removeNote">
         <component :is="DeleteOutline" />{{ t('common.delete') }}
@@ -537,8 +539,12 @@ onScopeDispose(unwatchNotes)
 }
 
 .note-aside {
+  display: flex;
+  flex-direction: column;
   width: 200px;
+  height: 100%;
   margin-right: 10px;
+  overflow: hidden;
 }
 
 .note-aside-wrapper {
@@ -546,6 +552,7 @@ onScopeDispose(unwatchNotes)
 }
 
 .note-create.el-button {
+  flex-shrink: 0;
   justify-content: flex-start;
   width: 100%;
   height: 36px;
