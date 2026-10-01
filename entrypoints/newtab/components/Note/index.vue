@@ -2,11 +2,12 @@
 import 'element-plus/theme-chalk/src/dialog.scss'
 import '@newtab/styles/dialog.scss'
 import '@newtab/styles/note.scss'
-import { useWindowSize } from '@vueuse/core'
+import { useEventListener, useWindowSize } from '@vueuse/core'
 
-import { useLocale, type InputInstance } from 'element-plus'
+import { useLocale, type DropdownInstance, type InputInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import Plus from '~icons/fa7-solid/plus'
+import PinOff from '~icons/fluent/pin-off-16-regular'
 import Save from '~icons/ic/baseline-save'
 import CloseRound from '~icons/ic/round-close'
 import Code from '~icons/ic/round-code'
@@ -15,7 +16,6 @@ import FileDownload from '~icons/ic/round-file-download'
 import KeyboardArrowLeftRound from '~icons/ic/round-keyboard-arrow-left'
 import RoundModeEditIcon from '~icons/ic/round-mode-edit'
 import Pin from '~icons/ic/round-push-pin'
-import PinOff from '~icons/ic/round-push-pin'
 
 import { downloadBlob } from '@/shared/download'
 import {
@@ -60,7 +60,8 @@ function enqueueNoteWrite<T>(operation: () => Promise<T>): Promise<T> {
   return result
 }
 const menuNote = ref<NoteRecord | null>(null)
-const menuPosition = ref({ x: 0, y: 0 })
+const menuTrigger = ref({ getBoundingClientRect: () => new DOMRect() })
+const menuRef = useTemplateRef<DropdownInstance>('menuRef')
 const titleInputRef = useTemplateRef<InputInstance>('titleInputRef')
 
 const isReadonly = computed(() => mode.value !== 'edit')
@@ -89,7 +90,7 @@ function resetView(
   mode.value = nextMode
   isTitleEditing.value = false
   showCode.value = false
-  menuNote.value = null
+  closeMenu()
 }
 
 async function load() {
@@ -112,15 +113,19 @@ async function resolveUnsaved(): Promise<boolean> {
   return saveCurrent()
 }
 
-async function selectNote(note: NoteRecord) {
-  if (selected.value?.id === note.id || !(await resolveUnsaved())) return
+async function selectNote(note: NoteRecord, nextMode: 'view' | 'edit' = 'view') {
+  if (selected.value?.id === note.id) {
+    if (nextMode === 'edit') mode.value = 'edit'
+    return
+  }
+  if (!(await resolveUnsaved())) return
   const next = { ...note }
   draft.value = next
   selected.value = { ...next }
-  mode.value = 'view'
+  mode.value = nextMode
   isTitleEditing.value = false
   showCode.value = false
-  menuNote.value = null
+  closeMenu()
 }
 
 async function createNote() {
@@ -130,7 +135,7 @@ async function createNote() {
   mode.value = 'edit'
   isTitleEditing.value = true
   showCode.value = false
-  menuNote.value = null
+  closeMenu()
   nextTick(() => titleInputRef.value?.focus())
 }
 
@@ -222,12 +227,39 @@ async function beforeClose(done: () => void) {
 
 function openMenu(event: MouseEvent, note: NoteRecord) {
   menuNote.value = note
-  menuPosition.value = { x: event.clientX, y: event.clientY }
+  const position = DOMRect.fromRect({ x: event.clientX, y: event.clientY })
+  menuTrigger.value = { getBoundingClientRect: () => position }
+  menuRef.value?.handleOpen()
 }
 
-async function togglePinned() {
+function closeMenu() {
+  menuRef.value?.handleClose()
+  menuNote.value = null
+}
+
+// 弹出动画期间焦点可能仍在弹窗内，Escape 应优先关闭菜单。
+useEventListener(
+  window,
+  'keydown',
+  (event) => {
+    if (event.key !== 'Escape' || !menuNote.value) return
+    event.preventDefault()
+    event.stopPropagation()
+    closeMenu()
+  },
+  { capture: true },
+)
+
+async function handleMenuCommand(command: 'pin' | 'edit' | 'delete') {
   const note = menuNote.value
+  closeMenu()
   if (!note) return
+  if (command === 'edit') await selectNote(note, 'edit')
+  else if (command === 'pin') await togglePinned(note)
+  else await removeNote(note)
+}
+
+async function togglePinned(note: NoteRecord) {
   try {
     const saved = await setNotePinned(note.id, !note.pinned, assertBrowserNoteSnapshotSize)
     if (saved && selected.value?.id === saved.id) {
@@ -235,15 +267,12 @@ async function togglePinned() {
       draft.value.pinned = saved.pinned
     }
     await refreshNotes()
-    menuNote.value = null
   } catch (error) {
     showSaveError(error)
   }
 }
 
-async function removeNote() {
-  const note = menuNote.value
-  if (!note) return
+async function removeNote(note: NoteRecord) {
   if (selected.value?.id === note.id && !(await resolveUnsaved())) return
   try {
     await ElMessageBox.confirm(
@@ -258,10 +287,13 @@ async function removeNote() {
   } catch {
     return
   }
-  await deleteNote(note.id)
-  if (selected.value?.id === note.id) resetView(isCompact.value ? 'list' : 'idle')
-  await refreshNotes()
-  menuNote.value = null
+  try {
+    await deleteNote(note.id)
+    if (selected.value?.id === note.id) resetView(isCompact.value ? 'list' : 'idle')
+    await refreshNotes()
+  } catch (error) {
+    showSaveError(error)
+  }
 }
 
 function exportFileName() {
@@ -395,6 +427,7 @@ onScopeDispose(unwatchNotes)
     :before-close="beforeClose"
     header-class="note-header noselect"
     body-class="note-dialog-body"
+    @close="closeMenu"
   >
     <template #header="{ close, titleId }">
       <button
@@ -424,7 +457,7 @@ onScopeDispose(unwatchNotes)
           <el-button :icon="Plus" type="primary" class="note-create" plain @click="createNote">
             {{ t('note.create') }}
           </el-button>
-          <el-scrollbar>
+          <el-scrollbar @scroll="closeMenu">
             <div class="note-aside-list">
               <button
                 v-for="{ note, title, preview, time } in noteItems"
@@ -432,7 +465,7 @@ onScopeDispose(unwatchNotes)
                 class="note-aside-item"
                 :class="{ 'is-active': selected?.id === note.id }"
                 @click="selectNote(note)"
-                @contextmenu.prevent="openMenu($event, note)"
+                @contextmenu.stop.prevent="openMenu($event, note)"
               >
                 <span class="note-aside-title">
                   <component :is="Pin" v-if="note.pinned" class="note-pin-icon" />
@@ -518,20 +551,36 @@ onScopeDispose(unwatchNotes)
         </template>
       </main>
     </div>
-    <div
-      v-if="menuNote"
-      class="note-context-menu"
-      :style="{ left: `${menuPosition.x}px`, top: `${menuPosition.y}px` }"
-      @mouseleave="menuNote = null"
+    <el-dropdown
+      ref="menuRef"
+      :virtual-ref="menuTrigger"
+      :show-arrow="false"
+      virtual-triggering
+      trigger="contextmenu"
+      placement="bottom-start"
+      :popper-options="{ modifiers: [{ name: 'offset', options: { offset: [0, 0] } }] }"
+      popper-class="note-context-menu"
+      @command="handleMenuCommand"
+      @visible-change="
+        (visible: boolean) => {
+          if (!visible) menuNote = null
+        }
+      "
     >
-      <button @click="togglePinned">
-        <component :is="menuNote.pinned ? PinOff : Pin" />
-        {{ t(menuNote.pinned ? 'note.unpin' : 'note.pin') }}
-      </button>
-      <button class="is-danger" @click="removeNote">
-        <component :is="DeleteOutline" />{{ t('common.delete') }}
-      </button>
-    </div>
+      <template #dropdown>
+        <el-dropdown-menu class="noselect">
+          <el-dropdown-item :icon="menuNote?.pinned ? PinOff : Pin" command="pin">
+            {{ t(menuNote?.pinned ? 'note.unpin' : 'note.pin') }}
+          </el-dropdown-item>
+          <el-dropdown-item :icon="RoundModeEditIcon" command="edit">
+            {{ t('common.edit') }}
+          </el-dropdown-item>
+          <el-dropdown-item :icon="DeleteOutline" command="delete" class="is-danger" divided>
+            {{ t('common.delete') }}
+          </el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+    </el-dropdown>
   </el-dialog>
 </template>
 
@@ -706,34 +755,6 @@ onScopeDispose(unwatchNotes)
 .note-content-container .el-textarea__inner {
   background: #fefcf7;
   border-radius: 10px;
-}
-
-.note-context-menu {
-  position: fixed;
-  z-index: 3000;
-  display: grid;
-  min-width: 130px;
-  padding: 4px;
-  background: var(--el-bg-color-overlay);
-  border-radius: 10px;
-  box-shadow: var(--el-box-shadow);
-}
-
-.note-context-menu button {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 8px 10px;
-  color: var(--el-text-color-primary);
-  text-align: left;
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-radius: 7px;
-}
-
-.note-context-menu button:hover {
-  background: var(--el-fill-color-light);
 }
 
 .note-context-menu .is-danger {
