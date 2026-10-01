@@ -58,6 +58,7 @@
   },
   "builtinApps": {
     "add": "Ekle",
+    "hidden": "Uygulama kısayolu gizlendi.",
     "note": "Not",
     "remove": "Kaldır",
     "title": "Yerleşik uygulamalar"

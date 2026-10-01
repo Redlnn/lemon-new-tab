@@ -58,6 +58,7 @@
   },
   "builtinApps": {
     "add": "新增",
+    "hidden": "已隱藏應用程式入口",
     "note": "便箋",
     "remove": "移除",
     "title": "內建應用程式管理"

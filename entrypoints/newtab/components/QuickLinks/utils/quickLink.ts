@@ -1,5 +1,6 @@
 import i18next from 'i18next'
 
+import { resolveBuiltInAppId } from '@/shared/builtinApps'
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   useQuickLinksStore,
@@ -34,7 +35,11 @@ export async function removeQuickLink(
       h(
         'span',
         { style: { color: 'var(--el-color-success)' } },
-        i18next.t('newtab:quickLinks.unpinMessage'),
+        i18next.t(
+          resolveBuiltInAppId(quickLink)
+            ? 'newtab:builtinApps.hidden'
+            : 'newtab:quickLinks.unpinMessage',
+        ),
       ),
       h(
         'span',

@@ -58,6 +58,7 @@
   },
   "builtinApps": {
     "add": "添加",
+    "hidden": "已隐藏应用入口",
     "note": "便签",
     "remove": "移除",
     "title": "内置应用管理"

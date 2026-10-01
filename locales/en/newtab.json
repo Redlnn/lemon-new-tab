@@ -58,6 +58,7 @@
   },
   "builtinApps": {
     "add": "Add",
+    "hidden": "App shortcut hidden.",
     "note": "Note",
     "remove": "Remove",
     "title": "Built-in apps"

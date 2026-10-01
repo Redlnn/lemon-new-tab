@@ -88,7 +88,7 @@ export function useQuickLinkContextMenu(options: {
   }
 
   const ctxUnpin = async (): Promise<void> => {
-    if (!ctxItem.value?.isPinned || resolveBuiltInAppId(ctxItem.value)) return
+    if (!ctxItem.value?.isPinned) return
     await removeQuickLink(
       ctxItem.value.groupId
         ? { groupId: ctxItem.value.groupId, index: ctxItem.value.originalIndex }

@@ -166,8 +166,12 @@ defineExpose({ open, close })
           >
             <span>{{ t('quickLinks.moveRight') }}</span>
           </el-dropdown-item>
-          <el-dropdown-item :icon="PinOff16Regular" :divided="!showEdit" @click="ctxUnpin">
-            <span>{{ t('quickLinks.unpin') }}</span>
+          <el-dropdown-item
+            :icon="isBuiltInApp ? BlockRound : PinOff16Regular"
+            :divided="!showEdit"
+            @click="ctxUnpin"
+          >
+            <span>{{ t(isBuiltInApp ? 'quickLinks.hide' : 'quickLinks.unpin') }}</span>
           </el-dropdown-item>
         </template>
         <template v-else>
