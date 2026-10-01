@@ -475,14 +475,17 @@ export async function previewBrowserSyncHistory(
     baseline ?? heads[0]!.snapshot,
     opened.state.scope,
   )
-  const comparison = compareSyncSnapshots(local, prepared.snapshot)
+  const comparison = compareSyncSnapshots(
+    local,
+    preserveExcludedScope(prepared.snapshot, local, opened.state.scope),
+  )
   return {
     currentSnapshotHash: await hashCanonicalJson(local),
     differences: comparison.differences,
     headRevisionId: heads[0]!.revisionId,
     revisionId,
     truncated: comparison.truncated,
-    wallpaperUnavailable: prepared.wallpaperUnavailable,
+    wallpaperUnavailable: opened.state.scope.wallpapers ? prepared.wallpaperUnavailable : [],
   }
 }
 
@@ -528,7 +531,7 @@ export async function restoreBrowserSyncHistory(
     pending,
     parents: [heads[0]!.revisionId],
     reason: 'restore',
-    snapshot,
+    snapshot: preserveExcludedScope(snapshot, heads[0]!.snapshot, opened.state.scope),
     expectedLocal: local,
     tombstones: heads[0]!.tombstones,
     knownAssets: [...knownAssets.values()],

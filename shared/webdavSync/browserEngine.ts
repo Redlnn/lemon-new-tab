@@ -1738,6 +1738,8 @@ export async function resolveBrowserSyncConflict(
     }
     snapshot = merge.snapshot
   }
+  // 冲突工作副本中的停用类别来自旧基线；发布时沿用最新远端数据。
+  if (heads.length === 1) snapshot = preserveExcludedScope(snapshot, heads[0]!.snapshot, state.scope)
   const revisionId = crypto.randomUUID()
   const pending: PendingSyncOperation = {
     operationId: crypto.randomUUID(),
