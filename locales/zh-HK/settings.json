@@ -55,8 +55,7 @@
     "onlineTips": {
       "a": "按下 Enter 鍵或點擊輸入框以外的區域以提交",
       "b": "圖片快取策略取決於瀏覽器，離線時可能無法展示",
-      "c": "背景圖片載入前會短暫白屏，時間長短視乎你的網速",
-      "d": "請確認你使用的圖片 API 支援跨域請求，否則可能載入失敗"
+      "c": "背景圖片載入前會短暫白屏，時間長短視乎你的網速"
     },
     "parallax": "壁紙視差效果",
     "pauseWhenBlur": "失去焦點時暫停影片背景",
@@ -91,8 +90,7 @@
       "online": "線上圖片"
     },
     "video": {
-      "blurTip": "啟用此開關可緩解同時開啟多個新分頁或多個視窗時的效能佔用",
-      "warning": "使用影片作為背景會大量消耗 GPU 資源，建議避免同時開多個新分頁，建議適當停用動效、模糊、透明效果以降低效能消耗"
+      "blurTip": "啟用此開關可緩解同時開啟多個新分頁或多個視窗時的效能佔用"
     },
     "vignette": "暗角效果",
     "warning": {
@@ -103,10 +101,6 @@
       "monetDisabled": "由於未授予「訪問所有網站」權限，動態主題色（莫奈取色）已被關閉",
       "notGranted": "尚未授權，無法載入背景圖片",
       "title": "警告",
-      "tooLarge": {
-        "message": "檔案過大（{{size}}），可能會影響效能或佔用較多空間，是否繼續？",
-        "title": "檔案過大"
-      },
       "unknownSource": "使用來自不明來源的圖片作背景可能會危及你的裝置安全，是否繼續？"
     }
   },
@@ -171,26 +165,22 @@
     "openInNewTab": "在新分頁中開啟",
     "openInNewWindow": "在新視窗中開啟",
     "sections": {
-      "animation": "動畫",
       "appearance": "外觀",
       "behavior": "互動與行為",
       "danger": "清理資料",
       "data": "資料與復原",
       "display": "顯示與內容",
-      "effects": "透明與模糊",
       "general": "一般",
       "layout": "佈局與間距",
       "position": "頁面位置",
       "radius": "圓角",
       "source": "內容來源",
       "summary": {
-        "animation": "壁紙與介面動效",
         "appearance": "顏色、陰影與尺寸",
         "behavior": "互動方式與開啟行為",
         "danger": "不可逆操作，請謹慎使用",
         "data": "備份與快取",
         "display": "可見內容與呈現方式",
-        "effects": "逐項控制透明度和模糊",
         "general": "常用設定",
         "layout": "尺寸、數量與間距",
         "position": "主區域與功能按鈕",
@@ -307,7 +297,6 @@
       "icon": "清除圖示快取",
       "wallpaper": "清除壁紙快取"
     },
-    "sync": "雲端同步（已停止支援）",
     "syncRetirement": {
       "acknowledge": "好的",
       "clearCloudData": "清理雲端資料",
@@ -705,7 +694,6 @@
       "revision": "損壞版本：{{id}}",
       "same": "本機資料與上一完整版本相同，將自動使用上一版本建立修復版本。",
       "size": "原始檔案大小：{{size}} 位元組",
-      "title": "檢查與修復",
       "wallpaperDescription": "超過限制或不支援的圖片會被略過。請關閉對應範圍或選擇較小的圖片；擴充功能不會修改原圖。",
       "wallpaperTitle": "部分圖片未同步"
     },
@@ -734,7 +722,6 @@
         "existingTitle": "比較本機與雲端",
         "firstConnectionNote": "本機與雲端都有資料，尚未有共同同步版本。開啟後可在設定中逐項處理，或批量優先選擇本機或雲端；確認後將建立共同基線。",
         "firstConnectionTitle": "首次接入：選擇要保留的資料",
-        "initial": "新同步庫",
         "initialTitle": "確認初始上傳內容",
         "safe": "本機同遠端資料冇衝突，可以直接安全開啟同步。"
       },

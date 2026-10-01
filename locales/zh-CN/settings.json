@@ -55,8 +55,7 @@
     "onlineTips": {
       "a": "按下回车键或者输入框失去焦点后提交",
       "b": "壁纸缓存策略取决于浏览器，断网后会获取不到壁纸",
-      "c": "壁纸加载完成前会白屏一段时间，时长取决于你的网速",
-      "d": "请确保你使用的壁纸 API 允许跨域请求，否则会加载失败"
+      "c": "壁纸加载完成前会白屏一段时间，时长取决于你的网速"
     },
     "parallax": "壁纸视差效果",
     "pauseWhenBlur": "失去焦点时暂停视频背景",
@@ -91,8 +90,7 @@
       "online": "在线图片"
     },
     "video": {
-      "blurTip": "打开此开关以缓解多开新标签页或多个窗口同屏时的性能占用",
-      "warning": "使用视频作为背景会大量消耗 GPU 资源，建议避免同时开多个新标签页，建议适当关闭动画、模糊、透明效果以降低性能消耗"
+      "blurTip": "打开此开关以缓解多开新标签页或多个窗口同屏时的性能占用"
     },
     "vignette": "暗角效果",
     "warning": {
@@ -103,10 +101,6 @@
       "monetDisabled": "由于未授予「访问所有网站」权限，动态主题色（莫奈取色）已被关闭",
       "notGranted": "未授予权限，无法访问该地址",
       "title": "警告",
-      "tooLarge": {
-        "message": "文件过大（{{size}}），可能会影响性能或占用较多空间，是否继续？",
-        "title": "文件过大"
-      },
       "unknownSource": "使用未知来源的图片作为背景可能会使你的设备遭到攻击，是否继续？"
     }
   },
@@ -171,26 +165,22 @@
     "openInNewTab": "在新标签页中打开",
     "openInNewWindow": "在新窗口中打开",
     "sections": {
-      "animation": "动画",
       "appearance": "外观",
       "behavior": "交互与行为",
       "danger": "清理数据",
       "data": "数据与恢复",
       "display": "显示与内容",
-      "effects": "透明与模糊",
       "general": "常规",
       "layout": "布局与间距",
       "position": "页面位置",
       "radius": "圆角",
       "source": "内容来源",
       "summary": {
-        "animation": "壁纸与界面动效",
         "appearance": "颜色、阴影与尺寸",
         "behavior": "交互方式与打开行为",
         "danger": "不可逆操作，请谨慎使用",
         "data": "备份与缓存",
         "display": "可见内容与呈现方式",
-        "effects": "逐项控制透明度和模糊",
         "general": "常用设置",
         "layout": "尺寸、数量与间距",
         "position": "主区域与功能按钮",
@@ -307,7 +297,6 @@
       "icon": "清除图标缓存",
       "wallpaper": "清除壁纸缓存"
     },
-    "sync": "云同步（已停止支持）",
     "syncRetirement": {
       "acknowledge": "好的",
       "clearCloudData": "清理云端数据",
@@ -705,7 +694,6 @@
       "revision": "损坏版本：{{id}}",
       "same": "本机数据与上一完整版本相同，将自动使用上一版本创建修复版本。",
       "size": "原始文件大小：{{size}} 字节",
-      "title": "检查与修复",
       "wallpaperDescription": "超限或不支持的图片会被跳过。请关闭对应范围或选择更小的图片；扩展不会修改原图。",
       "wallpaperTitle": "部分图片未同步"
     },
@@ -734,7 +722,6 @@
         "existingTitle": "比较本机与云端",
         "firstConnectionNote": "本机与云端都有数据，尚未有共同同步版本。开启后可在设置中逐项处理，或批量优先选择本机或云端；确认后将建立共同基线。",
         "firstConnectionTitle": "首次接入：选择要保留的数据",
-        "initial": "新同步库",
         "initialTitle": "确认初始上传内容",
         "safe": "本地与远端无冲突，可直接安全开启同步"
       },

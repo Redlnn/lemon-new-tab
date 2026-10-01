@@ -9,8 +9,6 @@ const ALLOWED_IMAGE_TYPES = [
   'image/tiff',
 ]
 
-const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']
-
 /**
  * 检查文件是否为有效的图片文件
  * @param file - 要检查的文件
@@ -19,13 +17,5 @@ const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quic
  */
 export function isImageFile(file: Blob, extraTypes: string[] = []): boolean {
   const allowedTypes = new Set([...ALLOWED_IMAGE_TYPES, ...extraTypes])
-  return allowedTypes.has(file.type)
-}
-
-/**
- * 检查文件是否为视频文件
- */
-export function isVideoFile(file: Blob, extraTypes: string[] = []): boolean {
-  const allowedTypes = new Set([...ALLOWED_VIDEO_TYPES, ...extraTypes])
   return allowedTypes.has(file.type)
 }

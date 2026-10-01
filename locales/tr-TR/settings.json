@@ -55,8 +55,7 @@
     "onlineTips": {
       "a": "Enter tuşuna basarak veya giriş alanı odağı kaybettiğinde gönderin.",
       "b": "Duvar kağıdı önbellekleme stratejisi tarayıcıya bağlıdır ve duvar kağıtları çevrimdışı erişilebilir olmayabilir.",
-      "c": "Duvar kağıdı yüklenene kadar boş bir ekran olacaktır ve bu süre internet hızınıza bağlıdır.",
-      "d": "Kullandığınız duvar kağıdı API'sinin çapraz kaynak isteklerine izin verdiğinden emin olun; aksi takdirde yüklenemez."
+      "c": "Duvar kağıdı yüklenene kadar boş bir ekran olacaktır ve bu süre internet hızınıza bağlıdır."
     },
     "parallax": "Duvar kağıdı paralaks efekti",
     "pauseWhenBlur": "Arka plan penceresi odağı kaybettiğinde videoyu duraklat",
@@ -91,8 +90,7 @@
       "online": "Çevrimiçi URL"
     },
     "video": {
-      "blurTip": "Ekranda aynı anda birden fazla yeni sekme veya pencere açıkken performans kullanımını azaltmak için açın.",
-      "warning": "Video arka plan olarak kullanmak çok fazla GPU kaynağı tüketir. Aynı anda birden fazla yeni sekme açmaktan kaçınılması önerilir. Performans tüketimini azaltmak için animasyon, bulanıklık ve saydamlık efektlerinin uygun şekilde kapatılması önerilir."
+      "blurTip": "Ekranda aynı anda birden fazla yeni sekme veya pencere açıkken performans kullanımını azaltmak için açın."
     },
     "vignette": "Vinyet efektini etkinleştir",
     "warning": {
@@ -103,10 +101,6 @@
       "monetDisabled": "Dinamik Tema Renkleri (Monet Çıkarma), \"Tüm sitelere erişim\" izni verilmediği için devre dışı bırakıldı.",
       "notGranted": "İzin verilmedi, bu ana bilgisayara erişilemiyor.",
       "title": "Uyarı",
-      "tooLarge": {
-        "message": "Dosya çok büyük ({{size}}) ve performansı etkileyebilir veya önemli miktarda depolama alanı kaplayabilir. Devam etmek istiyor musunuz?",
-        "title": "Büyük Dosya Uyarısı"
-      },
       "unknownSource": "Bilinmeyen kaynaklardan alınan görselleri arka plan olarak kullanmak cihazınızı saldırılara maruz bırakabilir. Devam etmek istiyor musunuz?"
     }
   },
@@ -171,26 +165,22 @@
     "openInNewTab": "Yeni Sekmede Aç",
     "openInNewWindow": "Yeni Pencerede Aç",
     "sections": {
-      "animation": "Animasyonlar",
       "appearance": "Görünüm",
       "behavior": "Etkileşim ve davranış",
       "danger": "Verileri temizle",
       "data": "Veri ve kurtarma",
       "display": "Görüntü ve içerik",
-      "effects": "Saydamlık ve bulanıklık",
       "general": "Genel",
       "layout": "Düzen ve boşluk",
       "position": "Sayfa konumu",
       "radius": "Köşe yarıçapı",
       "source": "İçerik kaynağı",
       "summary": {
-        "animation": "Duvar kağıdı ve arayüz hareketi",
         "appearance": "Renk, gölge ve boyutlandırma",
         "behavior": "Etkileşimler ve açılış davranışı",
         "danger": "Geri alınamaz işlemler—dikkatli kullanın",
         "data": "Yedekler ve önbellekler",
         "display": "Görünür içerik ve sunum",
-        "effects": "Bileşene göre saydamlık ve bulanıklığı kontrol edin",
         "general": "Sık kullanılan seçenekler",
         "layout": "Boyutlandırma, sayılar ve boşluk",
         "position": "Ana içerik ve eylem düğmeleri",
@@ -307,7 +297,6 @@
       "icon": "Favicon önbelleğini temizle",
       "wallpaper": "Duvar kağıdı önbelleğini temizle"
     },
-    "sync": "Bulut Senkronizasyonu (Artık Desteklenmiyor)",
     "syncRetirement": {
       "acknowledge": "Tamam",
       "clearCloudData": "Bulut verilerini temizle",
@@ -705,7 +694,6 @@
       "revision": "Hasarlı sürüm: {{id}}",
       "same": "Yerel veriler önceki eksiksiz sürümle aynı; onarım sürümü oluşturmak için otomatik olarak bu sürüm kullanılacak.",
       "size": "Ham dosya boyutu: {{size}} bayt",
-      "title": "Denetle ve onar",
       "wallpaperDescription": "Boyut sınırını aşan veya desteklenmeyen resimler atlanır. Kapsamı değiştirin veya daha küçük bir resim seçin; uzantı özgün dosyayı değiştirmez.",
       "wallpaperTitle": "Bazı resimler eşitlenmedi"
     },
@@ -734,7 +722,6 @@
         "existingTitle": "Bu cihaz ile uzak verileri karşılaştır",
         "firstConnectionNote": "Bu cihazda ve uzakta veri var ancak henüz ortak bir eşitleme sürümü yok. Eşitlemeyi açtıktan sonra öğeleri tek tek çözün veya Ayarlar’da toplu tercih seçin; onay ortak başlangıcı oluşturur.",
         "firstConnectionTitle": "İlk bağlantı: korunacak verileri seçin",
-        "initial": "Yeni eşitleme kasası",
         "initialTitle": "İlk yüklemeyi inceleyin",
         "safe": "Yerel ve uzak veriler arasında çakışma yok. Eşitleme güvenle etkinleştirilebilir."
       },

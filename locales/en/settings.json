@@ -55,8 +55,7 @@
     "onlineTips": {
       "a": "Submit after pressing the Enter key or when the input field loses focus.",
       "b": "The wallpaper caching strategy depends on the browser, and wallpapers may not be accessible offline.",
-      "c": "There will be a blank screen before the wallpaper finishes loading, and the duration depends on your internet speed.",
-      "d": "Please ensure the wallpaper API you are using allows cross-origin requests; otherwise, it will fail to load."
+      "c": "There will be a blank screen before the wallpaper finishes loading, and the duration depends on your internet speed."
     },
     "parallax": "Wallpaper parallax effect",
     "pauseWhenBlur": "Pause video background when loses focus",
@@ -91,8 +90,7 @@
       "online": "Online URL"
     },
     "video": {
-      "blurTip": "Turn on to reduce performance usage when multiple new tabs or windows are open on the screen simultaneously.",
-      "warning": "Using a video as a background consumes a lot of GPU resources. It is recommended to avoid opening multiple new tabs at the same time. It is recommended to turn off animation, blur, and transparency effects appropriately to reduce performance consumption."
+      "blurTip": "Turn on to reduce performance usage when multiple new tabs or windows are open on the screen simultaneously."
     },
     "vignette": "Enable vignetting",
     "warning": {
@@ -103,10 +101,6 @@
       "monetDisabled": "Dynamic Theme Colors (Monet Extraction) has been disabled because “Access all sites” permission was not granted.",
       "notGranted": "Permission not granted, cannot access this host.",
       "title": "Warning",
-      "tooLarge": {
-        "message": "The file is too large ({{size}}) and may affect performance or occupy significant storage. Do you want to continue?",
-        "title": "Large File Warning"
-      },
       "unknownSource": "Using images from unknown sources as backgrounds may expose your device to attacks. Do you want to continue?"
     }
   },
@@ -171,26 +165,22 @@
     "openInNewTab": "Open in New Tab",
     "openInNewWindow": "Open in New Window",
     "sections": {
-      "animation": "Animations",
       "appearance": "Appearance",
       "behavior": "Interaction and behavior",
       "danger": "Clear data",
       "data": "Data and recovery",
       "display": "Display and content",
-      "effects": "Transparency and blur",
       "general": "General",
       "layout": "Layout and spacing",
       "position": "Page position",
       "radius": "Corner radius",
       "source": "Content source",
       "summary": {
-        "animation": "Wallpaper and interface motion",
         "appearance": "Color, shadow, and sizing",
         "behavior": "Interactions and opening behavior",
         "danger": "Irreversible actions—use with care",
         "data": "Backups and caches",
         "display": "Visible content and presentation",
-        "effects": "Control transparency and blur by component",
         "general": "Frequently used options",
         "layout": "Sizing, counts, and spacing",
         "position": "Main content and action buttons",
@@ -307,7 +297,6 @@
       "icon": "Purge favicon cache",
       "wallpaper": "Purge wallpaper cache"
     },
-    "sync": "Cloud Sync (No Longer Supported)",
     "syncRetirement": {
       "acknowledge": "OK",
       "clearCloudData": "Clean up cloud data",
@@ -705,7 +694,6 @@
       "revision": "Damaged version: {{id}}",
       "same": "Local data matches the previous complete version, which will be used automatically to create a repair version.",
       "size": "Raw file size: {{size}} bytes",
-      "title": "Inspect and repair",
       "wallpaperDescription": "Oversized or unsupported images are skipped. Change the scope or choose a smaller image; the original file is never modified.",
       "wallpaperTitle": "Some images were not synced"
     },
@@ -734,7 +722,6 @@
         "existingTitle": "Compare this device and remote",
         "firstConnectionNote": "This device and the remote both have data, but no shared sync version exists yet. After enabling sync, resolve items individually or choose a bulk preference in Settings; confirmation creates the shared baseline.",
         "firstConnectionTitle": "First connection: choose which data to keep",
-        "initial": "New sync vault",
         "initialTitle": "Review the initial upload",
         "safe": "No conflicts between local and remote data. Sync can be safely enabled."
       },

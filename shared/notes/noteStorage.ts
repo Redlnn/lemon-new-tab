@@ -110,26 +110,11 @@ export async function setNotePinned(
   pinned: boolean,
   validate?: ValidateNoteSnapshot,
 ): Promise<NoteRecord | null> {
-  return updateNote(id, { pinned: pinned || undefined }, validate)
-}
-
-export async function setNoteTitle(
-  id: string,
-  title: string | undefined,
-): Promise<NoteRecord | null> {
-  return updateNote(id, { title: title?.trim() || undefined, updatedAt: new Date().toISOString() })
-}
-
-async function updateNote(
-  id: string,
-  patch: Partial<NoteRecord>,
-  validate?: ValidateNoteSnapshot,
-): Promise<NoteRecord | null> {
   return withNotesWriteLock(async () => {
     const snapshot = projectNotes(await noteStorage.getValue())
     const index = snapshot.notes.findIndex((note) => note.id === id)
     if (index < 0) return null
-    const next = { ...snapshot.notes[index]!, ...patch }
+    const next = { ...snapshot.notes[index]!, pinned: pinned || undefined }
     snapshot.notes.splice(index, 1, next)
     assertNoteSnapshotSize(snapshot)
     await validate?.(snapshot)
