@@ -1,5 +1,6 @@
 import type { QuickLink, QuickLinksData } from '@/shared/quickLinks'
 
+import { jsonEquals } from './canonical.ts'
 import {
   applySyncSettings,
   preserveUnknownSyncSettings,
@@ -102,7 +103,7 @@ function mergeNoteImport(
     if (position === undefined) {
       index.set(note.id, result.length)
       result.push(structuredClone(note))
-    } else if (JSON.stringify(result[position]) !== JSON.stringify(note)) {
+    } else if (!jsonEquals(result[position], note)) {
       result.push({ ...structuredClone(note), id: crypto.randomUUID() })
     }
   }
