@@ -322,9 +322,20 @@ const noteItems = computed(() =>
   notes.value.map((note) => ({
     note,
     title: getNoteTitle(note) || t('note.untitled'),
+    preview: isCompact.value ? getNotePreview(note.markdown) : undefined,
     time: formatNoteTime(note.updatedAt),
   })),
 )
+
+function getNotePreview(markdown: string): string {
+  return (
+    markdown
+      .replace(/^\s*#{1,6}[ \t]+[^\r\n]*(?:\r?\n|$)/, '')
+      .match(/\S[^\r\n]*/)?.[0]
+      .replace(/\\+$/, '')
+      .trim() ?? ''
+  )
+}
 
 function formatNoteTime(updatedAt: string): string {
   const date = new Date(updatedAt)
@@ -416,7 +427,7 @@ onScopeDispose(unwatchNotes)
           <el-scrollbar>
             <div class="note-aside-list">
               <button
-                v-for="{ note, title, time } in noteItems"
+                v-for="{ note, title, preview, time } in noteItems"
                 :key="note.id"
                 class="note-aside-item"
                 :class="{ 'is-active': selected?.id === note.id }"
@@ -427,6 +438,7 @@ onScopeDispose(unwatchNotes)
                   <component :is="Pin" v-if="note.pinned" class="note-pin-icon" />
                   {{ title }}
                 </span>
+                <span v-if="preview" class="note-aside-preview">{{ preview }}</span>
                 <span class="note-aside-modified-time">{{ time }}</span>
               </button>
               <p v-if="notes.length === 0" class="note-list-empty">{{ t('note.listEmpty') }}</p>
@@ -593,7 +605,21 @@ onScopeDispose(unwatchNotes)
 
 .note-aside-title {
   margin-bottom: 2px;
+  font-size: var(--el-font-size-base);
   font-weight: bold;
+}
+
+.note-aside-preview {
+  display: -webkit-box;
+  margin-bottom: 4px;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  font-size: var(--el-font-size-extra-small);
+  line-height: 1.5;
+  color: var(--el-text-color-regular);
+  overflow-wrap: anywhere;
+  opacity: 0.85;
+  -webkit-box-orient: vertical;
 }
 
 .note-pin-icon {
@@ -605,7 +631,7 @@ onScopeDispose(unwatchNotes)
 
 .note-aside-modified-time {
   font-size: var(--el-font-size-extra-small);
-  opacity: 0.75;
+  color: var(--el-text-color-secondary);
 }
 
 .note-list-empty {
