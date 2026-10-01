@@ -656,6 +656,10 @@ onScopeDispose(unwatchNotes)
   &:focus-visible {
     outline: 2px solid var(--el-color-primary-light-7);
   }
+
+  .note-aside-modified-time {
+    color: var(--el-fill-color);
+  }
 }
 
 .note-aside-title,
@@ -667,17 +671,16 @@ onScopeDispose(unwatchNotes)
 }
 
 .note-aside-title {
-  margin-bottom: 2px;
   font-size: var(--el-font-size-base);
   font-weight: bold;
 }
 
 .note-aside-preview {
   display: -webkit-box;
-  margin-bottom: 4px;
+  margin-top: 4px;
   overflow: hidden;
   -webkit-line-clamp: 2;
-  font-size: var(--el-font-size-extra-small);
+  font-size: var(--el-font-size-small);
   line-height: 1.5;
   color: var(--el-text-color-regular);
   overflow-wrap: anywhere;
@@ -813,6 +816,22 @@ onScopeDispose(unwatchNotes)
 
   .note-actions {
     align-self: flex-end;
+  }
+}
+
+.note-context-menu {
+  --el-popper-border-radius: 20px;
+
+  .el-dropdown-menu {
+    padding: 4px;
+    background-color: transparent;
+  }
+
+  .el-dropdown-menu__item {
+    min-width: 100px;
+    padding: 3px 30px 2px 10px;
+    font-size: var(--el-font-size-extra-small);
+    border-radius: 16px;
   }
 }
 </style>
