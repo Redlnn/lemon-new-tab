@@ -1,7 +1,7 @@
-import { BgType, ClockWeight, DrawerDirection, SortMode } from '@/shared/enums'
-import { BUILT_IN_SEARCH_ENGINE_KEYS } from '@/shared/searchEngines'
+import { BgType, ClockWeight, DrawerDirection, SortMode } from '../enums.ts'
+import { BUILT_IN_SEARCH_ENGINE_KEYS } from '../searchEngines.ts'
 
-import { type CURRENT_CONFIG_SCHEMA, CURRENT_CONFIG_VERSION } from './current'
+import { type CURRENT_CONFIG_SCHEMA, CURRENT_CONFIG_VERSION } from './current.ts'
 
 export const defaultSettings = {
   theme: {

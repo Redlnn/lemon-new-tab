@@ -1,13 +1,8 @@
 import { migrateWallpaperLibrary } from '../wallpaperLibrary'
 
 import { CURRENT_CONFIG_VERSION, type CURRENT_CONFIG_SCHEMA } from './current'
-import {
-  migrateFromVer10To11,
-  migrateFromVer7To8,
-  migrateFromVer8To9,
-  migrateFromVer9To10,
-} from './migrate'
-import { migrateFromVer11To12 } from './migrate/fromVer11'
+import { migrateFromVer7To8, migrateFromVer8To9, migrateFromVer9To10 } from './migrate'
+import { SYNC_SETTINGS_MIGRATIONS } from './migrate/sync.ts'
 import { normalizeCurrentSettings } from './normalize'
 import type {
   SettingsSchemaV10,
@@ -33,12 +28,13 @@ export function migrateSettingsOneVersion(settings: MigratableSettings): Migrata
       return migrateFromVer8To9(settings)
     case 9:
       return migrateFromVer9To10(settings)
-    case 10:
-      return migrateFromVer10To11(settings)
-    case 11:
-      return migrateFromVer11To12(settings)
-    default:
-      throw new Error(`Unsupported config version: ${settings.version}`)
+    default: {
+      const migrate = SYNC_SETTINGS_MIGRATIONS[settings.version]
+      if (!migrate) throw new Error(`Unsupported config version: ${settings.version}`)
+      return migrate(
+        settings as unknown as Record<string, unknown>,
+      ) as unknown as MigratableSettings
+    }
   }
 }
 
