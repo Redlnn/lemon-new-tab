@@ -613,6 +613,7 @@
     },
     "errors": {
       "authentication": "密碼不正確或服務商拒絕存取",
+      "permission-required": "需要授權此 WebDAV 伺服器的存取權限",
       "conflict": "遠端資料發生衝突",
       "corrupted": "遠端資料損壞",
       "network": "暫時無法連線伺服器",
@@ -620,6 +621,7 @@
       "redirect-insecure": "伺服器嘗試由 HTTPS 降級至 HTTP，已停止同步",
       "redirect-required": "伺服器重新導向不安全或無法驗證。僅支援同源重新導向及同一主機由 HTTP 升級至 HTTPS；也可填寫最終的 WebDAV 位址。",
       "server": "WebDAV 服務暫時發生錯誤",
+      "data-too-large": "資料超出容量限制：單張便箋限 1 MiB，所有便箋限 8 MiB，完整快照限 10 MiB。請在本機或遠端縮減資料後重試。",
       "storage-full": "WebDAV 空間不足",
       "timeout": "連線逾時",
       "unknown": "同步操作失敗，請檢查狀態後再試"
@@ -715,7 +717,7 @@
       "onlineWallpaperUrl": "線上桌布網址",
       "onlineWallpaperUrlNote": "網址可能包含存取 Token。",
       "settings": "基本設定",
-      "summary": "可逐項選擇；範圍會記錄到整個同步庫，並同步到其他裝置。",
+      "summary": "只影響此裝置；關閉的類別會保留遠端資料，重新開啟後繼續比較。",
       "title": "同步範圍",
       "uiPreferences": "語言與深色模式",
       "userIcons": "自訂連結圖示",
@@ -786,7 +788,7 @@
         "title": "遠端掃描結果"
       },
       "scope": {
-        "description": "此選擇也會套用至其他裝置。",
+        "description": "只影響此裝置；關閉的類別會保留遠端資料，重新開啟後繼續比較。",
         "omittedResources": "{{count}} 個過大或不支援的所選圖片將被略過",
         "required": "請至少開啟一個同步範圍。",
         "title": "選擇同步範圍"
@@ -816,6 +818,7 @@
     },
     "status": {
       "authentication": "需要重新登入",
+      "permission": "需要重新授權伺服器存取",
       "conflict": "有衝突需要處理",
       "corrupted": "遠端最新版本損壞",
       "encryptionPassword": "需要同步加密密碼",
@@ -824,13 +827,21 @@
       "pending": "有待上傳修改",
       "ready": "已連線，等待首次檢查",
       "remoteDeleted": "雲端同步資料已被刪除",
+      "dataTooLarge": "資料超出容量限制，請縮減資料後重試",
       "storageFull": "WebDAV 空間不足",
       "synced": "已同步",
       "unconfigured": "未設定",
-      "wallpaperSkipped": "核心資料已同步，桌布未同步"
+      "wallpaperSkipped": "核心資料已同步，桌布未同步",
+      "noSelection": "未選擇同步項目"
     },
     "syncNow": "立即同步",
-    "title": "WebDAV 同步"
+    "title": "WebDAV 同步",
+    "enabled": "啟用此裝置同步",
+    "credentials": {
+      "title": "更新登入憑證",
+      "username": "使用者名稱（留空保留目前名稱）",
+      "save": "驗證並儲存"
+    }
   },
   "yiyan": {
     "alwaysShow": "總是顯示",

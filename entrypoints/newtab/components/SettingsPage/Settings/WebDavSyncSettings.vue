@@ -12,7 +12,15 @@ import RefreshRound from '~icons/ic/round-refresh'
 import SyncRound from '~icons/ic/round-sync'
 import WarningRound from '~icons/ic/round-warning'
 
-import { getSyncState, syncNow, updateSyncPreferences } from '@/shared/webdavSync/bridge'
+import {
+  getSyncState,
+  syncNow,
+  updateSyncPreferences,
+  updateSyncCredentials,
+} from '@/shared/webdavSync/bridge'
+import { SYNC_SCOPE_KEYS } from '@/shared/webdavSync/domains'
+import { webDavSyncConfigStorage } from '@/shared/webdavSync/localState'
+import { requestExactWebDavPermission } from '@/shared/webdavSync/permissions'
 import type { LocalSyncStateV1, SyncScopePreferences } from '@/shared/webdavSync/types'
 
 import RetiredCloudSyncPanel from '../components/RetiredCloudSyncPanel.vue'
@@ -43,24 +51,21 @@ const syncing = ref(false)
 const setupVisible = ref(false)
 const dialogMode = ref<DialogMode>(null)
 const updatingScope = ref<keyof SyncScopePreferences | null>(null)
+const updatingEnabled = ref(false)
+const credentialsVisible = ref(false)
+const credentials = reactive({ username: '', password: '', rememberPassword: true })
+const savingCredentials = ref(false)
+const connectionAddress = ref('')
 
-const scopeKeys = [
-  'settings',
-  'quickLinks',
-  'notes',
-  'customSearchEngines',
-  'uiPreferences',
-  'blockedTopSites',
-  'wallpapers',
-  'onlineWallpaperUrl',
-  'userIcons',
-] as const satisfies readonly (keyof SyncScopePreferences)[]
+const scopeKeys = SYNC_SCOPE_KEYS
 
 watch(sharedState, (value) => {
   state.value = value
 })
 
 const pauseLabels: Record<NonNullable<LocalSyncStateV1['pauseReason']>, string> = {
+  'data-too-large': 'webdavSync.status.dataTooLarge',
+  permission: 'webdavSync.status.permission',
   authentication: 'webdavSync.status.authentication',
   conflict: 'webdavSync.status.conflict',
   'corrupted-remote': 'webdavSync.status.corrupted',
@@ -73,6 +78,9 @@ const pauseLabels: Record<NonNullable<LocalSyncStateV1['pauseReason']>, string> 
 const status = computed(() => {
   if (!state.value.configured)
     return { key: 'webdavSync.status.unconfigured', type: 'info' as const }
+  if (!state.value.enabled) return { key: 'webdavSync.status.paused', type: 'info' as const }
+  if (!Object.values(state.value.scope).some(Boolean))
+    return { key: 'webdavSync.status.noSelection', type: 'info' as const }
   if (state.value.paused) {
     return {
       key: state.value.pauseReason
@@ -117,6 +125,7 @@ const lastError = computed(() => {
 async function refresh(checkStorage = false) {
   loading.value = true
   try {
+    connectionAddress.value = (await webDavSyncConfigStorage.getValue())?.connection.baseUrl ?? ''
     state.value =
       state.value.pauseReason === 'remote-deleted' ||
       (checkStorage && state.value.pauseReason === 'storage-full')
@@ -155,15 +164,58 @@ async function changeScope(key: keyof SyncScopePreferences, value: boolean | str
   }
 }
 
+async function changeEnabled(value: boolean | string | number) {
+  updatingEnabled.value = true
+  try {
+    state.value = await updateSyncPreferences({ enabled: Boolean(value) })
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : String(error))
+  } finally {
+    updatingEnabled.value = false
+  }
+}
+
 function openPauseAction() {
   const reason = state.value.pauseReason
-  if (reason === 'conflict') dialogMode.value = 'conflict'
+  if (reason === 'permission') void restorePermission()
+  else if (reason === 'authentication') credentialsVisible.value = true
+  else if (reason === 'conflict') dialogMode.value = 'conflict'
   else if (reason === 'corrupted-remote') dialogMode.value = 'repair'
   else if (reason === 'encryption-password') dialogMode.value = 'encryption'
   else if (reason === 'remote-deleted') dialogMode.value = 'remote-deleted'
   else if (reason === 'storage-full') dialogMode.value = 'repair'
+  else if (reason === 'data-too-large') void runSync()
   else if (state.value.resourceOmissions.length) dialogMode.value = 'repair'
   else dialogMode.value = 'disconnect'
+}
+
+async function restorePermission() {
+  try {
+    if (
+      !connectionAddress.value ||
+      !(await requestExactWebDavPermission(connectionAddress.value))
+    ) {
+      ElMessage.error(t('webdavSync.errors.permission-required'))
+      return
+    }
+    await runSync()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : String(error))
+  }
+}
+
+async function saveCredentials() {
+  savingCredentials.value = true
+  try {
+    state.value = await updateSyncCredentials(credentials)
+    credentials.password = ''
+    credentialsVisible.value = false
+    await runSync()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : String(error))
+  } finally {
+    savingCredentials.value = false
+  }
 }
 
 function closeDialogs() {
@@ -227,7 +279,7 @@ onMounted(() => void refresh())
             type="primary"
             :icon="SyncRound"
             :loading="syncing"
-            :disabled="state.paused && state.pauseReason !== 'storage-full'"
+            :disabled="!state.enabled || !Object.values(state.scope).some(Boolean)"
             @click="runSync"
           >
             {{ t('webdavSync.syncNow') }}
@@ -241,6 +293,15 @@ onMounted(() => void refresh())
           </el-button>
         </div>
       </section>
+
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('webdavSync.enabled') }}</div>
+        <el-switch
+          :model-value="state.enabled"
+          :loading="updatingEnabled"
+          @change="changeEnabled"
+        />
+      </div>
 
       <SettingsSection
         :title="t('webdavSync.scope.title')"
@@ -288,6 +349,9 @@ onMounted(() => void refresh())
           <el-button :icon="LockRound" @click="dialogMode = 'encryption'">
             {{ t('webdavSync.encryption.title') }}
           </el-button>
+          <el-button @click="credentialsVisible = true">{{
+            t('webdavSync.credentials.title')
+          }}</el-button>
         </div>
       </SettingsSection>
 
@@ -304,6 +368,38 @@ onMounted(() => void refresh())
     </template>
 
     <RetiredCloudSyncPanel />
+
+    <el-dialog
+      v-model="credentialsVisible"
+      :title="t('webdavSync.credentials.title')"
+      width="min(480px, 95vw)"
+      @closed="credentials.password = ''"
+    >
+      <el-form label-position="top">
+        <el-form-item :label="t('webdavSync.credentials.username')"
+          ><el-input v-model="credentials.username" autocomplete="username"
+        /></el-form-item>
+        <el-form-item :label="t('webdavSync.setup.connection.password')"
+          ><el-input
+            v-model="credentials.password"
+            type="password"
+            show-password
+            autocomplete="current-password"
+        /></el-form-item>
+        <el-checkbox v-model="credentials.rememberPassword">{{
+          t('webdavSync.setup.connection.remember')
+        }}</el-checkbox>
+      </el-form>
+      <template #footer
+        ><el-button
+          type="primary"
+          :loading="savingCredentials"
+          :disabled="!credentials.password"
+          @click="saveCredentials"
+          >{{ t('webdavSync.credentials.save') }}</el-button
+        ></template
+      >
+    </el-dialog>
 
     <component :is="SetupDialog" v-if="setupVisible" v-model="setupVisible" @connected="refresh" />
     <component

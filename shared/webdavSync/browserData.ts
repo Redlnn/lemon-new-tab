@@ -1,9 +1,13 @@
 import { browser } from 'wxt/browser'
 
-import { noteStorage, withNotesLock, NoteSaveError, type NoteSnapshot } from '@/shared/notes'
+import { getNoteSnapshot, withNotesLock, NoteSaveError, type NoteSnapshot } from '@/shared/notes'
 import { getQuickLinksStorageValue } from '@/shared/quickLinks'
 import type { CURRENT_CONFIG_SCHEMA } from '@/shared/settings'
-import { normalizeCurrentSettings, settingsStorage } from '@/shared/settings'
+import {
+  CURRENT_CONFIG_VERSION,
+  normalizeCurrentSettings,
+  settingsStorage,
+} from '@/shared/settings'
 import { idbDelete, idbGet } from '@/shared/storage/idb'
 import { withSyncWriteLock } from '@/shared/storage/syncWrite'
 import { getUiPreferences, uiPreferencesStorage } from '@/shared/uiPreferences'
@@ -33,6 +37,7 @@ import {
   type PendingApplyV1,
   type PendingWallpaperApplyV1,
 } from './localState.ts'
+import { decodeSyncSnapshot } from './snapshotCodec.ts'
 import type {
   LocalResourceOmission,
   SyncScopePreferences,
@@ -71,7 +76,7 @@ export async function captureBrowserSyncSnapshotResult(
     customSearchEngineStorage.getValue(),
     getUiPreferences(),
     scope.blockedTopSites ? blockedTopSitesStorage.getValue() : undefined,
-    scope.notes ? (notesOverride ?? noteStorage.getValue()) : undefined,
+    scope.notes ? (notesOverride ?? getNoteSnapshot(lockHeld)) : undefined,
   ])
 
   const snapshot = captureSyncSnapshot({
@@ -191,7 +196,7 @@ async function materializeSettings(snapshot: SyncSnapshotV1, scope: SyncScopePre
     scope.settings && snapshot.settings
       ? mergeSyncSettings<CURRENT_CONFIG_SCHEMA>(current, snapshot.settings)
       : structuredClone(current)
-  if (snapshot.scope.onlineWallpaperUrl && snapshot.optional?.onlineWallpaperUrl !== undefined) {
+  if (scope.onlineWallpaperUrl && snapshot.optional?.onlineWallpaperUrl !== undefined) {
     merged.background.online.url = snapshot.optional.onlineWallpaperUrl
   }
   if (scope.wallpapers && snapshot.optional?.wallpapers?.rotation)
@@ -379,7 +384,17 @@ export async function prepareBrowserApply(
   snapshot: SyncSnapshotV1,
   scope: SyncScopePreferences,
   wallpapers?: IncomingWallpaperResources,
+  origin: PendingApplyV1['origin'] = 'sync',
 ) {
+  snapshot = decodeSyncSnapshot(
+    snapshot,
+    {
+      formatVersion: 1,
+      settingsSchemaVersion: CURRENT_CONFIG_VERSION,
+      pluginVersion: browser.runtime.getManifest().version,
+    },
+    browser.runtime.getManifest().version,
+  )
   const validation = validateSyncSnapshot(snapshot)
   if (!validation.ok) throw new Error(validation.error)
   const resources: Array<readonly [string, Blob]> = []
@@ -411,6 +426,7 @@ export async function prepareBrowserApply(
   }
   const pending: PendingApplyV1 = {
     version: 1,
+    origin,
     operationId,
     revisionId,
     phase: 'validated',
@@ -457,6 +473,15 @@ export async function resumePendingBrowserApply(): Promise<boolean> {
       const alreadyApplied =
         (await browser.storage.local.get('webdavAppliedOperationId')).webdavAppliedOperationId ===
         pending.operationId
+      if (!alreadyApplied && pending.origin !== 'import') {
+        const state = await getOrCreateSyncState()
+        // 手动暂停保留日志。范围改变则撤销旧计划，让正常同步重新做三方比较。
+        if (!state.configured || !state.enabled) return false
+        if (!jsonEquals(state.scope, pending.scope)) {
+          await discardPendingApply(pending)
+          return false
+        }
+      }
       if (!alreadyApplied && pending.localBefore) {
         const current = await captureBrowserSyncSnapshot(pending.scope, true)
         // 素材事务独立提交；这里只比较尚未提交的普通数据。
@@ -468,9 +493,7 @@ export async function resumePendingBrowserApply(): Promise<boolean> {
           },
         })
         if (!jsonEquals(ordinary(current), ordinary(pending.localBefore))) {
-          for (const wallpaper of Object.values(pending.wallpapers ?? {}))
-            await idbDelete('webdavSync', wallpaper.temporaryKey)
-          await clearPendingApply()
+          await discardPendingApply(pending)
           return false
         }
       }
@@ -482,9 +505,7 @@ export async function resumePendingBrowserApply(): Promise<boolean> {
         !(await idbGet('wallpaperLibrary', `applied:${pending.operationId}`)) &&
         pending.wallpaperSignature !== wallpaperLibrarySignature(await readWallpaperLibrary())
       ) {
-        for (const wallpaper of Object.values(pending.wallpapers ?? {}))
-          await idbDelete('webdavSync', wallpaper.temporaryKey)
-        await clearPendingApply()
+        await discardPendingApply(pending)
         return false
       }
       const validation = validateSyncSnapshot(pending.snapshot)
@@ -493,6 +514,13 @@ export async function resumePendingBrowserApply(): Promise<boolean> {
       return true
     }),
   )
+}
+
+async function discardPendingApply(pending: PendingApplyV1): Promise<void> {
+  for (const wallpaper of Object.values(pending.wallpapers ?? {}))
+    await idbDelete('webdavSync', wallpaper.temporaryKey)
+  await clearPendingApply()
+  await idbDelete('wallpaperLibrary', `applied:${pending.operationId}`)
 }
 
 function isAnimatedImage(bytes: Uint8Array, mimeType: string): boolean {

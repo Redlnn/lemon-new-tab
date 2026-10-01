@@ -1,6 +1,10 @@
+import { CURRENT_CONFIG_VERSION } from '../settings/current.ts'
+
 import { canonicalJson } from './canonical.ts'
+import { decodeSyncSnapshot } from './snapshotCodec.ts'
 import type { SyncSnapshotV1 } from './types.ts'
-import { validateSyncSnapshot } from './validation.ts'
+import { validateStoredSyncSnapshot } from './validation.ts'
+import { requireSupportedSource, type SyncSource } from './version.ts'
 
 const FORMAT_VERSION = 1
 
@@ -17,26 +21,43 @@ function withoutWallpaperFiles(snapshot: SyncSnapshotV1): SyncSnapshotV1 {
 }
 
 function validateSnapshot(value: unknown): SyncSnapshotV1 {
-  const validation = validateSyncSnapshot(value)
+  const validation = validateStoredSyncSnapshot(value)
   if (!validation.ok) throw new TypeError(validation.error)
   return validation.value
 }
 
-export function serializeJsonBackup(snapshot: SyncSnapshotV1): string {
+export function serializeJsonBackup(snapshot: SyncSnapshotV1, pluginVersion: string): string {
   return canonicalJson({
     product: 'lemon-new-tab',
     formatVersion: FORMAT_VERSION,
-    snapshot: validateSnapshot(withoutWallpaperFiles(snapshot)),
+    pluginVersion,
+    settingsSchemaVersion: CURRENT_CONFIG_VERSION,
+    snapshot: decodeSyncSnapshot(
+      validateSnapshot(withoutWallpaperFiles(snapshot)),
+      {
+        formatVersion: FORMAT_VERSION,
+        settingsSchemaVersion: CURRENT_CONFIG_VERSION,
+        pluginVersion,
+      },
+      pluginVersion,
+    ),
   })
 }
 
-export function parseJsonBackup(value: unknown): ParsedLocalBackup {
+export function parseJsonBackup(value: unknown, pluginVersion: string): ParsedLocalBackup {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new TypeError('Backup must be an object')
   }
   const record = value as Record<string, unknown>
+  requireSupportedSource(record as unknown as SyncSource, pluginVersion)
   if (record.product !== 'lemon-new-tab' || record.formatVersion !== FORMAT_VERSION) {
     throw new TypeError('Backup format is unsupported')
   }
-  return { snapshot: validateSnapshot(record.snapshot) }
+  return {
+    snapshot: decodeSyncSnapshot(
+      validateSnapshot(record.snapshot),
+      record as unknown as SyncSource,
+      pluginVersion,
+    ),
+  }
 }

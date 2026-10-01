@@ -613,6 +613,7 @@
     },
     "errors": {
       "authentication": "The password is incorrect or the provider denied access",
+      "permission-required": "Access to this WebDAV server must be authorized",
       "conflict": "Remote data has a conflict",
       "corrupted": "Remote data is corrupted",
       "network": "The server is temporarily unreachable",
@@ -620,6 +621,7 @@
       "redirect-insecure": "The server tried to downgrade HTTPS to HTTP, so sync was stopped",
       "redirect-required": "The redirect is unsafe or could not be verified. Only same-origin redirects and same-host HTTP-to-HTTPS upgrades are allowed; you can also enter the final WebDAV address.",
       "server": "The WebDAV service returned an error",
+      "data-too-large": "Data exceeds the size limits: 1 MiB per note, 8 MiB for all notes, and 10 MiB for the full snapshot. Reduce local or remote data and retry.",
       "storage-full": "The WebDAV storage is full",
       "timeout": "The connection timed out",
       "unknown": "Sync failed. Review its status and try again."
@@ -715,7 +717,7 @@
       "onlineWallpaperUrl": "Online wallpaper address",
       "onlineWallpaperUrlNote": "The address may contain a access token.",
       "settings": "Baisc Settings",
-      "summary": "Choose each category. Changes are recorded for the whole vault and mirrored to other devices.",
+      "summary": "Only affects this device. Disabled categories retain their remote data and resume comparison when enabled.",
       "title": "Sync scope",
       "uiPreferences": "Language and Dark Mode",
       "userIcons": "Custom Link Icons",
@@ -786,7 +788,7 @@
         "title": "Remote scan result"
       },
       "scope": {
-        "description": "This selection will also apply to other devices.",
+        "description": "Only affects this device. Disabled categories retain their remote data and resume comparison when enabled.",
         "omittedResources": "{{count}} oversized or unsupported selected images will be skipped",
         "required": "Enable at least one sync category.",
         "title": "Choose sync scope"
@@ -816,6 +818,7 @@
     },
     "status": {
       "authentication": "Sign-in required",
+      "permission": "Server access permission required",
       "conflict": "Conflicts need attention",
       "corrupted": "The latest remote version is damaged",
       "encryptionPassword": "Sync encryption password required",
@@ -824,13 +827,21 @@
       "pending": "Changes waiting to upload",
       "ready": "Connected; waiting for first check",
       "remoteDeleted": "Remote sync data was deleted",
+      "dataTooLarge": "Data exceeds the size limits. Reduce it and retry",
       "storageFull": "WebDAV storage is full",
       "synced": "Synced",
       "unconfigured": "Not configured",
-      "wallpaperSkipped": "Core data synced; wallpaper not synced"
+      "wallpaperSkipped": "Core data synced; wallpaper not synced",
+      "noSelection": "No sync categories selected"
     },
     "syncNow": "Sync now",
-    "title": "WebDAV Sync"
+    "title": "WebDAV Sync",
+    "enabled": "Enable sync on this device",
+    "credentials": {
+      "title": "Update login credentials",
+      "username": "Username (leave blank to keep current)",
+      "save": "Verify and save"
+    }
   },
   "yiyan": {
     "alwaysShow": "Always show",

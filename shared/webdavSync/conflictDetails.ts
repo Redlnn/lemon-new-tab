@@ -1,12 +1,13 @@
 import { createSyncConflictDisplayContext } from './conflictPresentation.ts'
 import { mergeSyncSnapshots } from './merge.ts'
-import type { SyncConflict, SyncSnapshotV1 } from './types.ts'
+import type { SyncConflict, SyncSnapshotV1, TombstoneV1 } from './types.ts'
 
 interface StoredSyncConflictDetailsSource {
   base: SyncSnapshotV1
   conflicts: SyncConflict[]
   local: SyncSnapshotV1
   remote: SyncSnapshotV1
+  tombstones?: TombstoneV1[]
   remoteBranchConflicts?: SyncConflict[]
   remoteRevisionIds: string[]
   remoteVersions?: Array<{
@@ -20,7 +21,7 @@ export function createSyncConflictDetails(stored: StoredSyncConflictDetailsSourc
   return {
     conflicts:
       stored.remoteBranchConflicts ??
-      mergeSyncSnapshots(stored.base, stored.local, stored.remote).conflicts,
+      mergeSyncSnapshots(stored.base, stored.local, stored.remote, stored.tombstones).conflicts,
     hasEmptyBase: hasEmptyBase(stored.base),
     remoteRevisionIds: stored.remoteRevisionIds,
     remoteVersions: stored.remoteVersions ?? [],
@@ -32,6 +33,7 @@ function hasEmptyBase(snapshot: SyncSnapshotV1): boolean {
   return !(
     snapshot.settings ||
     snapshot.quickLinks ||
+    snapshot.notes ||
     snapshot.customSearchEngines ||
     snapshot.ui ||
     snapshot.optional ||

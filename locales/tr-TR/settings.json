@@ -613,6 +613,7 @@
     },
     "errors": {
       "authentication": "Parola yanlış veya sağlayıcı erişimi reddetti",
+      "permission-required": "Bu WebDAV sunucusuna erişim izni verilmelidir",
       "conflict": "Uzak verilerde çakışma var",
       "corrupted": "Uzak veriler bozuk",
       "network": "Sunucuya geçici olarak ulaşılamıyor",
@@ -620,6 +621,7 @@
       "redirect-insecure": "Sunucu HTTPS bağlantısını HTTP bağlantısına düşürmeye çalıştığı için eşitleme durduruldu",
       "redirect-required": "Yönlendirme güvenli değil veya doğrulanamadı. Yalnızca aynı kaynaklı yönlendirmelere ve aynı ana bilgisayarda HTTP’den HTTPS’ye yükseltmelere izin verilir; son WebDAV adresini de girebilirsiniz.",
       "server": "WebDAV hizmeti hata döndürdü",
+      "data-too-large": "Veriler boyut sınırlarını aşıyor: not başına 1 MiB, tüm notlar için 8 MiB ve tam anlık görüntü için 10 MiB. Yerel veya uzak verileri azaltıp yeniden deneyin.",
       "storage-full": "WebDAV depolama alanı dolu",
       "timeout": "Bağlantı zaman aşımına uğradı",
       "unknown": "Eşitleme başarısız oldu. Durumu inceleyip yeniden deneyin."
@@ -715,7 +717,7 @@
       "onlineWallpaperUrl": "Çevrimiçi duvar kâğıdı adresi",
       "onlineWallpaperUrlNote": "Adres bir erişim belirteci içerebilir.",
       "settings": "Temel ayarlar",
-      "summary": "Her kategoriyi ayrı seçebilirsiniz; kapsam tüm eşitleme kasasına kaydedilir ve diğer cihazlara eşitlenir.",
+      "summary": "Yalnızca bu cihazı etkiler. Kapalı kategorilerin uzak verileri korunur ve yeniden açıldığında karşılaştırma sürdürülür.",
       "title": "Eşitleme kapsamı",
       "uiPreferences": "Dil ve koyu mod",
       "userIcons": "Özel bağlantı simgeleri",
@@ -786,7 +788,7 @@
         "title": "Uzak tarama sonucu"
       },
       "scope": {
-        "description": "Bu seçim diğer cihazlara da uygulanır.",
+        "description": "Yalnızca bu cihazı etkiler. Kapalı kategorilerin uzak verileri korunur ve yeniden açıldığında karşılaştırma sürdürülür.",
         "omittedResources": "Boyut sınırını aşan veya desteklenmeyen {{count}} seçili resim atlanacak",
         "required": "En az bir eşitleme kategorisini etkinleştirin.",
         "title": "Eşitleme kapsamını seçin"
@@ -816,6 +818,7 @@
     },
     "status": {
       "authentication": "Yeniden oturum açılması gerekiyor",
+      "permission": "Sunucu erişim izni gerekiyor",
       "conflict": "Çakışmaların çözülmesi gerekiyor",
       "corrupted": "En son uzak sürüm hasarlı",
       "encryptionPassword": "Eşitleme şifreleme parolası gerekiyor",
@@ -824,13 +827,21 @@
       "pending": "Yüklenmeyi bekleyen değişiklikler var",
       "ready": "Bağlandı; ilk denetim bekleniyor",
       "remoteDeleted": "Uzak eşitleme verileri silindi",
+      "dataTooLarge": "Veriler boyut sınırlarını aşıyor. Azaltıp yeniden deneyin",
       "storageFull": "WebDAV depolama alanı dolu",
       "synced": "Eşitlendi",
       "unconfigured": "Yapılandırılmadı",
-      "wallpaperSkipped": "Temel veriler eşitlendi; duvar kâğıdı eşitlenmedi"
+      "wallpaperSkipped": "Temel veriler eşitlendi; duvar kâğıdı eşitlenmedi",
+      "noSelection": "Eşitleme kategorisi seçilmedi"
     },
     "syncNow": "Şimdi eşitle",
-    "title": "WebDAV Eşitlemesi"
+    "title": "WebDAV Eşitlemesi",
+    "enabled": "Bu cihazda eşitlemeyi etkinleştir",
+    "credentials": {
+      "title": "Giriş bilgilerini güncelle",
+      "username": "Kullanıcı adı (mevcut adı korumak için boş bırakın)",
+      "save": "Doğrula ve kaydet"
+    }
   },
   "yiyan": {
     "alwaysShow": "Her zaman göster",

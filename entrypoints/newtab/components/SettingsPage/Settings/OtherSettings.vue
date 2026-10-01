@@ -9,6 +9,7 @@ import { browser } from 'wxt/browser'
 
 import { downloadBlob } from '@/shared/download'
 import { clearFaviconCache } from '@/shared/media'
+import { NoteSaveError } from '@/shared/notes'
 import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import { clearExtensionData, reloadNewtabTabs } from '@/shared/settings/legacySettingsRecovery'
 import { idbClearMany } from '@/shared/storage/idb'
@@ -357,13 +358,18 @@ async function handleFileChange(event: Event) {
       if (state.configured) await disconnectBeforeReplacement()
       await applyPreparedBrowserImport(prepared)
     } else {
-      await applyPreparedBrowserImport(prepared, state.scope)
+      await applyPreparedBrowserImport(prepared, true)
       sendSyncDataChanged()
     }
     ElMessage.success(t('other.importExport.importSuccess'))
     if (!(await reloadNewtabTabs())) location.reload()
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error)
+    const reason =
+      error instanceof NoteSaveError
+        ? t('webdavSync.errors.data-too-large')
+        : error instanceof Error
+          ? error.message
+          : String(error)
     ElMessage.error(
       t('other.importExport.importFailed', {
         reason: reason || t('other.importExport.unknownError'),

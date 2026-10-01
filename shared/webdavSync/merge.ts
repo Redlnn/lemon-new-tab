@@ -1,9 +1,7 @@
 import { canonicalize, jsonEquals } from './canonical.ts'
-import {
-  normalizeRemoteSyncSettings,
-  pickSyncSettings,
-  preserveUnknownSyncSettings,
-} from './settingsWhitelist.ts'
+import { SYNC_ENTITIES } from './domains.ts'
+import { pruneExpiredTombstones } from './lifecycle.ts'
+import { normalizeRemoteSyncSettings, pickSyncSettings } from './settingsWhitelist.ts'
 import { normalizeSnapshotOrder } from './snapshotOrder.ts'
 import type {
   JsonObject,
@@ -16,6 +14,7 @@ import type {
   SyncNoteV1,
   SyncSnapshotV1,
   ThreeWayMergeResult,
+  TombstoneV1,
 } from './types.ts'
 
 const MISSING = Symbol('missing')
@@ -536,6 +535,7 @@ export function mergeSyncSnapshots(
   base: SyncSnapshotV1,
   local: SyncSnapshotV1,
   remote: SyncSnapshotV1,
+  tombstones: readonly TombstoneV1[] = [],
 ): ThreeWayMergeResult {
   base = normalizeSnapshotOrder(base)
   local = normalizeSnapshotOrder(local)
@@ -547,7 +547,7 @@ export function mergeSyncSnapshots(
     remote.settings ?? {},
   )
   const settings = hasSettings
-    ? preserveUnknownSyncSettings(
+    ? pickSyncSettings(
         mergeJson(
           'settings',
           'settings',
@@ -556,7 +556,6 @@ export function mergeSyncSnapshots(
           pickSyncSettings(normalizedRemoteSettings),
           conflicts,
         ) as JsonObject,
-        normalizedRemoteSettings,
       )
     : MISSING
   const ui = mergeJson(
@@ -567,17 +566,15 @@ export function mergeSyncSnapshots(
     remote.ui ?? MISSING,
     conflicts,
   )
-  const scope = mergeJson(
-    'scope',
-    'scope',
-    canonicalize(base.scope),
-    canonicalize(local.scope),
-    canonicalize(remote.scope),
-    conflicts,
-  ) as unknown as SyncSnapshotV1['scope']
+  const scope = { ...local.scope }
   const quickLinks =
-    base.quickLinks && local.quickLinks && remote.quickLinks
-      ? mergeQuickLinks(base.quickLinks, local.quickLinks, remote.quickLinks, conflicts)
+    local.quickLinks && remote.quickLinks
+      ? mergeQuickLinks(
+          base.quickLinks ?? { items: [], rootOrder: [], groups: [], groupOrder: [] },
+          local.quickLinks,
+          remote.quickLinks,
+          conflicts,
+        )
       : mergeJson(
           'quick-links',
           'quickLinks',
@@ -587,9 +584,9 @@ export function mergeSyncSnapshots(
           conflicts,
         )
   const searchEngines =
-    base.customSearchEngines && local.customSearchEngines && remote.customSearchEngines
+    local.customSearchEngines && remote.customSearchEngines
       ? mergeSearchEngines(
-          base.customSearchEngines,
+          base.customSearchEngines ?? { items: [], order: [] },
           local.customSearchEngines,
           remote.customSearchEngines,
           conflicts,
@@ -603,8 +600,8 @@ export function mergeSyncSnapshots(
           conflicts,
         )
   const notes =
-    base.notes && local.notes && remote.notes
-      ? mergeNotes(base.notes, local.notes, remote.notes, conflicts)
+    local.notes && remote.notes
+      ? mergeNotes(base.notes ?? { items: [] }, local.notes, remote.notes, conflicts)
       : mergeJson(
           'notes',
           'notes',
@@ -624,6 +621,31 @@ export function mergeSyncSnapshots(
   }
   if (notes !== MISSING) snapshot.notes = notes as SyncSnapshotV1['notes']
   if (ui !== MISSING) snapshot.ui = ui as SyncSnapshotV1['ui']
+  // 没有实体基线时，无法判断本机副本是否在删除前修改过，必须显式选择。
+  const deleted = new Set(
+    pruneExpiredTombstones(tombstones).map((item) => `${item.entityType}\0${item.entityId}`),
+  )
+  if (deleted.size)
+    for (const entity of SYNC_ENTITIES) {
+      // 未携带类别表示不共享；显式空集合才表达实体删除。
+      if (!entity.items(remote)) continue
+      const known = new Set(
+        [...(entity.items(base) ?? []), ...(entity.items(remote) ?? [])].map((item) => item.id),
+      )
+      for (const item of entity.items(local) ?? []) {
+        if (!known.has(item.id) && deleted.has(`${entity.type}\0${item.id}`))
+          addConflict(
+            conflicts,
+            entity.category,
+            'delete-vs-modify',
+            `${entity.path}.${item.id}`,
+            MISSING,
+            canonicalize(item),
+            MISSING,
+            entity.canKeepBoth,
+          )
+      }
+    }
   const usedImages = new Set(
     [
       ...(snapshot.quickLinks?.items.map((item) => item.faviconHash) ?? []),

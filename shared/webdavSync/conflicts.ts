@@ -6,6 +6,7 @@ import type {
   SyncConflict,
   SyncConflictResolution,
   SyncSnapshotV1,
+  TombstoneV1,
 } from './types.ts'
 import { validateSyncSnapshot } from './validation.ts'
 
@@ -33,6 +34,7 @@ export function resolveSyncConflicts(input: {
   base: SyncSnapshotV1
   local: SyncSnapshotV1
   remote: SyncSnapshotV1
+  tombstones?: readonly TombstoneV1[]
   resolutions: readonly SyncConflictResolution[]
 }): SyncSnapshotV1 {
   if (
@@ -46,7 +48,7 @@ export function resolveSyncConflicts(input: {
   ) {
     throw new TypeError('Conflict resolution is invalid')
   }
-  const merged = mergeSyncSnapshots(input.base, input.local, input.remote)
+  const merged = mergeSyncSnapshots(input.base, input.local, input.remote, input.tombstones)
   if (merged.conflicts.length === 0) return merged.snapshot
   const choices = new Map(input.resolutions.map((item) => [item.conflictId, item]))
   if (choices.size !== input.resolutions.length)
@@ -100,7 +102,14 @@ export function readConflictValue(
     ['notes.items.', snapshot.notes?.items],
   ] as const) {
     if (!path.startsWith(prefix)) continue
-    const [id, ...keys] = path.slice(prefix.length).split('.')
+    const fragment = path.slice(prefix.length)
+    const wholeEntity = [conflict.base, conflict.local, conflict.remote].some(
+      (value) =>
+        value && typeof value === 'object' && !Array.isArray(value) && fragment === value.id,
+    )
+    const separator = wholeEntity ? -1 : fragment.lastIndexOf('.')
+    const id = separator < 0 ? fragment : fragment.slice(0, separator)
+    const keys = separator < 0 ? [] : fragment.slice(separator + 1).split('.')
     let value: unknown = items?.find((item) => item.id === id)
     for (const key of keys) value = (value as JsonObject | undefined)?.[key]
     return value as JsonValue | undefined
@@ -171,7 +180,8 @@ function entityTarget(
 }
 
 function entityId(conflict: SyncConflict): string {
-  if (conflict.path.startsWith('optional.wallpapers.')) return conflict.path.split('.')[4]!
+  if (conflict.path.startsWith('optional.wallpapers.'))
+    return conflict.path.slice(conflict.path.indexOf('.items.') + '.items.'.length)
   const prefix = conflict.path.startsWith('quickLinks.items.')
     ? 'quickLinks.items.'
     : conflict.path.startsWith('quickLinks.groups.')
@@ -412,7 +422,7 @@ function applyEntityField(
   value: JsonValue | undefined,
   present: boolean,
 ): void {
-  const separator = path.indexOf('.')
+  const separator = path.lastIndexOf('.')
   if (separator < 1) throw new TypeError(`Entity field path is invalid: ${path}`)
   const id = path.slice(0, separator)
   const item = items.find((candidate) => candidate.id === id)
@@ -426,7 +436,7 @@ function applyQuickLinkGroupPath(
   value: JsonValue | undefined,
   present: boolean,
 ): void {
-  const separator = path.indexOf('.')
+  const separator = path.lastIndexOf('.')
   if (separator < 1) throw new TypeError(`Quick Link group path is invalid: ${path}`)
   const id = path.slice(0, separator)
   const key = path.slice(separator + 1)

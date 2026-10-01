@@ -151,8 +151,11 @@ export type SyncRevisionReason =
   | 'import'
 
 export interface SyncRevisionV1 {
+  /** 仅用于已解码工作副本，不写入协议。 */
+  needsRewrite?: boolean
   formatVersion: 1
   settingsSchemaVersion: number
+  pluginVersion: string
   vaultId: string
   generationId: string
   revisionId: string
@@ -208,6 +211,8 @@ export type LocalResourceOmission =
     }
 
 export type SyncPauseReason =
+  | 'data-too-large'
+  | 'permission'
   | 'authentication'
   | 'conflict'
   | 'corrupted-remote'
@@ -236,6 +241,7 @@ export interface SanitizedSyncError {
 
 export interface LocalSyncStateV1 {
   configured: boolean
+  enabled: boolean
   paused: boolean
   pauseReason?: SyncPauseReason
   vaultId?: string
@@ -248,6 +254,7 @@ export interface LocalSyncStateV1 {
   lastSuccessAt?: string
   pending?: PendingSyncOperation
   lastError?: SanitizedSyncError
+  retry?: { attempt: number; nextAttemptAt?: number }
   resourceOmissions: readonly LocalResourceOmission[]
   scope: SyncScopePreferences
   encrypted: boolean

@@ -1,11 +1,7 @@
 import type { QuickLink, QuickLinksData } from '@/shared/quickLinks'
 
 import { jsonEquals } from './canonical.ts'
-import {
-  applySyncSettings,
-  preserveUnknownSyncSettings,
-  stripExcludedSyncSettings,
-} from './settingsWhitelist.ts'
+import { applySyncSettings, pickSyncSettings, mergeSyncSettingValues } from './settingsWhitelist.ts'
 import { normalizeSnapshotOrder } from './snapshotOrder.ts'
 import type {
   JsonObject,
@@ -139,7 +135,7 @@ export function mergeImportedSnapshot(
   const result: SyncSnapshotV1 = {
     scope: { ...current.scope },
     settings: incoming.settings
-      ? mergeSyncSettings(current.settings ?? {}, incoming.settings)
+      ? mergeSyncSettingValues(current.settings ?? {}, incoming.settings)
       : structuredClone(current.settings),
     quickLinks: mergeQuickLinkImport(current.quickLinks, incoming.quickLinks),
     notes: mergeNoteImport(current.notes, incoming.notes),
@@ -265,10 +261,7 @@ export function preserveExcludedScope(
   const result = structuredClone(captured)
   result.scope = { ...scope }
   if (!scope.settings) copyCategory(result, baseline, 'settings')
-  else if (result.settings && baseline.settings) {
-    result.settings = preserveUnknownSyncSettings(result.settings, baseline.settings)
-  }
-  if (result.settings) result.settings = stripExcludedSyncSettings(result.settings)
+  if (result.settings) result.settings = pickSyncSettings(result.settings)
   if (!scope.quickLinks) copyCategory(result, baseline, 'quickLinks')
   if (!scope.notes) copyCategory(result, baseline, 'notes')
   if (!scope.customSearchEngines) copyCategory(result, baseline, 'customSearchEngines')
@@ -310,10 +303,7 @@ export function expectedAppliedSnapshot(
   }
   if (target.scope.settings) {
     const targetSettings = target.settings ?? {}
-    const settings = preserveUnknownSyncSettings(
-      mergeSyncSettings(beforeApply.settings ?? {}, targetSettings),
-      targetSettings,
-    )
+    const settings = mergeSyncSettingValues(beforeApply.settings ?? {}, targetSettings)
     if (Object.keys(settings).length) result.settings = settings
     else delete result.settings
   }

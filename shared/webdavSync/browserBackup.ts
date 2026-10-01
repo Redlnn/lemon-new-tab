@@ -40,7 +40,10 @@ interface LegacyLocalIcons {
 
 export async function createBrowserJsonBackup() {
   const capture = await captureBrowserSyncSnapshotResult({ ...JSON_BACKUP_SCOPE })
-  return { json: serializeJsonBackup(capture.snapshot), omissions: capture.resourceOmissions }
+  return {
+    json: serializeJsonBackup(capture.snapshot, browser.runtime.getManifest().version),
+    omissions: capture.resourceOmissions,
+  }
 }
 
 export async function prepareBrowserImport(file: Blob): Promise<PreparedBrowserImport> {
@@ -51,27 +54,26 @@ export async function prepareBrowserImport(file: Blob): Promise<PreparedBrowserI
   } catch {
     throw new TypeError('JSON backup is invalid')
   }
-  try {
-    const parsed = parseJsonBackup(value)
+  if (isRecord(value) && value.product === 'lemon-new-tab') {
+    const parsed = parseJsonBackup(value, browser.runtime.getManifest().version)
     return {
       ...parsed,
       source: 'json-v1',
       scope: inferImportScope(parsed.snapshot),
     }
-  } catch {
-    return prepareLegacyImport(value)
   }
+  return prepareLegacyImport(value)
 }
 
 export async function applyPreparedBrowserImport(
   input: PreparedBrowserImport,
-  mergeScope?: SyncScopePreferences,
+  merge = false,
 ): Promise<void> {
   return withNotesLock(() =>
     withSyncWriteLock(async () => {
-      const snapshot = mergeScope
+      const snapshot = merge
         ? mergeImportedSnapshot(
-            (await captureBrowserSyncSnapshotResult(mergeScope, undefined, true)).snapshot,
+            (await captureBrowserSyncSnapshotResult(input.scope, undefined, true)).snapshot,
             input.snapshot,
           )
         : input.snapshot
@@ -80,7 +82,9 @@ export async function applyPreparedBrowserImport(
           crypto.randomUUID(),
           crypto.randomUUID(),
           snapshot,
-          snapshot.scope,
+          input.scope,
+          undefined,
+          'import',
         ),
       )
       if (input.legacyIcons) await restoreLegacyIcons(input.legacyIcons)
@@ -280,3 +284,4 @@ function isCustomSearchEngines(
     )
   )
 }
+import { browser } from 'wxt/browser'

@@ -1,15 +1,20 @@
 import { storage } from '#imports'
 import { browser } from 'wxt/browser'
 
-import { idbClear, idbDelete, idbGet, idbSet, idbSetMany } from '@/shared/storage/idb'
+import { getDB, idbClear, idbDelete, idbGet, idbSet } from '@/shared/storage/idb'
 
-import { normalizeSnapshotOrder } from './snapshotOrder.ts'
+import { CURRENT_CONFIG_VERSION } from '../settings/current.ts'
+
+import { SYNC_SCOPE_KEYS } from './domains.ts'
+import { decodeWorkingRecord, type WorkingRecord } from './recovery.ts'
 import type {
   LocalSyncStateV1,
   SyncConflict,
   SyncScopePreferences,
   SyncSnapshotV1,
+  TombstoneV1,
 } from './types.ts'
+import type { SyncSource } from './version.ts'
 import type { WebDavConnection } from './webdav.ts'
 
 export const DEFAULT_SYNC_SCOPE: Readonly<SyncScopePreferences> = {
@@ -25,33 +30,12 @@ export const DEFAULT_SYNC_SCOPE: Readonly<SyncScopePreferences> = {
 }
 
 function normalizeScope(value: Partial<SyncScopePreferences> | undefined): SyncScopePreferences {
-  const scope: SyncScopePreferences = {
-    settings: typeof value?.settings === 'boolean' ? value.settings : DEFAULT_SYNC_SCOPE.settings,
-    quickLinks:
-      typeof value?.quickLinks === 'boolean' ? value.quickLinks : DEFAULT_SYNC_SCOPE.quickLinks,
-    notes: typeof value?.notes === 'boolean' ? value.notes : DEFAULT_SYNC_SCOPE.notes,
-    customSearchEngines:
-      typeof value?.customSearchEngines === 'boolean'
-        ? value.customSearchEngines
-        : DEFAULT_SYNC_SCOPE.customSearchEngines,
-    uiPreferences:
-      typeof value?.uiPreferences === 'boolean'
-        ? value.uiPreferences
-        : DEFAULT_SYNC_SCOPE.uiPreferences,
-    blockedTopSites:
-      typeof value?.blockedTopSites === 'boolean'
-        ? value.blockedTopSites
-        : DEFAULT_SYNC_SCOPE.blockedTopSites,
-    wallpapers:
-      typeof value?.wallpapers === 'boolean' ? value.wallpapers : DEFAULT_SYNC_SCOPE.wallpapers,
-    onlineWallpaperUrl:
-      typeof value?.onlineWallpaperUrl === 'boolean'
-        ? value.onlineWallpaperUrl
-        : DEFAULT_SYNC_SCOPE.onlineWallpaperUrl,
-    userIcons:
-      typeof value?.userIcons === 'boolean' ? value.userIcons : DEFAULT_SYNC_SCOPE.userIcons,
-  }
-  return Object.values(scope).some(Boolean) ? scope : { ...DEFAULT_SYNC_SCOPE }
+  return Object.fromEntries(
+    SYNC_SCOPE_KEYS.map((key) => [
+      key,
+      typeof value?.[key] === 'boolean' ? value[key] : DEFAULT_SYNC_SCOPE[key],
+    ]),
+  ) as unknown as SyncScopePreferences
 }
 
 export function normalizeLocalSyncState(value: unknown): LocalSyncStateV1 {
@@ -60,8 +44,24 @@ export function normalizeLocalSyncState(value: unknown): LocalSyncStateV1 {
       ? (value as Partial<LocalSyncStateV1>)
       : {}
   return {
-    ...current,
+    ...Object.fromEntries(
+      [
+        'vaultId',
+        'generationId',
+        'deviceFirstSeenAt',
+        'deviceRecordAt',
+        'baseRevisionId',
+        'lastSuccessAt',
+        'pending',
+        'lastError',
+        'pauseReason',
+        'retry',
+      ]
+        .filter((key) => Object.hasOwn(current, key))
+        .map((key) => [key, current[key as keyof LocalSyncStateV1]]),
+    ),
     configured: current.configured === true,
+    enabled: current.enabled !== false,
     paused: current.paused === true,
     deviceId: typeof current.deviceId === 'string' ? current.deviceId : '',
     deviceName: typeof current.deviceName === 'string' ? current.deviceName : '',
@@ -85,6 +85,7 @@ interface StoredWebDavSecretV1 {
 }
 
 export interface PendingApplyV1 {
+  origin: 'sync' | 'import'
   localBefore?: SyncSnapshotV1
   version: 1
   operationId: string
@@ -123,6 +124,7 @@ export interface StoredSyncConflictV1 {
   deviceLocal: SyncSnapshotV1
   local: SyncSnapshotV1
   remote: SyncSnapshotV1
+  tombstones?: TombstoneV1[]
   remoteRevisionIds: string[]
   remoteBranchConflicts?: SyncConflict[]
   remainingRemoteRevisionIds: string[]
@@ -155,6 +157,7 @@ export const webDavSyncStateStorage = storage.defineItem<LocalSyncStateV1>(
   {
     fallback: {
       configured: false,
+      enabled: true,
       paused: false,
       deviceId: '',
       deviceName: '',
@@ -165,7 +168,7 @@ export const webDavSyncStateStorage = storage.defineItem<LocalSyncStateV1>(
   },
 )
 
-export async function getOrCreateSyncState(): Promise<LocalSyncStateV1> {
+async function readSyncState(): Promise<LocalSyncStateV1> {
   const stored = await webDavSyncStateStorage.getValue()
   const current = normalizeLocalSyncState(stored)
   const state: LocalSyncStateV1 = {
@@ -178,11 +181,17 @@ export async function getOrCreateSyncState(): Promise<LocalSyncStateV1> {
   return state
 }
 
+export function getOrCreateSyncState(): Promise<LocalSyncStateV1> {
+  return navigator.locks.request('lemon-webdav-state', readSyncState)
+}
+
 export async function patchSyncState(patch: Partial<LocalSyncStateV1>): Promise<LocalSyncStateV1> {
-  const current = await getOrCreateSyncState()
-  const next = { ...current, ...patch }
-  await webDavSyncStateStorage.setValue(next)
-  return next
+  return navigator.locks.request('lemon-webdav-state', async () => {
+    const current = await readSyncState()
+    const next = { ...current, ...patch }
+    await webDavSyncStateStorage.setValue(next)
+    return next
+  })
 }
 
 export async function saveWebDavPassword(password: string, remember: boolean): Promise<void> {
@@ -214,6 +223,7 @@ export async function clearWebDavConnection(): Promise<void> {
   ])
   await webDavSyncStateStorage.setValue({
     configured: false,
+    enabled: true,
     paused: false,
     deviceId: crypto.randomUUID(),
     deviceName: '',
@@ -258,13 +268,41 @@ export function setStoredEncryptionKey(
 }
 
 export async function getBaseline(): Promise<SyncSnapshotV1 | undefined> {
-  const snapshot = (await idbGet('webdavSync', BASELINE_KEY)) as SyncSnapshotV1 | undefined
-  if (!snapshot) return undefined
-  return normalizeSnapshotOrder({ ...snapshot, scope: normalizeScope(snapshot.scope) })
+  return (await readWorking<{ snapshot: SyncSnapshotV1 }>(BASELINE_KEY))?.snapshot
 }
 
 export function setBaseline(snapshot: SyncSnapshotV1): Promise<void> {
-  return idbSet('webdavSync', BASELINE_KEY, snapshot)
+  return writeWorking(BASELINE_KEY, { snapshot })
+}
+
+export function currentSyncSource(): SyncSource {
+  return {
+    formatVersion: 1,
+    settingsSchemaVersion: CURRENT_CONFIG_VERSION,
+    pluginVersion: browser.runtime.getManifest().version,
+  }
+}
+
+async function readWorking<T extends object>(key: string): Promise<T | undefined> {
+  const stored = (await idbGet('webdavSync', key)) as WorkingRecord<T> | undefined
+  if (!stored) return undefined
+  const value = decodeWorkingRecord(stored, browser.runtime.getManifest().version)
+  if (
+    JSON.stringify(stored.value) !== JSON.stringify(value) ||
+    JSON.stringify(stored.source) !== JSON.stringify(currentSyncSource())
+  ) {
+    await writeWorking(key, value)
+  }
+  return value
+}
+
+function workingRecord<T extends object>(value: T): WorkingRecord<T> {
+  const source = currentSyncSource()
+  return { source, value: decodeWorkingRecord({ source, value }, source.pluginVersion) }
+}
+
+function writeWorking<T extends object>(key: string, value: T): Promise<void> {
+  return idbSet('webdavSync', key, workingRecord(value))
 }
 
 export interface PublishRecovery {
@@ -275,11 +313,11 @@ export interface PublishRecovery {
 }
 
 export function getPublishRecovery() {
-  return idbGet('webdavSync', 'publish-recovery') as Promise<PublishRecovery | undefined>
+  return readWorking<PublishRecovery>('publish-recovery')
 }
 
 export function setPublishRecovery(value: PublishRecovery) {
-  return idbSet('webdavSync', 'publish-recovery', value)
+  return writeWorking('publish-recovery', value)
 }
 
 export function clearPublishRecovery() {
@@ -293,11 +331,11 @@ export interface AppliedSyncSnapshot {
 }
 
 export function getAppliedSyncSnapshot() {
-  return idbGet('webdavSync', 'applied-sync-snapshot') as Promise<AppliedSyncSnapshot | undefined>
+  return readWorking<AppliedSyncSnapshot>('applied-sync-snapshot')
 }
 
 export function setAppliedSyncSnapshot(value: AppliedSyncSnapshot) {
-  return idbSet('webdavSync', 'applied-sync-snapshot', value)
+  return writeWorking('applied-sync-snapshot', value)
 }
 
 export function clearAppliedSyncSnapshot() {
@@ -305,14 +343,50 @@ export function clearAppliedSyncSnapshot() {
 }
 
 export function getPendingApply(): Promise<PendingApplyV1 | undefined> {
-  return idbGet('webdavSync', PENDING_APPLY_KEY) as Promise<PendingApplyV1 | undefined>
+  return readWorking<PendingApplyV1>(PENDING_APPLY_KEY)
 }
 
-export function setPendingApply(
+export async function hasPendingApply(): Promise<boolean> {
+  return (await (await getDB()).getKey('webdavSync', PENDING_APPLY_KEY)) !== undefined
+}
+
+export async function setPendingApply(
   value: PendingApplyV1,
   resources: ReadonlyArray<readonly [string, Blob]> = [],
 ): Promise<void> {
-  return idbSetMany('webdavSync', [...resources, [PENDING_APPLY_KEY, value]])
+  const record = workingRecord(value)
+  const db = await getDB()
+  const tx = db.transaction(['webdavSync', 'wallpaperLibrary'], 'readwrite')
+  try {
+    const store = tx.objectStore('webdavSync')
+    const previous = (await store.get(PENDING_APPLY_KEY)) as
+      | WorkingRecord<PendingApplyV1>
+      | undefined
+    if (previous) {
+      const old = decodeWorkingRecord(previous, record.source.pluginVersion)
+      const retained = new Set(
+        Object.values(value.wallpapers ?? {}).map((item) => item.temporaryKey),
+      )
+      for (const item of Object.values(old.wallpapers ?? {}))
+        if (!retained.has(item.temporaryKey)) await store.delete(item.temporaryKey)
+      if (old.operationId !== value.operationId)
+        await tx.objectStore('wallpaperLibrary').delete(`applied:${old.operationId}`)
+    }
+    // 新日志与资源替换、旧临时文件回收一起提交，中断时保留完整的旧计划。
+    await Promise.all([
+      ...resources.map(([key, blob]) => store.put(blob, key)),
+      store.put(record, PENDING_APPLY_KEY),
+    ])
+    await tx.done
+  } catch (error) {
+    try {
+      tx.abort()
+    } catch {
+      /* 事务可能已因存储错误自动中止。 */
+    }
+    await tx.done.catch(() => undefined)
+    throw error
+  }
 }
 
 export function clearPendingApply(): Promise<void> {
@@ -320,11 +394,11 @@ export function clearPendingApply(): Promise<void> {
 }
 
 export function getStoredConflict(): Promise<StoredSyncConflictV1 | undefined> {
-  return idbGet('webdavSync', CONFLICT_KEY) as Promise<StoredSyncConflictV1 | undefined>
+  return readWorking<StoredSyncConflictV1>(CONFLICT_KEY)
 }
 
 export function setStoredConflict(value: StoredSyncConflictV1): Promise<void> {
-  return idbSet('webdavSync', CONFLICT_KEY, value)
+  return writeWorking(CONFLICT_KEY, value)
 }
 
 export function clearStoredConflict(): Promise<void> {

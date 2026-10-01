@@ -43,6 +43,7 @@ export type SyncDecision =
       remainingRemoteRevisionIds: string[]
       conflicts: SyncConflict[]
       stage: 'local-remote' | 'remote-branches'
+      tombstones?: TombstoneV1[]
     }
   | {
       action: 'publish'
@@ -112,7 +113,11 @@ function buildRemoteState(
   const heads = findRevisionHeads(revisions)
   if (heads.length === 0) return undefined
   const byId = new Map(revisions.map((revision) => [revision.revisionId, revision]))
-  if (heads.some((head) => !descendsFrom(head.revisionId, baseRevisionId, byId))) return undefined
+  if (
+    byId.has(baseRevisionId) &&
+    heads.some((head) => !descendsFrom(head.revisionId, baseRevisionId, byId))
+  )
+    return undefined
 
   return mergeRemoteRevisionHeads(baseline, revisions)
 }
@@ -135,7 +140,11 @@ export function mergeRemoteRevisionHeads(
         headSnapshot.settings ?? {},
       )
     }
-    const merge = mergeSyncSnapshots(baseline, snapshot, headSnapshot)
+    // 首个远端快照直接采用；以默认值自合并会把首次连接误判为远端分支冲突。
+    const merge =
+      index === 0
+        ? { snapshot: headSnapshot, conflicts: [] }
+        : mergeSyncSnapshots(baseline, snapshot, headSnapshot)
     if (merge.conflicts.length > 0) {
       return {
         kind: 'conflict',
@@ -327,7 +336,7 @@ export function decideSynchronization(input: {
       : { action: 'up-to-date', revisionId, snapshot: remote.snapshot }
   }
 
-  const merge = mergeSyncSnapshots(input.baseline, input.local, remote.snapshot)
+  const merge = mergeSyncSnapshots(input.baseline, input.local, remote.snapshot, remote.tombstones)
   if (merge.conflicts.length > 0) {
     return {
       action: 'conflict',
@@ -339,6 +348,7 @@ export function decideSynchronization(input: {
       remainingRemoteRevisionIds: [],
       conflicts: merge.conflicts,
       stage: 'local-remote',
+      tombstones: remote.tombstones,
     }
   }
   if (!hasBranches && jsonEquals(merge.snapshot, remote.snapshot)) {
@@ -379,7 +389,7 @@ export function decideInitialization(input: {
     }
   }
   const remote = builtRemote.state
-  const merge = mergeSyncSnapshots(input.base, input.local, remote.snapshot)
+  const merge = mergeSyncSnapshots(input.base, input.local, remote.snapshot, remote.tombstones)
   if (merge.conflicts.length > 0) {
     return {
       action: 'conflict',
@@ -391,6 +401,7 @@ export function decideInitialization(input: {
       remainingRemoteRevisionIds: [],
       conflicts: merge.conflicts,
       stage: 'local-remote',
+      tombstones: remote.tombstones,
     }
   }
   if (remote.headRevisionIds.length === 1 && jsonEquals(merge.snapshot, remote.snapshot)) {
