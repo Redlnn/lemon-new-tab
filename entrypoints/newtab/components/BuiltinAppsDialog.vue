@@ -42,6 +42,7 @@ async function toggleNote() {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 12px;
+  margin-top: 20px;
 }
 
 .builtin-app-card {
@@ -61,11 +62,5 @@ async function toggleNote() {
   .el-button {
     font-size: 13px;
   }
-}
-
-.builtin-app-card img {
-  width: 54px;
-  height: 54px;
-  object-fit: contain;
 }
 </style>

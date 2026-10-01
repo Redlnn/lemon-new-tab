@@ -621,6 +621,11 @@ onScopeDispose(unwatchNotes)
   font-weight: bold;
   border: 0;
   border-radius: 15px;
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: -2px;
+  }
 }
 
 .note-aside-list {
@@ -637,11 +642,20 @@ onScopeDispose(unwatchNotes)
   background: var(--note-item-background);
   border: 0;
   border-radius: 15px;
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: -2px;
+  }
 }
 
 .note-aside-item.is-active {
   color: white;
   background: var(--el-color-primary);
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary-light-7);
+  }
 }
 
 .note-aside-title,
@@ -734,6 +748,12 @@ onScopeDispose(unwatchNotes)
   cursor: text;
   background: transparent;
   border: 0;
+  border-radius: 15px;
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: -2px;
+  }
 }
 
 .note-actions {
@@ -759,14 +779,6 @@ onScopeDispose(unwatchNotes)
 
 .note-context-menu .is-danger {
   color: var(--el-color-danger);
-}
-
-.note-export-host {
-  position: fixed;
-  top: 0;
-  left: -100000px;
-  width: max-content;
-  pointer-events: none;
 }
 
 .is-compact .note-layout {
