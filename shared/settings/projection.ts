@@ -45,7 +45,7 @@ const ENUMS: Record<string, readonly unknown[]> = {
   'bookmark.defaultSortMode': Object.values(SortMode),
   'search.suggestionAPI': ['bing', 'baidu', 'google'],
   'yiyan.provider': ['jinrishici', 'hitokoto', 'custom'],
-  'layout.mainPosition.type': ['center', 'dvh'],
+  'layout.mainPosition.type': ['center', 'dvh', 'px'],
   'layout.actionBtnPosition': ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
 }
 const INTEGER_RANGES: Record<string, readonly [number, number]> = {
