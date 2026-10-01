@@ -20,6 +20,7 @@ import {
   applyPreparedBrowserSnapshot,
 } from './browserData.ts'
 import { captureSyncSnapshot, deduplicateInlineImages } from './capture.ts'
+import { JSON_BACKUP_SCOPE } from './catalog.ts'
 import { DEFAULT_SYNC_SCOPE } from './localState.ts'
 import type { SyncScopePreferences, SyncSnapshotV1 } from './types.ts'
 
@@ -38,17 +39,7 @@ interface LegacyLocalIcons {
 }
 
 export async function createBrowserJsonBackup() {
-  const capture = await captureBrowserSyncSnapshotResult({
-    settings: true,
-    quickLinks: true,
-    notes: true,
-    customSearchEngines: true,
-    uiPreferences: true,
-    blockedTopSites: true,
-    wallpapers: false,
-    onlineWallpaperUrl: true,
-    userIcons: true,
-  })
+  const capture = await captureBrowserSyncSnapshotResult({ ...JSON_BACKUP_SCOPE })
   return { json: serializeJsonBackup(capture.snapshot), omissions: capture.resourceOmissions }
 }
 

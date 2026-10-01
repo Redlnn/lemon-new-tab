@@ -108,6 +108,11 @@
     }
   },
   "note": {
+    "snapshotTooLarge": "Kaydedilemiyor: tüm yedekleme veya eşitleme verileri 10 MiB sınırını aşıyor. Notları, özel simgeleri veya diğer verileri azaltın; taslağınız korunuyor.",
+    "saveFailed": "Not kaydedilemedi. Değişiklikleriniz düzenleyicide korunuyor.",
+    "conflict": "Bu not başka bir yerde değiştirildi. Taslağınız korunuyor; notu yeniden açmadan önce taslağı kopyalayın.",
+    "deleted": "Bu not başka bir yerde silindi. Taslağınız korunuyor; yeni bir nota kopyalayın.",
+    "tooLarge": "Kaydedilemiyor: her not en fazla 1 MiB, tüm notlar en fazla 8 MiB olabilir. İçeriği kısaltın veya gereksiz notları silin.",
     "backToList": "Not listesine dön",
     "create": "Not oluştur",
     "deleteConfirm": "“{{title}}” silinsin mi?",

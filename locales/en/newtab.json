@@ -108,6 +108,11 @@
     }
   },
   "note": {
+    "snapshotTooLarge": "Unable to save: the complete backup or sync snapshot exceeds 10 MiB. Reduce notes, custom icons, or other data; your draft is preserved.",
+    "saveFailed": "Unable to save the note. Your changes are still in the editor.",
+    "conflict": "This note was changed elsewhere. Your draft is preserved; copy it before reopening the note.",
+    "deleted": "This note was deleted elsewhere. Your draft is preserved; copy it into a new note.",
+    "tooLarge": "Unable to save: each note must be within 1 MiB and all notes within 8 MiB. Shorten the content or remove unused notes.",
     "backToList": "Back to note list",
     "create": "Create note",
     "deleteConfirm": "Delete “{{title}}”?",

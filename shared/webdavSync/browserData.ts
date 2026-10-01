@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser'
 
-import { noteStorage, withNotesLock } from '@/shared/notes'
+import { noteStorage, withNotesLock, NoteSaveError, type NoteSnapshot } from '@/shared/notes'
 import { getQuickLinksStorageValue } from '@/shared/quickLinks'
 import type { CURRENT_CONFIG_SCHEMA } from '@/shared/settings'
 import { normalizeCurrentSettings, settingsStorage } from '@/shared/settings'
@@ -22,13 +22,14 @@ import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
 import { materializeQuickLinks, mergeSyncSettings } from './apply.ts'
 import { jsonEquals, sha256Hex } from './canonical.ts'
 import { captureSyncSnapshot, deduplicateInlineImages } from './capture.ts'
-import { MAX_SYNC_WALLPAPER_BYTES } from './catalog.ts'
+import { JSON_BACKUP_SCOPE, MAX_SYNC_WALLPAPER_BYTES } from './catalog.ts'
 import {
   clearPendingApply,
   getPendingApply,
   getOrCreateSyncState,
   setAppliedSyncSnapshot,
   setPendingApply,
+  webDavSyncStateStorage,
   type PendingApplyV1,
   type PendingWallpaperApplyV1,
 } from './localState.ts'
@@ -62,6 +63,7 @@ export async function captureBrowserSyncSnapshotResult(
   scope: SyncScopePreferences,
   baseline?: SyncSnapshotV1,
   lockHeld = false,
+  notesOverride?: NoteSnapshot,
 ): Promise<BrowserSyncCaptureResult> {
   const [settings, quickLinks, searchEngines, ui, blockedTopSites, notes] = await Promise.all([
     settingsStorage.getValue(),
@@ -69,7 +71,7 @@ export async function captureBrowserSyncSnapshotResult(
     customSearchEngineStorage.getValue(),
     getUiPreferences(),
     scope.blockedTopSites ? blockedTopSitesStorage.getValue() : undefined,
-    scope.notes ? noteStorage.getValue() : undefined,
+    scope.notes ? (notesOverride ?? noteStorage.getValue()) : undefined,
   ])
 
   const snapshot = captureSyncSnapshot({
@@ -117,6 +119,23 @@ export async function captureBrowserSyncSnapshotResult(
     }
   }
   return { snapshot, resourceOmissions }
+}
+
+/** 调用方持有便签锁和同步写入锁；校验后才落盘，不能先写入再回滚。 */
+export async function assertBrowserNoteSnapshotSize(notes: NoteSnapshot): Promise<void> {
+  const state = await webDavSyncStateStorage.getValue()
+  const capture = await captureBrowserSyncSnapshotResult(
+    { ...JSON_BACKUP_SCOPE, wallpapers: state.configured && state.scope.wallpapers },
+    undefined,
+    true,
+    notes,
+  )
+  const validation = validateSyncSnapshot(capture.snapshot)
+  if (!validation.ok) {
+    if (validation.error === 'Sync snapshot is too large')
+      throw new NoteSaveError('snapshotTooLarge')
+    throw new Error(validation.error)
+  }
 }
 
 async function captureWallpaper(selection: WallpaperItem, store: 'wallpaper' | 'wallpaperDark') {

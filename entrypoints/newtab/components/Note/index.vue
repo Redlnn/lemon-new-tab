@@ -22,11 +22,13 @@ import {
   deleteNote,
   getNoteTitle,
   listNotes,
+  noteStorage,
+  NoteSaveError,
   saveNote,
   setNotePinned,
-  setNoteTitle,
   type NoteRecord,
 } from '@/shared/notes'
+import { assertBrowserNoteSnapshotSize } from '@/shared/webdavSync/browserData'
 
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 
@@ -48,6 +50,15 @@ const draft = ref<NoteRecord>(createDraft())
 const isTitleEditing = ref(false)
 const showCode = ref(false)
 const exporting = ref(false)
+const saving = ref(false)
+let noteWrites: Promise<unknown> = Promise.resolve()
+
+function enqueueNoteWrite<T>(operation: () => Promise<T>): Promise<T> {
+  const result = noteWrites.then(operation)
+  // 一次失败不应阻塞后续重试。
+  noteWrites = result.catch(() => {})
+  return result
+}
 const menuNote = ref<NoteRecord | null>(null)
 const menuPosition = ref({ x: 0, y: 0 })
 const titleInputRef = useTemplateRef<InputInstance>('titleInputRef')
@@ -95,11 +106,10 @@ async function resolveUnsaved(): Promise<boolean> {
       distinguishCancelAndClose: true,
       type: 'warning',
     })
-    await saveCurrent()
-    return true
   } catch (reason) {
     return reason === 'cancel'
   }
+  return saveCurrent()
 }
 
 async function selectNote(note: NoteRecord) {
@@ -125,30 +135,70 @@ async function createNote() {
 }
 
 async function saveCurrent() {
+  if (saving.value) return false
+  saving.value = true
   const submitted = { ...draft.value }
-  const saved = await saveNote(
-    selected.value ? submitted : { ...submitted, title: getNoteTitle(submitted) || undefined },
-  )
-  if (draft.value.id === saved.id) {
-    selected.value = saved
-    // 等待落盘时仍可输入，只更新保存元数据，不能用旧正文覆盖后续输入。
-    if (draft.value.title === submitted.title) draft.value.title = saved.title
-    draft.value.updatedAt = saved.updatedAt
-    draft.value.pinned = saved.pinned
+  const before = selected.value ? { ...selected.value } : undefined
+  try {
+    const saved = await enqueueNoteWrite(() =>
+      saveNote(
+        before ? submitted : { ...submitted, title: getNoteTitle(submitted) || undefined },
+        before,
+        assertBrowserNoteSnapshotSize,
+      ),
+    )
+    if (draft.value.id === saved.id) {
+      selected.value = saved
+      // 等待落盘时仍可输入，只合并未继续修改的字段。
+      if (draft.value.title === submitted.title) draft.value.title = saved.title
+      if (draft.value.markdown === submitted.markdown) draft.value.markdown = saved.markdown
+      draft.value.updatedAt = saved.updatedAt
+      draft.value.pinned = saved.pinned
+    }
+    await refreshNotes()
+    return !draftDirty.value
+  } catch (error) {
+    showSaveError(error)
+    return false
+  } finally {
+    saving.value = false
   }
-  await refreshNotes()
+}
+
+function showSaveError(error: unknown) {
+  ElMessage.error(t(`note.${error instanceof NoteSaveError ? error.code : 'saveFailed'}`))
 }
 
 async function saveTitle() {
   isTitleEditing.value = false
   draft.value.title = draft.value.title?.trim() || undefined
   if (!selected.value || selected.value.title === draft.value.title) return
-  const saved = await setNoteTitle(selected.value.id, draft.value.title)
-  if (saved && selected.value?.id === saved.id) {
-    selected.value = { ...selected.value, title: saved.title, updatedAt: saved.updatedAt }
-    draft.value.updatedAt = saved.updatedAt
+  if (saving.value) return
+  const submittedTitle = draft.value.title
+  const original = { ...selected.value }
+  try {
+    await enqueueNoteWrite(async () => {
+      const before = selected.value?.id === original.id ? { ...selected.value } : original
+      const saved = await saveNote(
+        { ...before, title: submittedTitle },
+        before,
+        assertBrowserNoteSnapshotSize,
+      )
+      if (selected.value?.id === saved.id) {
+        if (draft.value.markdown === before.markdown) {
+          draft.value.markdown = saved.markdown
+          selected.value = saved
+        } else {
+          // 正文仍有本机编辑时保留正文基线，不能掩盖另一页面的正文冲突。
+          selected.value = { ...before, title: saved.title, updatedAt: saved.updatedAt }
+        }
+        draft.value.updatedAt = saved.updatedAt
+      }
+    })
+    await refreshNotes()
+  } catch (error) {
+    showSaveError(error)
   }
-  await refreshNotes()
 }
 
 function editTitle() {
@@ -178,13 +228,17 @@ function openMenu(event: MouseEvent, note: NoteRecord) {
 async function togglePinned() {
   const note = menuNote.value
   if (!note) return
-  const saved = await setNotePinned(note.id, !note.pinned)
-  if (saved && selected.value?.id === saved.id) {
-    selected.value = saved
-    draft.value.pinned = saved.pinned
+  try {
+    const saved = await setNotePinned(note.id, !note.pinned, assertBrowserNoteSnapshotSize)
+    if (saved && selected.value?.id === saved.id) {
+      selected.value = { ...selected.value, pinned: saved.pinned }
+      draft.value.pinned = saved.pinned
+    }
+    await refreshNotes()
+    menuNote.value = null
+  } catch (error) {
+    showSaveError(error)
   }
-  await refreshNotes()
-  menuNote.value = null
 }
 
 async function removeNote() {
@@ -299,6 +353,23 @@ watch(
 watch(isCompact, (compact) => {
   if (opened.value && compact && mode.value === 'idle') mode.value = 'list'
 })
+
+const unwatchNotes = noteStorage.watch(() => {
+  if (!opened.value) return
+  void refreshNotes()
+    .then(() => {
+      // 未保存草稿保留原基线，保存时才能检测同字段冲突或远端删除。
+      if (!selected.value || draftDirty.value || saving.value) return
+      const current = notes.value.find((note) => note.id === selected.value?.id)
+      if (!current) resetView()
+      else {
+        selected.value = { ...current }
+        draft.value = { ...current }
+      }
+    })
+    .catch(showSaveError)
+})
+onScopeDispose(unwatchNotes)
 </script>
 
 <template>
@@ -411,6 +482,7 @@ watch(isCompact, (compact) => {
                 />
                 <el-button
                   :icon="Save"
+                  :loading="saving"
                   :aria-label="t('common.save')"
                   :title="t('common.save')"
                   @click="saveCurrent"

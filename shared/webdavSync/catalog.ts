@@ -12,6 +12,18 @@ export const MAX_SYNC_INLINE_IMAGE_BYTES = 2 * 1024 * 1024
 export const MAX_SYNC_INLINE_IMAGES_BYTES = 8 * 1024 * 1024
 export const MAX_SYNC_SNAPSHOT_BYTES = 10 * 1024 * 1024
 
+export const JSON_BACKUP_SCOPE: Readonly<SyncScopePreferences> = {
+  settings: true,
+  quickLinks: true,
+  notes: true,
+  customSearchEngines: true,
+  uiPreferences: true,
+  blockedTopSites: true,
+  wallpapers: false,
+  onlineWallpaperUrl: true,
+  userIcons: true,
+}
+
 export type SyncCatalogKey =
   | 'settings'
   | 'quickLinks'
@@ -133,9 +145,7 @@ export function getSyncAvailability(
       ? included()
       : excludedByUser('sync.availability.quickLinksScopeDisabled')
   if (key === 'notes')
-    return context.scope.notes
-      ? included()
-      : excludedByUser('sync.availability.notesScopeDisabled')
+    return context.scope.notes ? included() : excludedByUser('sync.availability.notesScopeDisabled')
   if (key === 'customSearchEngines')
     return context.scope.customSearchEngines
       ? included()
