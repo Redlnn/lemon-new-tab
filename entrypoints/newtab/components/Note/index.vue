@@ -375,7 +375,7 @@ onScopeDispose(unwatchNotes)
 <template>
   <el-dialog
     v-model="opened"
-    :width="850"
+    :width="isCompact ? 400 : 850"
     class="note__dialog"
     :class="{ 'is-compact': isCompact }"
     draggable

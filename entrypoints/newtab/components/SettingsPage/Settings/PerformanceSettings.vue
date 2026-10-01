@@ -469,7 +469,7 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
   }
 }
 
-@media (width <= 520px) {
+@media (width <= 600px) {
   .perf-panel--compact {
     grid-template-columns: 1fr;
   }
