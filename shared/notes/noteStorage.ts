@@ -2,47 +2,23 @@ import { storage } from '#imports'
 
 import { withSyncWriteLock } from '../storage/syncWrite.ts'
 
-export interface NoteRecord {
-  id: string
-  title?: string
-  markdown: string
-  pinned?: boolean
-  createdAt: string
-  updatedAt: string
-}
+import {
+  assertNoteSnapshotSize,
+  NoteSaveError,
+  projectNote,
+  projectNotes,
+  type NoteRecord,
+  type NoteSnapshot,
+} from './model.ts'
 
-export interface NoteSnapshot {
-  notes: NoteRecord[]
-}
+export * from './model.ts'
 
 const defaultNoteSnapshot: NoteSnapshot = { notes: [] }
-
-// 为设置、快捷方式等同步数据预留空间；按 UTF-8 JSON 字节而非字符数计量。
-export const MAX_NOTE_BYTES = 1024 * 1024
-export const MAX_NOTES_BYTES = 8 * 1024 * 1024
-
-export class NoteSaveError extends Error {
-  readonly code: 'conflict' | 'deleted' | 'tooLarge' | 'snapshotTooLarge'
-
-  constructor(code: NoteSaveError['code']) {
-    super(code)
-    this.code = code
-  }
-}
 
 type ValidateNoteSnapshot = (snapshot: NoteSnapshot) => Promise<void>
 
 function withNotesWriteLock<T>(operation: () => Promise<T>, validate?: ValidateNoteSnapshot) {
   return withNotesLock(() => (validate ? withSyncWriteLock(operation) : operation()))
-}
-
-function assertNoteSize(snapshot: NoteSnapshot, note: NoteRecord) {
-  const encoder = new TextEncoder()
-  if (
-    encoder.encode(JSON.stringify(note)).byteLength > MAX_NOTE_BYTES ||
-    encoder.encode(JSON.stringify(snapshot)).byteLength > MAX_NOTES_BYTES
-  )
-    throw new NoteSaveError('tooLarge')
 }
 
 export const noteStorage = storage.defineItem<NoteSnapshot>('local:notes', {
@@ -52,6 +28,17 @@ export const noteStorage = storage.defineItem<NoteSnapshot>('local:notes', {
 /** 所有便签写入共用跨页面/后台锁；同步调用方需从本机校验前持锁到落盘完成。 */
 export function withNotesLock<T>(operation: () => Promise<T>): Promise<T> {
   return navigator.locks.request('lemon-notes', operation)
+}
+
+/** 在便签锁内清理存储，避免只清理同步副本造成反复发布。 */
+export async function getNoteSnapshot(lockHeld = false): Promise<NoteSnapshot> {
+  const read = async () => {
+    const stored = await noteStorage.getValue()
+    const current = projectNotes(stored)
+    if (JSON.stringify(stored) !== JSON.stringify(current)) await noteStorage.setValue(current)
+    return current
+  }
+  return lockHeld ? read() : withNotesLock(read)
 }
 
 export function getNoteTitle(note: Pick<NoteRecord, 'title' | 'markdown'>): string {
@@ -67,7 +54,7 @@ export function getNoteTitle(note: Pick<NoteRecord, 'title' | 'markdown'>): stri
 }
 
 export async function listNotes(): Promise<NoteRecord[]> {
-  const value = await noteStorage.getValue()
+  const value = await getNoteSnapshot()
   return value.notes.slice().sort((a, b) => {
     if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1
     return b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id)
@@ -80,12 +67,12 @@ export async function saveNote(
   validate?: ValidateNoteSnapshot,
 ): Promise<NoteRecord> {
   let next: NoteRecord = {
-    ...note,
+    ...projectNote(note),
     title: note.title?.trim() || undefined,
     updatedAt: new Date().toISOString(),
   }
   return withNotesWriteLock(async () => {
-    const snapshot = { notes: [...(await noteStorage.getValue()).notes] }
+    const snapshot = projectNotes(await noteStorage.getValue())
     const index = snapshot.notes.findIndex((item) => item.id === next.id)
     if (before && index < 0) throw new NoteSaveError('deleted')
     if (index >= 0) {
@@ -103,7 +90,7 @@ export async function saveNote(
     }
     if (index >= 0) snapshot.notes.splice(index, 1, next)
     else snapshot.notes.push(next)
-    assertNoteSize(snapshot, next)
+    assertNoteSnapshotSize(snapshot)
     await validate?.(snapshot)
     await noteStorage.setValue(snapshot)
     return next
@@ -112,7 +99,7 @@ export async function saveNote(
 
 export async function deleteNote(id: string): Promise<void> {
   await withNotesLock(async () => {
-    const snapshot = { notes: [...(await noteStorage.getValue()).notes] }
+    const snapshot = projectNotes(await noteStorage.getValue())
     snapshot.notes = snapshot.notes.filter((note) => note.id !== id)
     await noteStorage.setValue(snapshot)
   })
@@ -139,12 +126,12 @@ async function updateNote(
   validate?: ValidateNoteSnapshot,
 ): Promise<NoteRecord | null> {
   return withNotesWriteLock(async () => {
-    const snapshot = { notes: [...(await noteStorage.getValue()).notes] }
+    const snapshot = projectNotes(await noteStorage.getValue())
     const index = snapshot.notes.findIndex((note) => note.id === id)
     if (index < 0) return null
     const next = { ...snapshot.notes[index]!, ...patch }
     snapshot.notes.splice(index, 1, next)
-    assertNoteSize(snapshot, next)
+    assertNoteSnapshotSize(snapshot)
     await validate?.(snapshot)
     await noteStorage.setValue(snapshot)
     return next

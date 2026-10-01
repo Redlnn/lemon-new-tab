@@ -93,8 +93,8 @@ function resetView(
 }
 
 async function load() {
-  await refreshNotes()
   resetView()
+  await refreshNotes()
 }
 
 async function resolveUnsaved(): Promise<boolean> {
@@ -356,7 +356,7 @@ function formatNoteTime(updatedAt: string): string {
 watch(
   opened,
   (visible) => {
-    if (visible) void load()
+    if (visible) void load().catch(showSaveError)
   },
   { immediate: true },
 )
