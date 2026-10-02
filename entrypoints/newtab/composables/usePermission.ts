@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import { browser } from 'wxt/browser'
 
@@ -24,13 +24,23 @@ const currentOnlyAll = ref(false)
 const currentContext = ref<PermissionContext>(PermissionContext.OnlineWallpaper)
 let permissionResolve: ((value: PermissionResult) => void) | null = null
 
+watch(
+  permissionDialogVisible,
+  (visible) => {
+    if (visible) return
+    const resolve = permissionResolve
+    permissionResolve = null
+    resolve?.(PermissionResult.DeniedByUser)
+  },
+  { flush: 'sync' },
+)
+
 export function usePermission() {
   const onPermissionDialogResult = (result: PermissionResult) => {
+    const resolve = permissionResolve
+    permissionResolve = null
     permissionDialogVisible.value = false
-    if (permissionResolve) {
-      permissionResolve(result)
-      permissionResolve = null
-    }
+    resolve?.(result)
   }
 
   const checkAndRequestPermission = async (
