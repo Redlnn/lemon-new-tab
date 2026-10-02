@@ -31,8 +31,8 @@
       "other": "Düzeyde Diğerlerini Daralt"
     },
     "delete": {
-      "confirm": "“{{title}}” öğesini silmek istediğinizden emin misiniz?",
-      "confirmFolder": "“{{title}}” bir klasördür. Silinmesi, içindeki tüm yer imlerini de silecektir. Emin misiniz?",
+      "confirm": "“{{name}}” öğesini silmek istediğinizden emin misiniz?",
+      "confirmFolder": "“{{name}}” bir klasördür. Silinmesi, içindeki tüm yer imlerini de silecektir. Emin misiniz?",
       "success": "“{{title}}” silindi"
     },
     "expandHint": "Yer imlerini görüntülemek için lütfen yan çubuğu genişletin",
@@ -81,6 +81,7 @@
     "edit": "Düzenle",
     "enable": "Etkinleştir",
     "icon": "Simge (İsteğe bağlı)",
+    "itemUnavailable": "Bu öğe başka bir yerde silindi. Taslağınız korundu.",
     "name": "Ad",
     "no": "Hayır",
     "save": "Kaydet",

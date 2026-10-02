@@ -31,8 +31,8 @@
       "other": "Collapse Other at Level"
     },
     "delete": {
-      "confirm": "Are you sure you want to delete “{{title}}”?",
-      "confirmFolder": "“{{title}}” is a folder. Deleting it will also delete all bookmarks inside it. Are you sure?",
+      "confirm": "Are you sure you want to delete “{{name}}”?",
+      "confirmFolder": "“{{name}}” is a folder. Deleting it will also delete all bookmarks inside it. Are you sure?",
       "success": "“{{title}}” has been deleted"
     },
     "expandHint": "Please expand the sidebar to view bookmarks",
@@ -81,6 +81,7 @@
     "edit": "Edit",
     "enable": "Enable",
     "icon": "Icon (Optional)",
+    "itemUnavailable": "This item was deleted elsewhere. Your draft has been kept.",
     "name": "Name",
     "no": "No",
     "save": "Save",

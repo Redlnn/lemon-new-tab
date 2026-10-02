@@ -294,6 +294,7 @@ function filter(query: string, mode: SortMode) {
   }
 
   // 再为匹配到的文件夹添加所有后代
+  const visitedDescendants = new Set<string>()
   for (const id of matchedIds) {
     const entry = indexMap.get(id)
     if (!entry?.isFolder || !entry.node.children?.length) continue
@@ -301,7 +302,8 @@ function filter(query: string, mode: SortMode) {
     const stack = entry.node.children.slice()
     while (stack.length) {
       const current = stack.pop()!
-      if (keepIds.has(current.id)) continue
+      if (visitedDescendants.has(current.id)) continue
+      visitedDescendants.add(current.id)
       keepIds.add(current.id)
       if (current.children?.length) {
         for (let i = 0; i < current.children.length; i++) stack.push(current.children[i]!)
