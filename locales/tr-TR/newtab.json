@@ -157,6 +157,15 @@
       "message": "Daha hızlı simge yüklemesi için \"Diğer\" ayarlarında favicon önbelleğini etkinleştirin",
       "title": "İpucu: Favicon önbelleği devre dışı"
     },
+    "greeting": {
+      "afternoon": "İyi günler! Günün geri kalanı güzel geçsin.",
+      "dawn": "Günün bu sakin saatlerinde kendinize iyi bakın.",
+      "dusk": "Gün sona ererken biraz soluklanın.",
+      "evening": "İyi akşamlar! Huzurlu bir akşam geçirin.",
+      "lateNight": "Geç oldu. Fırsat bulunca biraz dinlenin.",
+      "morning": "Günaydın! Umarız gününüz güzel başlar.",
+      "noon": "İyi günler! Yoğunluk arasında kısa bir mola vermeyi unutmayın."
+    },
     "wallpaperCache": {
       "message": "Çevrimiçi duvar kağıdı önbelleğe alınamadı: {error}",
       "title": "Çevrimiçi duvar kağıdı önbelleğe alınamadı"

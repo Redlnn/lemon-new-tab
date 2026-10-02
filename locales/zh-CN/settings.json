@@ -228,6 +228,10 @@
     "title": "布局"
   },
   "other": {
+    "greeting": {
+      "description": "每次启动浏览器后显示一次。",
+      "label": "启动问候"
+    },
     "faviconCache": {
       "description": "开启后将图标缓存至本地，加快加载速度；需要「访问所有网站」权限",
       "label": "图标缓存",

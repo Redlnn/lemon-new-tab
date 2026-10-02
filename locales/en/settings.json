@@ -228,6 +228,10 @@
     "title": "Layout"
   },
   "other": {
+    "greeting": {
+      "description": "Shown once each time the browser starts.",
+      "label": "Startup greeting"
+    },
     "faviconCache": {
       "description": "Cache favicons locally for faster loading; requires the \"Access all sites\" permission",
       "label": "Favicon Cache",

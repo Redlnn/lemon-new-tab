@@ -265,6 +265,7 @@ export const defaultSettings = {
   },
 
   hideMajorChangelog: true,
+  greetingEnabled: true,
   readChangeLog: false,
   faviconCacheEnabled: false,
 

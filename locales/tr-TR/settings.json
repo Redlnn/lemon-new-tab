@@ -228,6 +228,10 @@
     "title": "Düzen"
   },
   "other": {
+    "greeting": {
+      "description": "Tarayıcı her açıldığında bir kez gösterilir.",
+      "label": "Başlangıç selamlaması"
+    },
     "faviconCache": {
       "description": "Favicon'ları daha hızlı yükleme için yerel olarak önbelleğe alır; \"Tüm sitelere erişim\" izni gerektirir",
       "label": "Favicon Önbelleği",

@@ -6,6 +6,7 @@ import {
   isExtensionUpdateMessage,
   markExtensionUpdateAvailable,
 } from '@/shared/extensionUpdate'
+import { GREETING_SESSION_KEY, isGreetingClaimMessage } from '@/shared/greeting'
 import { isWebDavSyncMessage, type WebDavSyncMessage } from '@/shared/webdavSync/bridge'
 import { createSyncConflictDetails } from '@/shared/webdavSync/conflictDetails'
 import { SyncCoordinator } from '@/shared/webdavSync/coordinator'
@@ -61,6 +62,23 @@ export default defineBackground(() => {
   browser.runtime.onMessage.addListener(
     routeExtensionUpdateMessage(() => runExtensionUpdateTask(consumeExtensionUpdateNotice)),
   )
+
+  let greetingClaimTail: Promise<void> = Promise.resolve()
+  browser.runtime.onMessage.addListener((message: unknown, sender: Browser.runtime.MessageSender) => {
+    if (sender.id && sender.id !== browser.runtime.id) return undefined
+    if (!isGreetingClaimMessage(message)) return undefined
+    const claim = greetingClaimTail.then(async () => {
+      const shown = await browser.storage.session.get(GREETING_SESSION_KEY)
+      if (shown[GREETING_SESSION_KEY]) return false
+      await browser.storage.session.set({ [GREETING_SESSION_KEY]: true })
+      return true
+    })
+    greetingClaimTail = claim.then(
+      () => undefined,
+      () => undefined,
+    )
+    return claim
+  })
 
   initializeBookmarkCache()
 

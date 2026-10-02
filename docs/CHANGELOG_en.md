@@ -32,6 +32,7 @@
 - **Notes:** The Notes shortcut can be added to or hidden from Quick Links through Built-in App Management, and hiding it can be undone.
 - **Sync:** Added experimental WebDAV backup and sync.
 - **Settings:** Reorganized settings sections and appearance.
+- **New Tab:** Added localized greetings that change with the time of day, appear once per browser session, and can be turned off under Other → General.
 - **Dock:** Added an entrance animation with an individual toggle in Performance & Effects.
 - **Quick Links, Dock, and Launchpad:** When a site has no favicon, its first title character can be used as the link icon.
   > Chromium-based browsers require icon caching to be enabled.

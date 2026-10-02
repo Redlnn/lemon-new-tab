@@ -5,15 +5,17 @@ import { browser } from 'wxt/browser'
 import { version } from '@/package.json'
 
 import { requestExtensionUpdateNotice } from '@/shared/extensionUpdate'
+import { requestGreetingClaim } from '@/shared/greeting'
 import { useSettingsStore } from '@/shared/settings'
 import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
 
 import { shownFaviconCacheHintStorage } from '@newtab/shared/storages/notificationStorage'
+import { getTimePeriod } from '@newtab/shared/timePeriod'
 
 import { shouldShowChangelog } from '../shared/utils'
 
 /**
- * 处理应用级通知（欢迎、图标缓存提示、版本更新）。
+ * 处理应用级通知（欢迎、问候、图标缓存提示、版本更新）。
  * @param showChangelog 用于自动弹出更新日志，调用方可在其中懒加载 Changelog。
  */
 export function useAppNotifications(showChangelog: () => void | Promise<void>) {
@@ -63,6 +65,13 @@ export function useAppNotifications(showChangelog: () => void | Promise<void>) {
       } else {
         settings.pluginVersion = version
       }
+    }
+
+    if (settings.greetingEnabled && (await requestGreetingClaim())) {
+      ElMessage({
+        message: t(`newtab:notification.greeting.${getTimePeriod(new Date().getHours())}`),
+        duration: 5000,
+      })
     }
   })
   onBeforeUnmount(() => browser.storage.onChanged.removeListener(syncStateListener))

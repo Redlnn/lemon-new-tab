@@ -7,6 +7,7 @@ export interface SettingsSchemaV12 extends Omit<
   'version' | 'background' | 'search' | 'perf'
 > {
   version: 12
+  greetingEnabled: boolean
   perf: SettingsSchemaV11['perf'] & {
     dockEnterAnim: boolean
   }

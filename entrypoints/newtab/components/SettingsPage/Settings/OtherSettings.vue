@@ -446,6 +446,14 @@ function changeLanguage(lang: string) {
         </div>
         <el-switch v-model="settings.hideMajorChangelog" />
       </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">
+          {{ t('other.greeting.label') }}
+          <SyncAvailabilityIcon catalog-key="settings" />
+        </div>
+        <el-switch v-model="settings.greetingEnabled" />
+        <p class="settings__item-note">{{ t('other.greeting.description') }}</p>
+      </div>
     </SettingsSection>
 
     <SettingsSection

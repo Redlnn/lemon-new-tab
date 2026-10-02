@@ -10,6 +10,7 @@ import { isChinese } from '@/shared/i18n'
 import { useSettingsStore } from '@/shared/settings'
 
 import { dayjsLanguage, ensureLunarPlugin } from '@newtab/shared/dayjs'
+import { getTimePeriod } from '@newtab/shared/timePeriod'
 
 const { t } = useTranslation('newtab')
 const settings = useSettingsStore()
@@ -33,14 +34,7 @@ watch(
 )
 
 function customMeridiem(hours: number) {
-  if (hours < 2) return t('time.lateNight')
-  if (hours < 7) return t('time.dawn')
-  if (hours < 11) return t('time.morning')
-  if (hours < 14) return t('time.noon')
-  if (hours < 17) return t('time.afternoon')
-  if (hours < 19) return t('time.dusk')
-  if (hours < 23) return t('time.evening')
-  return t('time.lateNight')
+  return t(`time.${getTimePeriod(hours)}`)
 }
 
 const timeNow = ref(new Date())

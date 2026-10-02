@@ -157,6 +157,15 @@
       "message": "Enable favicon cache in \"Other\" settings for faster icon loading",
       "title": "Tip: Favicon cache is disabled"
     },
+    "greeting": {
+      "afternoon": "Good afternoon! Hope the rest of your day goes smoothly.",
+      "dawn": "The day is still quiet. Take good care of yourself.",
+      "dusk": "The day is winding down. Take a moment for yourself.",
+      "evening": "Good evening! Hope you have a relaxing night.",
+      "lateNight": "It's getting late. Hope you can get some rest soon.",
+      "morning": "Good morning! Hope your day starts well.",
+      "noon": "Hope your day is going well. Take a break when you can."
+    },
     "wallpaperCache": {
       "message": "Unable to cache online wallpaper: {error}",
       "title": "Failed to cache online wallpaper"

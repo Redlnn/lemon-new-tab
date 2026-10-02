@@ -228,6 +228,10 @@
     "title": "佈局"
   },
   "other": {
+    "greeting": {
+      "description": "每次啟動瀏覽器後顯示一次。",
+      "label": "啟動問候"
+    },
     "faviconCache": {
       "description": "開啟後將圖示快取至本地，加快載入速度；需要「存取所有網站」權限",
       "label": "圖示快取",
