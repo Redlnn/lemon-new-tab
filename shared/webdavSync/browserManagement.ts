@@ -131,9 +131,9 @@ export async function inspectBrowserSyncCorruption(): Promise<BrowserCorruptionI
     ? preserveExcludedScope(local, previous.snapshot, opened.state.scope)
     : local
   return {
-    ...(!payload.missing
-      ? { actualPayloadHash: payload.hash, payloadSize: payload.bytes.byteLength }
-      : {}),
+    ...(payload.missing
+      ? {}
+      : { actualPayloadHash: payload.hash, payloadSize: payload.bytes.byteLength }),
     corruptedRevisionId: commit.revisionId,
     encrypted: commit.encrypted,
     localMatchesPrevious: Boolean(previous && jsonEquals(comparable, previous.snapshot)),
@@ -289,7 +289,7 @@ export async function listBrowserSyncDevices(): Promise<BrowserSyncDeviceEntry[]
   const opened = await openConfiguredVault()
   const records = new Map<string, SyncDeviceRecordV1>()
   for (const stored of await opened.repository.listDevicePayloads(opened.metadata)) {
-    let bytes = stored.bytes
+    let { bytes } = stored
     if (opened.metadata.encrypted) {
       if (!opened.encryptionKey) {
         throw new WebDavError('encryption-locked', 'Encrypted WebDAV vault is locked')
@@ -511,6 +511,7 @@ export async function restoreBrowserSyncHistory(
     baseline ?? heads[0]!.snapshot,
     opened.state.scope,
   )
+  // sourcery skip: merge-nested-ifs
   if (expected) {
     if (
       heads[0]!.revisionId !== expected.headRevisionId ||

@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import { useTranslation } from 'i18next-vue'
 import HeartFilled from '~icons/ant-design/heart-filled'
+import Apps24Regular from '~icons/fluent/apps-24-regular'
 import AccessTimeFilledRound from '~icons/ic/round-access-time-filled'
 import HelpFilled from '~icons/ic/round-help'
 import InfoRound from '~icons/ic/round-info'
 import SearchRound from '~icons/ic/round-search'
 import SettingsRound from '~icons/ic/round-settings'
 import WallpaperRound from '~icons/ic/round-wallpaper'
-import Apps24Regular from '~icons/fluent/apps-24-regular'
 
 import { useSettingsStore } from '@/shared/settings'
 

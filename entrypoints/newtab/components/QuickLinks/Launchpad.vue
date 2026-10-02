@@ -21,6 +21,7 @@ import AddRound from '~icons/ic/round-add'
 import DeleteRound from '~icons/ic/round-delete'
 import SettingsRound from '~icons/ic/round-settings'
 
+import { openBuiltInApp, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   useQuickLinksStore,
@@ -29,7 +30,6 @@ import {
   type QuickLinkTarget,
 } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
-import { openBuiltInApp, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 import { toggleDocumentClass } from '@/shared/theme'
 
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'

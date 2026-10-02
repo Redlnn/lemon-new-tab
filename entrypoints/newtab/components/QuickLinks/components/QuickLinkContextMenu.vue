@@ -13,9 +13,9 @@ import BlockRound from '~icons/ic/round-block'
 import ContentCopyRound from '~icons/ic/round-content-copy'
 import OpenInNewRound from '~icons/ic/round-open-in-new'
 
+import { resolveBuiltInAppId } from '@/shared/builtinApps'
 import type { QuickLinkTarget } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
-import { resolveBuiltInAppId } from '@/shared/builtinApps'
 
 import { useQuickLinkContextMenu } from '../composables/useQuickLinkContextMenu'
 import type { CtxQuickLinkItem } from '../composables/useQuickLinkContextMenu'
@@ -130,7 +130,11 @@ defineExpose({ open, close })
         <el-dropdown-item v-if="!isBuiltInApp" :icon="OpenInNewRound" @click="ctxOpenInNewWindow">
           <span>{{ t('settings:common.openInNewWindow') }}</span>
         </el-dropdown-item>
-        <el-dropdown-item v-if="!isBuiltInApp" :icon="Incognito16Regular" @click="ctxOpenInIncognitoWindow">
+        <el-dropdown-item
+          v-if="!isBuiltInApp"
+          :icon="Incognito16Regular"
+          @click="ctxOpenInIncognitoWindow"
+        >
           <span>{{ t('settings:common.openInIncognitoWindow') }}</span>
         </el-dropdown-item>
         <el-dropdown-item v-if="!isBuiltInApp" :icon="ContentCopyRound" @click="ctxCopyLink">
@@ -140,7 +144,12 @@ defineExpose({ open, close })
           <span>{{ t('quickLinks.bookmark.add') }}</span>
         </el-dropdown-item>
         <template v-if="ctxItem?.isPinned">
-          <el-dropdown-item v-if="showEdit && !isBuiltInApp" :icon="Edit16Regular" divided @click="ctxEdit">
+          <el-dropdown-item
+            v-if="showEdit && !isBuiltInApp"
+            :icon="Edit16Regular"
+            divided
+            @click="ctxEdit"
+          >
             <span>{{ t('common.edit') }}</span>
           </el-dropdown-item>
           <el-dropdown-item

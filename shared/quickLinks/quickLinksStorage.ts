@@ -1,6 +1,7 @@
+import type { Component } from 'vue'
+
 import { storage } from '#imports'
 import { browser } from 'wxt/browser'
-import type { Component } from 'vue'
 
 import { coordinateStorage, withSyncWriteLock } from '@/shared/storage/syncWrite'
 

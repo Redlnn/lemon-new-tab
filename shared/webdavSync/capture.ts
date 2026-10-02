@@ -20,11 +20,11 @@ import type {
 
 function onlineWallpaperUrl(settings: unknown): string | undefined {
   if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return undefined
-  const background = (settings as Record<string, unknown>).background
+  const { background } = settings as Record<string, unknown>
   if (!background || typeof background !== 'object' || Array.isArray(background)) return undefined
-  const online = (background as Record<string, unknown>).online
+  const { online } = background as Record<string, unknown>
   if (!online || typeof online !== 'object' || Array.isArray(online)) return undefined
-  const url = (online as Record<string, unknown>).url
+  const { url } = online as Record<string, unknown>
   return typeof url === 'string' ? url : undefined
 }
 

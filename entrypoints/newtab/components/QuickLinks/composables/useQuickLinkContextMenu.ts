@@ -2,8 +2,8 @@ import { useTranslation } from 'i18next-vue'
 
 import { browser } from '#imports'
 
-import { useQuickLinksStore, type QuickLinkTarget } from '@/shared/quickLinks'
 import { resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
+import { useQuickLinksStore, type QuickLinkTarget } from '@/shared/quickLinks'
 
 import { openUrlInIncognitoWindow } from '@newtab/shared/incognito'
 import { isSafeUrl } from '@newtab/shared/utils'
@@ -52,7 +52,8 @@ export function useQuickLinkContextMenu(options: {
   }
 
   const ctxOpenInNewTab = (): void => {
-    if (ctxItem.value && !resolveBuiltInAppId(ctxItem.value)) openQuickLinkUrl(ctxItem.value.url, '_blank')
+    if (ctxItem.value && !resolveBuiltInAppId(ctxItem.value))
+      openQuickLinkUrl(ctxItem.value.url, '_blank')
   }
 
   const ctxOpenInNewWindow = (): void => {
@@ -66,7 +67,8 @@ export function useQuickLinkContextMenu(options: {
   }
 
   const ctxCopyLink = (): void => {
-    if (ctxItem.value && !resolveBuiltInAppId(ctxItem.value)) navigator.clipboard.writeText(ctxItem.value.url)
+    if (ctxItem.value && !resolveBuiltInAppId(ctxItem.value))
+      navigator.clipboard.writeText(ctxItem.value.url)
   }
 
   const ctxCreateBookmark = async (): Promise<void> => {

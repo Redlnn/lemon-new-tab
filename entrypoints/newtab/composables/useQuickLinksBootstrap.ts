@@ -1,7 +1,9 @@
-import { useQuickLinksStore } from '@/shared/quickLinks'
-import { builtInApps, builtInAppUrl } from '@/shared/builtinApps'
-import { browser } from 'wxt/browser'
 import i18next from 'i18next'
+
+import { browser } from 'wxt/browser'
+
+import { builtInApps, builtInAppUrl } from '@/shared/builtinApps'
+import { useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 
 import { getTopSites } from '@newtab/components/QuickLinks/utils/topSites'

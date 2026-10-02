@@ -97,7 +97,7 @@ function hasUniqueIds(items: readonly { id: string }[]): boolean {
 
 function isQuickLinks(value: unknown, images: Readonly<Record<string, string>>): boolean {
   if (!isRecord(value) || !Array.isArray(value.items) || !Array.isArray(value.groups)) return false
-  const items = value.items
+  const { items } = value
   if (
     !items.every(
       (item) =>
@@ -117,7 +117,7 @@ function isQuickLinks(value: unknown, images: Readonly<Record<string, string>>):
   if (!hasUniqueIds(typedItems)) return false
   const itemIds = new Set(typedItems.map((item) => item.id))
 
-  const groups = value.groups
+  const { groups } = value
   if (
     !groups.every(
       (group) =>
@@ -162,7 +162,7 @@ function isNotes(value: unknown): boolean {
 
 function isCustomSearchEngines(value: unknown, images: Readonly<Record<string, string>>): boolean {
   if (!isRecord(value) || !Array.isArray(value.items)) return false
-  const items = value.items
+  const { items } = value
   if (
     !items.every(
       (item) =>
@@ -340,7 +340,7 @@ export function validateSyncSnapshot(value: unknown): ValidationResult<SyncSnaps
   const structure = validateStoredSyncSnapshot(value)
   if (!structure.ok) return structure
   try {
-    const notes = (value as SyncSnapshotV1).notes
+    const { notes } = value as SyncSnapshotV1
     if (notes) assertNoteSnapshotSize({ notes: notes.items })
   } catch {
     return invalid('Sync notes are too large')
@@ -397,7 +397,7 @@ export function validateCommitRecord(value: unknown): ValidationResult<CommitRec
   }
   if (!isSafeRelativePath(value.payloadPath)) return invalid('Commit payload path is unsafe')
   if (!isHash(value.payloadHash)) return invalid('Commit payload hash is invalid')
-  const payloadSize = value.payloadSize
+  const { payloadSize } = value
   if (typeof payloadSize !== 'number' || !Number.isSafeInteger(payloadSize) || payloadSize < 0) {
     return invalid('Commit payload size is invalid')
   }
@@ -427,7 +427,7 @@ export function validateSyncRevision(value: unknown): ValidationResult<SyncRevis
   ) {
     return invalid('Revision contains an invalid ID')
   }
-  const settingsSchemaVersion = value.settingsSchemaVersion
+  const { settingsSchemaVersion } = value
   if (
     typeof settingsSchemaVersion !== 'number' ||
     !Number.isSafeInteger(settingsSchemaVersion) ||

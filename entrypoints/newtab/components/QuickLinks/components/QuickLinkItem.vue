@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
-
 import { OnLongPress } from '@vueuse/components'
+import type { Component } from 'vue'
 
 import Pin12Regular from '~icons/fluent/pin-12-regular'
 
+import { openBuiltInApp, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 import { getFaviconDisplay } from '@/shared/media'
 import { useSettingsStore } from '@/shared/settings'
 
 import { isTouchEvent } from '@newtab/shared/touch'
 import { isValidUrl } from '@newtab/shared/utils'
-import { openBuiltInApp, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 
 import type { QuickLinkItemPresentation } from './quickLinkItemPresentation'
 

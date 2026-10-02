@@ -8,13 +8,13 @@ import { useTranslation } from 'i18next-vue'
 import Apps24Regular from '~icons/fluent/apps-24-regular'
 import AddRound from '~icons/ic/round-add'
 
+import { openBuiltInApp, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   useQuickLinksStore,
   type QuickLinkTarget,
 } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
-import { openBuiltInApp, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
@@ -498,11 +498,7 @@ defineExpose({ refresh, toggleLaunchpad })
           @click="openBuiltInItem($event, item)"
           @trigger="onItemLongPress($event, item, false, j)"
         >
-          <favicon-image
-            :url="item.url"
-            :favicon="item.favicon"
-            :title="item.title"
-          />
+          <favicon-image :url="item.url" :favicon="item.favicon" :title="item.title" />
         </OnLongPress>
       </el-tooltip>
       <div v-if="j !== visibleTopSites.length - 1" class="dock-gap" :ref="setScalableRef"></div>

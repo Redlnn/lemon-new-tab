@@ -25,7 +25,9 @@ export const SyncRetirementDialog = defineAsyncComponent(
   () => import('../components/SyncRetirementDialog.vue'),
 )
 export const Note = defineAsyncComponent(() => import('../components/Note/index.vue'))
-export const BuiltinAppsDialog = defineAsyncComponent(() => import('../components/BuiltinAppsDialog.vue'))
+export const BuiltinAppsDialog = defineAsyncComponent(
+  () => import('../components/BuiltinAppsDialog.vue'),
+)
 
 function createLazyDialogState() {
   const mounted = ref(false)

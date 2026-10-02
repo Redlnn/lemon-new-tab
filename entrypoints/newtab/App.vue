@@ -50,7 +50,6 @@ import { useQuickLinksBootstrap } from './composables/useQuickLinksBootstrap'
 import { useRetiredCloudSync } from './composables/useRetiredCloudSync'
 import { useThemeWatcher } from './composables/useThemeWatcher'
 
-
 const BackgroundRef = ref<InstanceType<typeof Background>>()
 const QuickLinksRef = ref<InstanceType<typeof QuickLinks>>()
 const DockRef = ref<InstanceType<typeof Dock>>()
@@ -96,7 +95,9 @@ function handleBuiltInApp(event: Event) {
   if ((event as CustomEvent<string>).detail === 'note') showNote()
 }
 onMounted(() => window.addEventListener('lemon-new-tab:open-built-in-app', handleBuiltInApp))
-onBeforeUnmount(() => window.removeEventListener('lemon-new-tab:open-built-in-app', handleBuiltInApp))
+onBeforeUnmount(() =>
+  window.removeEventListener('lemon-new-tab:open-built-in-app', handleBuiltInApp),
+)
 
 const elLocale = useElementLang()
 const settings = useSettingsStore()

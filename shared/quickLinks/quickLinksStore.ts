@@ -2,10 +2,15 @@ import { defineStore } from 'pinia'
 
 import i18next from 'i18next'
 
+import {
+  builtInApps,
+  builtInAppUrl,
+  resolveBuiltInAppId,
+  type BuiltInAppId,
+} from '@/shared/builtinApps'
 import { useSettingsStore } from '@/shared/settings'
 import { createDraftWriter } from '@/shared/storage/syncWrite'
 import { normalizeUrlForDedup } from '@/shared/url'
-import { builtInApps, builtInAppUrl, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 
 import { rebaseQuickLinkChanges } from './localChanges'
 import { flattenQuickLinkGroups, moveQuickLinkArrayItem } from './quickLinkAlgorithms'
@@ -540,7 +545,8 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     })
     if (groupState.value.length > 0) {
       const existing = groupState.value.flatMap((group) => group.items).find(matches)
-      for (const group of groupState.value) group.items = group.items.filter((item) => !matches(item))
+      for (const group of groupState.value)
+        group.items = group.items.filter((item) => !matches(item))
       if (enabled) ensureDefaultGroup().items.unshift(existing ?? createItem())
       await save()
       return
