@@ -436,6 +436,19 @@ html.colorful.dialog-transparent .settings__dialog {
   .settings-section {
     grid-column: auto;
     padding: 14px 16px;
+
+    &::details-content {
+      display: grid;
+      grid-template-rows: 0fr;
+      overflow: hidden;
+      transition:
+        grid-template-rows var(--el-transition-duration) ease,
+        content-visibility var(--el-transition-duration) allow-discrete;
+    }
+
+    &[open]::details-content {
+      grid-template-rows: 1fr;
+    }
   }
 
   .settings-section summary {
@@ -458,7 +471,15 @@ html.colorful.dialog-transparent .settings__dialog {
   }
 
   .settings-section__content {
-    margin-top: 8px;
+    min-height: 0;
+    padding-top: 0;
+    margin-top: 0;
+    overflow: hidden;
+    transition: padding-top var(--el-transition-duration) ease;
+  }
+
+  .settings-section[open] .settings-section__content {
+    padding-top: 8px;
   }
 
   .settings-control-grid {
