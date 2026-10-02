@@ -140,30 +140,56 @@ export async function deduplicateInlineImages(
     return false
   })
   const unique = new Map<string, ImageCandidate>()
-  for (const candidate of valid) unique.set(candidate.hash, candidate)
-  let total = [...unique.values()].reduce((sum, candidate) => sum + candidate.bytes, 0)
-  const omittedHashes = new Set<string>()
+  const owners = new Map<string, ImageCandidate[]>()
+  for (const candidate of valid) {
+    unique.set(candidate.hash, candidate)
+    const references = owners.get(candidate.hash) ?? []
+    references.push(candidate)
+    owners.set(candidate.hash, references)
+    snapshot.inlineImages ??= {}
+    snapshot.inlineImages[candidate.hash] = candidate.value
+    if (candidate.kind === 'quick-link-icon') candidate.owner.faviconHash = candidate.hash
+    else candidate.owner.iconHash = candidate.hash
+  }
+  const counts = new Map<string, number>()
+  const sizes = new Map<string, number>()
+  let total = 0
+  const retain = (hash: string) => {
+    const count = counts.get(hash) ?? 0
+    if (!count) {
+      if (!sizes.has(hash))
+        sizes.set(hash, encoder.encode(snapshot.inlineImages![hash]!).byteLength)
+      total += sizes.get(hash)!
+    }
+    counts.set(hash, count + 1)
+  }
+  for (const item of snapshot.quickLinks?.items ?? [])
+    if (item.faviconHash) retain(item.faviconHash)
+  for (const item of snapshot.customSearchEngines?.items ?? [])
+    if (item.iconHash) retain(item.iconHash)
+  // 按最终引用计量；回退旧图标也占预算，同一图像的多个引用只计算一次。
   for (const candidate of [...unique.values()].sort((left, right) => {
     const leftKnown = left.hash === left.baselineHash ? 1 : 0
     const rightKnown = right.hash === right.baselineHash ? 1 : 0
     return leftKnown - rightKnown || right.bytes - left.bytes || left.hash.localeCompare(right.hash)
   })) {
     if (total <= MAX_SYNC_INLINE_IMAGES_BYTES) break
-    omittedHashes.add(candidate.hash)
-    total -= candidate.bytes
-  }
-
-  for (const candidate of valid) {
-    if (omittedHashes.has(candidate.hash)) {
-      keepBaselineImage(snapshot, baseline, candidate)
-      omissions.push({ kind: candidate.kind, id: candidate.id, reason: 'aggregate-too-large' })
-      continue
+    for (const reference of owners.get(candidate.hash)!) {
+      const count = counts.get(candidate.hash)! - 1
+      counts.set(candidate.hash, count)
+      if (!count) total -= sizes.get(candidate.hash)!
+      if (reference.kind === 'quick-link-icon') delete reference.owner.faviconHash
+      else delete reference.owner.iconHash
+      keepBaselineImage(snapshot, baseline, reference)
+      if (reference.baselineHash && baseline?.inlineImages?.[reference.baselineHash])
+        retain(reference.baselineHash)
+      omissions.push({ kind: reference.kind, id: reference.id, reason: 'aggregate-too-large' })
     }
-    snapshot.inlineImages ??= {}
-    snapshot.inlineImages[candidate.hash] = candidate.value
-    if (candidate.kind === 'quick-link-icon') candidate.owner.faviconHash = candidate.hash
-    else candidate.owner.iconHash = candidate.hash
   }
+  if (snapshot.inlineImages)
+    snapshot.inlineImages = Object.fromEntries(
+      Object.entries(snapshot.inlineImages).filter(([hash]) => (counts.get(hash) ?? 0) > 0),
+    )
   if (snapshot.inlineImages && Object.keys(snapshot.inlineImages).length === 0) {
     delete snapshot.inlineImages
   }

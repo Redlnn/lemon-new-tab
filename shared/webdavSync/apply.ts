@@ -2,7 +2,7 @@ import type { QuickLink, QuickLinksData } from '@/shared/quickLinks'
 
 import { jsonEquals } from './canonical.ts'
 import { applySyncSettings, pickSyncSettings, mergeSyncSettingValues } from './settingsWhitelist.ts'
-import { normalizeSnapshotOrder } from './snapshotOrder.ts'
+import { normalizeSnapshotOrder, normalizeSyncQuickLinks } from './snapshotOrder.ts'
 import type {
   JsonObject,
   SyncCustomSearchEngineDataV1,
@@ -189,6 +189,7 @@ export function materializeQuickLinks(
   includeIcons: boolean,
   images: Readonly<Record<string, string>> = {},
 ): QuickLinksData {
+  snapshot = normalizeSyncQuickLinks(snapshot)
   const currentItems = current.groups?.length
     ? current.groups.flatMap((group) => group.items)
     : current.items

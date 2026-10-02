@@ -610,7 +610,7 @@ export function mergeSyncSnapshots(
           remote.notes ? canonicalize(remote.notes) : MISSING,
           conflicts,
         )
-  const snapshot: SyncSnapshotV1 = {
+  let snapshot: SyncSnapshotV1 = {
     scope,
     optional: mergeOptional(base.optional, local.optional, remote.optional, conflicts),
   }
@@ -658,6 +658,7 @@ export function mergeSyncSnapshots(
   )
   if (Object.keys(snapshot.inlineImages).length === 0) delete snapshot.inlineImages
   if (!snapshot.optional) delete snapshot.optional
+  snapshot = normalizeSnapshotOrder(snapshot)
   return {
     status: conflicts.length
       ? 'conflict'
