@@ -86,7 +86,7 @@ watch(
 <template>
   <el-dialog
     v-model="opened"
-    :width="DESKTOP_DIALOG_WIDTH"
+    :width="isMobile ? 400 : DESKTOP_DIALOG_WIDTH"
     class="settings__dialog settings-container--two-column"
     :class="[
       { 'is-mobile': isMobile },

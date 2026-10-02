@@ -1,0 +1,108 @@
+.note__dialog.el-dialog {
+  --note-back-background: color-mix(
+    in oklch,
+    var(--el-fill-color-blank),
+    transparent var(--le-dialog-secondary-transparency)
+  );
+  --note-item-background: var(--le-bg-color-overlay-opacity-60);
+  --note-item-hover-background: var(--le-bg-color-overlay-opacity-30);
+  --note-item-active-background: var(--el-color-primary-light-9);
+  display: flex;
+  flex-direction: column;
+  max-width: 93%;
+  min-height: 560px;
+  max-height: 93%;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--le-dialog-background, var(--note-dialog-background));
+  box-shadow: 0 0 15px 0 var(--le-bg-color-page-opacity-60);
+  transition: background-color var(--el-transition-duration-fast) ease;
+}
+
+// html.dark:not(.colorful) .note__dialog {
+// }
+
+// html.colorful .note__dialog {
+// }
+
+// html.dialog-transparent .note__dialog {
+// }
+
+// html.dark.dialog-transparent .note__dialog {
+// }
+
+// html.colorful.dialog-transparent .note__dialog {
+// }
+
+.note-header {
+  z-index: 1;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  width: 100%;
+  height: 50px;
+  padding: 0 30px;
+  margin: 0;
+  font-weight: bold;
+  line-height: 50px;
+  color: var(--el-text-color-primary);
+  cursor: move;
+
+  .is-mobile & {
+    grid-row: auto;
+    grid-column: auto;
+  }
+
+  .base-dialog-close-btn {
+    position: static;
+
+    &:hover {
+      background-color: var(--note-close-hover-background);
+      box-shadow: var(--el-box-shadow-light);
+    }
+  }
+
+  .base-dialog-title {
+    flex-grow: 1;
+    font-size: 16px;
+  }
+
+  .note-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 30px;
+    margin-right: 20px;
+    color: var(--el-text-color-secondary);
+    cursor: pointer;
+    background-color: var(--note-back-background);
+    border: none;
+    border-radius: var(--le-radius-surface, 15px);
+    box-shadow: var(--el-box-shadow-light);
+    transition: var(--el-transition-duration-fast) ease;
+
+    &:disabled {
+      cursor: auto;
+    }
+
+    &:not(:disabled):hover,
+    &:focus-visible {
+      color: var(--el-text-color-primary);
+      background-color: var(--note-back-hover-background);
+    }
+
+    &:focus-visible {
+      outline: none;
+
+      &::after {
+        position: absolute;
+        inset: -4px;
+        pointer-events: none;
+        content: '';
+        border: 2px solid var(--el-color-primary);
+        border-radius: inherit;
+      }
+    }
+  }
+}

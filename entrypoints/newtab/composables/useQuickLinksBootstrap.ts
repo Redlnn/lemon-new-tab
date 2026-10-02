@@ -1,4 +1,7 @@
 import { useQuickLinksStore } from '@/shared/quickLinks'
+import { builtInApps, builtInAppUrl } from '@/shared/builtinApps'
+import { browser } from 'wxt/browser'
+import i18next from 'i18next'
 import { useSettingsStore } from '@/shared/settings'
 
 import { getTopSites } from '@newtab/components/QuickLinks/utils/topSites'
@@ -27,7 +30,20 @@ export function useQuickLinksBootstrap() {
     initTask = (async () => {
       // 与快捷链接存储并行读取，避免等待 Top Sites 增加初始化耗时。
       const topSitesTask = loadTopSites()
+      const legacy = await browser.storage.local.get(['quickLinks', 'bookmark'])
       await quickLinksStore.init()
+      // 仅没有任何历史快速导航存储的新安装才注入，删除入口后不会再次出现。
+      if (!legacy.quickLinks && !legacy.bookmark && quickLinksStore.items.length === 0) {
+        await quickLinksStore.insertFlatQuickLink({
+          quickLink: {
+            url: builtInAppUrl('note'),
+            title: i18next.t('newtab:builtinApps.note'),
+            icon: builtInApps.note.icon,
+            appId: 'note',
+          },
+          index: 0,
+        })
+      }
       if (settings.quickLinks.grouping) {
         await quickLinksStore.enableGroupingFromItems()
       }

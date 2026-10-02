@@ -1,3 +1,4 @@
+import { withNotesLock } from '@/shared/notes'
 import {
   ensureQuickLinksStableIds,
   getQuickLinksStorageValue,
@@ -19,6 +20,7 @@ import {
   applyPreparedBrowserSnapshot,
 } from './browserData.ts'
 import { captureSyncSnapshot, deduplicateInlineImages } from './capture.ts'
+import { JSON_BACKUP_SCOPE } from './catalog.ts'
 import { DEFAULT_SYNC_SCOPE } from './localState.ts'
 import type { SyncScopePreferences, SyncSnapshotV1 } from './types.ts'
 
@@ -37,17 +39,11 @@ interface LegacyLocalIcons {
 }
 
 export async function createBrowserJsonBackup() {
-  const capture = await captureBrowserSyncSnapshotResult({
-    settings: true,
-    quickLinks: true,
-    customSearchEngines: true,
-    uiPreferences: true,
-    blockedTopSites: true,
-    wallpapers: false,
-    onlineWallpaperUrl: true,
-    userIcons: true,
-  })
-  return { json: serializeJsonBackup(capture.snapshot), omissions: capture.resourceOmissions }
+  const capture = await captureBrowserSyncSnapshotResult({ ...JSON_BACKUP_SCOPE })
+  return {
+    json: serializeJsonBackup(capture.snapshot, browser.runtime.getManifest().version),
+    omissions: capture.resourceOmissions,
+  }
 }
 
 export async function prepareBrowserImport(file: Blob): Promise<PreparedBrowserImport> {
@@ -58,40 +54,49 @@ export async function prepareBrowserImport(file: Blob): Promise<PreparedBrowserI
   } catch {
     throw new TypeError('JSON backup is invalid')
   }
-  try {
-    const parsed = parseJsonBackup(value)
+  if (isRecord(value) && value.product === 'lemon-new-tab') {
+    const parsed = parseJsonBackup(value, browser.runtime.getManifest().version)
     return {
       ...parsed,
       source: 'json-v1',
       scope: inferImportScope(parsed.snapshot),
     }
-  } catch {
-    return prepareLegacyImport(value)
   }
+  return prepareLegacyImport(value)
 }
 
 export async function applyPreparedBrowserImport(
   input: PreparedBrowserImport,
-  mergeScope?: SyncScopePreferences,
+  merge = false,
 ): Promise<void> {
-  return withSyncWriteLock(async () => {
-    const snapshot = mergeScope
-      ? mergeImportedSnapshot(
-          (await captureBrowserSyncSnapshotResult(mergeScope, undefined, true)).snapshot,
-          input.snapshot,
-        )
-      : input.snapshot
-    await applyPreparedBrowserSnapshot(
-      await prepareBrowserApply(crypto.randomUUID(), crypto.randomUUID(), snapshot, snapshot.scope),
-    )
-    if (input.legacyIcons) await restoreLegacyIcons(input.legacyIcons)
-  })
+  return withNotesLock(() =>
+    withSyncWriteLock(async () => {
+      const snapshot = merge
+        ? mergeImportedSnapshot(
+            (await captureBrowserSyncSnapshotResult(input.scope, undefined, true)).snapshot,
+            input.snapshot,
+          )
+        : input.snapshot
+      await applyPreparedBrowserSnapshot(
+        await prepareBrowserApply(
+          crypto.randomUUID(),
+          crypto.randomUUID(),
+          snapshot,
+          input.scope,
+          undefined,
+          'import',
+        ),
+      )
+      if (input.legacyIcons) await restoreLegacyIcons(input.legacyIcons)
+    }),
+  )
 }
 
 function inferImportScope(snapshot: SyncSnapshotV1): SyncScopePreferences {
   return {
     settings: Boolean(snapshot.settings),
     quickLinks: Boolean(snapshot.quickLinks),
+    notes: Boolean(snapshot.notes),
     customSearchEngines: Boolean(snapshot.customSearchEngines),
     uiPreferences: Boolean(snapshot.ui),
     blockedTopSites: Boolean(snapshot.optional?.blockedTopSites),
@@ -279,3 +284,4 @@ function isCustomSearchEngines(
     )
   )
 }
+import { browser } from 'wxt/browser'

@@ -7,6 +7,7 @@ import InfoRound from '~icons/ic/round-info'
 import SearchRound from '~icons/ic/round-search'
 import SettingsRound from '~icons/ic/round-settings'
 import WallpaperRound from '~icons/ic/round-wallpaper'
+import Apps24Regular from '~icons/fluent/apps-24-regular'
 
 import { useSettingsStore } from '@/shared/settings'
 
@@ -19,6 +20,7 @@ const emit = defineEmits<{
   (e: 'open-search-engine-preference'): void
   (e: 'open-faq'): void
   (e: 'open-background-switcher'): void
+  (e: 'open-builtin-apps'): void
 }>()
 
 const { t } = useTranslation()
@@ -82,6 +84,9 @@ function sponsorMessage() {
         </el-dropdown-item>
         <el-dropdown-item :icon="WallpaperRound" @click="emit('open-background-switcher')">
           <span>{{ t('menu.backgroundPreference') }}</span>
+        </el-dropdown-item>
+        <el-dropdown-item :icon="Apps24Regular" @click="emit('open-builtin-apps')">
+          <span>{{ t('builtinApps.title') }}</span>
         </el-dropdown-item>
         <el-badge is-dot :offset="[-3, 17]" :hidden="settings.readChangeLog" style="width: 100%">
           <el-dropdown-item :icon="AccessTimeFilledRound" divided @click="emit('open-changelog')">

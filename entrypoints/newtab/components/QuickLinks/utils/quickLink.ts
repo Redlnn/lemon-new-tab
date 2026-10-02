@@ -1,5 +1,6 @@
 import i18next from 'i18next'
 
+import { resolveBuiltInAppId } from '@/shared/builtinApps'
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   useQuickLinksStore,
@@ -21,7 +22,7 @@ export async function removeQuickLink(
 ) {
   const quickLink = store.getQuickLink(target)
   if (!quickLink) return
-  const { url, title, favicon, faviconSource } = quickLink
+  const { url, title, favicon, faviconSource, appId } = quickLink
 
   if (typeof target === 'number') {
     await store.removeFlatQuickLink(target)
@@ -34,7 +35,11 @@ export async function removeQuickLink(
       h(
         'span',
         { style: { color: 'var(--el-color-success)' } },
-        i18next.t('newtab:quickLinks.unpinMessage'),
+        i18next.t(
+          resolveBuiltInAppId(quickLink)
+            ? 'newtab:builtinApps.hidden'
+            : 'newtab:quickLinks.unpinMessage',
+        ),
       ),
       h(
         'span',
@@ -43,13 +48,13 @@ export async function removeQuickLink(
           onClick: async () => {
             if (typeof target === 'number') {
               await store.insertFlatQuickLink({
-                quickLink: { url, title, favicon, faviconSource },
+                quickLink: { url, title, favicon, faviconSource, appId },
                 index: target,
               })
             } else {
               await store.insertQuickLinkToGroup({
                 groupId: target.groupId,
-                quickLink: { url, title, favicon, faviconSource },
+                quickLink: { url, title, favicon, faviconSource, appId },
                 index: target.index,
               })
             }

@@ -28,6 +28,8 @@ const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder('utf-8', { fatal: true })
 
 export type WebDavErrorCategory =
+  | 'data-too-large'
+  | 'permission-required'
   | 'authentication'
   | 'conflict'
   | 'corrupted'
@@ -656,6 +658,10 @@ export class WebDavVaultRepository {
       if (inspection.metadata.vaultId !== metadata.vaultId) {
         throw new WebDavError('foreign-vault', 'WebDAV directory already contains another vault')
       }
+      if (!jsonEquals(inspection.metadata, metadata)) {
+        throw new WebDavError('precondition', 'WebDAV ownership marker changed')
+      }
+      await this.prepareVaultDirectories(metadata)
       return
     }
     if (inspection.state === 'foreign') {
@@ -914,12 +920,26 @@ export class WebDavVaultRepository {
 
   async listCommits(metadata: VaultMetadataV1): Promise<CommitRecordV1[]> {
     const path = `${this.directory}/generations/${metadata.generationId}/commits`
-    const entries = await this.client.list(path)
+    const entries = await this.client.list(path).catch(async (error) => {
+      if (!(error instanceof WebDavError) || error.category !== 'not-found') throw error
+      await this.prepareVaultDirectories(metadata)
+      return this.client.list(path)
+    })
     const files = entries.filter((entry) => !entry.isCollection && /\.json$/i.test(entry.name))
     const commits: CommitRecordV1[] = []
     for (const entry of files) {
       const { bytes } = await this.client.get(`${path}/${entry.name}`)
-      const validation = validateCommitRecord(parseJson(bytes, 'Commit record'))
+      const raw = parseJson(bytes, 'Commit record')
+      if (
+        raw &&
+        typeof raw === 'object' &&
+        'formatVersion' in raw &&
+        typeof raw.formatVersion === 'number' &&
+        raw.formatVersion > 1
+      ) {
+        throw new WebDavError('format-too-new', 'Commit format is newer than this extension')
+      }
+      const validation = validateCommitRecord(raw)
       if (!validation.ok) throw new WebDavError('corrupted', validation.error)
       if (
         validation.value.vaultId !== metadata.vaultId ||
@@ -1095,7 +1115,22 @@ export class WebDavVaultRepository {
     } catch (error) {
       if (!(error instanceof WebDavError) || error.category !== 'not-found') throw error
     }
-    await this.client.put(path, bytes, { timeoutMs })
+    try {
+      await this.client.put(path, bytes, { timeoutMs })
+    } catch (error) {
+      // PUT 响应丢失时核实不可变身份；确认已保存便继续提交。
+      try {
+        const saved = await this.client.get(path, bytes.byteLength, ASSET_TIMEOUT_MS)
+        if (
+          saved.bytes.byteLength === bytes.byteLength &&
+          (await sha256Hex(saved.bytes)) === expectedHash
+        )
+          return
+      } catch {
+        /* 保留原请求的错误分类。 */
+      }
+      throw error
+    }
     const stored = await this.client.get(path, bytes.byteLength, ASSET_TIMEOUT_MS)
     if (
       stored.bytes.byteLength !== bytes.byteLength ||

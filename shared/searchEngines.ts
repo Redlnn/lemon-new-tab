@@ -45,25 +45,3 @@ export function getAvailableSearchEngineIds(
     return true
   })
 }
-
-export function ensureSearchEngineAvailable(
-  search: {
-    engine: string
-    builtInEngineOrder: BuiltInSearchEngineKey[]
-    hiddenBuiltInEngines: BuiltInSearchEngineKey[]
-  },
-  customIds: readonly string[],
-) {
-  const available = getAvailableSearchEngineIds(
-    search.builtInEngineOrder,
-    search.hiddenBuiltInEngines,
-    customIds,
-  )
-  if (available.includes(search.engine)) return
-  if (available.length > 0) {
-    search.engine = available[0]!
-    return
-  }
-  search.hiddenBuiltInEngines = search.hiddenBuiltInEngines.filter((key) => key !== 'bing')
-  search.engine = 'bing'
-}

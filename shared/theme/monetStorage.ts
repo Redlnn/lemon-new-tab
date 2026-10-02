@@ -36,13 +36,6 @@ export async function getMonetColors(): Promise<MonetColors | null> {
 }
 
 /**
- * 清除存储的莫奈颜色
- */
-// export async function clearMonetColors() {
-//   await monetColorsStorage.setValue(null)
-// }
-
-/**
  * 应用已存储的莫奈颜色到当前页面
  * 适用于 popup 等无法直接从图片提取颜色的场景
  */

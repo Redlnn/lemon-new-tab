@@ -19,6 +19,35 @@
     "change": "更改背景",
     "custom": "自定义",
     "fasterBgAnim": "启动时更快地显示背景",
+    "library": {
+      "add": "添加",
+      "clearPreviews": "清理预览缓存",
+      "collapse": "收起",
+      "confirmRemove": "移除选中的 {{count}} 个壁纸？",
+      "dark": "深色模式",
+      "done": "完成",
+      "download": "下载",
+      "dragAddHint": "拖入图片或视频添加",
+      "empty": "添加图片或视频，支持一次选择多个文件或拖入。",
+      "expand": "展开全部",
+      "group": "壁纸分组",
+      "image": "图片",
+      "importFailed": "有 {{count}} 个文件未能添加，其余文件已保留。",
+      "inherit": "未设置深色模式壁纸时，将自动使用浅色模式壁纸。",
+      "light": "浅色模式",
+      "loading": "信息读取中",
+      "manage": "管理",
+      "order": "轮换顺序",
+      "ordered": "按列表顺序",
+      "random": "随机",
+      "remove": "移除",
+      "reset": "恢复默认",
+      "rotation": "壁纸轮换",
+      "solid": "纯色背景",
+      "sortHint": "拖动排序",
+      "unavailable": "无法读取",
+      "video": "视频"
+    },
     "mask": {
       "color": "遮罩颜色",
       "enable": "启用遮罩"
@@ -26,8 +55,7 @@
     "onlineTips": {
       "a": "按下回车键或者输入框失去焦点后提交",
       "b": "壁纸缓存策略取决于浏览器，断网后会获取不到壁纸",
-      "c": "壁纸加载完成前会白屏一段时间，时长取决于你的网速",
-      "d": "请确保你使用的壁纸 API 允许跨域请求，否则会加载失败"
+      "c": "壁纸加载完成前会白屏一段时间，时长取决于你的网速"
     },
     "parallax": "壁纸视差效果",
     "pauseWhenBlur": "失去焦点时暂停视频背景",
@@ -62,8 +90,7 @@
       "online": "在线图片"
     },
     "video": {
-      "blurTip": "打开此开关以缓解多开新标签页或多个窗口同屏时的性能占用",
-      "warning": "使用视频作为背景会大量消耗 GPU 资源，建议避免同时开多个新标签页，建议适当关闭动画、模糊、透明效果以降低性能消耗"
+      "blurTip": "打开此开关以缓解多开新标签页或多个窗口同屏时的性能占用"
     },
     "vignette": "暗角效果",
     "warning": {
@@ -74,40 +101,7 @@
       "monetDisabled": "由于未授予「访问所有网站」权限，动态主题色（莫奈取色）已被关闭",
       "notGranted": "未授予权限，无法访问该地址",
       "title": "警告",
-      "tooLarge": {
-        "message": "文件过大（{{size}}），可能会影响性能或占用较多空间，是否继续？",
-        "title": "文件过大"
-      },
       "unknownSource": "使用未知来源的图片作为背景可能会使你的设备遭到攻击，是否继续？"
-    },
-    "library": {
-      "solid": "纯色背景",
-      "light": "浅色模式",
-      "dark": "深色模式",
-      "reset": "恢复默认",
-      "group": "壁纸分组",
-      "download": "下载",
-      "add": "添加",
-      "manage": "管理",
-      "done": "完成",
-      "remove": "移除",
-      "expand": "展开全部",
-      "collapse": "收起",
-      "inherit": "未设置深色模式壁纸时，将自动使用浅色模式壁纸。",
-      "empty": "添加图片或视频，支持一次选择多个文件或拖入。",
-      "rotation": "壁纸轮换",
-      "order": "轮换顺序",
-      "random": "随机",
-      "ordered": "按列表顺序",
-      "image": "图片",
-      "video": "视频",
-      "loading": "信息读取中",
-      "unavailable": "无法读取",
-      "dragAddHint": "拖入图片或视频添加",
-      "sortHint": "拖动排序",
-      "importFailed": "有 {{count}} 个文件未能添加，其余文件已保留。",
-      "confirmRemove": "移除选中的 {{count}} 个壁纸？",
-      "clearPreviews": "清理预览缓存"
     }
   },
   "bookmark": {
@@ -163,34 +157,30 @@
   "common": {
     "copyLink": "复制链接地址",
     "hour": "小时",
+    "incognitoPermission": {
+      "message": "请在 Firefox 附加组件管理器中允许此扩展在隐私窗口中运行，然后重试。",
+      "title": "需要无痕模式权限"
+    },
+    "openInIncognitoWindow": "在无痕窗口中打开",
     "openInNewTab": "在新标签页中打开",
     "openInNewWindow": "在新窗口中打开",
-    "openInIncognitoWindow": "在无痕窗口中打开",
-    "incognitoPermission": {
-      "title": "需要无痕模式权限",
-      "message": "请在 Firefox 附加组件管理器中允许此扩展在隐私窗口中运行，然后重试。"
-    },
     "sections": {
-      "animation": "动画",
       "appearance": "外观",
       "behavior": "交互与行为",
       "danger": "清理数据",
       "data": "数据与恢复",
       "display": "显示与内容",
-      "effects": "透明与模糊",
       "general": "常规",
       "layout": "布局与间距",
       "position": "页面位置",
       "radius": "圆角",
       "source": "内容来源",
       "summary": {
-        "animation": "壁纸与界面动效",
         "appearance": "颜色、阴影与尺寸",
         "behavior": "交互方式与打开行为",
         "danger": "不可逆操作，请谨慎使用",
         "data": "备份与缓存",
         "display": "可见内容与呈现方式",
-        "effects": "逐项控制透明度和模糊",
         "general": "常用设置",
         "layout": "尺寸、数量与间距",
         "position": "主区域与功能按钮",
@@ -307,7 +297,6 @@
       "icon": "清除图标缓存",
       "wallpaper": "清除壁纸缓存"
     },
-    "sync": "云同步（已停止支持）",
     "syncRetirement": {
       "acknowledge": "好的",
       "clearCloudData": "清理云端数据",
@@ -447,10 +436,10 @@
       "uiScopeDisabled": "语言和颜色模式同步已关闭，仅保存在此设备。",
       "userIconsScopeDisabled": "用户选择的图标仅保存在此设备。可在高级同步范围中开启。",
       "wallpaperFailed": "壁纸文件未通过上传或完整性校验，其他数据仍会同步。",
+      "wallpaperPartial": "仅同步 20 MiB 以内的可用静态图片；视频、动态图及其他跳过项保留在本机。",
       "wallpaperScopeDisabled": "本地图片壁纸仅保存在此设备。可在 WebDAV 同步范围中开启。",
       "wallpaperTooLarge": "图片超过 20 MB，壁纸未同步；其他数据仍会同步。",
-      "wallpaperVideo": "视频壁纸不会通过 WebDAV 同步。",
-      "wallpaperPartial": "仅同步 20 MiB 以内的可用静态图片；视频、动态图及其他跳过项保留在本机。"
+      "wallpaperVideo": "视频壁纸不会通过 WebDAV 同步。"
     }
   },
   "theme": {
@@ -535,9 +524,9 @@
         "searchEngineUrl": "搜索引擎地址",
         "wallpaper": "壁纸",
         "wallpaperDark": "深色壁纸",
+        "wallpaperFixed": "固定壁纸",
         "wallpaperLight": "浅色壁纸",
-        "wallpaperOrder": "壁纸排列顺序",
-        "wallpaperFixed": "固定壁纸"
+        "wallpaperOrder": "壁纸排列顺序"
       },
       "finish": "创建合并版本",
       "local": "保留本地数据",
@@ -613,6 +602,7 @@
     },
     "errors": {
       "authentication": "密码不正确或服务商拒绝访问",
+      "permission-required": "需要授权此 WebDAV 服务器的访问权限",
       "conflict": "远端数据发生冲突",
       "corrupted": "远端数据损坏",
       "network": "暂时无法连接服务器",
@@ -620,6 +610,7 @@
       "redirect-insecure": "服务器尝试从 HTTPS 降级到 HTTP，已停止同步",
       "redirect-required": "服务器重定向不安全或无法验证。仅支持同源跳转和同主机的 HTTP 到 HTTPS 升级；也可填写最终的 WebDAV 地址。",
       "server": "WebDAV 服务暂时出错",
+      "data-too-large": "数据超出容量限制：单条便签限 1 MiB，全部便签限 8 MiB，完整快照限 10 MiB。请在本机或远端缩减数据后重试。",
       "storage-full": "WebDAV 空间不足",
       "timeout": "连接超时",
       "unknown": "同步操作失败，请查看状态后重试"
@@ -699,11 +690,10 @@
       "removeWallpapersCompleted": "已停止同步壁纸并清理不再使用的云端图片",
       "removeWallpapersDescription": "系统会发布一个不含壁纸的新版本，再清理不再被保留版本引用的云端图片。本机壁纸不会被删除。",
       "removeWallpapersTitle": "停止同步壁纸并清理云端图片？",
-      "revision": "损坏版本：{{id}}",
       "retry": "重新检查",
+      "revision": "损坏版本：{{id}}",
       "same": "本机数据与上一完整版本相同，将自动使用上一版本创建修复版本。",
       "size": "原始文件大小：{{size}} 字节",
-      "title": "检查与修复",
       "wallpaperDescription": "超限或不支持的图片会被跳过。请关闭对应范围或选择更小的图片；扩展不会修改原图。",
       "wallpaperTitle": "部分图片未同步"
     },
@@ -711,10 +701,11 @@
     "scope": {
       "blockedTopSites": "隐藏的最常访问站点",
       "customSearchEngines": "自定义搜索引擎",
+      "notes": "便签",
       "onlineWallpaperUrl": "在线壁纸地址",
       "onlineWallpaperUrlNote": "可能会包含访问 Token。",
       "settings": "基础设置",
-      "summary": "可逐项选择；范围会记录到整个同步库，并同步到其他设备。",
+      "summary": "只影响此设备；关闭的类别会保留远端数据，重新开启后继续比较。",
       "title": "同步范围",
       "uiPreferences": "语言和深色模式",
       "userIcons": "自定义的链接图标",
@@ -731,7 +722,6 @@
         "existingTitle": "比较本机与云端",
         "firstConnectionNote": "本机与云端都有数据，尚未有共同同步版本。开启后可在设置中逐项处理，或批量优先选择本机或云端；确认后将建立共同基线。",
         "firstConnectionTitle": "首次接入：选择要保留的数据",
-        "initial": "新同步库",
         "initialTitle": "确认初始上传内容",
         "safe": "本地与远端无冲突，可直接安全开启同步"
       },
@@ -785,7 +775,7 @@
         "title": "远端扫描结果"
       },
       "scope": {
-        "description": "该选择对其他设备也会生效。",
+        "description": "只影响此设备；关闭的类别会保留远端数据，重新开启后继续比较。",
         "omittedResources": "{{count}} 个过大或不支持的所选图片将被跳过",
         "required": "请至少开启一个同步范围。",
         "title": "选择同步范围"
@@ -815,6 +805,7 @@
     },
     "status": {
       "authentication": "需要重新登录",
+      "permission": "需要重新授权服务器访问",
       "conflict": "有冲突需要处理",
       "corrupted": "远端最新版本损坏",
       "encryptionPassword": "需要同步加密密码",
@@ -823,13 +814,21 @@
       "pending": "有待上传修改",
       "ready": "已连接，等待首次检查",
       "remoteDeleted": "云端同步数据已被删除",
+      "dataTooLarge": "数据超出容量限制，请缩减数据后重试",
       "storageFull": "WebDAV 空间不足",
       "synced": "已同步",
       "unconfigured": "未配置",
-      "wallpaperSkipped": "核心数据已同步，壁纸未同步"
+      "wallpaperSkipped": "核心数据已同步，壁纸未同步",
+      "noSelection": "未选择同步项"
     },
     "syncNow": "立即同步",
-    "title": "WebDAV 同步"
+    "title": "WebDAV 同步",
+    "enabled": "启用此设备同步",
+    "credentials": {
+      "title": "更新登录凭据",
+      "username": "用户名（留空保持当前用户名）",
+      "save": "验证并保存"
+    }
   },
   "yiyan": {
     "alwaysShow": "总是显示",

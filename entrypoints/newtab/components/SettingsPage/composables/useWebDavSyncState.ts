@@ -7,6 +7,7 @@ import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
 
 const state = shallowRef<LocalSyncStateV1>({
   configured: false,
+  enabled: true,
   paused: false,
   deviceId: '',
   deviceName: '',

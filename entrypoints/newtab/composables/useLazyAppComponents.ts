@@ -24,6 +24,8 @@ export const AddQuickLinkDialog = defineAsyncComponent(
 export const SyncRetirementDialog = defineAsyncComponent(
   () => import('../components/SyncRetirementDialog.vue'),
 )
+export const Note = defineAsyncComponent(() => import('../components/Note/index.vue'))
+export const BuiltinAppsDialog = defineAsyncComponent(() => import('../components/BuiltinAppsDialog.vue'))
 
 function createLazyDialogState() {
   const mounted = ref(false)
@@ -50,6 +52,8 @@ export function useLazyAppComponents() {
   const backgroundSwitcher = createLazyDialogState()
   const bookmark = createLazyDialogState()
   const addQuickLinkDialog = createLazyDialogState()
+  const note = createLazyDialogState()
+  const builtinApps = createLazyDialogState()
   const quickLinkDialogRequest = shallowRef<
     { mode: 'add'; groupId?: string } | { mode: 'edit'; target: QuickLinkTarget } | null
   >(null)
@@ -81,6 +85,10 @@ export function useLazyAppComponents() {
     bookmarkVisible: bookmark.visible,
     addQuickLinkDialogMounted: addQuickLinkDialog.mounted,
     addQuickLinkDialogVisible: addQuickLinkDialog.visible,
+    noteMounted: note.mounted,
+    noteVisible: note.visible,
+    builtinAppsMounted: builtinApps.mounted,
+    builtinAppsVisible: builtinApps.visible,
     quickLinkDialogRequest,
     permissionDialogLoaded,
     toggleSettingsPage: settingsPage.toggle,
@@ -92,5 +100,7 @@ export function useLazyAppComponents() {
     showBookmark: bookmark.show,
     openAddQuickLinkDialog,
     openEditQuickLinkDialog,
+    showNote: note.show,
+    showBuiltinApps: builtinApps.show,
   }
 }

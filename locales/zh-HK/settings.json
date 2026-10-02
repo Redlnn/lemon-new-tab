@@ -19,6 +19,35 @@
     "change": "更改背景",
     "custom": "自訂",
     "fasterBgAnim": "啟動時更快地顯示背景",
+    "library": {
+      "add": "新增",
+      "clearPreviews": "清除預覽快取",
+      "collapse": "收起",
+      "confirmRemove": "移除選取的 {{count}} 個桌布？",
+      "dark": "深色模式",
+      "done": "完成",
+      "download": "下載",
+      "dragAddHint": "拖入圖片或影片以新增",
+      "empty": "新增圖片或影片，支援一次選取多個檔案或拖入。",
+      "expand": "展開全部",
+      "group": "桌布分組",
+      "image": "圖片",
+      "importFailed": "有 {{count}} 個檔案無法新增，其餘檔案已保留。",
+      "inherit": "未設定深色模式桌布時，將自動使用淺色模式桌布。",
+      "light": "淺色模式",
+      "loading": "正在讀取資訊",
+      "manage": "管理",
+      "order": "輪播順序",
+      "ordered": "依清單順序",
+      "random": "隨機",
+      "remove": "移除",
+      "reset": "恢復預設",
+      "rotation": "桌布輪播",
+      "solid": "純色背景",
+      "sortHint": "拖曳排序",
+      "unavailable": "無法讀取",
+      "video": "影片"
+    },
     "mask": {
       "color": "遮罩顏色",
       "enable": "啟用遮罩"
@@ -26,8 +55,7 @@
     "onlineTips": {
       "a": "按下 Enter 鍵或點擊輸入框以外的區域以提交",
       "b": "圖片快取策略取決於瀏覽器，離線時可能無法展示",
-      "c": "背景圖片載入前會短暫白屏，時間長短視乎你的網速",
-      "d": "請確認你使用的圖片 API 支援跨域請求，否則可能載入失敗"
+      "c": "背景圖片載入前會短暫白屏，時間長短視乎你的網速"
     },
     "parallax": "壁紙視差效果",
     "pauseWhenBlur": "失去焦點時暫停影片背景",
@@ -62,8 +90,7 @@
       "online": "線上圖片"
     },
     "video": {
-      "blurTip": "啟用此開關可緩解同時開啟多個新分頁或多個視窗時的效能佔用",
-      "warning": "使用影片作為背景會大量消耗 GPU 資源，建議避免同時開多個新分頁，建議適當停用動效、模糊、透明效果以降低效能消耗"
+      "blurTip": "啟用此開關可緩解同時開啟多個新分頁或多個視窗時的效能佔用"
     },
     "vignette": "暗角效果",
     "warning": {
@@ -74,40 +101,7 @@
       "monetDisabled": "由於未授予「訪問所有網站」權限，動態主題色（莫奈取色）已被關閉",
       "notGranted": "尚未授權，無法載入背景圖片",
       "title": "警告",
-      "tooLarge": {
-        "message": "檔案過大（{{size}}），可能會影響效能或佔用較多空間，是否繼續？",
-        "title": "檔案過大"
-      },
       "unknownSource": "使用來自不明來源的圖片作背景可能會危及你的裝置安全，是否繼續？"
-    },
-    "library": {
-      "solid": "純色背景",
-      "light": "淺色模式",
-      "dark": "深色模式",
-      "reset": "恢復預設",
-      "group": "桌布分組",
-      "download": "下載",
-      "add": "新增",
-      "manage": "管理",
-      "done": "完成",
-      "remove": "移除",
-      "expand": "展開全部",
-      "collapse": "收起",
-      "inherit": "未設定深色模式桌布時，將自動使用淺色模式桌布。",
-      "empty": "新增圖片或影片，支援一次選取多個檔案或拖入。",
-      "rotation": "桌布輪播",
-      "order": "輪播順序",
-      "random": "隨機",
-      "ordered": "依清單順序",
-      "image": "圖片",
-      "video": "影片",
-      "loading": "正在讀取資訊",
-      "unavailable": "無法讀取",
-      "dragAddHint": "拖入圖片或影片以新增",
-      "sortHint": "拖曳排序",
-      "importFailed": "有 {{count}} 個檔案無法新增，其餘檔案已保留。",
-      "confirmRemove": "移除選取的 {{count}} 個桌布？",
-      "clearPreviews": "清除預覽快取"
     }
   },
   "bookmark": {
@@ -163,34 +157,30 @@
   "common": {
     "copyLink": "複製連結網址",
     "hour": "個鈡",
+    "incognitoPermission": {
+      "message": "請在 Firefox 附加元件管理員中允許此擴充功能在隱私視窗中執行，然後再試一次。",
+      "title": "需要無痕模式權限"
+    },
+    "openInIncognitoWindow": "在無痕視窗中開啟",
     "openInNewTab": "在新分頁中開啟",
     "openInNewWindow": "在新視窗中開啟",
-    "openInIncognitoWindow": "在無痕視窗中開啟",
-    "incognitoPermission": {
-      "title": "需要無痕模式權限",
-      "message": "請在 Firefox 附加元件管理員中允許此擴充功能在隱私視窗中執行，然後再試一次。"
-    },
     "sections": {
-      "animation": "動畫",
       "appearance": "外觀",
       "behavior": "互動與行為",
       "danger": "清理資料",
       "data": "資料與復原",
       "display": "顯示與內容",
-      "effects": "透明與模糊",
       "general": "一般",
       "layout": "佈局與間距",
       "position": "頁面位置",
       "radius": "圓角",
       "source": "內容來源",
       "summary": {
-        "animation": "壁紙與介面動效",
         "appearance": "顏色、陰影與尺寸",
         "behavior": "互動方式與開啟行為",
         "danger": "不可逆操作，請謹慎使用",
         "data": "備份與快取",
         "display": "可見內容與呈現方式",
-        "effects": "逐項控制透明度和模糊",
         "general": "常用設定",
         "layout": "尺寸、數量與間距",
         "position": "主區域與功能按鈕",
@@ -307,7 +297,6 @@
       "icon": "清除圖示快取",
       "wallpaper": "清除壁紙快取"
     },
-    "sync": "雲端同步（已停止支援）",
     "syncRetirement": {
       "acknowledge": "好的",
       "clearCloudData": "清理雲端資料",
@@ -447,10 +436,10 @@
       "uiScopeDisabled": "語言與色彩模式同步已關閉，只保存在此裝置。",
       "userIconsScopeDisabled": "使用者選擇的圖示只保存在此裝置，可在進階同步範圍中開啟。",
       "wallpaperFailed": "桌布未通過上傳或完整性驗證，其他資料仍會同步。",
+      "wallpaperPartial": "僅同步 20 MiB 以內的可用靜態圖片；影片、動態圖片及其他略過項目保留在本機。",
       "wallpaperScopeDisabled": "本機圖片桌布只保存在此裝置，可在 WebDAV 同步範圍中開啟。",
       "wallpaperTooLarge": "圖片超過 20 MB，桌布未同步；其他資料仍會同步。",
-      "wallpaperVideo": "影片桌布不會透過 WebDAV 同步。",
-      "wallpaperPartial": "僅同步 20 MiB 以內的可用靜態圖片；影片、動態圖片及其他略過項目保留在本機。"
+      "wallpaperVideo": "影片桌布不會透過 WebDAV 同步。"
     }
   },
   "theme": {
@@ -535,9 +524,9 @@
         "searchEngineUrl": "搜尋引擎網址",
         "wallpaper": "桌布",
         "wallpaperDark": "深色桌布",
+        "wallpaperFixed": "固定桌布",
         "wallpaperLight": "淺色桌布",
-        "wallpaperOrder": "桌布排列順序",
-        "wallpaperFixed": "固定桌布"
+        "wallpaperOrder": "桌布排列順序"
       },
       "finish": "建立合併版本",
       "local": "保留本機資料",
@@ -613,6 +602,7 @@
     },
     "errors": {
       "authentication": "密碼不正確或服務商拒絕存取",
+      "permission-required": "需要授權此 WebDAV 伺服器的存取權限",
       "conflict": "遠端資料發生衝突",
       "corrupted": "遠端資料損壞",
       "network": "暫時無法連線伺服器",
@@ -620,6 +610,7 @@
       "redirect-insecure": "伺服器嘗試由 HTTPS 降級至 HTTP，已停止同步",
       "redirect-required": "伺服器重新導向不安全或無法驗證。只支援同源重新導向及同一主機由 HTTP 升級至 HTTPS；亦可填寫最終的 WebDAV 位址。",
       "server": "WebDAV 服務暫時發生錯誤",
+      "data-too-large": "資料超出容量限制：單張便箋限 1 MiB，所有便箋限 8 MiB，完整快照限 10 MiB。請在本機或遠端縮減資料後重試。",
       "storage-full": "WebDAV 空間不足",
       "timeout": "連線逾時",
       "unknown": "同步操作失敗，請檢查狀態後再試"
@@ -699,11 +690,10 @@
       "removeWallpapersCompleted": "已停止同步桌布並清理不再使用的雲端圖片",
       "removeWallpapersDescription": "系統會發佈一個不含桌布的新版本，再清理不再被保留版本引用的雲端圖片。本機桌布不會被刪除。",
       "removeWallpapersTitle": "停止同步桌布並清理雲端圖片？",
-      "revision": "損壞版本：{{id}}",
       "retry": "重新檢查",
+      "revision": "損壞版本：{{id}}",
       "same": "本機資料與上一完整版本相同，將自動使用上一版本建立修復版本。",
       "size": "原始檔案大小：{{size}} 位元組",
-      "title": "檢查與修復",
       "wallpaperDescription": "超過限制或不支援的圖片會被略過。請關閉對應範圍或選擇較小的圖片；擴充功能不會修改原圖。",
       "wallpaperTitle": "部分圖片未同步"
     },
@@ -711,10 +701,11 @@
     "scope": {
       "blockedTopSites": "隱藏的常用網站",
       "customSearchEngines": "自訂搜尋引擎",
+      "notes": "便簽",
       "onlineWallpaperUrl": "線上桌布網址",
       "onlineWallpaperUrlNote": "網址可能包含存取 Token。",
       "settings": "基本設定",
-      "summary": "可逐項選擇；範圍會記錄到整個同步庫，並同步到其他裝置。",
+      "summary": "只影響此裝置；關閉的類別會保留遠端資料，重新開啟後繼續比較。",
       "title": "同步範圍",
       "uiPreferences": "語言與深色模式",
       "userIcons": "自訂連結圖示",
@@ -731,7 +722,6 @@
         "existingTitle": "比較本機與雲端",
         "firstConnectionNote": "本機與雲端都有資料，尚未有共同同步版本。開啟後可在設定中逐項處理，或批量優先選擇本機或雲端；確認後將建立共同基線。",
         "firstConnectionTitle": "首次接入：選擇要保留的資料",
-        "initial": "新同步庫",
         "initialTitle": "確認初始上傳內容",
         "safe": "本機同遠端資料冇衝突，可以直接安全開啟同步。"
       },
@@ -785,7 +775,7 @@
         "title": "遠端掃描結果"
       },
       "scope": {
-        "description": "呢個選擇亦會套用到其他裝置。",
+        "description": "只影響此裝置；關閉的類別會保留遠端資料，重新開啟後繼續比較。",
         "omittedResources": "{{count}} 個過大或不支援的所選圖片將被略過",
         "required": "請至少開啟一個同步範圍。",
         "title": "選擇同步範圍"
@@ -815,6 +805,7 @@
     },
     "status": {
       "authentication": "需要重新登入",
+      "permission": "需要重新授權伺服器存取",
       "conflict": "有衝突需要處理",
       "corrupted": "遠端最新版本損壞",
       "encryptionPassword": "需要同步加密密碼",
@@ -823,13 +814,21 @@
       "pending": "有待上傳修改",
       "ready": "已連線，等待首次檢查",
       "remoteDeleted": "雲端同步資料已被刪除",
+      "dataTooLarge": "資料超出容量限制，請縮減資料後重試",
       "storageFull": "WebDAV 空間不足",
       "synced": "已同步",
       "unconfigured": "未設定",
-      "wallpaperSkipped": "核心資料已同步，桌布未同步"
+      "wallpaperSkipped": "核心資料已同步，桌布未同步",
+      "noSelection": "未選擇同步項目"
     },
     "syncNow": "立即同步",
-    "title": "WebDAV 同步"
+    "title": "WebDAV 同步",
+    "enabled": "啟用此裝置同步",
+    "credentials": {
+      "title": "更新登入憑證",
+      "username": "使用者名稱（留空保留目前名稱）",
+      "save": "驗證並儲存"
+    }
   },
   "yiyan": {
     "alwaysShow": "總是顯示",

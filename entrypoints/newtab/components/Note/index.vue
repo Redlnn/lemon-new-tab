@@ -1,0 +1,837 @@
+<script setup lang="ts">
+import 'element-plus/theme-chalk/src/dialog.scss'
+import '@newtab/styles/dialog.scss'
+import '@newtab/styles/note.scss'
+import { useEventListener, useWindowSize } from '@vueuse/core'
+
+import { useLocale, type DropdownInstance, type InputInstance } from 'element-plus'
+import { useTranslation } from 'i18next-vue'
+import Plus from '~icons/fa7-solid/plus'
+import PinOff from '~icons/fluent/pin-off-16-regular'
+import Save from '~icons/ic/baseline-save'
+import CloseRound from '~icons/ic/round-close'
+import Code from '~icons/ic/round-code'
+import DeleteOutline from '~icons/ic/round-delete-outline'
+import FileDownload from '~icons/ic/round-file-download'
+import KeyboardArrowLeftRound from '~icons/ic/round-keyboard-arrow-left'
+import RoundModeEditIcon from '~icons/ic/round-mode-edit'
+import Pin from '~icons/ic/round-push-pin'
+
+import { downloadBlob } from '@/shared/download'
+import {
+  deleteNote,
+  getNoteTitle,
+  listNotes,
+  noteStorage,
+  NoteSaveError,
+  saveNote,
+  setNotePinned,
+  type NoteRecord,
+} from '@/shared/notes'
+import { assertBrowserNoteSnapshotSize } from '@/shared/webdavSync/browserData'
+
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
+
+import MilkdownEditorWrapper from './MilkdownEditorWrapper.vue'
+
+const COLLAPSE_BREAKPOINT = 850
+type NoteMode = 'idle' | 'list' | 'view' | 'edit'
+
+const { t, i18next } = useTranslation('newtab')
+const { t: tElement } = useLocale()
+const { width } = useWindowSize({ type: 'visual' })
+const opened = defineModel<boolean>({ required: true })
+const { isComposing } = useImeAwareDialog()
+const isCompact = computed(() => width.value < COLLAPSE_BREAKPOINT)
+const mode = ref<NoteMode>('idle')
+const notes = ref<NoteRecord[]>([])
+const selected = ref<NoteRecord | null>(null)
+const draft = ref<NoteRecord>(createDraft())
+const isTitleEditing = ref(false)
+const showCode = ref(false)
+const exporting = ref(false)
+const saving = ref(false)
+let noteWrites: Promise<unknown> = Promise.resolve()
+
+function enqueueNoteWrite<T>(operation: () => Promise<T>): Promise<T> {
+  const result = noteWrites.then(operation)
+  // 一次失败不应阻塞后续重试。
+  noteWrites = result.catch(() => {})
+  return result
+}
+const menuNote = ref<NoteRecord | null>(null)
+const menuTrigger = ref({ getBoundingClientRect: () => new DOMRect() })
+const menuRef = useTemplateRef<DropdownInstance>('menuRef')
+const titleInputRef = useTemplateRef<InputInstance>('titleInputRef')
+
+const isReadonly = computed(() => mode.value !== 'edit')
+const showAside = computed(() => !isCompact.value || mode.value === 'list')
+const displayTitle = computed(() => draft.value.title || t('note.untitled'))
+const draftDirty = computed(() => {
+  const title = draft.value.title?.trim() || undefined
+  if (!selected.value) return Boolean(title || draft.value.markdown.trim())
+  return selected.value.title !== title || selected.value.markdown !== draft.value.markdown
+})
+
+function createDraft(): NoteRecord {
+  const now = new Date().toISOString()
+  return { id: crypto.randomUUID(), markdown: '', createdAt: now, updatedAt: now }
+}
+
+async function refreshNotes() {
+  notes.value = await listNotes()
+}
+
+function resetView(
+  nextMode: Extract<NoteMode, 'idle' | 'list'> = isCompact.value ? 'list' : 'idle',
+) {
+  selected.value = null
+  draft.value = createDraft()
+  mode.value = nextMode
+  isTitleEditing.value = false
+  showCode.value = false
+  closeMenu()
+}
+
+async function load() {
+  resetView()
+  await refreshNotes()
+}
+
+async function resolveUnsaved(): Promise<boolean> {
+  if (!draftDirty.value) return true
+  try {
+    await ElMessageBox.confirm(t('note.unsaved'), t('common.warning'), {
+      confirmButtonText: t('common.save'),
+      cancelButtonText: t('note.discard'),
+      distinguishCancelAndClose: true,
+      type: 'warning',
+    })
+  } catch (reason) {
+    return reason === 'cancel'
+  }
+  return saveCurrent()
+}
+
+async function selectNote(note: NoteRecord, nextMode: 'view' | 'edit' = 'view') {
+  if (selected.value?.id === note.id) {
+    if (nextMode === 'edit') mode.value = 'edit'
+    return
+  }
+  if (!(await resolveUnsaved())) return
+  const next = { ...note }
+  draft.value = next
+  selected.value = { ...next }
+  mode.value = nextMode
+  isTitleEditing.value = false
+  showCode.value = false
+  closeMenu()
+}
+
+async function createNote() {
+  if (!(await resolveUnsaved())) return
+  selected.value = null
+  draft.value = createDraft()
+  mode.value = 'edit'
+  isTitleEditing.value = true
+  showCode.value = false
+  closeMenu()
+  nextTick(() => titleInputRef.value?.focus())
+}
+
+async function saveCurrent() {
+  if (saving.value) return false
+  saving.value = true
+  const submitted = { ...draft.value }
+  const before = selected.value ? { ...selected.value } : undefined
+  try {
+    const saved = await enqueueNoteWrite(() =>
+      saveNote(
+        before ? submitted : { ...submitted, title: getNoteTitle(submitted) || undefined },
+        before,
+        assertBrowserNoteSnapshotSize,
+      ),
+    )
+    if (draft.value.id === saved.id) {
+      selected.value = saved
+      // 等待落盘时仍可输入，只合并未继续修改的字段。
+      if (draft.value.title === submitted.title) draft.value.title = saved.title
+      if (draft.value.markdown === submitted.markdown) draft.value.markdown = saved.markdown
+      draft.value.updatedAt = saved.updatedAt
+      draft.value.pinned = saved.pinned
+    }
+    await refreshNotes()
+    return !draftDirty.value
+  } catch (error) {
+    showSaveError(error)
+    return false
+  } finally {
+    saving.value = false
+  }
+}
+
+function showSaveError(error: unknown) {
+  ElMessage.error(t(`note.${error instanceof NoteSaveError ? error.code : 'saveFailed'}`))
+}
+
+async function saveTitle() {
+  isTitleEditing.value = false
+  draft.value.title = draft.value.title?.trim() || undefined
+  if (!selected.value || selected.value.title === draft.value.title) return
+  if (saving.value) return
+  const submittedTitle = draft.value.title
+  const original = { ...selected.value }
+  try {
+    await enqueueNoteWrite(async () => {
+      const before = selected.value?.id === original.id ? { ...selected.value } : original
+      const saved = await saveNote(
+        { ...before, title: submittedTitle },
+        before,
+        assertBrowserNoteSnapshotSize,
+      )
+      if (selected.value?.id === saved.id) {
+        if (draft.value.markdown === before.markdown) {
+          draft.value.markdown = saved.markdown
+          selected.value = saved
+        } else {
+          // 正文仍有本机编辑时保留正文基线，不能掩盖另一页面的正文冲突。
+          selected.value = { ...before, title: saved.title, updatedAt: saved.updatedAt }
+        }
+        draft.value.updatedAt = saved.updatedAt
+      }
+    })
+    await refreshNotes()
+  } catch (error) {
+    showSaveError(error)
+  }
+}
+
+function editTitle() {
+  if (mode.value !== 'edit') return
+  isTitleEditing.value = true
+  nextTick(() => titleInputRef.value?.focus())
+}
+
+function submitTitle() {
+  titleInputRef.value?.blur()
+}
+
+async function backToList() {
+  if (!(await resolveUnsaved())) return
+  resetView('list')
+}
+
+async function beforeClose(done: () => void) {
+  if (await resolveUnsaved()) done()
+}
+
+function openMenu(event: MouseEvent, note: NoteRecord) {
+  menuNote.value = note
+  const position = DOMRect.fromRect({ x: event.clientX, y: event.clientY })
+  menuTrigger.value = { getBoundingClientRect: () => position }
+  menuRef.value?.handleOpen()
+}
+
+function closeMenu() {
+  menuRef.value?.handleClose()
+  menuNote.value = null
+}
+
+// 弹出动画期间焦点可能仍在弹窗内，Escape 应优先关闭菜单。
+useEventListener(
+  window,
+  'keydown',
+  (event) => {
+    if (event.key !== 'Escape' || !menuNote.value) return
+    event.preventDefault()
+    event.stopPropagation()
+    closeMenu()
+  },
+  { capture: true },
+)
+
+async function handleMenuCommand(command: 'pin' | 'edit' | 'delete') {
+  const note = menuNote.value
+  closeMenu()
+  if (!note) return
+  if (command === 'edit') await selectNote(note, 'edit')
+  else if (command === 'pin') await togglePinned(note)
+  else await removeNote(note)
+}
+
+async function togglePinned(note: NoteRecord) {
+  try {
+    const saved = await setNotePinned(note.id, !note.pinned, assertBrowserNoteSnapshotSize)
+    if (saved && selected.value?.id === saved.id) {
+      selected.value = { ...selected.value, pinned: saved.pinned }
+      draft.value.pinned = saved.pinned
+    }
+    await refreshNotes()
+  } catch (error) {
+    showSaveError(error)
+  }
+}
+
+async function removeNote(note: NoteRecord) {
+  if (selected.value?.id === note.id && !(await resolveUnsaved())) return
+  try {
+    await ElMessageBox.confirm(
+      t('note.deleteConfirm', { title: getNoteTitle(note) || t('note.untitled') }),
+      t('common.warning'),
+      {
+        confirmButtonText: t('common.delete'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+      },
+    )
+  } catch {
+    return
+  }
+  try {
+    await deleteNote(note.id)
+    if (selected.value?.id === note.id) resetView(isCompact.value ? 'list' : 'idle')
+    await refreshNotes()
+  } catch (error) {
+    showSaveError(error)
+  }
+}
+
+function exportFileName() {
+  const title = (getNoteTitle(draft.value) || t('note.untitled'))
+    .replace(/[\\/:*?"<>|]/g, '-')
+    .trim()
+    .slice(0, 80)
+  return `${title || 'note'}-${new Date().toISOString().slice(0, 10)}.png`
+}
+
+async function exportNote() {
+  if (showCode.value) return
+  const source = document.querySelector<HTMLElement>('.note-editor-frame')
+  if (!source || exporting.value) return
+  exporting.value = true
+  try {
+    const { default: html2canvas } = await import('html2canvas')
+    // 只渲染便签；整页裁剪仍会解析其他 UI 中 html2canvas 不支持的 oklch 颜色。
+    const canvas = await html2canvas(source, {
+      backgroundColor: '#fefcf7',
+      logging: false,
+      scale: Math.min(window.devicePixelRatio || 1, 2),
+      useCORS: true,
+      onclone(_document, frame) {
+        // 在副本中展开完整正文，避免 flex 收缩和滚动容器截断长便签。
+        frame.style.flex = 'none'
+        frame.style.height = 'auto'
+        frame.style.overflow = 'visible'
+        frame.querySelector<HTMLElement>('.editor')!.style.minHeight = `${source.clientHeight}px`
+      },
+    })
+    const blob = await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (value) => (value ? resolve(value) : reject(new Error('Canvas export failed'))),
+        'image/png',
+      ),
+    )
+    downloadBlob(blob, exportFileName())
+    ElMessage.success(t('note.exported'))
+  } catch (e) {
+    ElMessage.error(t('note.exportFailed'))
+    console.error(e)
+  } finally {
+    exporting.value = false
+  }
+}
+
+const dateFormatters = computed(() => {
+  const locale = i18next.language
+  return {
+    time: new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }),
+    date: new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }),
+    year: new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric' }),
+  }
+})
+
+const noteItems = computed(() =>
+  notes.value.map((note) => ({
+    note,
+    title: getNoteTitle(note) || t('note.untitled'),
+    preview: isCompact.value ? getNotePreview(note.markdown) : undefined,
+    time: formatNoteTime(note.updatedAt),
+  })),
+)
+
+function getNotePreview(markdown: string): string {
+  return (
+    markdown
+      .replace(/^\s*#{1,6}[ \t]+[^\r\n]*(?:\r?\n|$)/, '')
+      .match(/\S[^\r\n]*/)?.[0]
+      .replace(/\\+$/, '')
+      .trim() ?? ''
+  )
+}
+
+function formatNoteTime(updatedAt: string): string {
+  const date = new Date(updatedAt)
+  const today = new Date()
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const daysAgo = Math.round((todayStart.getTime() - dateStart.getTime()) / 86_400_000)
+  if (daysAgo >= 0 && daysAgo <= 2) {
+    return t(`note.time.${['today', 'yesterday', 'dayBeforeYesterday'][daysAgo]}`, {
+      time: dateFormatters.value.time.format(date),
+    })
+  }
+  return dateFormatters.value[date.getFullYear() === today.getFullYear() ? 'date' : 'year'].format(
+    date,
+  )
+}
+
+watch(
+  opened,
+  (visible) => {
+    if (visible) void load().catch(showSaveError)
+  },
+  { immediate: true },
+)
+
+watch(isCompact, (compact) => {
+  if (opened.value && compact && mode.value === 'idle') mode.value = 'list'
+})
+
+const unwatchNotes = noteStorage.watch(() => {
+  if (!opened.value) return
+  void refreshNotes()
+    .then(() => {
+      // 未保存草稿保留原基线，保存时才能检测同字段冲突或远端删除。
+      if (!selected.value || draftDirty.value || saving.value) return
+      const current = notes.value.find((note) => note.id === selected.value?.id)
+      if (!current) resetView()
+      else {
+        selected.value = { ...current }
+        draft.value = { ...current }
+      }
+    })
+    .catch(showSaveError)
+})
+onScopeDispose(unwatchNotes)
+</script>
+
+<template>
+  <el-dialog
+    v-model="opened"
+    :width="isCompact ? 400 : 850"
+    class="note__dialog"
+    :class="{ 'is-compact': isCompact }"
+    draggable
+    :show-close="false"
+    :close-on-press-escape="!isComposing"
+    :before-close="beforeClose"
+    header-class="note-header noselect"
+    body-class="note-dialog-body"
+    @close="closeMenu"
+  >
+    <template #header="{ close, titleId }">
+      <button
+        v-if="isCompact && mode !== 'list'"
+        class="note-back-btn"
+        :aria-label="t('note.backToList')"
+        @click="backToList"
+      >
+        <el-icon :size="20"><component :is="KeyboardArrowLeftRound" /></el-icon>
+      </button>
+      <div :id="titleId" class="base-dialog-title">{{ t('note.title') }}</div>
+      <div
+        role="button"
+        tabindex="0"
+        :aria-label="tElement('el.dialog.close')"
+        class="base-dialog-close-btn"
+        @click="close"
+        @keydown.enter="close"
+        @keydown.space.prevent="close"
+      >
+        <component :is="CloseRound" />
+      </div>
+    </template>
+    <div class="note-layout">
+      <aside v-if="showAside" class="note-aside-wrapper">
+        <div class="note-aside">
+          <el-button :icon="Plus" type="primary" class="note-create" plain @click="createNote">
+            {{ t('note.create') }}
+          </el-button>
+          <el-scrollbar @scroll="closeMenu">
+            <div class="note-aside-list">
+              <button
+                v-for="{ note, title, preview, time } in noteItems"
+                :key="note.id"
+                class="note-aside-item"
+                :class="{ 'is-active': selected?.id === note.id }"
+                @click="selectNote(note)"
+                @contextmenu.stop.prevent="openMenu($event, note)"
+              >
+                <span class="note-aside-title">
+                  <component :is="Pin" v-if="note.pinned" class="note-pin-icon" />
+                  {{ title }}
+                </span>
+                <span v-if="preview" class="note-aside-preview">{{ preview }}</span>
+                <span class="note-aside-modified-time">{{ time }}</span>
+              </button>
+              <p v-if="notes.length === 0" class="note-list-empty">{{ t('note.listEmpty') }}</p>
+            </div>
+          </el-scrollbar>
+        </div>
+      </aside>
+      <main v-if="!isCompact || mode !== 'list'" class="note-main">
+        <template v-if="mode === 'idle'">
+          <section class="note-empty-state">
+            <p>{{ t('note.empty') }}</p>
+            <el-button :icon="Plus" type="primary" @click="createNote">
+              {{ t('note.create') }}
+            </el-button>
+          </section>
+        </template>
+        <template v-else>
+          <div class="note-actions-container">
+            <div class="note-title-wrap">
+              <button v-if="!isTitleEditing" class="note-title" @click="editTitle">
+                {{ displayTitle }}
+              </button>
+              <el-input
+                v-else
+                ref="titleInputRef"
+                v-model="draft.title"
+                class="note-title-input"
+                :placeholder="displayTitle"
+                @keyup.enter.prevent="submitTitle"
+                @blur="saveTitle"
+              />
+            </div>
+            <el-space class="note-actions" :size="3">
+              <el-button
+                :icon="FileDownload"
+                :loading="exporting"
+                :disabled="showCode"
+                :aria-label="t('note.export')"
+                :title="t('note.export')"
+                @click="exportNote"
+              />
+              <el-button
+                v-if="isReadonly"
+                :icon="RoundModeEditIcon"
+                :aria-label="t('note.edit')"
+                :title="t('note.edit')"
+                @click="mode = 'edit'"
+              />
+              <template v-else>
+                <el-button
+                  :icon="Code"
+                  :type="showCode ? 'primary' : 'default'"
+                  :aria-label="t('note.toggleSource')"
+                  :title="t('note.toggleSource')"
+                  @click="showCode = !showCode"
+                />
+                <el-button
+                  :icon="Save"
+                  :loading="saving"
+                  :aria-label="t('common.save')"
+                  :title="t('common.save')"
+                  @click="saveCurrent"
+                />
+              </template>
+            </el-space>
+          </div>
+          <div class="note-content-container">
+            <el-input v-if="showCode" v-model="draft.markdown" type="textarea" resize="none" />
+            <template v-else>
+              <MilkdownEditorWrapper
+                :key="draft.id"
+                v-model:content="draft.markdown"
+                v-model:readonly="isReadonly"
+              />
+            </template>
+          </div>
+        </template>
+      </main>
+    </div>
+    <el-dropdown
+      ref="menuRef"
+      :virtual-ref="menuTrigger"
+      :show-arrow="false"
+      virtual-triggering
+      trigger="contextmenu"
+      placement="bottom-start"
+      :popper-options="{ modifiers: [{ name: 'offset', options: { offset: [0, 0] } }] }"
+      popper-class="note-context-menu"
+      @command="handleMenuCommand"
+      @visible-change="
+        (visible: boolean) => {
+          if (!visible) menuNote = null
+        }
+      "
+    >
+      <template #dropdown>
+        <el-dropdown-menu class="noselect">
+          <el-dropdown-item :icon="menuNote?.pinned ? PinOff : Pin" command="pin">
+            {{ t(menuNote?.pinned ? 'note.unpin' : 'note.pin') }}
+          </el-dropdown-item>
+          <el-dropdown-item :icon="RoundModeEditIcon" command="edit">
+            {{ t('common.edit') }}
+          </el-dropdown-item>
+          <el-dropdown-item :icon="DeleteOutline" command="delete" class="is-danger" divided>
+            {{ t('common.delete') }}
+          </el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+    </el-dropdown>
+  </el-dialog>
+</template>
+
+<style lang="scss">
+.note-dialog-body {
+  display: flex;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+.note-layout {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: 0 15px 15px;
+}
+
+.note-aside {
+  display: flex;
+  flex-direction: column;
+  width: 200px;
+  height: 100%;
+  margin-right: 10px;
+  overflow: hidden;
+}
+
+.note-aside-wrapper {
+  overflow: hidden;
+}
+
+.note-create.el-button {
+  flex-shrink: 0;
+  justify-content: flex-start;
+  width: 100%;
+  height: 36px;
+  margin-bottom: 10px;
+  font-weight: bold;
+  border: 0;
+  border-radius: 15px;
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: -2px;
+  }
+}
+
+.note-aside-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note-aside-item {
+  width: 100%;
+  padding: 10px 18px;
+  text-align: left;
+  cursor: pointer;
+  background: var(--note-item-background);
+  border: 0;
+  border-radius: 15px;
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: -2px;
+  }
+}
+
+.note-aside-item.is-active {
+  color: white;
+  background: var(--el-color-primary);
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary-light-7);
+  }
+
+  .note-aside-modified-time {
+    color: var(--el-fill-color);
+  }
+}
+
+.note-aside-title,
+.note-aside-modified-time {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-aside-title {
+  font-size: var(--el-font-size-base);
+  font-weight: bold;
+}
+
+.note-aside-preview {
+  display: -webkit-box;
+  margin-top: 4px;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  font-size: var(--el-font-size-small);
+  line-height: 1.5;
+  color: var(--el-text-color-regular);
+  overflow-wrap: anywhere;
+  opacity: 0.85;
+  -webkit-box-orient: vertical;
+}
+
+.note-pin-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+
+.note-aside-modified-time {
+  font-size: var(--el-font-size-extra-small);
+  color: var(--el-text-color-secondary);
+}
+
+.note-list-empty {
+  margin: 16px 8px;
+  color: var(--el-text-color-secondary);
+  text-align: center;
+}
+
+.note-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.note-empty-state {
+  display: grid;
+  flex: 1;
+  gap: 16px;
+  place-content: center;
+  justify-items: center;
+  color: var(--el-text-color-secondary);
+}
+
+.note-actions-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+  margin-bottom: 10px;
+}
+
+.note-title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.note-title {
+  width: 100%;
+  max-width: 100%;
+  padding: 6px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  cursor: text;
+  background: transparent;
+  border: 0;
+  border-radius: 15px;
+
+  &:focus-visible {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: -2px;
+  }
+}
+
+.note-actions {
+  flex-shrink: 0;
+}
+
+.note-content-container {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.note-content-container .el-textarea,
+.note-content-container .el-textarea__inner {
+  height: 100%;
+}
+
+.note-content-container .el-textarea__inner {
+  background: #fefcf7;
+  border-radius: 10px;
+}
+
+.note-context-menu .is-danger {
+  color: var(--el-color-danger);
+}
+
+.is-compact .note-layout {
+  position: relative;
+  padding: 0 12px 12px;
+}
+
+.is-compact .note-aside-wrapper {
+  position: absolute;
+  inset: 0 12px 12px;
+  z-index: 2;
+  overflow: auto;
+}
+
+.is-compact .note-aside {
+  width: 100%;
+  margin: 0;
+}
+
+@media (width <= 599px) {
+  .note-actions-container {
+    align-items: stretch;
+  }
+
+  .note-title-wrap {
+    width: 100%;
+  }
+
+  .note-title-input {
+    max-width: none;
+  }
+
+  .note-actions {
+    align-self: flex-end;
+  }
+}
+
+.note-context-menu {
+  --el-popper-border-radius: 20px;
+
+  .el-dropdown-menu {
+    padding: 4px;
+    background-color: transparent;
+  }
+
+  .el-dropdown-menu__item {
+    min-width: 100px;
+    padding: 3px 30px 2px 10px;
+    font-size: var(--el-font-size-extra-small);
+    border-radius: 16px;
+  }
+}
+</style>

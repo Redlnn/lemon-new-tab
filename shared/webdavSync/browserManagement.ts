@@ -16,7 +16,7 @@ import { hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
 import { bytesToBase64, createEncryptionAad, decryptSyncBytes } from './crypto.ts'
 import { compareSyncSnapshots } from './differences.ts'
 import { deriveSnapshotTombstones } from './lifecycle.ts'
-import { getBaseline, getOrCreateSyncState, patchSyncState } from './localState.ts'
+import { getBaseline, getOrCreateSyncState, patchSyncState, setBaseline } from './localState.ts'
 import { findRevisionHeads, hasConfirmedCorruptionRepair } from './syncDecision.ts'
 import type {
   AssetReferenceV1,
@@ -365,9 +365,7 @@ export async function removeBrowserRemoteWallpapers(): Promise<LocalSyncStateV1>
     throw new WebDavError('precondition', 'Run a sync check before removing remote wallpapers')
   }
   const scope = { ...opened.state.scope, wallpapers: false }
-  if (!Object.values(scope).some(Boolean)) {
-    throw new WebDavError('invalid-response', 'At least one sync category must remain enabled')
-  }
+  await patchSyncState({ scope })
   const local = preserveExcludedScope(await captureBrowserSyncSnapshot(scope), head.snapshot, scope)
   const snapshot = structuredClone(local)
   if (snapshot.optional) {
@@ -384,7 +382,7 @@ export async function removeBrowserRemoteWallpapers(): Promise<LocalSyncStateV1>
   await publishAndFinalize({
     repository: opened.repository,
     metadata: opened.metadata,
-    state: opened.state,
+    state: { ...opened.state, scope },
     pending,
     parents: [head.revisionId],
     reason: 'local-change',
@@ -398,6 +396,8 @@ export async function removeBrowserRemoteWallpapers(): Promise<LocalSyncStateV1>
     encryptionKey: opened.encryptionKey,
   })
   const state = await getOrCreateSyncState()
+  // 明确移除远端壁纸后，以“不含壁纸”为基线；再次开启会重新发布本机文件。
+  await setBaseline(snapshot)
   return patchSyncState({
     resourceOmissions: state.resourceOmissions.filter((item) => item.kind !== 'wallpaper'),
   })
@@ -475,14 +475,17 @@ export async function previewBrowserSyncHistory(
     baseline ?? heads[0]!.snapshot,
     opened.state.scope,
   )
-  const comparison = compareSyncSnapshots(local, prepared.snapshot)
+  const comparison = compareSyncSnapshots(
+    local,
+    preserveExcludedScope(prepared.snapshot, local, opened.state.scope),
+  )
   return {
     currentSnapshotHash: await hashCanonicalJson(local),
     differences: comparison.differences,
     headRevisionId: heads[0]!.revisionId,
     revisionId,
     truncated: comparison.truncated,
-    wallpaperUnavailable: prepared.wallpaperUnavailable,
+    wallpaperUnavailable: opened.state.scope.wallpapers ? prepared.wallpaperUnavailable : [],
   }
 }
 
@@ -528,7 +531,7 @@ export async function restoreBrowserSyncHistory(
     pending,
     parents: [heads[0]!.revisionId],
     reason: 'restore',
-    snapshot,
+    snapshot: preserveExcludedScope(snapshot, heads[0]!.snapshot, opened.state.scope),
     expectedLocal: local,
     tombstones: heads[0]!.tombstones,
     knownAssets: [...knownAssets.values()],

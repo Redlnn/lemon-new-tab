@@ -1,6 +1,11 @@
 import { browser } from 'wxt/browser'
 
-import { CURRENT_CONFIG_VERSION } from '@/shared/settings'
+import { NoteSaveError, withNotesLock } from '@/shared/notes'
+import {
+  CURRENT_CONFIG_VERSION,
+  settingsStorage,
+  normalizeCurrentSettings,
+} from '@/shared/settings'
 import { withSyncWriteLock } from '@/shared/storage/syncWrite'
 import { readWallpaperLibrary, wallpaperLibrarySignature } from '@/shared/wallpaperLibrary'
 
@@ -18,7 +23,7 @@ import {
   resumePendingBrowserApply,
   type IncomingWallpaperResources,
 } from './browserData.ts'
-import { observeBrowserWebDavRequest } from './browserRedirects.ts'
+import { createBrowserWebDavRequestObserver } from './browserRedirects.ts'
 import { canonicalJson, hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
 import { inlineImageHashesAreValid } from './capture.ts'
 import { resolveSyncConflicts } from './conflicts.ts'
@@ -30,6 +35,7 @@ import {
   unlockVaultEncryption,
 } from './crypto.ts'
 import type { SyncDifference } from './differences.ts'
+import { snapshotCoverage } from './domains.ts'
 import {
   deriveSnapshotTombstones,
   mustReinitializeDevice,
@@ -56,6 +62,8 @@ import {
   webDavSyncConfigStorage,
 } from './localState.ts'
 import { mergeSyncSnapshots } from './merge.ts'
+import { cacheRevision, cachedRevision } from './revisionCache.ts'
+import { decodeSyncSnapshot } from './snapshotCodec.ts'
 import { normalizeSnapshotOrder } from './snapshotOrder.ts'
 import {
   collectRemoteBranchConflicts,
@@ -81,6 +89,12 @@ import type {
 } from './types.ts'
 import { isSyncScope, validateSyncRevision } from './validation.ts'
 import {
+  SyncVersionError,
+  requireSupportedSource,
+  compareReleaseVersions,
+  type SyncSource,
+} from './version.ts'
+import {
   probeWebDavAccess,
   requireConfiguredVaultInspection,
   WebDavClient,
@@ -105,7 +119,7 @@ export function createClient(
     },
     undefined,
     undefined,
-    observeBrowserWebDavRequest,
+    createBrowserWebDavRequestObserver(config.connection.baseUrl),
   )
 }
 
@@ -117,7 +131,26 @@ export async function readRevisions(
 ): Promise<SyncRevisionV1[]> {
   const commits = providedCommits ?? (await repository.listCommits(metadata))
   try {
-    return await readRevisionPayloads(repository, metadata, encryptionKey, commits)
+    const revisions = await readRevisionPayloads(
+      repository,
+      metadata,
+      encryptionKey,
+      commits,
+      providedCommits === undefined,
+    )
+    if (providedCommits === undefined) {
+      const heads = new Set(findRevisionHeads(revisions).map((revision) => revision.revisionId))
+      const verifiedHeads = await readRevisionPayloads(
+        repository,
+        metadata,
+        encryptionKey,
+        commits.filter((commit) => heads.has(commit.revisionId)),
+        false,
+      )
+      const byId = new Map(verifiedHeads.map((revision) => [revision.revisionId, revision]))
+      return revisions.map((revision) => byId.get(revision.revisionId) ?? revision)
+    }
+    return revisions
   } catch (error) {
     if (!(error instanceof WebDavError) || error.category !== 'corrupted') {
       throw error
@@ -139,21 +172,26 @@ async function readRevisionPayloads(
   metadata: VaultMetadataV1,
   encryptionKey: CryptoKey | undefined,
   commits: Awaited<ReturnType<WebDavVaultRepository['listCommits']>>,
+  useCache: boolean,
 ): Promise<SyncRevisionV1[]> {
   const revisions: SyncRevisionV1[] = []
   for (const commit of commits) {
+    const cacheKey = `${canonicalJson(commit)}:${browser.runtime.getManifest().version}`
+    const cached = useCache ? cachedRevision(cacheKey) : undefined
+    if (cached) {
+      revisions.push(cached)
+      continue
+    }
     if (commit.encrypted !== metadata.encrypted) {
       throw new WebDavError('corrupted', 'Commit encryption mode does not match its vault')
     }
-    let revision: SyncRevisionV1
+    const payload = await repository.readCommittedPayload(commit)
+    let plaintext = payload
     if (metadata.encrypted) {
-      if (!encryptionKey) {
+      if (!encryptionKey)
         throw new WebDavError('encryption-locked', 'Encrypted WebDAV vault is locked')
-      }
-      const payload = await repository.readCommittedPayload(commit)
-      let value: unknown
       try {
-        const plaintext = await decryptSyncBytes(
+        plaintext = await decryptSyncBytes(
           encryptionKey,
           payload,
           createEncryptionAad({
@@ -163,18 +201,32 @@ async function readRevisionPayloads(
             objectId: commit.revisionId,
           }),
         )
-        value = JSON.parse(textDecoder.decode(plaintext)) as unknown
       } catch {
         throw new WebDavError('corrupted', 'Encrypted revision could not be authenticated')
       }
-      const validation = validateSyncRevision(value)
-      if (!validation.ok) throw new WebDavError('corrupted', validation.error)
-      revision = validation.value
-      if ((await hashCanonicalJson(revision.snapshot)) !== revision.snapshotHash) {
-        throw new WebDavError('corrupted', 'Revision snapshot hash is invalid')
-      }
-    } else {
-      revision = await repository.readRevision(commit)
+    }
+    let value: unknown
+    try {
+      value = JSON.parse(textDecoder.decode(plaintext))
+    } catch {
+      throw new WebDavError('corrupted', 'Revision payload is invalid JSON')
+    }
+    try {
+      requireSupportedSource(value as SyncSource, browser.runtime.getManifest().version)
+    } catch (error) {
+      throw new WebDavError(
+        error instanceof SyncVersionError ? 'format-too-new' : 'corrupted',
+        'Unsupported sync source',
+      )
+    }
+    const validation = validateSyncRevision(value)
+    if (!validation.ok) throw new WebDavError('corrupted', validation.error)
+    const revision = validation.value
+    if (revision.vaultId !== metadata.vaultId || revision.generationId !== metadata.generationId) {
+      throw new WebDavError('corrupted', 'Committed revision belongs to another vault')
+    }
+    if ((await hashCanonicalJson(revision.snapshot)) !== revision.snapshotHash) {
+      throw new WebDavError('corrupted', 'Revision snapshot hash is invalid')
     }
     if (revision.revisionId !== commit.revisionId) {
       throw new WebDavError('corrupted', 'Commit and revision identifiers do not match')
@@ -182,13 +234,73 @@ async function readRevisionPayloads(
     if (!jsonEquals(revision.snapshot.scope, commit.scope)) {
       throw new WebDavError('corrupted', 'Commit and revision scope do not match')
     }
-    if (revision.settingsSchemaVersion > CURRENT_CONFIG_VERSION) {
-      throw new WebDavError('format-too-new', 'Remote settings format is newer than this extension')
-    }
     if (!(await inlineImageHashesAreValid(revision.snapshot))) {
       throw new WebDavError('corrupted', 'Quick Link icon hash does not match its content')
     }
-    revisions.push(revision)
+    try {
+      const working = {
+        ...Object.fromEntries(
+          [
+            'formatVersion',
+            'settingsSchemaVersion',
+            'pluginVersion',
+            'vaultId',
+            'generationId',
+            'revisionId',
+            'parentRevisionIds',
+            'operationId',
+            'device',
+            'createdAt',
+            'reason',
+            'repairedRevisionId',
+            'snapshotHash',
+          ]
+            .filter((key) => Object.hasOwn(revision, key))
+            .map((key) => [key, revision[key as keyof SyncRevisionV1]]),
+        ),
+        snapshot: decodeSyncSnapshot(
+          revision.snapshot,
+          revision,
+          browser.runtime.getManifest().version,
+        ),
+        tombstones: pruneExpiredTombstones(revision.tombstones),
+        assets: revision.assets
+          .filter((asset) =>
+            (['light', 'dark'] as const).some((variant) =>
+              revision.snapshot.optional?.wallpapers?.[variant]?.items.some(
+                (item) => item.assetId === asset.id,
+              ),
+            ),
+          )
+          .map(({ id, path, role, size, mimeType, sha256 }) => ({
+            id,
+            path,
+            role,
+            size,
+            mimeType,
+            sha256,
+          })),
+      } as SyncRevisionV1
+      working.device = { id: revision.device.id, name: revision.device.name }
+      working.needsRewrite =
+        !jsonEquals(
+          { ...revision, snapshot: normalizeSnapshotOrder(revision.snapshot) },
+          working,
+        ) ||
+        revision.settingsSchemaVersion < CURRENT_CONFIG_VERSION ||
+        compareReleaseVersions(revision.pluginVersion, browser.runtime.getManifest().version) < 0
+      cacheRevision(cacheKey, working)
+      revisions.push(working)
+    } catch (error) {
+      throw new WebDavError(
+        error instanceof SyncVersionError
+          ? 'format-too-new'
+          : error instanceof NoteSaveError
+            ? 'data-too-large'
+            : 'corrupted',
+        error instanceof Error ? error.message : 'Invalid sync snapshot',
+      )
+    }
   }
   return revisions
 }
@@ -215,9 +327,20 @@ export async function createRevision(input: {
   tombstones: TombstoneV1[]
   assets: AssetReferenceV1[]
 }): Promise<SyncRevisionV1> {
+  const cleaned = decodeSyncSnapshot(
+    input.snapshot,
+    {
+      formatVersion: 1,
+      settingsSchemaVersion: CURRENT_CONFIG_VERSION,
+      pluginVersion: browser.runtime.getManifest().version,
+    },
+    browser.runtime.getManifest().version,
+  )
+  const snapshot = { ...cleaned, scope: snapshotCoverage(cleaned) }
   return {
     formatVersion: 1,
     settingsSchemaVersion: CURRENT_CONFIG_VERSION,
+    pluginVersion: browser.runtime.getManifest().version,
     vaultId: input.metadata.vaultId,
     generationId: input.metadata.generationId,
     revisionId: input.revisionId,
@@ -232,10 +355,10 @@ export async function createRevision(input: {
     createdAt: new Date().toISOString(),
     reason: input.reason,
     ...(input.repairedRevisionId ? { repairedRevisionId: input.repairedRevisionId } : {}),
-    snapshot: input.snapshot,
-    tombstones: input.tombstones,
+    snapshot,
+    tombstones: pruneExpiredTombstones(input.tombstones),
     assets: input.assets,
-    snapshotHash: await hashCanonicalJson(input.snapshot),
+    snapshotHash: await hashCanonicalJson(snapshot),
   }
 }
 
@@ -259,82 +382,99 @@ export async function finalizeSnapshot(input: {
   wallpapers?: IncomingWallpaperResources
   preserveLocalWallpapers?: boolean
 }): Promise<void> {
-  input = { ...input, expectedLocal: normalizeSnapshotOrder(input.expectedLocal) }
+  input = {
+    ...input,
+    snapshot: { ...input.snapshot, scope: { ...input.state.scope } },
+    expectedLocal: normalizeSnapshotOrder(input.expectedLocal),
+  }
   const prepared = input.apply
     ? await prepareBrowserApply(
         input.operationId,
         input.revisionId,
         input.snapshot,
-        input.snapshot.scope,
+        input.state.scope,
         input.wallpapers,
       )
     : undefined
-  return withSyncWriteLock(async () => {
-    const wallpaperSignature = wallpaperLibrarySignature(await readWallpaperLibrary())
-    const capture = await captureBrowserSyncSnapshotResult(
-      input.expectedLocal.scope,
-      input.expectedLocal,
-      true,
-    )
-    const local = preserveExcludedScope(
-      capture.snapshot,
-      input.expectedLocal,
-      input.expectedLocal.scope,
-    )
-    if (!jsonEquals(local, input.expectedLocal)) {
-      throw new WebDavError(
-        'precondition',
-        'Local data changed before applying the synchronized snapshot',
+  return withNotesLock(() =>
+    withSyncWriteLock(async () => {
+      const wallpaperSignature = wallpaperLibrarySignature(await readWallpaperLibrary())
+      const capture = await captureBrowserSyncSnapshotResult(
+        input.expectedLocal.scope,
+        input.expectedLocal,
+        true,
       )
-    }
-    if (input.apply) {
-      const verificationScope = input.preserveLocalWallpapers
-        ? { ...input.snapshot.scope, wallpapers: false }
-        : input.snapshot.scope
-      const expected = preserveExcludedScope(
-        expectedAppliedSnapshot(
-          capture.resourceOmissions.length === 0 &&
-            jsonEquals(input.expectedLocal.scope, input.snapshot.scope)
-            ? capture.snapshot
-            : await captureBrowserSyncSnapshot(input.snapshot.scope, true),
-          input.snapshot,
-        ),
-        input.snapshot,
-        verificationScope,
+      const local = preserveExcludedScope(
+        capture.snapshot,
+        input.expectedLocal,
+        input.expectedLocal.scope,
       )
-      await patchSyncState({
-        pending: {
-          operationId: input.operationId,
-          phase: 'applying-local',
-          revisionId: input.revisionId,
-          startedAt: new Date().toISOString(),
-        },
-        scope: { ...input.snapshot.scope },
-      })
-      await applyPreparedBrowserSnapshot(prepared!, wallpaperSignature)
-      const captured = (
-        await captureBrowserSyncSnapshotResult(input.snapshot.scope, input.snapshot, true)
-      ).snapshot
-      const applied = preserveExcludedScope(captured, input.snapshot, verificationScope)
-      if (!jsonEquals(applied, expected)) {
-        throw new WebDavError('precondition', 'Applied local snapshot did not pass verification')
+      if (!jsonEquals(local, input.expectedLocal)) {
+        throw new WebDavError(
+          'precondition',
+          'Local data changed before applying the synchronized snapshot',
+        )
       }
-    }
+      if (input.apply) {
+        const verificationScope = input.preserveLocalWallpapers
+          ? { ...input.state.scope, wallpapers: false }
+          : input.state.scope
+        const expected = preserveExcludedScope(
+          expectedAppliedSnapshot(
+            capture.resourceOmissions.length === 0 &&
+              jsonEquals(input.expectedLocal.scope, input.state.scope)
+              ? capture.snapshot
+              : await captureBrowserSyncSnapshot(input.state.scope, true),
+            input.snapshot,
+          ),
+          input.snapshot,
+          verificationScope,
+        )
+        await patchSyncState({
+          pending: {
+            operationId: input.operationId,
+            phase: 'applying-local',
+            revisionId: input.revisionId,
+            startedAt: new Date().toISOString(),
+          },
+          scope: { ...input.state.scope },
+        })
+        await applyPreparedBrowserSnapshot(prepared!, wallpaperSignature)
+        const captured = (
+          await captureBrowserSyncSnapshotResult(input.state.scope, input.snapshot, true)
+        ).snapshot
+        const applied = preserveExcludedScope(captured, input.snapshot, verificationScope)
+        if (!jsonEquals(applied, expected)) {
+          throw new WebDavError('precondition', 'Applied local snapshot did not pass verification')
+        }
+      }
 
-    await setBaseline(input.snapshot)
-    await clearStoredConflict()
-    await patchSyncState({
-      baseRevisionId: input.revisionId,
-      lastSuccessAt: new Date().toISOString(),
-      lastError: undefined,
-      paused: false,
-      pauseReason: undefined,
-      pending: undefined,
-      scope: { ...input.snapshot.scope },
-    })
-    await clearPublishRecovery()
-    await clearAppliedSyncSnapshot()
-  })
+      const settings = await settingsStorage.raw.getValue()
+      const currentSettings = normalizeCurrentSettings(settings)
+      if (!jsonEquals(settings, currentSettings))
+        await settingsStorage.raw.setValue(currentSettings)
+      await setBaseline(
+        preserveExcludedScope(
+          input.snapshot,
+          (await getBaseline()) ?? firstConnectionBase(),
+          input.state.scope,
+        ),
+      )
+      await clearStoredConflict()
+      await patchSyncState({
+        baseRevisionId: input.revisionId,
+        lastSuccessAt: new Date().toISOString(),
+        lastError: undefined,
+        retry: undefined,
+        paused: false,
+        pauseReason: undefined,
+        pending: undefined,
+        scope: { ...input.state.scope },
+      })
+      await clearPublishRecovery()
+      await clearAppliedSyncSnapshot()
+    }),
+  )
 }
 
 export async function publishAndFinalize(input: {
@@ -352,9 +492,19 @@ export async function publishAndFinalize(input: {
   encryptionKey?: CryptoKey
   corruptedRevisionToIgnore?: string
 }): Promise<void> {
+  // 合并结果必须在上传任何资源及提交之前通过同一份当前结构和容量校验。
+  const cleaned = decodeSyncSnapshot(
+    input.snapshot,
+    {
+      formatVersion: 1,
+      settingsSchemaVersion: CURRENT_CONFIG_VERSION,
+      pluginVersion: browser.runtime.getManifest().version,
+    },
+    browser.runtime.getManifest().version,
+  )
   let revisionId = input.pending.revisionId ?? crypto.randomUUID()
   let pending = await setPendingPhase(input.pending, 'captured', revisionId)
-  let { snapshot } = input
+  let snapshot = cleaned
   let assets: AssetReferenceV1[]
   let preservingLocalWallpapers = false
   try {
@@ -699,84 +849,25 @@ export async function readWallpaperAsset(
   return new Blob([plaintext], { type: asset.mimeType })
 }
 
-const SCOPE_KEYS = [
-  'settings',
-  'quickLinks',
-  'customSearchEngines',
-  'uiPreferences',
-  'blockedTopSites',
-  'wallpapers',
-  'onlineWallpaperUrl',
-  'userIcons',
-] as const
-
-function mergeScope(
-  base: LocalSyncStateV1['scope'],
-  local: LocalSyncStateV1['scope'],
-  remote: LocalSyncStateV1['scope'],
-): LocalSyncStateV1['scope'] {
-  return Object.fromEntries(
-    SCOPE_KEYS.map((key) => [
-      key,
-      local[key] === remote[key] ? local[key] : local[key] === base[key] ? remote[key] : local[key],
-    ]),
-  ) as unknown as LocalSyncStateV1['scope']
-}
-
-function remoteScope(
-  base: LocalSyncStateV1['scope'],
-  revisions: readonly SyncRevisionV1[],
-): LocalSyncStateV1['scope'] {
-  return findRevisionHeads(revisions).reduce(
-    (scope, revision) => mergeScope(base, scope, revision.snapshot.scope),
-    base,
-  )
-}
-
 async function runSynchronizationOnce(): Promise<void> {
   const [config, storedState, password] = await Promise.all([
     webDavSyncConfigStorage.getValue(),
     getOrCreateSyncState(),
     getWebDavPassword(),
   ])
-  let initialState = storedState
+  const initialState = storedState
   if (!config || !initialState.configured) return
-  if (initialState.paused) {
-    if (initialState.pauseReason === 'conflict') {
-      // 冲突可能已由其他设备合并；继续三方比较后才决定自动应用或再次暂停。
-      initialState = await patchSyncState({ paused: false, pauseReason: undefined })
-    } else {
-      if (initialState.pauseReason !== 'remote-deleted') return
-      if (!password) {
-        await patchSyncState({ paused: true, pauseReason: 'authentication' })
-        return
-      }
-      const repository = new WebDavVaultRepository(createClient(config, password), config.directory)
-      const inspection = await repository.inspect()
-      if (
-        inspection.state !== 'ready' ||
-        inspection.metadata.vaultId !== initialState.vaultId ||
-        inspection.metadata.generationId !== initialState.generationId ||
-        inspection.metadata.encrypted !== initialState.encrypted
-      ) {
-        return
-      }
-      initialState = await patchSyncState({
-        paused: false,
-        pauseReason: undefined,
-        lastError: undefined,
-      })
-    }
-  }
+  if (!initialState.enabled || !Object.values(initialState.scope).some(Boolean)) return
   if (!password) {
     await patchSyncState({ paused: true, pauseReason: 'authentication' })
     return
   }
-
   await resumePendingBrowserApply()
   let baselineAtStart = await getBaseline()
   const lastDeviceRecord = initialState.deviceRecordAt ?? initialState.lastSuccessAt
-  const reinitialize = Boolean(lastDeviceRecord && mustReinitializeDevice(lastDeviceRecord))
+  const reinitialize = Boolean(
+    !baselineAtStart && lastDeviceRecord && mustReinitializeDevice(lastDeviceRecord),
+  )
   let pending: PendingSyncOperation = initialState.pending ?? {
     operationId: crypto.randomUUID(),
     phase: 'captured',
@@ -828,7 +919,10 @@ async function runSynchronizationOnce(): Promise<void> {
       resumed &&
       applied?.revisionId === resumeRevisionId &&
       applied.operationId === pending.operationId &&
-      (await hashCanonicalJson(applied.snapshot)) === resumed.snapshotHash
+      jsonEquals(preserveExcludedScope(resumed.snapshot, applied.snapshot, initialState.scope), {
+        ...applied.snapshot,
+        scope: initialState.scope,
+      })
     ) {
       baselineAtStart = resumed.snapshot
       initialState.baseRevisionId = resumed.revisionId
@@ -888,15 +982,16 @@ async function runSynchronizationOnce(): Promise<void> {
     await patchSyncState({ paused: true, pauseReason: 'conflict' })
     return
   }
-  let comparisonBase = reinitialize ? firstConnectionBase() : baseline!
-  const scope = mergeScope(
-    comparisonBase.scope,
-    initialState.scope,
-    remoteScope(comparisonBase.scope, revisions),
-  )
-  const state = jsonEquals(scope, initialState.scope)
-    ? initialState
-    : await patchSyncState({ scope })
+  let comparisonBase = {
+    ...(reinitialize ? firstConnectionBase() : baseline!),
+    scope: { ...initialState.scope },
+  }
+  const scope = initialState.scope
+  const state = initialState
+  const comparisonRevisions = revisions.map((revision) => ({
+    ...revision,
+    snapshot: preserveExcludedScope(revision.snapshot, comparisonBase, scope),
+  }))
   const capture = await captureBrowserSyncSnapshotResult(scope, reinitialize ? undefined : baseline)
   await patchSyncState({ resourceOmissions: capture.resourceOmissions })
   const local =
@@ -904,18 +999,18 @@ async function runSynchronizationOnce(): Promise<void> {
       ? preserveExcludedScope(capture.snapshot, baseline, scope)
       : capture.snapshot
   let decision = reinitialize
-    ? decideInitialization({ base: comparisonBase, local, revisions })
+    ? decideInitialization({ base: comparisonBase, local, revisions: comparisonRevisions })
     : decideSynchronization({
         baseRevisionId: initialState.baseRevisionId!,
-        baseline: baseline!,
+        baseline: comparisonBase,
         local,
-        revisions,
+        revisions: comparisonRevisions,
       })
 
   let recoveredFromPrunedHistory = false
   if (decision.action === 'unknown-ancestor') {
-    comparisonBase = firstConnectionBase()
-    decision = decideInitialization({ base: comparisonBase, local, revisions })
+    comparisonBase = { ...comparisonBase, scope }
+    decision = decideInitialization({ base: comparisonBase, local, revisions: comparisonRevisions })
     recoveredFromPrunedHistory = true
   }
   if (decision.action === 'unknown-ancestor') {
@@ -943,6 +1038,7 @@ async function runSynchronizationOnce(): Promise<void> {
       remainingRemoteRevisionIds: decision.remainingRemoteRevisionIds,
       remoteVersions: describeConflictRevisions(revisions, decision.remoteRevisionIds),
       stage: decision.stage,
+      tombstones: decision.tombstones,
     })
     await patchSyncState({ paused: true, pauseReason: 'conflict' })
     return
@@ -950,6 +1046,23 @@ async function runSynchronizationOnce(): Promise<void> {
   if (decision.action === 'up-to-date' || decision.action === 'apply-remote') {
     const snapshot =
       decision.action === 'apply-remote' ? decision.remote.snapshot : decision.snapshot
+    const head = revisions.find((revision) => revision.revisionId === decision.revisionId)!
+    if (head.needsRewrite) {
+      await publishAndFinalize({
+        repository,
+        metadata,
+        state,
+        pending,
+        parents: [head.revisionId],
+        reason: 'merge',
+        snapshot: preserveExcludedScope(snapshot, head.snapshot, scope),
+        expectedLocal: local,
+        tombstones: head.tombstones,
+        knownAssets: head.assets,
+        encryptionKey,
+      })
+      return
+    }
     const apply = !jsonEquals(local, snapshot)
     const assets =
       decision.action === 'apply-remote'
@@ -997,7 +1110,11 @@ async function runSynchronizationOnce(): Promise<void> {
     pending: { ...pending, revisionId },
     parents: decision.parents,
     reason: decision.reason,
-    snapshot: decision.snapshot,
+    snapshot: preserveExcludedScope(
+      decision.snapshot,
+      findRevisionHeads(revisions)[0]!.snapshot,
+      scope,
+    ),
     expectedLocal: local,
     tombstones,
     knownAssets: decision.assets,
@@ -1006,6 +1123,7 @@ async function runSynchronizationOnce(): Promise<void> {
 }
 
 function pauseReasonFor(error: WebDavError): SyncPauseReason | undefined {
+  if (error.category === 'permission-required') return 'permission'
   if (error.category === 'authentication' || error.category === 'forbidden') return 'authentication'
   if (error.category === 'corrupted' || error.category === 'foreign-vault')
     return 'corrupted-remote'
@@ -1013,15 +1131,20 @@ function pauseReasonFor(error: WebDavError): SyncPauseReason | undefined {
   if (error.category === 'encryption-locked') return 'encryption-password'
   if (error.category === 'not-found') return 'remote-deleted'
   if (error.category === 'storage-full') return 'storage-full'
+  if (error.category === 'data-too-large') return 'data-too-large'
   return undefined
 }
 
-async function recordFailure(error: unknown): Promise<void> {
+export async function recordSyncFailure(error: unknown): Promise<void> {
   const state = await getOrCreateSyncState()
   const webDavError =
     error instanceof WebDavError
       ? error
-      : new WebDavError('invalid-response', 'Unexpected synchronization failure')
+      : error instanceof SyncVersionError
+        ? new WebDavError('format-too-new', error.message)
+        : error instanceof NoteSaveError
+          ? new WebDavError('data-too-large', error.message)
+          : new WebDavError('invalid-response', 'Unexpected synchronization failure')
   const lastError: SanitizedSyncError = {
     category: webDavError.category,
     operationId: state.pending?.operationId ?? crypto.randomUUID(),
@@ -1053,7 +1176,7 @@ export async function synchronizeBrowser(): Promise<void> {
       ) {
         continue
       }
-      await recordFailure(error)
+      await recordSyncFailure(error)
       return
     }
   }
@@ -1142,7 +1265,7 @@ async function inspectBrowserWebDavSetup(input: BrowserWebDavSetupInput): Promis
     input.connection,
     undefined,
     undefined,
-    observeBrowserWebDavRequest,
+    createBrowserWebDavRequestObserver(input.connection.baseUrl),
   )
   const repository = new WebDavVaultRepository(client, input.directory)
   await probeWebDavAccess(client)
@@ -1177,9 +1300,7 @@ async function inspectBrowserWebDavSetup(input: BrowserWebDavSetupInput): Promis
     }
   }
   const revisions = await readRevisions(repository, metadata, encryptionKey)
-  const scope = revisions.length
-    ? remoteScope(firstConnectionBase().scope, revisions)
-    : setupScope(input)
+  const scope = setupScope(input)
   const capture = await captureBrowserSyncSnapshotResult(scope)
   return {
     encryptionKey,
@@ -1299,9 +1420,7 @@ export async function connectBrowserWebDav(
   }
 
   const deviceName = input.deviceName?.trim().slice(0, 80) || (await createPrivateDeviceName())
-  const scope = heads.length
-    ? remoteScope(firstConnectionBase().scope, scanned.revisions)
-    : requestedScope
+  const scope = requestedScope
   await webDavSyncConfigStorage.setValue({
     version: 1,
     connection: {
@@ -1379,7 +1498,7 @@ export async function connectBrowserWebDav(
     return patchSyncState({ paused: true, pauseReason: 'conflict' })
   }
   const remote = combined.state
-  const comparison = mergeSyncSnapshots(base, scanned.local, remote.snapshot)
+  const comparison = mergeSyncSnapshots(base, scanned.local, remote.snapshot, remote.tombstones)
   if (comparison.conflicts.length > 0) {
     await Promise.all([
       setBaseline(base),
@@ -1394,6 +1513,7 @@ export async function connectBrowserWebDav(
         remainingRemoteRevisionIds: [],
         remoteVersions: describeConflictRevisions(scanned.revisions, remote.headRevisionIds),
         stage: 'local-remote',
+        tombstones: remote.tombstones,
       }),
     ])
     state = await patchSyncState({ paused: true, pauseReason: 'conflict' })
@@ -1582,6 +1702,7 @@ export async function resolveBrowserSyncConflict(
           base: stored.base,
           local: stored.local,
           remote: stored.remote,
+          tombstones: stored.tombstones,
           resolutions,
         })
   if (stored.stage === 'remote-branches' && !stored.remoteBranchConflicts) {
@@ -1617,6 +1738,8 @@ export async function resolveBrowserSyncConflict(
     }
     snapshot = merge.snapshot
   }
+  // 冲突工作副本中的停用类别来自旧基线；发布时沿用最新远端数据。
+  if (heads.length === 1) snapshot = preserveExcludedScope(snapshot, heads[0]!.snapshot, state.scope)
   const revisionId = crypto.randomUUID()
   const pending: PendingSyncOperation = {
     operationId: crypto.randomUUID(),
@@ -1717,6 +1840,13 @@ export async function openConfiguredVault(readAllRevisions = true): Promise<{
   const encryptionKey = metadata.encrypted
     ? await getStoredEncryptionKey(metadata.vaultId, metadata.generationId)
     : undefined
-  const revisions = readAllRevisions ? await readRevisions(repository, metadata, encryptionKey) : []
+  const revisions = readAllRevisions
+    ? await readRevisions(
+        repository,
+        metadata,
+        encryptionKey,
+        await repository.listCommits(metadata),
+      )
+    : []
   return { encryptionKey, metadata, repository, revisions, state }
 }

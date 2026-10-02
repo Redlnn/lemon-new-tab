@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 
-import { createDraftWriter } from '@/shared/storage/syncWrite'
+import { createDraftWriter, withSyncWriteLock } from '@/shared/storage/syncWrite'
+import { jsonEquals } from '@/shared/webdavSync/canonical'
 
 import type { CURRENT_CONFIG_SCHEMA } from './current'
 import { defaultSettings } from './default'
@@ -27,7 +28,12 @@ export const useSettingsStore = defineStore('option', () => {
   )
 
   const init = async () => {
-    const settings = await settingsStorage.getValue()
+    const settings = await withSyncWriteLock(async () => {
+      const stored = await settingsStorage.raw.getValue()
+      const current = normalizeCurrentSettings(stored)
+      if (!jsonEquals(stored, current)) await settingsStorage.raw.setValue(current)
+      return current
+    })
     console.log('[Settings] Initializing settings storage with config version', settings.version)
 
     // 清除过期的 blob url，避免使用失效的 URL

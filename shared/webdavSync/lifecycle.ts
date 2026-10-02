@@ -1,3 +1,4 @@
+import { SYNC_ENTITIES } from './domains.ts'
 import type { SyncSnapshotV1, TombstoneV1 } from './types.ts'
 
 export const TOMBSTONE_RETENTION_DAYS = 180
@@ -6,6 +7,7 @@ export const MAX_HISTORY_VERSIONS = 10
 export const MIN_COMPLETE_HISTORY_VERSIONS = 2
 export const ORPHAN_RESOURCE_GRACE_MS = 24 * 60 * 60 * 1000
 const DAY_MS = 24 * 60 * 60 * 1000
+const ENTITY_TYPES = new Set<string>(SYNC_ENTITIES.map(({ type }) => type))
 
 export function createTombstone(
   entityType: string,
@@ -27,7 +29,15 @@ export function pruneExpiredTombstones(
   now = new Date(),
 ): TombstoneV1[] {
   const nowTime = now.getTime()
-  return tombstones.filter((tombstone) => Date.parse(tombstone.expiresAt) > nowTime)
+  return tombstones
+    .filter((item) => ENTITY_TYPES.has(item.entityType) && Date.parse(item.expiresAt) > nowTime)
+    .map(({ entityType, entityId, deletedByRevisionId, deletedAt, expiresAt }) => ({
+      entityType,
+      entityId,
+      deletedByRevisionId,
+      deletedAt,
+      expiresAt,
+    }))
 }
 
 export function mustReinitializeDevice(lastSeenAt: string, now = new Date()): boolean {
@@ -56,27 +66,11 @@ export function deriveSnapshotTombstones(
     }
   }
 
-  appendDeleted(
-    'quick-link',
-    base.quickLinks?.items.map((item) => item.id) ?? [],
-    next.quickLinks?.items.map((item) => item.id) ?? [],
-  )
-  appendDeleted(
-    'quick-link-group',
-    base.quickLinks?.groups.map((item) => item.id) ?? [],
-    next.quickLinks?.groups.map((item) => item.id) ?? [],
-  )
-  appendDeleted(
-    'custom-search-engine',
-    base.customSearchEngines?.items.map((item) => item.id) ?? [],
-    next.customSearchEngines?.items.map((item) => item.id) ?? [],
-  )
-  for (const variant of ['light', 'dark'] as const) {
+  for (const entity of SYNC_ENTITIES)
     appendDeleted(
-      `wallpaper-${variant}`,
-      base.optional?.wallpapers?.[variant]?.order ?? [],
-      next.optional?.wallpapers?.[variant]?.order ?? [],
+      entity.type,
+      entity.items(base)?.map((item) => item.id) ?? [],
+      entity.items(next)?.map((item) => item.id) ?? [],
     )
-  }
   return result
 }

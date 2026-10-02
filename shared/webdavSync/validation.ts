@@ -1,3 +1,5 @@
+import { assertNoteSnapshotSize } from '../notes/model.ts'
+
 import { jsonByteLength } from './canonical.ts'
 import {
   MAX_SYNC_INLINE_IMAGE_BYTES,
@@ -5,6 +7,7 @@ import {
   MAX_SYNC_SNAPSHOT_BYTES,
   MAX_SYNC_WALLPAPER_BYTES,
 } from './catalog.ts'
+import { pickSyncSettings } from './settingsWhitelist.ts'
 import type {
   AssetReferenceV1,
   CommitRecordV1,
@@ -15,6 +18,7 @@ import type {
   SyncSnapshotV1,
   TombstoneV1,
 } from './types.ts'
+import { compareReleaseVersions } from './version.ts'
 
 export const MAX_METADATA_BYTES = 256 * 1024
 export const MAX_REVISION_BYTES = MAX_SYNC_SNAPSHOT_BYTES
@@ -101,6 +105,7 @@ function isQuickLinks(value: unknown, images: Readonly<Record<string, string>>):
         isEntityId(item.id) &&
         typeof item.url === 'string' &&
         typeof item.title === 'string' &&
+        (item.appId === undefined || item.appId === 'note') &&
         (item.faviconHash === undefined ||
           (typeof item.faviconHash === 'string' && Object.hasOwn(images, item.faviconHash))) &&
         item.favicon === undefined,
@@ -135,6 +140,24 @@ function isQuickLinks(value: unknown, images: Readonly<Record<string, string>>):
   if (!isUniqueIdList(value.rootOrder, itemIds)) return false
   const referencedItems = [...value.rootOrder, ...typedGroups.flatMap((group) => group.itemIds)]
   return referencedItems.length === itemIds.size && new Set(referencedItems).size === itemIds.size
+}
+
+function isNotes(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.items) &&
+    value.items.every(
+      (item) =>
+        isRecord(item) &&
+        isUuid(item.id) &&
+        (item.title === undefined || typeof item.title === 'string') &&
+        typeof item.markdown === 'string' &&
+        (item.pinned === undefined || typeof item.pinned === 'boolean') &&
+        isDate(item.createdAt) &&
+        isDate(item.updatedAt),
+    ) &&
+    hasUniqueIds(value.items as Array<{ id: string }>)
+  )
 }
 
 function isCustomSearchEngines(value: unknown, images: Readonly<Record<string, string>>): boolean {
@@ -229,7 +252,7 @@ function isWallpapers(value: unknown): boolean {
 
 export function isSyncScope(value: unknown): value is SyncScopePreferences {
   if (!isRecord(value)) return false
-  const keys: Array<keyof SyncScopePreferences> = [
+  const keys: Array<Exclude<keyof SyncScopePreferences, 'notes'>> = [
     'settings',
     'quickLinks',
     'customSearchEngines',
@@ -240,7 +263,8 @@ export function isSyncScope(value: unknown): value is SyncScopePreferences {
     'userIcons',
   ]
   return (
-    keys.every((key) => typeof value[key] === 'boolean') && keys.some((key) => value[key] === true)
+    keys.every((key) => typeof value[key] === 'boolean') &&
+    (value.notes === undefined || typeof value.notes === 'boolean')
   )
 }
 
@@ -248,6 +272,7 @@ export function parseLocalSyncState(value: unknown): LocalSyncStateV1 {
   if (
     !isRecord(value) ||
     typeof value.configured !== 'boolean' ||
+    typeof value.enabled !== 'boolean' ||
     typeof value.paused !== 'boolean' ||
     typeof value.deviceId !== 'string' ||
     typeof value.deviceName !== 'string' ||
@@ -287,6 +312,7 @@ function isSyncSnapshot(value: unknown): boolean {
   )
     return false
   if (value.quickLinks !== undefined && !isQuickLinks(value.quickLinks, images)) return false
+  if (value.notes !== undefined && !isNotes(value.notes)) return false
   if (
     value.customSearchEngines !== undefined &&
     !isCustomSearchEngines(value.customSearchEngines, images)
@@ -303,9 +329,27 @@ function isSyncSnapshot(value: unknown): boolean {
   )
 }
 
-export function validateSyncSnapshot(value: unknown): ValidationResult<SyncSnapshotV1> {
+/** 存储原文先验证结构和体积；设置字段含义在迁移后校验。 */
+export function validateStoredSyncSnapshot(value: unknown): ValidationResult<SyncSnapshotV1> {
   if (!isSyncSnapshot(value)) return invalid('Sync snapshot is invalid')
   if (!hasJsonSizeAtMost(value, MAX_REVISION_BYTES)) return invalid('Sync snapshot is too large')
+  return { ok: true, value: value as SyncSnapshotV1 }
+}
+
+export function validateSyncSnapshot(value: unknown): ValidationResult<SyncSnapshotV1> {
+  const structure = validateStoredSyncSnapshot(value)
+  if (!structure.ok) return structure
+  try {
+    const notes = (value as SyncSnapshotV1).notes
+    if (notes) assertNoteSnapshotSize({ notes: notes.items })
+  } catch {
+    return invalid('Sync notes are too large')
+  }
+  try {
+    if ((value as SyncSnapshotV1).settings) pickSyncSettings((value as SyncSnapshotV1).settings)
+  } catch {
+    return invalid('Sync settings are invalid')
+  }
   return { ok: true, value: value as unknown as SyncSnapshotV1 }
 }
 
@@ -368,6 +412,11 @@ export function validateCommitRecord(value: unknown): ValidationResult<CommitRec
 export function validateSyncRevision(value: unknown): ValidationResult<SyncRevisionV1> {
   if (!isRecord(value)) return invalid('Revision must be an object')
   if (value.formatVersion !== 1) return invalid('Unsupported revision format')
+  try {
+    compareReleaseVersions(value.pluginVersion as string, '0')
+  } catch {
+    return invalid('Extension source version is invalid')
+  }
   if (!hasJsonSizeAtMost(value, MAX_REVISION_BYTES))
     return invalid('Revision is too large or invalid')
   if (
@@ -439,5 +488,6 @@ export function validateSyncRevision(value: unknown): ValidationResult<SyncRevis
     return invalid('Revision contains duplicate assets')
   }
   if (!isHash(value.snapshotHash)) return invalid('Revision snapshot hash is invalid')
+  // 校验不能补写默认值，否则旧 revision 的内容哈希和 commit scope 会失配。
   return { ok: true, value: value as unknown as SyncRevisionV1 }
 }

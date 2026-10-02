@@ -75,9 +75,16 @@ export type WebDavSyncMessage =
     }
   | {
       type: 'webdav-sync:update-preferences'
+      enabled?: boolean
       scope?: Partial<LocalSyncStateV1['scope']>
     }
   | { type: 'webdav-sync:unlock-encryption'; password: string }
+  | {
+      type: 'webdav-sync:update-credentials'
+      username?: string
+      password: string
+      rememberPassword: boolean
+    }
 
 async function sendStateMessage(message: WebDavSyncMessage): Promise<LocalSyncStateV1> {
   return parseLocalSyncState(await browser.runtime.sendMessage(message))
@@ -237,12 +244,21 @@ export function restoreSyncHistory(
 }
 
 export function updateSyncPreferences(input: {
+  enabled?: boolean
   scope?: Partial<LocalSyncStateV1['scope']>
 }): Promise<LocalSyncStateV1> {
   return sendStateMessage({
     type: 'webdav-sync:update-preferences',
     ...input,
   } satisfies WebDavSyncMessage)
+}
+
+export function updateSyncCredentials(input: {
+  username?: string
+  password: string
+  rememberPassword: boolean
+}): Promise<LocalSyncStateV1> {
+  return sendStateMessage({ type: 'webdav-sync:update-credentials', ...input })
 }
 
 export function resolveSyncConflict(
@@ -262,13 +278,12 @@ export function unlockSyncEncryption(password: string): Promise<LocalSyncStateV1
 }
 
 export async function prepareSyncBeforeNewTabStartup(): Promise<void> {
-  const stored = await browser.storage.local.get('webdavSyncState')
-  const state = stored.webdavSyncState as LocalSyncStateV1 | undefined
-  if (state?.pending?.phase === 'applying-local') {
-    await browser.runtime.sendMessage({
+  // 导入日志不属于云端同步状态；每次启动均检查，恢复失败也不能阻断本机界面。
+  await browser.runtime
+    .sendMessage({
       type: 'webdav-sync:resume-apply',
     } satisfies WebDavSyncMessage)
-  }
+    .catch(() => undefined)
   void browser.runtime
     .sendMessage({ type: 'webdav-sync:natural' } satisfies WebDavSyncMessage)
     .catch(() => undefined)
@@ -330,6 +345,14 @@ export function isWebDavSyncMessage(value: unknown): value is WebDavSyncMessage 
   }
   if (type === 'webdav-sync:unlock-encryption') {
     return typeof (value as { password?: unknown }).password === 'string'
+  }
+  if (type === 'webdav-sync:update-credentials') {
+    const message = value as { username?: unknown; password?: unknown; rememberPassword?: unknown }
+    return (
+      (message.username === undefined || typeof message.username === 'string') &&
+      typeof message.password === 'string' &&
+      typeof message.rememberPassword === 'boolean'
+    )
   }
   if (type === 'webdav-sync:resolve-conflict') {
     return Array.isArray((value as { resolutions?: unknown }).resolutions)

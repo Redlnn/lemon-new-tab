@@ -1,10 +1,7 @@
 import type { QuickLink, QuickLinksData } from '@/shared/quickLinks'
 
-import {
-  applySyncSettings,
-  preserveUnknownSyncSettings,
-  stripExcludedSyncSettings,
-} from './settingsWhitelist.ts'
+import { jsonEquals } from './canonical.ts'
+import { applySyncSettings, pickSyncSettings, mergeSyncSettingValues } from './settingsWhitelist.ts'
 import { normalizeSnapshotOrder } from './snapshotOrder.ts'
 import type {
   JsonObject,
@@ -12,6 +9,7 @@ import type {
   SyncCustomSearchEngineV1,
   SyncQuickLinkV1,
   SyncQuickLinksDataV1,
+  SyncNotesDataV1,
   SyncScopePreferences,
   SyncSnapshotV1,
 } from './types.ts'
@@ -89,6 +87,25 @@ function mergeSearchEngineImport(
   }
 }
 
+function mergeNoteImport(
+  current: SyncNotesDataV1 | undefined,
+  incoming: SyncNotesDataV1 | undefined,
+): SyncNotesDataV1 | undefined {
+  if (!current && !incoming) return undefined
+  const result = structuredClone(current?.items ?? [])
+  const index = new Map(result.map((item, position) => [item.id, position]))
+  for (const note of incoming?.items ?? []) {
+    const position = index.get(note.id)
+    if (position === undefined) {
+      index.set(note.id, result.length)
+      result.push(structuredClone(note))
+    } else if (!jsonEquals(result[position], note)) {
+      result.push({ ...structuredClone(note), id: crypto.randomUUID() })
+    }
+  }
+  return { items: result }
+}
+
 export function mergeImportedSnapshot(
   current: SyncSnapshotV1,
   incoming: SyncSnapshotV1,
@@ -118,9 +135,10 @@ export function mergeImportedSnapshot(
   const result: SyncSnapshotV1 = {
     scope: { ...current.scope },
     settings: incoming.settings
-      ? mergeSyncSettings(current.settings ?? {}, incoming.settings)
+      ? mergeSyncSettingValues(current.settings ?? {}, incoming.settings)
       : structuredClone(current.settings),
     quickLinks: mergeQuickLinkImport(current.quickLinks, incoming.quickLinks),
+    notes: mergeNoteImport(current.notes, incoming.notes),
     customSearchEngines: mergeSearchEngineImport(
       current.customSearchEngines,
       incoming.customSearchEngines,
@@ -131,6 +149,7 @@ export function mergeImportedSnapshot(
   }
   if (!result.settings) delete result.settings
   if (!result.ui) delete result.ui
+  if (!result.notes) delete result.notes
   if (!result.optional) delete result.optional
   pruneInlineImages(result)
   return normalizeSnapshotOrder(result)
@@ -142,7 +161,12 @@ function toLocalQuickLink(
   includeIcons: boolean,
   images: Readonly<Record<string, string>>,
 ): QuickLink {
-  const result: QuickLink = { id: incoming.id, url: incoming.url, title: incoming.title }
+  const result: QuickLink = {
+    id: incoming.id,
+    url: incoming.url,
+    title: incoming.title,
+    ...(incoming.appId ? { appId: incoming.appId } : {}),
+  }
   const syncedIcon = incoming.faviconHash ? images[incoming.faviconHash] : undefined
   if (includeIcons && syncedIcon) {
     result.favicon = syncedIcon
@@ -237,11 +261,9 @@ export function preserveExcludedScope(
   const result = structuredClone(captured)
   result.scope = { ...scope }
   if (!scope.settings) copyCategory(result, baseline, 'settings')
-  else if (result.settings && baseline.settings) {
-    result.settings = preserveUnknownSyncSettings(result.settings, baseline.settings)
-  }
-  if (result.settings) result.settings = stripExcludedSyncSettings(result.settings)
+  if (result.settings) result.settings = pickSyncSettings(result.settings)
   if (!scope.quickLinks) copyCategory(result, baseline, 'quickLinks')
+  if (!scope.notes) copyCategory(result, baseline, 'notes')
   if (!scope.customSearchEngines) copyCategory(result, baseline, 'customSearchEngines')
   if (!scope.uiPreferences) copyCategory(result, baseline, 'ui')
   if (!scope.userIcons || (!scope.quickLinks && !scope.customSearchEngines)) {
@@ -261,6 +283,7 @@ export function expectedAppliedSnapshot(
 ): SyncSnapshotV1 {
   const result = preserveExcludedScope(beforeApply, target, target.scope)
   if (target.scope.quickLinks && target.quickLinks) copyCategory(result, target, 'quickLinks')
+  if (target.scope.notes && target.notes) copyCategory(result, target, 'notes')
   if (target.scope.customSearchEngines && target.customSearchEngines)
     copyCategory(result, target, 'customSearchEngines')
   if (target.scope.uiPreferences && target.ui) copyCategory(result, target, 'ui')
@@ -280,10 +303,7 @@ export function expectedAppliedSnapshot(
   }
   if (target.scope.settings) {
     const targetSettings = target.settings ?? {}
-    const settings = preserveUnknownSyncSettings(
-      mergeSyncSettings(beforeApply.settings ?? {}, targetSettings),
-      targetSettings,
-    )
+    const settings = mergeSyncSettingValues(beforeApply.settings ?? {}, targetSettings)
     if (Object.keys(settings).length) result.settings = settings
     else delete result.settings
   }

@@ -1,3 +1,5 @@
+import { projectNote } from '../notes/model.ts'
+
 import { sha256Hex } from './canonical.ts'
 import {
   MAX_SYNC_INLINE_IMAGE_BYTES,
@@ -36,13 +38,17 @@ export function captureSyncSnapshot(context: CaptureContext): SyncSnapshotV1 {
   if (context.scope.quickLinks) {
     snapshot.quickLinks = toSyncQuickLinks(context.quickLinks, context.scope.userIcons)
   }
+  if (context.scope.notes && context.notes) {
+    snapshot.notes = { items: context.notes.notes.map(projectNote) }
+  }
   if (context.scope.customSearchEngines) {
     snapshot.customSearchEngines = toSyncCustomSearchEngines(
       context.customSearchEngines,
       context.scope.userIcons,
     )
   }
-  if (context.scope.uiPreferences) snapshot.ui = { ...context.ui }
+  if (context.scope.uiPreferences)
+    snapshot.ui = { language: context.ui.language, colorMode: context.ui.colorMode }
   if (context.scope.blockedTopSites && context.blockedTopSites) {
     snapshot.optional = {
       ...snapshot.optional,

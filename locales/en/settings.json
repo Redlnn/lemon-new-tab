@@ -19,6 +19,35 @@
     "change": "Change background",
     "custom": "Custom",
     "fasterBgAnim": "Faster background display on startup",
+    "library": {
+      "add": "Add",
+      "clearPreviews": "Clear preview cache",
+      "collapse": "Collapse",
+      "confirmRemove": "Remove the {{count}} selected wallpapers?",
+      "dark": "Dark mode",
+      "done": "Done",
+      "download": "Download",
+      "dragAddHint": "Drag images or videos here to add them",
+      "empty": "Add images or videos. Select multiple files or drop them here.",
+      "expand": "Show all",
+      "group": "Wallpaper group",
+      "image": "Image",
+      "importFailed": "{{count}} files could not be added. Other files were kept.",
+      "inherit": "When no dark mode wallpapers are set, light mode wallpapers will be used automatically.",
+      "light": "Light mode",
+      "loading": "Reading details",
+      "manage": "Manage",
+      "order": "Rotation order",
+      "ordered": "List order",
+      "random": "Random",
+      "remove": "Remove",
+      "reset": "Reset",
+      "rotation": "Wallpaper rotation",
+      "solid": "Solid color",
+      "sortHint": "Drag to reorder",
+      "unavailable": "Unavailable",
+      "video": "Video"
+    },
     "mask": {
       "color": "Mask color",
       "enable": "Enable mask"
@@ -26,8 +55,7 @@
     "onlineTips": {
       "a": "Submit after pressing the Enter key or when the input field loses focus.",
       "b": "The wallpaper caching strategy depends on the browser, and wallpapers may not be accessible offline.",
-      "c": "There will be a blank screen before the wallpaper finishes loading, and the duration depends on your internet speed.",
-      "d": "Please ensure the wallpaper API you are using allows cross-origin requests; otherwise, it will fail to load."
+      "c": "There will be a blank screen before the wallpaper finishes loading, and the duration depends on your internet speed."
     },
     "parallax": "Wallpaper parallax effect",
     "pauseWhenBlur": "Pause video background when loses focus",
@@ -62,8 +90,7 @@
       "online": "Online URL"
     },
     "video": {
-      "blurTip": "Turn on to reduce performance usage when multiple new tabs or windows are open on the screen simultaneously.",
-      "warning": "Using a video as a background consumes a lot of GPU resources. It is recommended to avoid opening multiple new tabs at the same time. It is recommended to turn off animation, blur, and transparency effects appropriately to reduce performance consumption."
+      "blurTip": "Turn on to reduce performance usage when multiple new tabs or windows are open on the screen simultaneously."
     },
     "vignette": "Enable vignetting",
     "warning": {
@@ -74,40 +101,7 @@
       "monetDisabled": "Dynamic Theme Colors (Monet Extraction) has been disabled because “Access all sites” permission was not granted.",
       "notGranted": "Permission not granted, cannot access this host.",
       "title": "Warning",
-      "tooLarge": {
-        "message": "The file is too large ({{size}}) and may affect performance or occupy significant storage. Do you want to continue?",
-        "title": "Large File Warning"
-      },
       "unknownSource": "Using images from unknown sources as backgrounds may expose your device to attacks. Do you want to continue?"
-    },
-    "library": {
-      "solid": "Solid color",
-      "light": "Light mode",
-      "dark": "Dark mode",
-      "reset": "Reset",
-      "group": "Wallpaper group",
-      "download": "Download",
-      "add": "Add",
-      "manage": "Manage",
-      "done": "Done",
-      "remove": "Remove",
-      "expand": "Show all",
-      "collapse": "Collapse",
-      "inherit": "When no dark mode wallpapers are set, light mode wallpapers will be used automatically.",
-      "empty": "Add images or videos. Select multiple files or drop them here.",
-      "rotation": "Wallpaper rotation",
-      "order": "Rotation order",
-      "random": "Random",
-      "ordered": "List order",
-      "image": "Image",
-      "video": "Video",
-      "loading": "Reading details",
-      "unavailable": "Unavailable",
-      "dragAddHint": "Drag images or videos here to add them",
-      "sortHint": "Drag to reorder",
-      "importFailed": "{{count}} files could not be added. Other files were kept.",
-      "confirmRemove": "Remove the {{count}} selected wallpapers?",
-      "clearPreviews": "Clear preview cache"
     }
   },
   "bookmark": {
@@ -163,34 +157,30 @@
   "common": {
     "copyLink": "Copy Link Address",
     "hour": "Hour",
+    "incognitoPermission": {
+      "message": "To open a private window, allow this extension to run in private windows in Firefox Add-ons Manager, then try again.",
+      "title": "Private Browsing Permission Required"
+    },
+    "openInIncognitoWindow": "Open in Incognito Window",
     "openInNewTab": "Open in New Tab",
     "openInNewWindow": "Open in New Window",
-    "openInIncognitoWindow": "Open in Incognito Window",
-    "incognitoPermission": {
-      "title": "Private Browsing Permission Required",
-      "message": "To open a private window, allow this extension to run in private windows in Firefox Add-ons Manager, then try again."
-    },
     "sections": {
-      "animation": "Animations",
       "appearance": "Appearance",
       "behavior": "Interaction and behavior",
       "danger": "Clear data",
       "data": "Data and recovery",
       "display": "Display and content",
-      "effects": "Transparency and blur",
       "general": "General",
       "layout": "Layout and spacing",
       "position": "Page position",
       "radius": "Corner radius",
       "source": "Content source",
       "summary": {
-        "animation": "Wallpaper and interface motion",
         "appearance": "Color, shadow, and sizing",
         "behavior": "Interactions and opening behavior",
         "danger": "Irreversible actions—use with care",
         "data": "Backups and caches",
         "display": "Visible content and presentation",
-        "effects": "Control transparency and blur by component",
         "general": "Frequently used options",
         "layout": "Sizing, counts, and spacing",
         "position": "Main content and action buttons",
@@ -307,7 +297,6 @@
       "icon": "Purge favicon cache",
       "wallpaper": "Purge wallpaper cache"
     },
-    "sync": "Cloud Sync (No Longer Supported)",
     "syncRetirement": {
       "acknowledge": "OK",
       "clearCloudData": "Clean up cloud data",
@@ -447,10 +436,10 @@
       "uiScopeDisabled": "Language and color mode stay on this device because their sync category is off.",
       "userIconsScopeDisabled": "User-selected icons stay on this device. You can include them in Advanced sync scope.",
       "wallpaperFailed": "The wallpaper did not pass upload or integrity checks. Other data will still sync.",
+      "wallpaperPartial": "Only available static images up to 20 MiB sync. Videos, animated images, and other skipped files stay on this device.",
       "wallpaperScopeDisabled": "Local image wallpapers stay on this device. You can include them in the WebDAV sync scope.",
       "wallpaperTooLarge": "This image is over 20 MB, so the wallpaper is not synced. Other data will still sync.",
-      "wallpaperVideo": "Video wallpapers are not synced through WebDAV.",
-      "wallpaperPartial": "Only available static images up to 20 MiB sync. Videos, animated images, and other skipped files stay on this device."
+      "wallpaperVideo": "Video wallpapers are not synced through WebDAV."
     }
   },
   "theme": {
@@ -535,9 +524,9 @@
         "searchEngineUrl": "Search engine address",
         "wallpaper": "Wallpaper",
         "wallpaperDark": "Dark wallpaper",
+        "wallpaperFixed": "Fixed wallpaper",
         "wallpaperLight": "Light wallpaper",
-        "wallpaperOrder": "Wallpaper list order",
-        "wallpaperFixed": "Fixed wallpaper"
+        "wallpaperOrder": "Wallpaper list order"
       },
       "finish": "Create merge version",
       "local": "Keep local data",
@@ -613,6 +602,7 @@
     },
     "errors": {
       "authentication": "The password is incorrect or the provider denied access",
+      "permission-required": "Access to this WebDAV server must be authorized",
       "conflict": "Remote data has a conflict",
       "corrupted": "Remote data is corrupted",
       "network": "The server is temporarily unreachable",
@@ -620,6 +610,7 @@
       "redirect-insecure": "The server tried to downgrade HTTPS to HTTP, so sync was stopped",
       "redirect-required": "The redirect is unsafe or could not be verified. Only same-origin redirects and same-host HTTP-to-HTTPS upgrades are allowed; you can also enter the final WebDAV address.",
       "server": "The WebDAV service returned an error",
+      "data-too-large": "Data exceeds the size limits: 1 MiB per note, 8 MiB for all notes, and 10 MiB for the full snapshot. Reduce local or remote data and retry.",
       "storage-full": "The WebDAV storage is full",
       "timeout": "The connection timed out",
       "unknown": "Sync failed. Review its status and try again."
@@ -699,11 +690,10 @@
       "removeWallpapersCompleted": "Wallpaper sync stopped and unused cloud images cleaned up",
       "removeWallpapersDescription": "A new version without wallpapers will be published, then cloud images no longer referenced by retained versions will be removed. Local wallpapers will remain.",
       "removeWallpapersTitle": "Stop syncing wallpapers and clean up cloud images?",
-      "revision": "Damaged version: {{id}}",
       "retry": "Check again",
+      "revision": "Damaged version: {{id}}",
       "same": "Local data matches the previous complete version, which will be used automatically to create a repair version.",
       "size": "Raw file size: {{size}} bytes",
-      "title": "Inspect and repair",
       "wallpaperDescription": "Oversized or unsupported images are skipped. Change the scope or choose a smaller image; the original file is never modified.",
       "wallpaperTitle": "Some images were not synced"
     },
@@ -711,10 +701,11 @@
     "scope": {
       "blockedTopSites": "Hidden frequently visited sites",
       "customSearchEngines": "Custom search engines",
+      "notes": "Notes",
       "onlineWallpaperUrl": "Online wallpaper address",
       "onlineWallpaperUrlNote": "The address may contain a access token.",
       "settings": "Baisc Settings",
-      "summary": "Choose each category. Changes are recorded for the whole vault and mirrored to other devices.",
+      "summary": "Only affects this device. Disabled categories retain their remote data and resume comparison when enabled.",
       "title": "Sync scope",
       "uiPreferences": "Language and Dark Mode",
       "userIcons": "Custom Link Icons",
@@ -731,7 +722,6 @@
         "existingTitle": "Compare this device and remote",
         "firstConnectionNote": "This device and the remote both have data, but no shared sync version exists yet. After enabling sync, resolve items individually or choose a bulk preference in Settings; confirmation creates the shared baseline.",
         "firstConnectionTitle": "First connection: choose which data to keep",
-        "initial": "New sync vault",
         "initialTitle": "Review the initial upload",
         "safe": "No conflicts between local and remote data. Sync can be safely enabled."
       },
@@ -785,7 +775,7 @@
         "title": "Remote scan result"
       },
       "scope": {
-        "description": "This selection will also apply to other devices.",
+        "description": "Only affects this device. Disabled categories retain their remote data and resume comparison when enabled.",
         "omittedResources": "{{count}} oversized or unsupported selected images will be skipped",
         "required": "Enable at least one sync category.",
         "title": "Choose sync scope"
@@ -815,6 +805,7 @@
     },
     "status": {
       "authentication": "Sign-in required",
+      "permission": "Server access permission required",
       "conflict": "Conflicts need attention",
       "corrupted": "The latest remote version is damaged",
       "encryptionPassword": "Sync encryption password required",
@@ -823,13 +814,21 @@
       "pending": "Changes waiting to upload",
       "ready": "Connected; waiting for first check",
       "remoteDeleted": "Remote sync data was deleted",
+      "dataTooLarge": "Data exceeds the size limits. Reduce it and retry",
       "storageFull": "WebDAV storage is full",
       "synced": "Synced",
       "unconfigured": "Not configured",
-      "wallpaperSkipped": "Core data synced; wallpaper not synced"
+      "wallpaperSkipped": "Core data synced; wallpaper not synced",
+      "noSelection": "No sync categories selected"
     },
     "syncNow": "Sync now",
-    "title": "WebDAV Sync"
+    "title": "WebDAV Sync",
+    "enabled": "Enable sync on this device",
+    "credentials": {
+      "title": "Update login credentials",
+      "username": "Username (leave blank to keep current)",
+      "save": "Verify and save"
+    }
   },
   "yiyan": {
     "alwaysShow": "Always show",

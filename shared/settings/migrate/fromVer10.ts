@@ -1,9 +1,17 @@
-import { defaultSettings } from '../default'
+import { defaultSettings } from '../default.ts'
 import type { SettingsSchemaV10, SettingsSchemaV11 } from '../types'
 
-export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 {
+import type { PartialSettings } from './partial.ts'
+
+export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11
+export function migrateFromVer10To11(
+  old: PartialSettings<SettingsSchemaV10>,
+): PartialSettings<SettingsSchemaV11>
+export function migrateFromVer10To11(
+  old: PartialSettings<SettingsSchemaV10>,
+): PartialSettings<SettingsSchemaV11> {
   const { shortcut, perf, ...rest } = old
-  const { shortcut: perfShortcut, ...restPerf } = perf
+  const { shortcut: perfShortcut, ...restPerf } = perf ?? {}
 
   return {
     ...rest,
@@ -15,16 +23,16 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
       ...rest.background,
       showDownloadBtn: defaultSettings.background.showDownloadBtn,
       bing: {
-        ...rest.background.bing,
+        ...rest.background?.bing,
         resolution: defaultSettings.background.bing.resolution,
-        cachedResolution: rest.background.bing.id ? '1080p' : null,
+        cachedResolution: rest.background?.bing?.id ? '1080p' : null,
       },
     },
     clock: {
       ...rest.clock,
       dateSize: defaultSettings.clock.dateSize,
       style: {
-        ...rest.clock.style,
+        ...rest.clock?.style,
         transparency: defaultSettings.clock.style.transparency,
       },
     },
@@ -49,7 +57,7 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
       ...rest.dock,
       borderRadius: defaultSettings.dock.borderRadius,
       launchpad: {
-        ...rest.dock.launchpad,
+        ...rest.dock?.launchpad,
         iconSize: defaultSettings.dock.launchpad.iconSize,
         rightClickToOpen: defaultSettings.dock.launchpad.rightClickToOpen,
       },
@@ -98,5 +106,5 @@ export function migrateFromVer10To11(old: SettingsSchemaV10): SettingsSchemaV11 
       },
     },
     version: 11,
-  } satisfies SettingsSchemaV11
+  }
 }

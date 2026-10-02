@@ -12,6 +12,20 @@ export interface SyncQuickLinkV1 {
   title: string
   favicon?: string
   faviconHash?: string
+  appId?: import('@/shared/builtinApps').BuiltInAppId
+}
+
+export interface SyncNoteV1 {
+  id: string
+  title?: string
+  markdown: string
+  pinned?: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SyncNotesDataV1 {
+  items: SyncNoteV1[]
 }
 
 export interface SyncQuickLinkGroupV1 {
@@ -67,6 +81,7 @@ export interface SyncSnapshotV1 {
   scope: SyncScopePreferences
   settings?: JsonObject
   quickLinks?: SyncQuickLinksDataV1
+  notes?: SyncNotesDataV1
   customSearchEngines?: SyncCustomSearchEngineDataV1
   ui?: {
     language: string
@@ -136,8 +151,11 @@ export type SyncRevisionReason =
   | 'import'
 
 export interface SyncRevisionV1 {
+  /** 仅用于已解码工作副本，不写入协议。 */
+  needsRewrite?: boolean
   formatVersion: 1
   settingsSchemaVersion: number
+  pluginVersion: string
   vaultId: string
   generationId: string
   revisionId: string
@@ -171,6 +189,7 @@ export interface SyncDeviceRecordV1 {
 export interface SyncScopePreferences {
   settings: boolean
   quickLinks: boolean
+  notes: boolean
   customSearchEngines: boolean
   uiPreferences: boolean
   blockedTopSites: boolean
@@ -192,6 +211,8 @@ export type LocalResourceOmission =
     }
 
 export type SyncPauseReason =
+  | 'data-too-large'
+  | 'permission'
   | 'authentication'
   | 'conflict'
   | 'corrupted-remote'
@@ -220,6 +241,7 @@ export interface SanitizedSyncError {
 
 export interface LocalSyncStateV1 {
   configured: boolean
+  enabled: boolean
   paused: boolean
   pauseReason?: SyncPauseReason
   vaultId?: string
@@ -232,6 +254,7 @@ export interface LocalSyncStateV1 {
   lastSuccessAt?: string
   pending?: PendingSyncOperation
   lastError?: SanitizedSyncError
+  retry?: { attempt: number; nextAttemptAt?: number }
   resourceOmissions: readonly LocalResourceOmission[]
   scope: SyncScopePreferences
   encrypted: boolean
@@ -260,6 +283,7 @@ export interface SyncConflict {
   category:
     | 'settings'
     | 'quick-links'
+    | 'notes'
     | 'search-engines'
     | 'blocked-top-sites'
     | 'wallpaper'
