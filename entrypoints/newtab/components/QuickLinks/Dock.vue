@@ -343,22 +343,26 @@ function canMoveDockQuickLinkRight(item: CtxQuickLinkItem) {
 }
 
 async function moveDockQuickLink(item: CtxQuickLinkItem, direction: -1 | 1) {
-  if (!item.isPinned) return
-  const fromIndex = item.originalIndex
+  if (!item.isPinned || !item.id) return
+  const target = quickLinksStore.findQuickLinkTargetById(item.id)
+  if (target === null) return
+  if (typeof target !== 'number' && target.groupId !== DEFAULT_QUICK_LINK_GROUP_ID) return
+  const fromIndex = typeof target === 'number' ? target : target.index
   const toIndex = fromIndex + direction
   if (toIndex < 0 || toIndex >= getDockQuickLinkCount()) return
   try {
-    const changed = settings.quickLinks.grouping
-      ? await quickLinksStore.moveQuickLink({
-          fromGroupId: DEFAULT_QUICK_LINK_GROUP_ID,
-          fromIndex,
-          toGroupId: DEFAULT_QUICK_LINK_GROUP_ID,
-          toIndex,
-        })
-      : await quickLinksStore.moveFlatQuickLink({
-          fromIndex,
-          toIndex,
-        })
+    const changed =
+      typeof target !== 'number'
+        ? await quickLinksStore.moveQuickLink({
+            fromGroupId: target.groupId,
+            fromIndex,
+            toGroupId: target.groupId,
+            toIndex,
+          })
+        : await quickLinksStore.moveFlatQuickLink({
+            fromIndex,
+            toIndex,
+          })
     if (changed) await refreshDebounced()
   } catch (error) {
     console.error('[dock] Failed to move quick link:', error)

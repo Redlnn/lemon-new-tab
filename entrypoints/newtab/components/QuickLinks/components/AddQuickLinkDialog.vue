@@ -36,7 +36,7 @@ const emit = defineEmits<{
   saved: []
 }>()
 
-const editingTarget = ref<QuickLinkTarget | null>(null)
+const editingId = ref<string | null>(null)
 const addingGroupId = ref<string | null>(null)
 const data: QuickLink = reactive({
   url: '',
@@ -46,7 +46,7 @@ const data: QuickLink = reactive({
 
 const { beforeFaviconUpload, httpRequest } = useFaviconUpload()
 
-const isEditing = computed(() => editingTarget.value !== null)
+const isEditing = computed(() => editingId.value !== null)
 const dialogTitle = computed(() =>
   t(isEditing.value ? 'quickLinks.editLink' : 'quickLinks.addLink'),
 )
@@ -55,7 +55,7 @@ const confirmLabel = computed(() => t(isEditing.value ? 'common.save' : 'common.
 function resetFields() {
   modelForm.value?.resetFields()
   Object.assign(data, { url: '', title: '', favicon: '', faviconSource: undefined })
-  editingTarget.value = null
+  editingId.value = null
   addingGroupId.value = null
 }
 
@@ -66,12 +66,12 @@ function prepareAddDialog(groupId?: string) {
 
 function prepareEditDialog(targetRef: QuickLinkTarget) {
   const target = quickLinksStore.getQuickLink(targetRef)
-  if (!target) {
+  if (!target?.id) {
     showDialog.value = false
     return
   }
   modelForm.value?.resetFields()
-  editingTarget.value = targetRef
+  editingId.value = target.id
   Object.assign(data, {
     url: target.url,
     title: target.title,
@@ -103,15 +103,16 @@ async function submit() {
     ...(!data.faviconSource ? {} : { faviconSource: data.faviconSource }),
   }
 
-  if (isEditing.value && editingTarget.value !== null) {
-    if (typeof editingTarget.value === 'number') {
-      await quickLinksStore.updateFlatQuickLink(editingTarget.value, quickLink)
+  if (editingId.value !== null) {
+    const target = quickLinksStore.findQuickLinkTargetById(editingId.value)
+    if (target === null) {
+      ElMessage.warning(t('common.itemUnavailable'))
+      return
+    }
+    if (typeof target === 'number') {
+      await quickLinksStore.updateFlatQuickLink(target, quickLink)
     } else {
-      await quickLinksStore.updateQuickLinkInGroup(
-        editingTarget.value.groupId,
-        editingTarget.value.index,
-        quickLink,
-      )
+      await quickLinksStore.updateQuickLinkInGroup(target.groupId, target.index, quickLink)
     }
   } else if (settings.quickLinks.grouping && addingGroupId.value) {
     await quickLinksStore.addQuickLinkToGroup(addingGroupId.value, quickLink)

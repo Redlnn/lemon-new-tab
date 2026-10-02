@@ -533,6 +533,18 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     return getGroup(target.groupId)?.items[target.index]
   }
 
+  const findQuickLinkTargetById = (id: string): QuickLinkTarget | null => {
+    if (groupState.value.length) {
+      for (const group of groupState.value) {
+        const index = group.items.findIndex((item) => item.id === id)
+        if (index >= 0) return { groupId: group.id, index }
+      }
+      return null
+    }
+    const index = flatItems.value.findIndex((item) => item.id === id)
+    return index >= 0 ? index : null
+  }
+
   const setBuiltInAppEnabled = async (id: BuiltInAppId, enabled: boolean) => {
     await init()
     const matches = (item: QuickLink) => resolveBuiltInAppId(item) === id
@@ -586,6 +598,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     insertQuickLinkToGroup,
     insertFlatQuickLink,
     getQuickLink,
+    findQuickLinkTargetById,
     getSnapshot,
     setBuiltInAppEnabled,
   }

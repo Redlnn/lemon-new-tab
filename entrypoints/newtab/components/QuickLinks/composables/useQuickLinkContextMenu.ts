@@ -12,6 +12,7 @@ import { openQuickLinkUrl, pinQuickLink, removeQuickLink } from '../utils/quickL
 import { blockSite } from '../utils/topSites'
 
 export type CtxQuickLinkItem = {
+  id?: string
   url: string
   title: string
   appId?: BuiltInAppId
@@ -38,7 +39,13 @@ export function useQuickLinkContextMenu(options: {
     event: MouseEvent | PointerEvent | TouchEvent,
     item: CtxQuickLinkItem,
   ): void => {
-    ctxItem.value = item
+    const target = item.groupId
+      ? { groupId: item.groupId, index: item.originalIndex }
+      : item.originalIndex
+    ctxItem.value = {
+      ...item,
+      id: item.id ?? (item.isPinned ? quickLinksStore.getQuickLink(target)?.id : undefined),
+    }
     let clientX = 0
     let clientY = 0
     if ('clientX' in event) {
@@ -80,24 +87,18 @@ export function useQuickLinkContextMenu(options: {
       ElMessage.info(t('quickLinks.bookmark.existing'))
       return
     }
-    browser.bookmarks.create({ title, url }, (created) => {
-      if (!created.parentId) return
-      chrome.bookmarks.get(created.parentId, (nodes) => {
-        const folderTitle = nodes?.[0]?.title ?? null
-        ElMessage.success(t('quickLinks.bookmark.success', { folder: folderTitle }))
-      })
-    })
+    const created = await browser.bookmarks.create({ title, url })
+    if (!created.parentId) return
+    const nodes = await browser.bookmarks.get(created.parentId)
+    const folderTitle = nodes[0]?.title ?? null
+    ElMessage.success(t('quickLinks.bookmark.success', { folder: folderTitle }))
   }
 
   const ctxUnpin = async (): Promise<void> => {
-    if (!ctxItem.value?.isPinned) return
-    await removeQuickLink(
-      ctxItem.value.groupId
-        ? { groupId: ctxItem.value.groupId, index: ctxItem.value.originalIndex }
-        : ctxItem.value.originalIndex,
-      quickLinksStore,
-      refreshFn,
-    )
+    if (!ctxItem.value?.isPinned || !ctxItem.value.id) return
+    const target = quickLinksStore.findQuickLinkTargetById(ctxItem.value.id)
+    if (target === null) return
+    await removeQuickLink(target, quickLinksStore, refreshFn)
   }
 
   const ctxPin = async (): Promise<void> => {
@@ -121,12 +122,9 @@ export function useQuickLinkContextMenu(options: {
   }
 
   const ctxEdit = (): void => {
-    if (!ctxItem.value?.isPinned) return
-    onOpenEditDialog?.(
-      ctxItem.value.groupId
-        ? { groupId: ctxItem.value.groupId, index: ctxItem.value.originalIndex }
-        : ctxItem.value.originalIndex,
-    )
+    if (!ctxItem.value?.isPinned || !ctxItem.value.id) return
+    const target = quickLinksStore.findQuickLinkTargetById(ctxItem.value.id)
+    if (target !== null) onOpenEditDialog?.(target)
   }
 
   return {

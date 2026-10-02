@@ -14,6 +14,7 @@ type GroupSelectDialog = {
 type Translate = (key: string, options?: Record<string, unknown>) => string
 
 export type QuickLinkGroupActionItem = {
+  id?: string
   url: string
   title: string
   favicon?: string
@@ -55,14 +56,22 @@ export function useQuickLinkGroupActions(options: {
     await options.refresh()
   }
 
-  const moveToGroup = async (item: Pick<QuickLinkGroupActionItem, 'groupId' | 'originalIndex'>) => {
+  const moveToGroup = async (
+    item: Pick<QuickLinkGroupActionItem, 'id' | 'groupId' | 'originalIndex'>,
+  ) => {
     if (!item.groupId) return
+    const id =
+      item.id ??
+      quickLinksStore.getQuickLink({ groupId: item.groupId, index: item.originalIndex })?.id
+    if (!id) return
     const groupId = await openGroupSelectDialog({
       title: options.t('quickLinks.groups.selectMoveTarget'),
       currentGroupId: item.groupId,
     })
-    if (!groupId || groupId === item.groupId) return
-    await quickLinksStore.moveQuickLinkToGroup(item.groupId, item.originalIndex, groupId)
+    if (!groupId) return
+    const target = quickLinksStore.findQuickLinkTargetById(id)
+    if (target === null || typeof target === 'number' || groupId === target.groupId) return
+    await quickLinksStore.moveQuickLinkToGroup(target.groupId, target.index, groupId)
     await options.refresh()
   }
 

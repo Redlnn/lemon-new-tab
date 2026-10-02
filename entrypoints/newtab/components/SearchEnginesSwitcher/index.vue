@@ -77,8 +77,10 @@ async function deleteCustomEngine(index: number) {
       },
     )
 
+    const targetIndex = customSearchEngineStore.items.findIndex((item) => item.id === engine.id)
+    if (targetIndex < 0) return
     const currentIndex = availableEngineIds.value.indexOf(engine.id)
-    customSearchEngineStore.items.splice(index, 1)
+    customSearchEngineStore.items.splice(targetIndex, 1)
     await customSearchEngineStore.save()
 
     if (settings.search.engine !== engine.id) return

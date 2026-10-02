@@ -16,7 +16,7 @@ const customSearchEngineStore = useCustomSearchEngineStore()
 const modelForm = ref<FormInstance>()
 
 const showDialog = ref(false)
-const editingIndex = ref<number | null>(null)
+const editingId = ref<string | null>(null)
 const data: {
   name: string
   url: string
@@ -29,7 +29,7 @@ const data: {
 
 const { beforeFaviconUpload, httpRequest } = useFaviconUpload()
 
-const isEditing = computed(() => editingIndex.value !== null)
+const isEditing = computed(() => editingId.value !== null)
 const dialogTitle = computed(() =>
   t(isEditing.value ? 'customSearchEngine.edit' : 'customSearchEngine.add'),
 )
@@ -38,7 +38,7 @@ const confirmLabel = computed(() => t(isEditing.value ? 'common.save' : 'common.
 function resetFields() {
   modelForm.value?.resetFields()
   Object.assign(data, { name: '', url: '', icon: '' })
-  editingIndex.value = null
+  editingId.value = null
 }
 
 function openAddDialog() {
@@ -50,7 +50,7 @@ function openEditDialog(index: number) {
   const target = customSearchEngineStore.items[index]
   if (!target) return
   modelForm.value?.resetFields()
-  editingIndex.value = index
+  editingId.value = target.id
   Object.assign(data, {
     name: target.name,
     url: target.url,
@@ -79,17 +79,20 @@ async function submit() {
     return
   }
 
+  const index = customSearchEngineStore.items.findIndex((item) => item.id === editingId.value)
+  if (isEditing.value && index < 0) {
+    ElMessage.warning(t('common.itemUnavailable'))
+    return
+  }
   const engine = {
-    id: isEditing.value
-      ? customSearchEngineStore.items[editingIndex.value!]!.id
-      : crypto.randomUUID(),
+    id: editingId.value ?? crypto.randomUUID(),
     name: data.name.trim(),
     url: data.url.trim(),
     icon: data.icon || undefined,
   }
 
-  if (isEditing.value && editingIndex.value !== null) {
-    customSearchEngineStore.items.splice(editingIndex.value, 1, engine)
+  if (isEditing.value) {
+    customSearchEngineStore.items.splice(index, 1, engine)
   } else {
     customSearchEngineStore.items.push(engine)
   }
