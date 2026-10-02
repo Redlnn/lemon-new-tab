@@ -22,10 +22,14 @@
 - **Search:** Added a Tips shortcut in the search-engine menu on the left side of the search box to open Search Preferences directly.
 - **Search:** Added direct navigation to the target URL when entering a URL.
 - **Search:** Added inline calculation results when entering an expression.
+- **Search:** Search suggestion sources can now be selected individually: calculator, URL detection, Quick Links, Top Sites, browser history, extension search history, and search engine suggestions.
+- **Search:** Added browser history suggestions matched by title or URL. First use requires permission, and the number of suggestions is adjustable.
 - **Bookmarks:** When adding a bookmark to Quick Links, the current Quick Links group is selected by default.
 - **Bookmarks:** Added remembered width for the bookmarks sidebar.
 - **Launchpad:** Added an icon-size control.
 - **Launchpad:** Added opening the Launchpad by right-clicking a blank area of the new tab page, similar to Lemon Start Page.
+- **Notes:** Added built-in notes with Markdown editing and source view, reading preview, pinning, deletion, and image export.
+- **Notes:** The Notes shortcut can be added to or hidden from Quick Links through Built-in App Management, and hiding it can be undone.
 - **Sync:** Added experimental WebDAV backup and sync.
 - **Settings:** Reorganized settings sections and appearance.
 - **Quick Links, Dock, and Launchpad:** When a site has no favicon, its first title character can be used as the link icon.
@@ -36,14 +40,19 @@
 ### Improvements⚡️
 
 - Improved performance across modules for faster responses and lower memory usage.
-- **Quick Links:** In grouped mode, changed the Top Sites context-menu label from “Pin” to “Add to Quick Links”.
-- **Quick Links:** Improved Quick Links performance.
-- **Bookmarks:** Improved bookmarks-sidebar loading and sorting performance.
-- **Bookmarks:** Improved the interaction for dragging to reorder bookmarks.
 - Removed third-party favicon services to reduce extra third-party requests.
 - Limited concurrent favicon fetches to prevent a burst of requests.
 - Clearing wallpaper or icon caches now reloads open new-tab pages and provides clearer failure hints and recovery.
 - Simplified some settings UI wording and reordered options.
+- Optimized drag-and-drop experience across modules.
+- **Settings:** Narrow-screen dialogs now fit the screen width, with transitions when sections expand or collapse.
+- **Sync:** Temporary network failures are retried automatically. After credentials expire or server permission is lost, sync can be resumed by updating credentials or granting permission in Settings.
+- **Sync:** Disabling a data category preserves its cloud data; re-enabling it resumes comparison between local and cloud changes.
+- **Touch screens:** Tapping a blank area of the new tab page can trigger the configured Launchpad or bookmarks-sidebar action.
+- **Quick Links:** In grouped mode, changed the Top Sites context-menu label from “Pin” to “Add to Quick Links”.
+- **Quick Links:** Improved Quick Links performance.
+- **Bookmarks:** Improved bookmarks-sidebar loading and sorting performance.
+- **Bookmarks:** Improved the interaction for dragging to reorder bookmarks.
 
 ### Bug Fixes🐛
 
