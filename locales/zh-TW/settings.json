@@ -333,6 +333,7 @@
       "transparent": "對話框背景透明"
     },
     "dock": {
+      "enterAnim": "Dock 入場動畫",
       "scale": "Dock圖示縮放動畫"
     },
     "effectsTitle": "效果設定",

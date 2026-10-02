@@ -198,6 +198,7 @@ export const defaultSettings = {
   },
   perf: {
     bgSwitchAnim: true,
+    dockEnterAnim: true,
     dockScale: true,
     bookmark: {
       transparent: true,

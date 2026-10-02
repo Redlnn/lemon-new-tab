@@ -75,6 +75,7 @@ function toggleAnimationSettings(enable: boolean) {
   settings.perf.focus.blur = enable
   settings.perf.searchBar.launchAnim = enable
   settings.perf.bgSwitchAnim = enable
+  settings.perf.dockEnterAnim = enable
   settings.perf.dockScale = enable
   settings.perf.yiyan.ripple = enable
   settings.background.parallax = enable && !isOnlyTouchDevice.value
@@ -140,6 +141,11 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
     key: 'launchAnim',
     label: t('search.launchAnim'),
     model: toRef(settings.perf.searchBar, 'launchAnim'),
+  },
+  {
+    key: 'dockEnterAnim',
+    label: t('perf.dock.enterAnim'),
+    model: toRef(settings.perf, 'dockEnterAnim'),
   },
   {
     key: 'dockScale',

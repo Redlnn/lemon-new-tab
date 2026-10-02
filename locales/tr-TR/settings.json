@@ -333,6 +333,7 @@
       "transparent": "İletişim kutusu saydamlığı"
     },
     "dock": {
+      "enterAnim": "Dock giriş animasyonu",
       "scale": "Dock simgesi ölçeklendirme animasyonu"
     },
     "effectsTitle": "Efekt Ayarları",

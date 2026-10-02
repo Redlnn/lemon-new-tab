@@ -333,6 +333,7 @@
       "transparent": "Dialog transparency"
     },
     "dock": {
+      "enterAnim": "Dock entrance animation",
       "scale": "Dock icon scale animation"
     },
     "effectsTitle": "Effect Settings",

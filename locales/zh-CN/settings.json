@@ -333,6 +333,7 @@
       "transparent": "弹窗背景透明"
     },
     "dock": {
+      "enterAnim": "Dock 入场动画",
       "scale": "Dock图标缩放动画"
     },
     "effectsTitle": "效果设置",

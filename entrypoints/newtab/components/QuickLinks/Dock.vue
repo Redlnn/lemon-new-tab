@@ -209,6 +209,14 @@ async function refreshDockScaleLayout() {
   }, 180)
 }
 
+watch(
+  () => props.ready,
+  (ready) => {
+    if (ready) void refreshDockScaleLayout()
+  },
+  { flush: 'post' },
+)
+
 let transitionTimer: ReturnType<typeof setTimeout> | null = null
 
 // 追踪当前交互是否来自触屏，用于混合设备（鼠标+触屏）的判断
@@ -374,171 +382,174 @@ defineExpose({ refresh, toggleLaunchpad })
 </script>
 
 <template>
-  <div
-    ref="dockRef"
-    class="dock noselect"
-    :class="dockClass"
-    :style="{
-      opacity: isHideDock,
-      pointerEvents: isHideDock === '0' ? 'none' : 'auto',
-      '--item-size': settings.dock.iconSize + 'px',
-      '--item-ratio': settings.dock.iconRatio * 100 + '%',
-      '--dock-icon-inset': (settings.dock.iconSize * (1 - settings.dock.iconRatio)) / 2 + 'px',
-      '--dock-radius': settings.dock.borderRadius + 'px',
-      '--gap-size': settings.dock.gap + 'px',
-    }"
-    @pointerenter="onPointerEnter"
-    @mouseenter="onMouseEnter"
-    @mousemove="onMouseMove"
-    @mouseleave="onMouseLeave"
-    @contextmenu.stop.prevent
-    @dragstart.prevent
-  >
-    <!-- 启动台固定入口 -->
-    <template v-if="settings.dock.launchpad.enabled">
-      <el-tooltip
-        :content="t('dock.launchpad.title')"
-        placement="top"
-        effect="light"
-        :hide-after="0"
-        :show-arrow="false"
-        :enterable="false"
-        :disabled="isUsingTouch"
-        transition="none"
-        :popper-class="dockTooltipClass"
-      >
-        <div
-          role="button"
-          tabindex="0"
-          class="dock-item"
-          :aria-label="t('dock.launchpad.title')"
-          :ref="setLaunchpadBtnRef"
-          @click="toggleLaunchpad"
-          @keydown.enter.prevent="toggleLaunchpad"
-          @keydown.space.prevent="toggleLaunchpad"
-        >
-          <apps24-regular />
-        </div>
-      </el-tooltip>
-      <div
-        v-if="settings.dock.launchpad.enabled && visibleQuickLinksData.length > 0"
-        class="dock-gap"
-        :ref="setScalableRef"
-      ></div>
-    </template>
-    <template v-for="(item, idx) in visibleQuickLinksData" :key="`pin-${idx}`">
-      <el-tooltip
-        :content="item.title"
-        placement="top"
-        effect="light"
-        :hide-after="0"
-        :show-arrow="false"
-        :enterable="false"
-        :disabled="isUsingTouch"
-        transition="none"
-        :popper-class="dockTooltipClass"
-      >
-        <a
-          class="dock-item"
-          draggable="false"
-          :href="item.url"
-          :ref="setScalableRef"
-          :aria-label="item.title"
-          :target="settings.dock.openInNewTab ? '_blank' : '_self'"
-          :rel="settings.dock.openInNewTab ? 'noopener noreferrer' : undefined"
-          @contextmenu.stop.prevent="onItemContextmenu($event, item, true, idx)"
-          @click="openBuiltInItem($event, item)"
-        >
-          <favicon-image
-            :url="item.url"
-            :favicon="item.favicon"
-            :icon="item.icon"
-            :title="item.title"
-          />
-        </a>
-      </el-tooltip>
-      <div
-        v-if="idx !== visibleQuickLinksData.length - 1"
-        class="dock-gap"
-        :ref="setScalableRef"
-      ></div>
-    </template>
-    <template
-      v-if="
-        (settings.dock.launchpad.enabled || visibleQuickLinksData.length > 0) &&
-        visibleTopSites.length > 0
-      "
+  <Transition appear name="dock" :css="settings.perf.dockEnterAnim">
+    <div
+      v-if="ready"
+      ref="dockRef"
+      class="dock noselect"
+      :class="dockClass"
+      :style="{
+        '--dock-opacity': isHideDock,
+        pointerEvents: isHideDock === '0' ? 'none' : 'auto',
+        '--item-size': settings.dock.iconSize + 'px',
+        '--item-ratio': settings.dock.iconRatio * 100 + '%',
+        '--dock-icon-inset': (settings.dock.iconSize * (1 - settings.dock.iconRatio)) / 2 + 'px',
+        '--dock-radius': settings.dock.borderRadius + 'px',
+        '--gap-size': settings.dock.gap + 'px',
+      }"
+      @pointerenter="onPointerEnter"
+      @mouseenter="onMouseEnter"
+      @mousemove="onMouseMove"
+      @mouseleave="onMouseLeave"
+      @contextmenu.stop.prevent
+      @dragstart.prevent
     >
-      <div class="dock-gap" :ref="setScalableRef"></div>
-      <div class="dock-separator"></div>
-      <div class="dock-gap" :ref="setScalableRef"></div>
-    </template>
-    <template v-for="(item, j) in visibleTopSites" :key="`top-${j}`">
-      <el-tooltip
-        :content="item.title"
-        placement="top"
-        effect="light"
-        :hide-after="0"
-        :show-arrow="false"
-        :enterable="false"
-        :disabled="isUsingTouch"
-        transition="none"
-        :popper-class="dockTooltipClass"
-      >
-        <OnLongPress
-          as="a"
-          class="dock-item"
-          draggable="false"
-          :href="item.url"
-          :ref="setScalableRef"
-          :aria-label="item.title"
-          :target="settings.dock.openInNewTab ? '_blank' : '_self'"
-          :rel="settings.dock.openInNewTab ? 'noopener noreferrer' : undefined"
-          @contextmenu.stop.prevent="onItemContextmenu($event, item, false, j)"
-          @click="openBuiltInItem($event, item)"
-          @trigger="onItemLongPress($event, item, false, j)"
+      <!-- 启动台固定入口 -->
+      <template v-if="settings.dock.launchpad.enabled">
+        <el-tooltip
+          :content="t('dock.launchpad.title')"
+          placement="top"
+          effect="light"
+          :hide-after="0"
+          :show-arrow="false"
+          :enterable="false"
+          :disabled="isUsingTouch"
+          transition="none"
+          :popper-class="dockTooltipClass"
         >
-          <favicon-image :url="item.url" :favicon="item.favicon" :title="item.title" />
-        </OnLongPress>
-      </el-tooltip>
-      <div v-if="j !== visibleTopSites.length - 1" class="dock-gap" :ref="setScalableRef"></div>
-    </template>
-    <template v-if="!settings.dock.launchpad.enabled">
-      <div class="dock-gap" :ref="setScalableRef"></div>
-      <div class="dock-separator"></div>
-      <div class="dock-gap" :ref="setScalableRef"></div>
-      <div class="dock-item" :ref="setAddBtnRef" @click="openAddQuickLink">
-        <add-round />
-      </div>
-    </template>
+          <div
+            role="button"
+            tabindex="0"
+            class="dock-item"
+            :aria-label="t('dock.launchpad.title')"
+            :ref="setLaunchpadBtnRef"
+            @click="toggleLaunchpad"
+            @keydown.enter.prevent="toggleLaunchpad"
+            @keydown.space.prevent="toggleLaunchpad"
+          >
+            <apps24-regular />
+          </div>
+        </el-tooltip>
+        <div
+          v-if="settings.dock.launchpad.enabled && visibleQuickLinksData.length > 0"
+          class="dock-gap"
+          :ref="setScalableRef"
+        ></div>
+      </template>
+      <template v-for="(item, idx) in visibleQuickLinksData" :key="`pin-${idx}`">
+        <el-tooltip
+          :content="item.title"
+          placement="top"
+          effect="light"
+          :hide-after="0"
+          :show-arrow="false"
+          :enterable="false"
+          :disabled="isUsingTouch"
+          transition="none"
+          :popper-class="dockTooltipClass"
+        >
+          <a
+            class="dock-item"
+            draggable="false"
+            :href="item.url"
+            :ref="setScalableRef"
+            :aria-label="item.title"
+            :target="settings.dock.openInNewTab ? '_blank' : '_self'"
+            :rel="settings.dock.openInNewTab ? 'noopener noreferrer' : undefined"
+            @contextmenu.stop.prevent="onItemContextmenu($event, item, true, idx)"
+            @click="openBuiltInItem($event, item)"
+          >
+            <favicon-image
+              :url="item.url"
+              :favicon="item.favicon"
+              :icon="item.icon"
+              :title="item.title"
+            />
+          </a>
+        </el-tooltip>
+        <div
+          v-if="idx !== visibleQuickLinksData.length - 1"
+          class="dock-gap"
+          :ref="setScalableRef"
+        ></div>
+      </template>
+      <template
+        v-if="
+          (settings.dock.launchpad.enabled || visibleQuickLinksData.length > 0) &&
+          visibleTopSites.length > 0
+        "
+      >
+        <div class="dock-gap" :ref="setScalableRef"></div>
+        <div class="dock-separator"></div>
+        <div class="dock-gap" :ref="setScalableRef"></div>
+      </template>
+      <template v-for="(item, j) in visibleTopSites" :key="`top-${j}`">
+        <el-tooltip
+          :content="item.title"
+          placement="top"
+          effect="light"
+          :hide-after="0"
+          :show-arrow="false"
+          :enterable="false"
+          :disabled="isUsingTouch"
+          transition="none"
+          :popper-class="dockTooltipClass"
+        >
+          <OnLongPress
+            as="a"
+            class="dock-item"
+            draggable="false"
+            :href="item.url"
+            :ref="setScalableRef"
+            :aria-label="item.title"
+            :target="settings.dock.openInNewTab ? '_blank' : '_self'"
+            :rel="settings.dock.openInNewTab ? 'noopener noreferrer' : undefined"
+            @contextmenu.stop.prevent="onItemContextmenu($event, item, false, j)"
+            @click="openBuiltInItem($event, item)"
+            @trigger="onItemLongPress($event, item, false, j)"
+          >
+            <favicon-image :url="item.url" :favicon="item.favicon" :title="item.title" />
+          </OnLongPress>
+        </el-tooltip>
+        <div v-if="j !== visibleTopSites.length - 1" class="dock-gap" :ref="setScalableRef"></div>
+      </template>
+      <template v-if="!settings.dock.launchpad.enabled">
+        <div class="dock-gap" :ref="setScalableRef"></div>
+        <div class="dock-separator"></div>
+        <div class="dock-gap" :ref="setScalableRef"></div>
+        <div class="dock-item" :ref="setAddBtnRef" @click="openAddQuickLink">
+          <add-round />
+        </div>
+      </template>
 
-    <!-- 启动台覆盖层 -->
-    <Launchpad
-      v-if="launchpadLoaded"
-      v-model="showLaunchpad"
-      :on-open-add-dialog="props.onOpenAddDialog"
-      :on-open-edit-dialog="props.onOpenEditDialog"
-    />
+      <!-- 启动台覆盖层 -->
+      <Launchpad
+        v-if="launchpadLoaded"
+        v-model="showLaunchpad"
+        :on-open-add-dialog="props.onOpenAddDialog"
+        :on-open-edit-dialog="props.onOpenEditDialog"
+      />
 
-    <!-- 共享右键菜单 -->
-    <quick-link-context-menu
-      ref="ctxMenuRef"
-      placement="top-start"
-      :popper-class="popperClass"
-      show-edit
-      :show-move="settings.quickLinks.grouping"
-      :refresh-fn="refreshDebounced"
-      :on-open-edit-dialog="props.onOpenEditDialog"
-      :on-pin="pinToGroup"
-      :on-move="moveToGroup"
-      show-sort-actions
-      :can-move-left="canMoveDockQuickLinkLeft"
-      :can-move-right="canMoveDockQuickLinkRight"
-      :on-move-left="(item) => moveDockQuickLink(item, -1)"
-      :on-move-right="(item) => moveDockQuickLink(item, 1)"
-    />
-    <quick-link-group-select-dialog ref="groupSelectDialogRef" />
-  </div>
+      <!-- 共享右键菜单 -->
+      <quick-link-context-menu
+        ref="ctxMenuRef"
+        placement="top-start"
+        :popper-class="popperClass"
+        show-edit
+        :show-move="settings.quickLinks.grouping"
+        :refresh-fn="refreshDebounced"
+        :on-open-edit-dialog="props.onOpenEditDialog"
+        :on-pin="pinToGroup"
+        :on-move="moveToGroup"
+        show-sort-actions
+        :can-move-left="canMoveDockQuickLinkLeft"
+        :can-move-right="canMoveDockQuickLinkRight"
+        :on-move-left="(item) => moveDockQuickLink(item, -1)"
+        :on-move-right="(item) => moveDockQuickLink(item, 1)"
+      />
+      <quick-link-group-select-dialog ref="groupSelectDialogRef" />
+    </div>
+  </Transition>
 </template>
 
 <style lang="scss">
@@ -563,10 +574,12 @@ defineExpose({ refresh, toggleLaunchpad })
   background-color: var(--dock-background);
   border-radius: var(--dock-radius);
   box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
+  opacity: var(--dock-opacity, 1);
   transform: translateX(-50%);
   transition:
-    opacity 0.1s ease,
+    opacity var(--el-transition-duration-fast) ease,
     bottom var(--el-transition-duration-fast) ease,
+    transform var(--el-transition-duration) ease,
     background-color var(--el-transition-duration-fast) ease;
 
   &--blur {
@@ -691,5 +704,15 @@ html.colorful .dock-tooltip {
   &.dock-tooltip--opacity {
     --dock-tooltip-background: var(--le-bg-color-overlay-quick-links-tooltip);
   }
+}
+
+.dock-enter-from {
+  opacity: 0;
+  transform: translate(-50%, 20px);
+}
+
+.dock-enter-to {
+  opacity: var(--dock-opacity, 1);
+  transform: translateX(-50%);
 }
 </style>
