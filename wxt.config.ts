@@ -44,7 +44,7 @@ const baseManifest = {
 const firefoxManifest = {
   ...baseManifest,
   permissions: ['topSites', 'storage', 'bookmarks', 'activeTab', 'tabs', 'alarms'],
-  optional_permissions: ['webRequest', '*://*/*'],
+  optional_permissions: ['webRequest', 'history', '*://*/*'],
   chrome_settings_overrides: {
     homepage: 'newtab.html',
   },
@@ -70,7 +70,7 @@ const chromeManifest = {
     'scripting',
     'alarms',
   ],
-  optional_permissions: ['webRequest'],
+  optional_permissions: ['webRequest', 'history'],
   optional_host_permissions: ['*://*/*'],
 }
 

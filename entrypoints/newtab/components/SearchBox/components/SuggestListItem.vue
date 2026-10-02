@@ -4,6 +4,7 @@ import type { Component } from 'vue'
 const props = defineProps<{
   id?: string
   text: string
+  description?: string
   active: boolean
   icon?: Component
   prefix?: string
@@ -36,6 +37,12 @@ const emit = defineEmits<{
     </el-icon>
     <span v-if="prefix" class="search-suggestion-area__item-prefix">{{ prefix }}&nbsp;</span>
     <span class="search-suggestion-area__item-text">{{ props.text }}</span>
+    <span
+      v-if="description"
+      class="search-suggestion-area__item-description"
+      :title="description"
+      >{{ description }}</span
+    >
     <span v-if="actionLabel" class="search-suggestion-area__item-action">{{ actionLabel }}</span>
   </div>
 </template>

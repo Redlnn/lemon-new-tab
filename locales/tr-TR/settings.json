@@ -404,22 +404,38 @@
   "search": {
     "alwaysExpandSearchBar": "Arama çubuğunu her zaman genişlet",
     "alwaysShowIcon": "Arama motoru simgesini her zaman göster",
+    "authorizeHistory": "Geçmiş erişimine izin ver",
     "border": "Arama kutusu kenarlığını göster",
     "borderRadius": "Arama kutusu köşe yarıçapı",
     "clickToChange": "Değiştirmek için tıklayın",
     "defaultSearchEngine": "Arama motoru",
     "expandWidth": "Genişletilmiş genişlik",
+    "historyPermissionDenied": "Geçmiş erişimine izin verilmedi. Diğer öneri sağlayıcıları kullanılabilir.",
+    "historyPermissionDescription": "Tarayıcı geçmişi önerileri izin gerektirir; başlık veya URL ile eşleşir.",
+    "historyPermissionPending": "Tarayıcı geçmişi seçili, ancak bu cihazda izin verilmemiş.",
     "launchAnim": "Başlangıçta arama kutusu genişletme animasyonu",
     "leftAlignInput": "Arama girişini sola hizala",
+    "noSuggestionProviders": "Hiçbiri",
     "placeholder": "Arama yer tutucusu",
+    "providers": {
+      "calculator": "Hesap makinesi",
+      "url": "URL algılama",
+      "quick-links": "Hızlı bağlantılar",
+      "top-sites": "En çok ziyaret edilen siteler",
+      "browser-history": "Tarayıcı geçmişi",
+      "search-history": "Uzantı arama geçmişi",
+      "remote": "Arama motoru önerileri"
+    },
     "recordSearchHistory": "Arama geçmişini kaydet",
     "restoreHiddenEngines": "Gizli yerleşik arama motorlarını geri yükle",
     "restoreHiddenEnginesTitle": "Tüm yerleşik arama motorlarını ve varsayılan sıralarını geri yüklemek istiyor musunuz?",
-    "searchSuggestionProvider": "Arama önerisi API'si",
+    "searchSuggestionProvider": "Arama önerisi API",
     "searchSuggestions": "Arama önerileri",
     "shadow": "Arama kutusu gölgesini göster",
+    "suggestionProviders": "Öneri sağlayıcıları",
     "tip": "Yeni bir sekme açarken arama girişini etkinleştirmek mi istiyorsunuz? Sayfanın sağ alt kısmındaki düğme menüsündeki \"Yardım ve Geri Bildirim\" bölümüne bakın.",
-    "title": "Arama"
+    "title": "Arama",
+    "browserHistoryLimit": "Tarayıcı geçmişi öneri sayısı"
   },
   "sync": {
     "availability": {

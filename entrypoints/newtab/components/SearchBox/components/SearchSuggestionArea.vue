@@ -1,55 +1,51 @@
 <script setup lang="ts">
+import type { Component } from 'vue'
+
 import { ElMessage } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
-import type { Component } from 'vue'
 import Calculation from '~icons/carbon/calculation'
+import History from '~icons/carbon/history'
 import Link from '~icons/carbon/link'
+import RecentlyViewed from '~icons/carbon/recently-viewed'
 import Search from '~icons/carbon/search'
 import TrashCan from '~icons/carbon/trash-can'
 import Open32Regular from '~icons/fluent/open-32-regular'
 
+import { browser } from 'wxt/browser'
+
 import { BgType } from '@/shared/enums'
 import { useQuickLinksStore } from '@/shared/quickLinks'
+import type { SearchSuggestionProviderId } from '@/shared/searchSuggestionProviders'
 import { useSettingsStore } from '@/shared/settings'
 
+import { getTopSites } from '@newtab/components/QuickLinks/utils/topSites'
+import { useBrowserHistoryPermission } from '@newtab/composables/useBrowserHistoryPermission'
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useSearchHistoryCache } from '@newtab/composables/useSearchHistoryCache'
-import { getTopSites, rawTopSites } from '@newtab/components/QuickLinks/utils/topSites'
 import { searchSuggestAPIs, searchSuggestCache } from '@newtab/shared/search'
 import { calculateExpression, hasCalculationOperator } from '@newtab/shared/search/calculator'
+import {
+  browserHistorySuggestions,
+  collectSuggestions,
+  type SearchSuggestion,
+} from '@newtab/shared/search/providers'
 import { parseNavigableUrl } from '@newtab/shared/search/url'
 
 import SuggestListItem from './SuggestListItem.vue'
 
 const { t } = useTranslation()
-
 const focusStore = useFocusState()
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
+const { granted: historyGranted } = useBrowserHistoryPermission()
 const {
   histories: cachedHistories,
   ensureLoaded: ensureHistoryLoaded,
   clearHistories: clearHistoryCache,
 } = useSearchHistoryCache()
 
-const isShowSearchHistories = ref(false)
-const currentActiveSuggest = ref<null | number>(null)
-const navigationSourceText = ref<string | null>(null)
-const searchSuggestions = shallowRef<string[]>([])
-// 用于追踪当前展示的结果是否仍然有效，避免旧请求覆盖新结果
-const latestLiveQuery = ref('')
-let historyRequestVersion = 0
-let suggestionRequestVersion = 0
-let suggestionTimer: ReturnType<typeof setTimeout> | null = null
-let suggestionController: AbortController | null = null
-
-const props = defineProps<{
-  searchText: string
-  searchFormWidth: number
-  listId: string
-}>()
-
+const props = defineProps<{ searchText: string; searchFormWidth: number; listId: string }>()
 const emit = defineEmits<{
   doSearchWithText: [text: string]
   navigateToUrl: [url: string]
@@ -57,128 +53,55 @@ const emit = defineEmits<{
   expandedChange: [expanded: boolean]
 }>()
 
-type SuggestionAction =
-  | 'calculate'
-  | 'copy-expression'
-  | 'navigate'
-  | 'quick-link'
-  | 'search'
-  | 'suggest'
-  | 'top-site'
-type CopyAction = Extract<SuggestionAction, 'calculate' | 'copy-expression'>
+const isShowSearchHistories = ref(false)
+const currentActiveSuggest = ref<number | null>(null)
+const navigationSourceText = ref<string | null>(null)
+const searchSuggestions = shallowRef<SearchSuggestion[]>([])
+let requestVersion = 0
+let controller: AbortController | null = null
 
-type DisplayedSuggestion = {
-  action: SuggestionAction
-  text: string
-  url?: string
-  inputText?: string
-  prefixKey?: string
-  actionLabelKey?: string
-  icon?: Component
-}
-
-const suggestionPresentation: Partial<
-  Record<SuggestionAction, Omit<DisplayedSuggestion, 'action' | 'text'>>
-> = {
-  calculate: {
-    prefixKey: 'newtab:search.calculationResult',
-    actionLabelKey: 'newtab:search.clickToCopy',
-    icon: Calculation,
-  },
-  'copy-expression': {
+type Presentation = { prefixKey?: string; actionLabelKey?: string; icon?: Component }
+const presentation: Partial<Record<SearchSuggestionProviderId, Presentation>> = {
+  calculator: {
     prefixKey: 'newtab:search.calculator',
     actionLabelKey: 'newtab:search.clickToCopy',
     icon: Calculation,
   },
-  navigate: {
-    prefixKey: 'newtab:search.navigateTo',
-    icon: Link,
-  },
-  'quick-link': {
-    prefixKey: 'newtab:search.open',
+  url: { prefixKey: 'newtab:search.navigateTo', icon: Link },
+  'quick-links': {
     actionLabelKey: 'newtab:search.savedWebsite',
     icon: Open32Regular,
   },
-  search: {
-    prefixKey: 'newtab:search.searchFor',
-    icon: Search,
-  },
-  'top-site': {
-    prefixKey: 'newtab:search.open',
+  'top-sites': {
     actionLabelKey: 'newtab:search.mostVisited',
     icon: Open32Regular,
   },
+  'browser-history': {
+    actionLabelKey: 'newtab:search.browserHistory',
+    icon: History,
+  },
+  'search-history': {
+    actionLabelKey: 'newtab:search.extensionSearchHistory',
+    icon: RecentlyViewed,
+  },
 }
-
-function createSuggestion(
-  action: SuggestionAction,
-  text: string,
-  options?: Pick<DisplayedSuggestion, 'inputText' | 'url'>,
-): DisplayedSuggestion {
-  return { action, text, ...options, ...suggestionPresentation[action] }
-}
-
-const actionSourceText = computed(() => navigationSourceText.value ?? props.searchText)
-const navigableUrl = computed(() => parseNavigableUrl(actionSourceText.value))
-const calculationResult = computed(() =>
-  hasCalculationOperator(actionSourceText.value)
-    ? calculateExpression(actionSourceText.value)
-    : null,
+const displayedSuggestions = computed(() =>
+  searchSuggestions.value.map((item) => ({
+    ...item,
+    ...presentation[item.provider],
+    ...(item.provider === 'calculator' && item.inputText
+      ? { prefixKey: 'newtab:search.calculationResult' }
+      : {}),
+    ...(item.provider === 'url' && item.action === 'search'
+      ? { prefixKey: 'newtab:search.searchFor', icon: Search }
+      : {}),
+  })),
 )
-const calculationText = computed(() => {
-  const expression = actionSourceText.value.trim().replace(/\s+/g, '').replace(/=$/, '')
-  return `${expression}=${calculationResult.value}`
-})
-const searchableLinks = computed(() => {
-  const query = actionSourceText.value.trim().toLocaleLowerCase()
-  if (!query) return []
-
-  const links: DisplayedSuggestion[] = []
-  const seenUrls = new Set<string>()
-  const addLink = (action: 'quick-link' | 'top-site', title: string, url: string) => {
-    if (seenUrls.has(url)) return
-    if (!`${title} ${url}`.toLocaleLowerCase().includes(query)) return
-    seenUrls.add(url)
-    links.push(createSuggestion(action, title || url, { url }))
-  }
-
-  for (const link of quickLinksStore.items) addLink('quick-link', link.title, link.url)
-  for (const site of rawTopSites.value) addLink('top-site', site.title || '', site.url)
-  return links
-})
-const shouldSuppressSearchSuggestions = computed(
-  () => calculationResult.value !== null && actionSourceText.value.trim().endsWith('='),
-)
-const displayedSuggestions = computed<DisplayedSuggestion[]>(() => {
-  let actionSuggestions: DisplayedSuggestion[] = []
-  if (navigableUrl.value) {
-    actionSuggestions = [
-      createSuggestion('navigate', navigableUrl.value.text),
-      createSuggestion('search', navigableUrl.value.text),
-    ]
-  } else if (calculationResult.value !== null) {
-    actionSuggestions = [
-      createSuggestion('copy-expression', calculationText.value),
-      createSuggestion('calculate', String(calculationResult.value), {
-        inputText: actionSourceText.value,
-      }),
-    ]
-  }
-
-  const remainingCount = Math.max(0, 10 - actionSuggestions.length)
-  const suggestions = [
-    ...searchableLinks.value,
-    ...searchSuggestions.value.map((text) => createSuggestion('suggest', text)),
-  ].slice(0, remainingCount)
-  return [...actionSuggestions, ...suggestions]
-})
-
 const perf = usePerfClasses(() => ({
   transparent: settings.perf.searchBar.transparent,
   transparency: settings.perf.searchBar.transparency,
   blur: settings.perf.searchBar.blur,
 }))
-
 const suggestionAreaPerfClass = computed(() => [
   {
     'search-suggestion-area--shadow': settings.search.style.shadow,
@@ -187,317 +110,255 @@ const suggestionAreaPerfClass = computed(() => [
   },
   perf('search-suggestion-area').value,
 ])
-
 const areaHeight = computed(() => {
   const length = displayedSuggestions.value.length
-  if (length === 0) {
-    return '0'
-  }
-  if (length > 10) {
-    return isShowSearchHistories.value ? '363px' : '330px'
-  }
-  return isShowSearchHistories.value ? `${(length + 1) * 33}px` : `${length * 33}px`
+  return length ? `${(length + Number(isShowSearchHistories.value)) * 33}px` : '0'
 })
-
 const activeOptionId = computed(() => {
   const index = currentActiveSuggest.value
-  if (index === null || index >= displayedSuggestions.value.length) {
-    return undefined
-  }
-  return `${props.listId}-option-${index}`
+  return index !== null && displayedSuggestions.value[index]
+    ? `${props.listId}-option-${index}`
+    : undefined
 })
 const isExpanded = computed(() => displayedSuggestions.value.length > 0)
 
-function isLiveSuggestionResult(text: string) {
-  return (
-    settings.search.suggestionsEnabled &&
-    text === latestLiveQuery.value &&
-    text === props.searchText.trim() &&
-    !isShowSearchHistories.value
-  )
-}
-
-function applyHistorySuggestions(list: readonly string[]) {
-  searchSuggestions.value = list.slice()
-  if (list.length > 0) {
-    isShowSearchHistories.value = true
-  }
-}
-
 function cancelSuggestionRequest() {
-  suggestionRequestVersion += 1
-  if (suggestionTimer) clearTimeout(suggestionTimer)
-  suggestionTimer = null
-  suggestionController?.abort()
-  suggestionController = null
+  requestVersion++
+  controller?.abort()
+  controller = null
+}
+function clearActiveSuggest(resetNavigationSource = true) {
+  currentActiveSuggest.value = null
+  if (resetNavigationSource) navigationSourceText.value = null
+}
+function clearSearchSuggestions() {
+  cancelSuggestionRequest()
+  clearActiveSuggest()
+  isShowSearchHistories.value = false
+  searchSuggestions.value = []
+}
+function hideSearchHistories() {
+  isShowSearchHistories.value = false
 }
 
-function handleInput(text?: string) {
-  const query = (text ?? props.searchText).trim()
-  if (focusStore.isFocused && !query) {
-    // 如果搜索词为空，则显示搜索历史
-    cancelSuggestionRequest()
-    latestLiveQuery.value = ''
-    clearSearchSuggestions()
-    void showSearchHistories()
-  } else if (query) {
-    hideSearchHistories()
-    if (shouldSuppressSearchSuggestions.value) clearSearchSuggestions()
-    else showSuggestionsDebounced(query)
-  }
-}
-
-watch(
-  () => focusStore.isFocused,
-  (isFocused) => {
-    if (isFocused) {
-      if (props.searchText.trim()) {
-        if (shouldSuppressSearchSuggestions.value) clearSearchSuggestions()
-        else showSuggestionsDebounced(props.searchText.trim())
-      } else {
-        void showSearchHistories()
-      }
-    } else {
-      cancelSuggestionRequest()
-    }
-  },
-)
-
-const canShowHistory = () => focusStore.isFocused && !props.searchText.trim()
-
-async function showSearchHistories() {
-  const requestVersion = ++historyRequestVersion
-  if (!canShowHistory()) {
-    return
-  }
-
-  if (searchSuggestions.value.length > 0 && !isShowSearchHistories.value) {
-    return
-  }
-
-  await ensureHistoryLoaded()
-  if (requestVersion !== historyRequestVersion || !canShowHistory()) {
-    return
-  }
-
-  const searchHistories = cachedHistories.value
-  if (searchHistories.length > 0) {
-    applyHistorySuggestions(searchHistories)
-  }
-}
-
-type SuggestParser = (text: string, signal?: AbortSignal) => Promise<string[]>
-
-function waitForRetry(signal: AbortSignal) {
+/** 中止时也结束等待，让已失效的提供器链及时退出。 */
+function waitForDelay(ms: number, signal: AbortSignal) {
   return new Promise<void>((resolve) => {
     const finish = () => {
       clearTimeout(timer)
       signal.removeEventListener('abort', finish)
       resolve()
     }
-    const timer = setTimeout(finish, 100)
+    const timer = setTimeout(finish, ms)
     signal.addEventListener('abort', finish, { once: true })
     if (signal.aborted) finish()
   })
 }
-
-async function fetchSuggestions(
-  text: string,
-  parser: SuggestParser,
-  version: number,
-  signal: AbortSignal,
-  cacheKey: string,
-) {
-  try {
-    let list: string[] = []
-    for (let attempt = 0; attempt <= 2; attempt += 1) {
-      if (signal.aborted || version !== suggestionRequestVersion) return
+async function remoteSuggestions(query: string, signal: AbortSignal): Promise<SearchSuggestion[]> {
+  const apiId = settings.search.suggestionAPI
+  const cacheKey = `${apiId}:${query}`
+  let list = searchSuggestCache.get(cacheKey)
+  if (!list) {
+    const api = searchSuggestAPIs[apiId] ?? searchSuggestAPIs.bing
+    for (let attempt = 0; attempt <= 2; attempt++) {
+      if (signal.aborted) return []
       try {
-        list = await parser(text, signal)
+        list = await api.parser(query, signal)
         break
       } catch (error) {
-        if (signal.aborted || version !== suggestionRequestVersion) return
+        if (signal.aborted) return []
         if (attempt === 2) throw error
-        await waitForRetry(signal)
+        await waitForDelay(100, signal)
       }
     }
-
-    if (version !== suggestionRequestVersion || !isLiveSuggestionResult(text)) return
-    searchSuggestions.value = list
-    if (list.length > 0) searchSuggestCache.set(cacheKey, list)
-  } catch (error) {
-    if (signal.aborted || version !== suggestionRequestVersion) return
-    console.error('Failed to fetch search suggestions:', error)
-    if (isLiveSuggestionResult(text)) searchSuggestions.value = []
+    if (!signal.aborted && list?.length) searchSuggestCache.set(cacheKey, list)
   }
+  return (list ?? []).map((text) => ({ provider: 'remote', action: 'search', text }))
 }
-
-function showSuggestionsDebounced(queryText?: string) {
-  historyRequestVersion += 1
-  const query = (queryText ?? props.searchText).trim()
-  latestLiveQuery.value = query
-  cancelSuggestionRequest()
-  if (!settings.search.suggestionsEnabled) {
-    searchSuggestions.value = []
-    clearActiveSuggest()
-    return
-  }
-  if (!query) {
-    return
-  }
-
-  // 先检查缓存，命中则直接返回
-  const cacheKey = `${settings.search.suggestionAPI}:${query}`
-  const cached = searchSuggestCache.get(cacheKey)
-  if (cached) {
-    searchSuggestions.value = cached
-    return
-  }
-
-  const api = searchSuggestAPIs[settings.search.suggestionAPI] ?? searchSuggestAPIs.bing
-
-  const version = ++suggestionRequestVersion
-  const controller = new AbortController()
-  suggestionController = controller
-  suggestionTimer = setTimeout(() => {
-    suggestionTimer = null
-    void fetchSuggestions(query, api.parser, version, controller.signal, cacheKey)
-  }, 250)
+function websiteSuggestions(
+  provider: 'quick-links' | 'top-sites',
+  items: readonly { title?: string; url: string }[],
+  query: string,
+): SearchSuggestion[] {
+  return items
+    .filter((item) =>
+      `${item.title ?? ''} ${item.url}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
+    )
+    .map((item) => ({ provider, action: 'navigate', text: item.title || item.url, url: item.url }))
 }
-
-watch([() => settings.search.suggestionAPI, () => settings.search.suggestionsEnabled], () => {
-  cancelSuggestionRequest()
-  if (!props.searchText.trim()) return
+async function refreshSuggestions(text = props.searchText) {
+  const sourceText = navigationSourceText.value
   clearSearchSuggestions()
-  if (focusStore.isFocused && !shouldSuppressSearchSuggestions.value) showSuggestionsDebounced()
-})
-
-onMounted(() => {
-  void quickLinksStore.init()
-  if (settings.quickLinks.topSites || settings.dock.topSites) {
-    void getTopSites().catch((error) => {
-      console.warn('[search] Failed to load top sites:', error)
-    })
+  // 设置或权限变化只刷新原始查询；真实输入会先通过 clearActiveSuggest 重置它。
+  navigationSourceText.value = sourceText
+  if (!focusStore.isFocused || !settings.search.suggestionsEnabled) return
+  const query = text.trim()
+  const enabled = settings.search.suggestionProviders
+  const current = requestVersion
+  const activeController = new AbortController()
+  controller = activeController
+  const { signal } = activeController
+  // 本地提供器立即执行；浏览器历史和远端请求共用本次输入的防抖期限。
+  const startedAt = Date.now()
+  const debounce = async () => {
+    await waitForDelay(Math.max(0, 250 - (Date.now() - startedAt)), signal)
   }
+  const result =
+    enabled.includes('calculator') && hasCalculationOperator(query)
+      ? calculateExpression(query)
+      : null
+  const expression = query.replace(/\s+/g, '').replace(/=$/, '')
+  const calculationText = `${expression}=${result}`
+  const calculatorOnly = enabled.includes('calculator') && result !== null && query.endsWith('=')
+  isShowSearchHistories.value = !query && enabled.includes('search-history')
+  await collectSuggestions({
+    enabled: !query
+      ? enabled.filter((id) => id === 'search-history')
+      : calculatorOnly
+        ? ['calculator']
+        : enabled,
+    signal,
+    browserHistoryLimit: settings.search.browserHistoryLimit,
+    providers: {
+      calculator: () =>
+        result === null
+          ? []
+          : [
+              {
+                provider: 'calculator',
+                action: 'copy',
+                text: calculationText,
+                copyText: calculationText,
+              },
+              {
+                provider: 'calculator',
+                action: 'copy',
+                text: String(result),
+                copyText: String(result),
+                inputText: query,
+              },
+            ],
+      url: () => {
+        const parsed = parseNavigableUrl(query)
+        return parsed
+          ? [
+              { provider: 'url', action: 'navigate', text: parsed.text, url: parsed.url },
+              { provider: 'url', action: 'search', text: parsed.text },
+            ]
+          : []
+      },
+      'quick-links': async () => {
+        await quickLinksStore.init()
+        if (signal.aborted) return []
+        return websiteSuggestions('quick-links', quickLinksStore.items, query)
+      },
+      'top-sites': async () => {
+        const sites = await getTopSites()
+        if (signal.aborted) return []
+        return websiteSuggestions('top-sites', sites, query)
+      },
+      'browser-history': async () => {
+        if (!historyGranted.value) return []
+        await debounce()
+        if (signal.aborted || !historyGranted.value) return []
+        return browserHistorySuggestions(
+          await browser.history.search({ text: query, startTime: 0, maxResults: 20 }),
+        )
+      },
+      'search-history': async () => {
+        await ensureHistoryLoaded()
+        if (signal.aborted) return []
+        return cachedHistories.value
+          .filter((item) => item.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
+          .map((item) => ({ provider: 'search-history', action: 'search', text: item }))
+      },
+      remote: async () => {
+        await debounce()
+        return signal.aborted ? [] : remoteSuggestions(query, signal)
+      },
+    },
+    onUpdate: (items) => {
+      if (current === requestVersion && !signal.aborted) searchSuggestions.value = items
+    },
+    onError: (provider, error) => console.warn(`[search] ${provider} suggestions failed:`, error),
+  })
+}
+function handleInput(text = props.searchText) {
+  void refreshSuggestions(text)
+}
+async function showSearchHistories() {
+  if (props.searchText.trim()) return
+  await refreshSuggestions()
+}
+watch(
+  () => focusStore.isFocused,
+  (focused) => {
+    if (focused) handleInput()
+    else clearSearchSuggestions()
+  },
+)
+watch(
+  [
+    () => settings.search.suggestionsEnabled,
+    () => settings.search.suggestionAPI,
+    () => settings.search.suggestionProviders,
+    () => settings.search.browserHistoryLimit,
+    historyGranted,
+  ],
+  () => {
+    // 使用键盘导航的原始查询刷新，不能把历史标题或 URL 送入远端接口。
+    void refreshSuggestions(navigationSourceText.value ?? props.searchText)
+  },
+  { deep: true },
+)
+watch(cachedHistories, () => {
+  if (isShowSearchHistories.value && navigationSourceText.value === null) void showSearchHistories()
 })
+onUnmounted(cancelSuggestionRequest)
 
-onUnmounted(() => {
-  cancelSuggestionRequest()
-})
-
-function clearActiveSuggest(resetNavigationSource = true) {
-  currentActiveSuggest.value = null
-  if (resetNavigationSource) navigationSourceText.value = null
-}
-
-function activateSuggest(index: number): string | null {
-  const nextItem = displayedSuggestions.value[index]
-  if (!nextItem) {
-    return null
-  }
-
-  currentActiveSuggest.value = index
-  return nextItem.inputText ?? nextItem.text
-}
-
-function submitActiveSuggest() {
-  const index = currentActiveSuggest.value
-  if (index === null) return false
-  const item = displayedSuggestions.value[index]
-  if (!item) return false
-  return activateSuggestion(item)
-}
-
-function isCopyAction(action: SuggestionAction): action is CopyAction {
-  return action === 'calculate' || action === 'copy-expression'
-}
-
-function activateSuggestion(item: DisplayedSuggestion) {
-  if (item.url) {
-    emit('navigateToUrl', item.url)
-  } else if (isCopyAction(item.action)) {
-    void copyCalculation(item.action)
-  } else if (item.action === 'navigate' && navigableUrl.value) {
-    emit('navigateToUrl', navigableUrl.value.url)
-  } else {
-    emit('doSearchWithText', item.text)
-  }
+function activateSuggestion(item: SearchSuggestion) {
+  if (item.action === 'navigate' && item.url) emit('navigateToUrl', item.url)
+  else if (item.action === 'copy') {
+    void navigator.clipboard
+      .writeText(item.copyText ?? item.text)
+      .then(() => ElMessage.success(t('newtab:yiyan.copied')))
+      .catch(() => {})
+  } else emit('doSearchWithText', item.text)
   return true
 }
-
-async function copyCalculation(action: 'calculate' | 'copy-expression') {
-  try {
-    await navigator.clipboard.writeText(
-      action === 'calculate' ? String(calculationResult.value) : calculationText.value,
-    )
-    ElMessage.success(t('newtab:yiyan.copied'))
-  } catch {
-    // 剪贴板不可用时不打断搜索框操作。
-  }
+function submitActiveSuggest() {
+  const index = currentActiveSuggest.value
+  const item = index === null ? undefined : searchSuggestions.value[index]
+  return item ? activateSuggestion(item) : false
 }
-
-function hideSearchHistories() {
-  historyRequestVersion += 1
-  isShowSearchHistories.value = false
+function activateSuggest(index: number) {
+  const item = searchSuggestions.value[index]
+  if (!item) return null
+  currentActiveSuggest.value = index
+  return item.inputText ?? item.text
 }
-
-function clearSearchSuggestions() {
+function navigateActiveSuggest(direction: number, currentText: string, originText: string | null) {
+  const length = searchSuggestions.value.length
+  if (!length) return null
+  const previous = currentActiveSuggest.value
+  const origin = originText ?? currentText
   cancelSuggestionRequest()
-  latestLiveQuery.value = ''
-  hideSearchHistories()
-  currentActiveSuggest.value = null
-  navigationSourceText.value = null
-  searchSuggestions.value = []
+  navigationSourceText.value = origin
+  clearActiveSuggest(false)
+  const next = previous === null ? (direction > 0 ? 0 : length - 1) : previous + direction
+  if (next < 0 || next >= length) {
+    navigationSourceText.value = null
+    return { searchText: origin, originSearchText: null }
+  }
+  const text = activateSuggest(next)
+  return text === null ? null : { searchText: text, originSearchText: origin }
 }
-
 async function clearSearchHistories() {
   await clearHistoryCache()
   clearSearchSuggestions()
 }
-
-function navigateActiveSuggest(direction: number, currentText: string, originText: string | null) {
-  const suggestionsLength = displayedSuggestions.value.length
-  if (suggestionsLength <= 0) {
-    return null
-  }
-
-  const previousIndex = currentActiveSuggest.value
-  const nextOriginText = originText === null ? currentText : originText
-
-  if (previousIndex === null) navigationSourceText.value = nextOriginText
-  clearActiveSuggest(false)
-
-  if (previousIndex === null) {
-    const nextIndex = direction > 0 ? direction - 1 : suggestionsLength + direction
-    const nextText = activateSuggest(nextIndex)
-    return nextText ? { searchText: nextText, originSearchText: nextOriginText } : null
-  }
-
-  const newIndex = previousIndex + direction
-  if (newIndex < 0 || newIndex >= suggestionsLength) {
-    navigationSourceText.value = null
-    return {
-      searchText: nextOriginText || '',
-      originSearchText: null,
-    }
-  }
-
-  const nextText = activateSuggest(newIndex)
-  return nextText ? { searchText: nextText, originSearchText: nextOriginText } : null
-}
-
-watch(
-  () => cachedHistories.value,
-  (list) => {
-    if (isShowSearchHistories.value && canShowHistory()) {
-      applyHistorySuggestions(list)
-    }
-  },
-)
-
 watch(activeOptionId, (id) => emit('activeOptionChange', id), { immediate: true })
 watch(isExpanded, (expanded) => emit('expandedChange', expanded), { immediate: true })
-
 defineExpose({
   clearActiveSuggest,
   clearSearchSuggestions,
@@ -527,6 +388,7 @@ defineExpose({
       :key="index"
       :id="`${listId}-option-${index}`"
       :text="item.text"
+      :description="item.provider === 'browser-history' ? item.url : undefined"
       :prefix="item.prefixKey ? t(item.prefixKey) : undefined"
       :icon="item.icon"
       :active="currentActiveSuggest === index"
@@ -628,6 +490,15 @@ defineExpose({
       white-space: nowrap;
     }
 
+    &-description {
+      min-width: 0;
+      max-width: 40%;
+      margin-left: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--el-text-color-secondary);
+    }
+
     &-action {
       flex: none;
       margin-left: 12px;
@@ -655,6 +526,13 @@ defineExpose({
 
 html.colorful .search-suggestion-area {
   --search-suggestion-background: var(--el-color-primary-light-9);
+}
+
+@media (width <= 600px) {
+  .search-suggestion-area__item-action,
+  .search-suggestion-area__item-description {
+    display: none;
+  }
 }
 
 html:not(.colorful) .search-suggestion-area {

@@ -205,9 +205,10 @@
     "unpinMessage": "已取消置顶该链接"
   },
   "search": {
-    "calculationResult": "计算结果",
-    "calculator": "计算器",
-    "clickToCopy": "点击复制",
+    "browserHistory": "浏览",
+    "calculationResult": "结果",
+    "calculator": "计算",
+    "clickToCopy": "复制",
     "engineMenu": {
       "current": "当前",
       "tipPrefix": "Tip：按下",
@@ -220,12 +221,12 @@
       "google": "Google",
       "yandex": "Yandex"
     },
-    "mostVisited": "最常访问",
+    "extensionSearchHistory": "搜索",
+    "mostVisited": "常用",
     "navigateTo": "前往",
-    "open": "打开",
     "placeholder": "搜索",
     "purgeSearchHistory": "清除搜索历史",
-    "savedWebsite": "已收藏网站",
+    "savedWebsite": "快捷",
     "searchEngineNotFound": "未找到搜索引擎",
     "searchFor": "搜索"
   },

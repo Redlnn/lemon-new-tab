@@ -1,6 +1,6 @@
 # Lemon New Tab Privacy Policy
 
-> Last updated: 2026-08-09
+> Last updated: 2026-10-02
 
 This Privacy Policy applies to the browser extension **Lemon New Tab** and its related public source code repository.
 
@@ -49,12 +49,15 @@ This data is generally stored in your browser environment and is controlled by y
 According to the extension manifest, the extension may access:
 
 - **bookmarks**: to display, search, or open your browser bookmarks;
+- **optional history permission**: only after you enable and authorize browser history suggestions, to match browsing records locally by title or URL. This feature is off by default; you can uncheck it or revoke the permission in your browser at any time.
 - **topSites / browsing activity related capabilities**: to show frequently visited sites;
 - **storage**: to save settings and cache, and to temporarily detect, download, or clear sync data left by older versions;
 - **tabs / activeTab / scripting** (depending on browser): to interact with tabs, the new tab page, and related pages;
 - **optional host and request-inspection permissions**: when you enable features that need network resources, the browser may request access to specific hosts or arbitrary website resources, such as favicons or online media. Only when you test a WebDAV connection does the extension request that server host and the optional `webRequest` permission; the latter is used only to identify and validate WebDAV redirects and does not read response bodies.
 
 These permissions are used to provide local functionality. For example, the extension may read **page titles, page URLs / hostnames, and favicon information** from tabs you visit or currently open in order to display Quick Links, frequently visited sites, or related site cards. Such information is generally processed locally in your browser and does not mean the developer receives that content.
+
+Titles, URLs, visit times, and suggestion results accessed by browser history suggestions stay in the current page's memory. They are not written to extension search history, backups, or sync, and are not uploaded to the developer, search suggestion services, or WebDAV servers. Only preferences such as provider selection and suggestion count may be synced; browser permission must be granted separately on each device.
 
 ## 4. What We Do Not Do
 
@@ -114,7 +117,7 @@ Purpose: return suggested search queries while you type.
 Risk notes:
 
 - related search suggestion functionality is enabled by default or available by default;
-- the search text you type is sent directly to the corresponding provider;
+- when the “Search engine suggestions” provider is enabled, your original search input is sent directly to the corresponding service; browser history suggestions do not send browsing records or suggestion results to these services. You can disable this provider separately while keeping local suggestions;
 - those providers may log search keywords, IP addresses, browser/device data, and request logs;
 - using Google, Bing, or other global services may involve **cross-border data transfers**;
 - **Bing-specific note**: in mainland China network environments, `www.bing.com` or related Bing services may be redirected to or associated with `cn.bing.com` or other China-related service endpoints depending on regional policies, network conditions, or provider configuration. As a result, the actual processing location, applicable law, and service operator may vary.
@@ -139,7 +142,7 @@ Risk notes:
 
 - Default: **off**. The extension connects only after you provide a server address, username, and password and confirm setup.
 - Purpose: two-way synchronization between your devices of selected settings, Quick Links, custom search engines, UI preferences, and optionally hidden sites, online wallpaper addresses, user-selected icons, and current static image wallpapers.
-- Never uploaded: WebDAV passwords, independent sync encryption passwords, browser permissions, browser bookmarks, video wallpapers, Bing/online wallpaper caches, favicon caches, object URLs, or retired browser-sync data.
+- Never uploaded: WebDAV passwords, independent sync encryption passwords, browser permissions, browser bookmarks, browser history and its suggestion results, video wallpapers, Bing/online wallpaper caches, favicon caches, object URLs, or retired browser-sync data.
 - Provider-visible data: even with client-side encryption, a WebDAV provider can generally see your account, connection IP, request time, directory existence, file counts, and transfer sizes.
 - Encryption boundary: client-side encryption is off by default. If enabled when the vault is created, selected content is encrypted before upload using your independent password. The encryption mode and password cannot be changed after creation, and the developer cannot recover a forgotten password.
 - HTTP risk: HTTPS is required by default. Only LAN addresses may use HTTP after explicit acknowledgement; public HTTP is unsupported. LAN HTTP can still expose credentials and unencrypted content to others on the same network. Client content encryption does not protect the WebDAV login or all network metadata.

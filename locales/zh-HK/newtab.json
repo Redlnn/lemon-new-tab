@@ -205,9 +205,10 @@
     "unpinMessage": "已取消釘選此連結"
   },
   "search": {
-    "calculationResult": "計算結果",
-    "calculator": "計算器",
-    "clickToCopy": "點擊複製",
+    "browserHistory": "瀏覽",
+    "calculationResult": "結果",
+    "calculator": "計算",
+    "clickToCopy": "複製",
     "engineMenu": {
       "current": "當前",
       "tipPrefix": "Tip：按",
@@ -220,12 +221,12 @@
       "google": "Google",
       "yandex": "Yandex"
     },
-    "mostVisited": "最常訪問",
+    "extensionSearchHistory": "搜尋",
+    "mostVisited": "常用",
     "navigateTo": "前往",
-    "open": "開啟",
     "placeholder": "搜尋",
     "purgeSearchHistory": "清除搜尋歷史",
-    "savedWebsite": "已收藏網站",
+    "savedWebsite": "快捷",
     "searchEngineNotFound": "找不到搜尋引擎",
     "searchFor": "搜尋"
   },

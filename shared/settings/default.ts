@@ -1,5 +1,6 @@
 import { BgType, ClockWeight, DrawerDirection, SortMode } from '../enums.ts'
 import { BUILT_IN_SEARCH_ENGINE_KEYS } from '../searchEngines.ts'
+import { SEARCH_SUGGESTION_PROVIDER_IDS } from '../searchSuggestionProviders.ts'
 
 import { type CURRENT_CONFIG_SCHEMA, CURRENT_CONFIG_VERSION } from './current.ts'
 
@@ -53,6 +54,8 @@ export const defaultSettings = {
     showIconAlways: false,
 
     suggestionsEnabled: true,
+    suggestionProviders: SEARCH_SUGGESTION_PROVIDER_IDS.filter((id) => id !== 'browser-history'),
+    browserHistoryLimit: 3,
     suggestionAPI: 'bing',
     engine: 'bing',
     builtInEngineOrder: [...BUILT_IN_SEARCH_ENGINE_KEYS],

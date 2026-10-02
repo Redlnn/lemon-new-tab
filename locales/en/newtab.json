@@ -205,9 +205,10 @@
     "unpinMessage": "Link unpinned."
   },
   "search": {
+    "browserHistory": "Visited",
     "calculationResult": "Result",
-    "calculator": "Calculator",
-    "clickToCopy": "Click to copy",
+    "calculator": "Calculate",
+    "clickToCopy": "Copy",
     "engineMenu": {
       "current": "Current",
       "tipPrefix": "Tip: Press",
@@ -220,12 +221,12 @@
       "google": "Google",
       "yandex": "Yandex"
     },
-    "mostVisited": "Most visited",
+    "extensionSearchHistory": "Search",
+    "mostVisited": "Frequent",
     "navigateTo": "Go to",
-    "open": "Open",
     "placeholder": "Search",
     "purgeSearchHistory": "Clear Search History",
-    "savedWebsite": "Saved websites",
+    "savedWebsite": "Saved",
     "searchEngineNotFound": "Search engine not found",
     "searchFor": "Search"
   },

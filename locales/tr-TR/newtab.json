@@ -205,9 +205,10 @@
     "unpinMessage": "Bağlantının sabitlemesi kaldırıldı."
   },
   "search": {
+    "browserHistory": "Ziyaretler",
     "calculationResult": "Sonuç",
-    "calculator": "Hesap makinesi",
-    "clickToCopy": "Kopyalamak için tıklayın",
+    "calculator": "Hesaplamak",
+    "clickToCopy": "Kopyala",
     "engineMenu": {
       "current": "Mevcut",
       "tipPrefix": "İpucu: Arama motorunu değiştirmek için",
@@ -220,12 +221,12 @@
       "google": "Google",
       "yandex": "Yandex"
     },
-    "mostVisited": "En çok ziyaret edilenler",
+    "extensionSearchHistory": "Aramalar",
+    "mostVisited": "Sık",
     "navigateTo": "Adrese git",
-    "open": "Aç",
     "placeholder": "Ara",
     "purgeSearchHistory": "Arama Geçmişini Temizle",
-    "savedWebsite": "Kayıtlı web siteleri",
+    "savedWebsite": "Kayıtlı",
     "searchEngineNotFound": "Arama motoru bulunamadı",
     "searchFor": "Ara"
   },

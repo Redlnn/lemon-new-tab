@@ -404,22 +404,38 @@
   "search": {
     "alwaysExpandSearchBar": "Always expand search bar",
     "alwaysShowIcon": "Always show search engine icon",
+    "authorizeHistory": "Grant history access",
     "border": "Show search box border",
     "borderRadius": "Search box radius",
     "clickToChange": "Click to change",
     "defaultSearchEngine": "Search engine",
     "expandWidth": "Expanded width",
+    "historyPermissionDenied": "History access was not granted. Other suggestion providers are still available.",
+    "historyPermissionDescription": "Browser history suggestions require permission and match titles or URLs.",
+    "historyPermissionPending": "Browser history is selected, but this device has not granted permission.",
     "launchAnim": "Search box expand animation on startup",
     "leftAlignInput": "Left-align search input",
+    "noSuggestionProviders": "None",
     "placeholder": "Search placeholder",
+    "providers": {
+      "calculator": "Calculator",
+      "url": "URL recognition",
+      "quick-links": "Quick links",
+      "top-sites": "Most visited sites",
+      "browser-history": "Browser history",
+      "search-history": "Extension search history",
+      "remote": "Search engine suggestions"
+    },
     "recordSearchHistory": "Record search history",
     "restoreHiddenEngines": "Restore hidden built-in search engines",
     "restoreHiddenEnginesTitle": "Restore all built-in search engines and their default order?",
     "searchSuggestionProvider": "Search suggestion API",
     "searchSuggestions": "Search suggestions",
     "shadow": "Show search box shadow",
+    "suggestionProviders": "Suggestion providers",
     "tip": "Want to activate the search input when opening a new tab? Check the “Help and Feedback” in the button menu at the bottom right of the page.",
-    "title": "Search"
+    "title": "Search",
+    "browserHistoryLimit": "Browser history suggestion count"
   },
   "sync": {
     "availability": {

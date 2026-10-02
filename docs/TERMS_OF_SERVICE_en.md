@@ -1,6 +1,6 @@
 # Lemon New Tab Terms of Service
 
-> Last updated: 2026-08-09
+> Last updated: 2026-10-02
 
 These Terms of Service ("**Terms**") apply to the browser extension **Lemon New Tab**, its distribution channels, and its related public source code repository.
 
@@ -64,6 +64,8 @@ WebDAV sync sends content you select directly to the server you specify. You are
 You may decide whether to continue using such online features through extension settings, browser permission settings, network blocking rules, or by uninstalling the extension. Disabling or blocking them may affect feature availability or user experience.
 
 ## 7. Data and Privacy
+
+Browser history suggestions are off by default and require you to enable them and grant the optional `history` permission. They match browsing records locally by title or URL. History data and suggestion results stay in the current page's memory, are not written to extension search history, backups, or sync, and are not uploaded to the developer, search suggestion services, or WebDAV servers. You can uncheck this provider or revoke permission. Provider selection and suggestion count may be synced, but permission must be granted separately on each device. If “Search engine suggestions” is enabled, your original search input is still sent directly to the selected search service; you can disable this provider separately.
 
 Your use of the extension is also governed by the Privacy Policy. If these Terms and the Privacy Policy differ in interpretation regarding data processing, lawful bases, user rights, or cross-border transfers, they should be interpreted consistently where possible; if a conflict remains, the Privacy Policy will control for data protection matters.
 

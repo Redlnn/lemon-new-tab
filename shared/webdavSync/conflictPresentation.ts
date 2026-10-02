@@ -1,3 +1,8 @@
+import {
+  normalizeSuggestionProviders,
+  suggestionProviderNameKey,
+} from '../searchSuggestionProviders.ts'
+
 import type { JsonObject, JsonValue, SyncConflict, SyncSnapshotV1 } from './types.ts'
 
 export type ConflictTranslator = (key: string, options?: Record<string, unknown>) => string
@@ -44,6 +49,8 @@ const SETTING_TITLE_KEYS: Record<string, string> = {
   'search.expandAlways': 'search.alwaysExpandSearchBar',
   'search.showIconAlways': 'search.alwaysShowIcon',
   'search.suggestionsEnabled': 'search.searchSuggestions',
+  'search.suggestionProviders': 'search.suggestionProviders',
+  'search.browserHistoryLimit': 'search.browserHistoryLimit',
   'search.suggestionAPI': 'search.searchSuggestionProvider',
   'search.engine': 'search.defaultSearchEngine',
   'search.builtInEngineOrder': 'webdavSync.conflicts.fields.searchEngineOrder',
@@ -355,6 +362,12 @@ function displayValue(
     return t(
       side === 'base' ? 'webdavSync.conflicts.values.noBaseline' : 'webdavSync.conflicts.deleted',
     )
+  if (conflict.path === 'settings.search.suggestionProviders' && Array.isArray(value)) {
+    const names = normalizeSuggestionProviders(
+      value.filter((id): id is string => typeof id === 'string'),
+    ).map((id) => t(suggestionProviderNameKey(id)))
+    return names.length ? names.join('、') : t('search.noSuggestionProviders')
+  }
   if (isOrderPath(conflict.path)) return t('webdavSync.conflicts.values.orderChanged')
   if (isIconPath(conflict.path)) {
     return t(

@@ -33,7 +33,7 @@ type SearchSuggestionAreaController = {
   clearActiveSuggest: () => void
   clearSearchSuggestions: () => void
   showSearchHistories: () => Promise<void>
-  handleInput: () => void
+  handleInput: (text: string) => void
   navigateActiveSuggest: (
     direction: number,
     currentText: string,
@@ -56,15 +56,16 @@ const { t } = useTranslation()
 const searchText = ref('')
 const originSearchText = ref<string | null>(null)
 const mounted = ref(false)
-const { isComposing, handleCompositionStart, handleCompositionEnd } =
-  useCompositionInput(handleInput)
+const { isComposing, handleCompositionStart, handleCompositionEnd } = useCompositionInput(
+  () => void nextTick(handleInput),
+)
 
 const focusStore = useFocusState()
 const settings = useSettingsStore()
 const customSearchEngineStore = useCustomSearchEngineStore()
 const isWindowFocused = useWindowFocus()
 const activeElement = useActiveElement()
-const { addHistory, ensureLoaded: ensureHistoryLoaded } = useSearchHistoryCache()
+const { addHistory } = useSearchHistoryCache()
 
 const SEARCH_FORM_FALLBACK_HEIGHT = 44
 
@@ -150,7 +151,7 @@ function handleInput() {
   }
   originSearchText.value = null
   suggestionArea.value?.clearActiveSuggest()
-  suggestionArea.value?.handleInput()
+  suggestionArea.value?.handleInput(searchText.value)
 }
 
 function navigateSuggestions(direction: number) {
@@ -263,7 +264,6 @@ onMounted(() => {
   if (settings.perf.searchBar.launchAnim) {
     useTimeoutFn(() => (mounted.value = true), 100)
   }
-  void ensureHistoryLoaded()
 })
 </script>
 

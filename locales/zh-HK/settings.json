@@ -404,22 +404,38 @@
   "search": {
     "alwaysExpandSearchBar": "一直展開搜尋框",
     "alwaysShowIcon": "始終顯示搜尋引擎圖示",
+    "authorizeHistory": "授權讀取歷史記錄",
     "border": "顯示搜尋框邊框",
     "borderRadius": "搜尋框圓角",
     "clickToChange": "點擊更改",
     "defaultSearchEngine": "預設搜尋引擎",
     "expandWidth": "展開後寬度",
+    "historyPermissionDenied": "未獲得歷史記錄權限，其他建議提供器仍可使用。",
+    "historyPermissionDescription": "瀏覽器歷史建議需要授權，按標題或 URL 配對",
+    "historyPermissionPending": "已選擇瀏覽器歷史記錄，但此裝置尚未授權。",
     "launchAnim": "啟動時搜索框展開動效",
     "leftAlignInput": "搜尋框輸入內容靠左對齊",
+    "noSuggestionProviders": "未選擇",
     "placeholder": "搜尋框占位文字",
+    "providers": {
+      "calculator": "計算機",
+      "url": "URL 識別",
+      "quick-links": "快捷連結",
+      "top-sites": "常用網站",
+      "browser-history": "瀏覽器歷史記錄",
+      "search-history": "擴充功能搜尋記錄",
+      "remote": "搜尋引擎建議"
+    },
     "recordSearchHistory": "記錄搜尋歷史",
     "restoreHiddenEngines": "還原已隱藏的內置搜尋引擎",
     "restoreHiddenEnginesTitle": "確定還原所有內置搜尋引擎及其預設順序嗎？",
-    "searchSuggestionProvider": "搜尋建議 API",
+    "searchSuggestionProvider": "搜尋引擎建議 API",
     "searchSuggestions": "搜尋建議",
     "shadow": "顯示搜尋框陰影",
+    "suggestionProviders": "建議提供器",
     "tip": "想要打開新分頁就將焦點移至搜尋框？請查看頁面右下角按鈕菜單的「幫助和反饋」",
-    "title": "搜尋"
+    "title": "搜尋",
+    "browserHistoryLimit": "瀏覽器歷史建議數量"
   },
   "sync": {
     "availability": {

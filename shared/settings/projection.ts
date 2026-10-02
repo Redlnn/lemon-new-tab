@@ -1,5 +1,6 @@
 import { BgType, ClockWeight, DrawerDirection, SortMode } from '../enums.ts'
 import { BUILT_IN_SEARCH_ENGINE_KEYS, normalizeBuiltInSearchEngineOrder } from '../searchEngines.ts'
+import { normalizeSuggestionProviders } from '../searchSuggestionProviders.ts'
 
 import { defaultSettings } from './default.ts'
 
@@ -52,6 +53,7 @@ const INTEGER_RANGES: Record<string, readonly [number, number]> = {
   'clock.dateSize': [10, 50],
   'clock.style.transparency': [0, 95],
   'search.borderRadius': [0, 50],
+  'search.browserHistoryLimit': [1, 5],
   'quickLinks.iconBorderRadius': [0, 50],
   'yiyan.borderRadius': [0, 40],
   'layout.actionBtnBorderRadius': [0, 50],
@@ -93,6 +95,7 @@ function validLeaf(value: unknown, fallback: unknown, path: string): boolean {
 }
 
 function normalizeLeaf(value: unknown, path: string): unknown {
+  if (path === 'search.suggestionProviders') return normalizeSuggestionProviders(value as string[])
   const range = INTEGER_RANGES[path]
   if (range && typeof value === 'number')
     return Math.min(range[1], Math.max(range[0], Math.round(value)))
@@ -114,7 +117,7 @@ export function projectSettings(
   input: unknown,
   { syncOnly = false, defaults = false, strict = true } = {},
 ): RecordValue {
-  function visit(template: RecordValue, source: RecordValue, prefix: string): RecordValue {
+  const visit = (template: RecordValue, source: RecordValue, prefix: string): RecordValue => {
     const result: RecordValue = {}
     for (const [key, fallback] of Object.entries(template)) {
       const path = prefix ? `${prefix}.${key}` : key

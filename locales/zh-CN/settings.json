@@ -404,22 +404,38 @@
   "search": {
     "alwaysExpandSearchBar": "一直展开搜索框",
     "alwaysShowIcon": "始终显示搜索引擎图标",
+    "authorizeHistory": "授权读取历史",
     "border": "显示搜索框边框",
     "borderRadius": "搜索框圆角",
     "clickToChange": "点击更改",
     "defaultSearchEngine": "搜索引擎",
     "expandWidth": "展开后宽度",
+    "historyPermissionDenied": "未获得历史记录权限，其他建议提供器仍可使用。",
+    "historyPermissionDescription": "浏览器历史建议需要授权，按标题或 URL 匹配",
+    "historyPermissionPending": "已选择浏览器历史，但此设备尚未授权。",
     "launchAnim": "启动时搜索框展开动画",
     "leftAlignInput": "搜索框输入内容左对齐",
+    "noSuggestionProviders": "未选择",
     "placeholder": "搜索框占位文字",
+    "providers": {
+      "calculator": "计算器",
+      "url": "URL 识别",
+      "quick-links": "快捷链接",
+      "top-sites": "常用网站",
+      "browser-history": "浏览器历史",
+      "search-history": "扩展搜索历史",
+      "remote": "搜索引擎建议"
+    },
     "recordSearchHistory": "记录搜索历史",
     "restoreHiddenEngines": "恢复已隐藏的内置搜索引擎",
     "restoreHiddenEnginesTitle": "确定恢复所有内置搜索引擎及其默认顺序吗？",
-    "searchSuggestionProvider": "搜索建议 API",
+    "searchSuggestionProvider": "搜索引擎建议 API",
     "searchSuggestions": "搜索建议",
     "shadow": "显示搜索框阴影",
+    "suggestionProviders": "建议提供器",
     "tip": "想要打开新标签页就激活搜索输入？请查看页面右下角按钮菜单的「帮助和反馈」",
-    "title": "搜索"
+    "title": "搜索",
+    "browserHistoryLimit": "浏览器历史建议数量"
   },
   "sync": {
     "availability": {
