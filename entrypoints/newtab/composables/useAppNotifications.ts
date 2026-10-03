@@ -28,8 +28,11 @@ export function useAppNotifications(showChangelog: () => void | Promise<void>) {
     if (!canShowGreeting()) return
     document.removeEventListener('visibilitychange', showGreeting)
     if (greetingShown || !settings.greetingEnabled) return
+    const greetings = t(`newtab:notification.greeting.${getTimePeriod(new Date().getHours())}`, {
+      returnObjects: true,
+    }) as string[]
     ElMessage({
-      message: t(`newtab:notification.greeting.${getTimePeriod(new Date().getHours())}`),
+      message: greetings[Math.floor(Math.random() * greetings.length)],
       duration: 5000,
     })
     // 仅在可见页面创建问候后记录，后台恢复的标签页不会消耗展示机会。

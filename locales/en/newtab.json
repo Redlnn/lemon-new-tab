@@ -159,13 +159,62 @@
       "title": "Tip: Favicon cache is disabled"
     },
     "greeting": {
-      "afternoon": "Good afternoon! Hope the rest of your day goes smoothly.",
-      "dawn": "The day is still quiet. Take good care of yourself.",
-      "dusk": "The day is winding down. Take a moment for yourself.",
-      "evening": "Good evening! Hope you have a relaxing night.",
-      "lateNight": "It's getting late. Hope you can get some rest soon.",
-      "morning": "Good morning! Hope your day starts well.",
-      "noon": "Hope your day is going well. Take a break when you can."
+      "afternoon": [
+        "Good afternoon! Hope the rest of your day goes smoothly.",
+        "Good afternoon! A sip of water and a little breather might feel good.",
+        "Hope something small makes you smile this afternoon.",
+        "Been busy for a while? Give yourself a moment to stretch.",
+        "Good afternoon! It's okay to go at your own pace.",
+        "Here's to a little less rush and a little more ease this afternoon."
+      ],
+      "dawn": [
+        "The day is still quiet. Take good care of yourself.",
+        "It's quiet out there. Hope you can find a little peace, too.",
+        "If you're still busy, leave a little room for rest.",
+        "Just waking up or still awake? Be kind to yourself either way.",
+        "Before the day gets going, take a moment to look after yourself.",
+        "Hope these quiet hours give you a little time that's just yours."
+      ],
+      "dusk": [
+        "The day is winding down. Take a moment for yourself.",
+        "Hope you get a little time to unwind as the evening begins.",
+        "The day is nearly done. You don't have to finish everything at once.",
+        "Hope there's a good meal and something to smile about waiting for you.",
+        "It's been a long day. Relax your shoulders and take a breath.",
+        "As the light fades, save a little kindness for yourself."
+      ],
+      "evening": [
+        "Good evening! Hope you have a relaxing night.",
+        "Good evening! Make a little time for something you enjoy.",
+        "Hope you have a bit of the evening all to yourself.",
+        "Take it slow tonight. A warm drink might be a nice place to start.",
+        "Good evening! It's okay to set today's worries aside for a while.",
+        "Hope tonight brings a good chat or a little moment of joy."
+      ],
+      "lateNight": [
+        "It's getting late. Hope you can get some rest soon.",
+        "Hope you can let the day go and get a good night's sleep.",
+        "Still busy? Give your eyes a break and have a sip of water.",
+        "You've done plenty today. It's okay to leave a little for tomorrow.",
+        "Wishing you fewer worries tonight and sweeter dreams.",
+        "Good night. Take care of yourself; tomorrow can wait."
+      ],
+      "morning": [
+        "Good morning! Hope your day starts well.",
+        "Good morning! Hope you have time for breakfast and a gentle start.",
+        "A new day is here. Take it at a pace that feels right for you.",
+        "Hope today brings a pleasant surprise and a few little joys.",
+        "Morning! Give yourself a smile and ease into the day.",
+        "Take good care of yourself today. Hope it's a kind one."
+      ],
+      "noon": [
+        "Hope your day is going well. Take a break when you can.",
+        "It's lunchtime. Give yourself a proper break and something good to eat.",
+        "Hope lunch hits the spot and the afternoon feels a little lighter.",
+        "Time for a midday breather. Rest your eyes and take a moment for yourself.",
+        "After a busy morning, a little time to recharge can feel good.",
+        "Hope your lunch is lovely and your worries feel a little smaller."
+      ]
     },
     "wallpaperCache": {
       "message": "Unable to cache online wallpaper: {error}",

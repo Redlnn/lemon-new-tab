@@ -159,13 +159,62 @@
       "title": "İpucu: Favicon önbelleği devre dışı"
     },
     "greeting": {
-      "afternoon": "İyi günler! Günün geri kalanı güzel geçsin.",
-      "dawn": "Günün bu sakin saatlerinde kendinize iyi bakın.",
-      "dusk": "Gün sona ererken biraz soluklanın.",
-      "evening": "İyi akşamlar! Huzurlu bir akşam geçirin.",
-      "lateNight": "Geç oldu. Fırsat bulunca biraz dinlenin.",
-      "morning": "Günaydın! Umarız gününüz güzel başlar.",
-      "noon": "İyi günler! Yoğunluk arasında kısa bir mola vermeyi unutmayın."
+      "afternoon": [
+        "İyi günler! Günün geri kalanı güzel geçsin.",
+        "İyi günler! Bir yudum su içip biraz soluklanmaya ne dersiniz?",
+        "Umarız bu öğleden sonra küçük bir şey yüzünüzü güldürür.",
+        "Bir süredir yoğun musunuz? Biraz esneyip kendinize zaman ayırın.",
+        "İyi günler! Kendi hızınızda ilerlemenizde hiçbir sakınca yok.",
+        "Günün geri kalanında telaşınız az, keyfiniz bol olsun."
+      ],
+      "dawn": [
+        "Günün bu sakin saatlerinde kendinize iyi bakın.",
+        "Ortalık henüz sessiz. Umarız içiniz de biraz huzur bulur.",
+        "Hâlâ bir şeylerle uğraşıyorsanız dinlenmeye de zaman ayırın.",
+        "İster yeni uyanmış olun ister henüz uyumamış, kendinize nazik davranın.",
+        "Gün başlamadan önce kendinize küçük bir iyilik yapın.",
+        "Bu sakin saatlerde yalnızca size ait bir anınız olsun."
+      ],
+      "dusk": [
+        "Gün sona ererken biraz soluklanın.",
+        "Akşam yaklaşırken kendinize dinlenecek biraz zaman ayırın.",
+        "Gün bitmek üzere. Her şeyi bir anda tamamlamanız gerekmiyor.",
+        "Umarız akşam sizi güzel bir yemek ve gülümsetecek bir şey bekliyordur.",
+        "Uzun bir günün ardından omuzlarınızı gevşetip derin bir nefes alın.",
+        "Hava kararırken kendinize de biraz şefkat gösterin."
+      ],
+      "evening": [
+        "İyi akşamlar! Huzurlu bir akşam geçirin.",
+        "İyi akşamlar! Sevdiğiniz bir şeye biraz zaman ayırın.",
+        "Umarız bu akşam kendinize ayırabileceğiniz sakin bir vaktiniz olur.",
+        "Bu akşam biraz yavaşlayın. Sıcak bir içecek iyi bir başlangıç olabilir.",
+        "İyi akşamlar! Bugünün dertlerini bir süreliğine kenara bırakabilirsiniz.",
+        "Bu akşam güzel bir sohbet ya da küçük bir mutluluk size eşlik etsin."
+      ],
+      "lateNight": [
+        "Geç oldu. Fırsat bulunca biraz dinlenin.",
+        "Umarız günün yorgunluğunu geride bırakıp rahat bir uyku çekersiniz.",
+        "Hâlâ meşgul müsünüz? Gözlerinizi dinlendirip bir yudum su için.",
+        "Bugün yeterince uğraştınız. Birkaç şeyi yarına bırakabilirsiniz.",
+        "Bu gece kaygılarınız az, rüyalarınız güzel olsun.",
+        "İyi geceler. Kendinize iyi bakın; yarın biraz bekleyebilir."
+      ],
+      "morning": [
+        "Günaydın! Umarız gününüz güzel başlar.",
+        "Günaydın! Güzel bir kahvaltıyla güne sakin bir başlangıç yapın.",
+        "Yeni bir gün başladı. Size iyi gelen bir tempoda ilerleyin.",
+        "Umarız bugün hoş bir sürpriz ve küçük mutluluklar sizi bulur.",
+        "Günaydın! Kendinize gülümseyip güne yavaşça başlayın.",
+        "Bugün de kendinize iyi bakın. Her şey gönlünüzce olsun."
+      ],
+      "noon": [
+        "İyi günler! Yoğunluk arasında kısa bir mola vermeyi unutmayın.",
+        "Öğle vakti geldi. İşlere dönmeden önce güzelce yemek yiyip dinlenin.",
+        "Öğle yemeğiniz lezzetli, öğleden sonranız daha hafif geçsin.",
+        "Küçük bir öğle molası iyi gelir. Gözlerinizi dinlendirip biraz soluklanın.",
+        "Yoğun bir sabahtan sonra kendinize biraz zaman ayırın.",
+        "Afiyet olsun! Yemeğiniz keyifli, dertleriniz biraz daha küçük olsun."
+      ]
     },
     "wallpaperCache": {
       "message": "Çevrimiçi duvar kağıdı önbelleğe alınamadı: {error}",
