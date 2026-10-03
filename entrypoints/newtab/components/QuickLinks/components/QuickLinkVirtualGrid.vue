@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { useEventListener, useResizeObserver } from '@vueuse/core'
+import { useIntersectionObserver, useResizeObserver } from '@vueuse/core'
 
 import type { QuickLinkViewItem } from '../composables/quickLinksViewModel'
 import type { QuickLinkDndData } from '../composables/useQuickLinkDnd'
+import { useVirtualGridViewport } from '../composables/useVirtualGridViewport'
 import { virtualItemKey, type VirtualQuickLinkDnd } from '../composables/useVirtualQuickLinkDnd'
 
 import QuickLinkDropTarget from './QuickLinkDropTarget.vue'
@@ -24,6 +25,14 @@ const rowHeight = ref(96)
 const gap = ref(0)
 const bounds = ref({ top: 0, bottom: 600 })
 const focusedKey = ref<string | null>(null)
+const nearViewport = ref(false)
+const { scrollVersion, viewport } = useVirtualGridViewport()
+const scrollRoot = computed(() => {
+  for (let parent = element.value?.parentElement; parent; parent = parent.parentElement) {
+    if (/(auto|scroll)/.test(getComputedStyle(parent).overflowY)) return parent
+  }
+  return null
+})
 let frame = 0
 const stride = computed(() => rowHeight.value + gap.value)
 const rows = computed(() => Math.ceil((props.items.length + Number(props.add)) / props.columns))
@@ -37,7 +46,9 @@ const indices = computed(() => {
     (Math.ceil(bounds.value.bottom / stride.value) + 3) * props.columns,
   )
   const set = new Set<number>()
-  for (let index = first; index < last; index++) set.add(index)
+  if (nearViewport.value) {
+    for (let index = first; index < last; index++) set.add(index)
+  }
   // 单个测量格保留真实主题/字体尺寸，不为测量挂载整个列表。
   if (props.items.length) set.add(0)
   const source = props.controller.source.value
@@ -55,42 +66,38 @@ const position = (index: number) => ({
   gridColumn: (index % props.columns) + 1,
 })
 
-function viewport() {
-  let top = 0
-  let bottom = window.innerHeight
-  let left = 0
-  let right = window.innerWidth
-  for (let parent = element.value?.parentElement; parent; parent = parent.parentElement) {
-    const style = getComputedStyle(parent)
-    if (/(auto|scroll|hidden|clip)/.test(style.overflowY)) {
-      const rect = parent.getBoundingClientRect()
-      top = Math.max(top, rect.top)
-      bottom = Math.min(bottom, rect.bottom)
-      left = Math.max(left, rect.left)
-      right = Math.min(right, rect.right)
-    }
-  }
-  return { top, bottom, left, right }
-}
-function measure() {
+function measure(cached = false) {
   const root = element.value
   if (!root) return
-  const sample = root.querySelector<HTMLElement>(
-    '[data-virtual-index="0"] > *, [data-virtual-add] > *',
-  )
-  if (sample?.offsetHeight && sample.offsetHeight !== rowHeight.value)
-    rowHeight.value = sample.offsetHeight
-  gap.value = parseFloat(getComputedStyle(root).rowGap) || 0
+  if (!cached) {
+    const sample = root.querySelector<HTMLElement>(
+      '[data-virtual-index="0"] > *, [data-virtual-add] > *',
+    )
+    const height = sample?.offsetHeight
+    if (height && height !== rowHeight.value) rowHeight.value = height
+    gap.value = parseFloat(getComputedStyle(root).rowGap) || 0
+  }
   const rect = root.getBoundingClientRect()
-  const view = viewport()
-  bounds.value = { top: view.top - rect.top, bottom: view.bottom - rect.top }
+  const view = viewport(root, cached)
+  const top = view.top - rect.top
+  const bottom = view.bottom - rect.top
+  if (top !== bounds.value.top || bottom !== bounds.value.bottom) bounds.value = { top, bottom }
 }
 function schedule() {
   cancelAnimationFrame(frame)
-  frame = requestAnimationFrame(measure)
+  frame = requestAnimationFrame(() => measure())
 }
-useEventListener(window, 'scroll', schedule, { capture: true, passive: true })
-useEventListener(window, 'resize', schedule)
+watch(scrollVersion, () => {
+  if (nearViewport.value) measure(true)
+})
+useIntersectionObserver(
+  element,
+  ([entry]) => {
+    nearViewport.value = entry?.isIntersecting ?? false
+    if (nearViewport.value) schedule()
+  },
+  { root: scrollRoot, rootMargin: '300px 0px' },
+)
 useResizeObserver(element, schedule)
 useResizeObserver(
   computed(() => element.value?.querySelector<HTMLElement>('.quick-links__item, .launchpad-item')),
@@ -110,7 +117,7 @@ const registration = {
     const root = element.value
     if (!root) return null
     const rect = root.getBoundingClientRect()
-    const view = viewport()
+    const view = viewport(root)
     const header = props.endTarget?.()?.getBoundingClientRect()
     if (
       header &&
@@ -148,7 +155,7 @@ const registration = {
     if (!root) return
     if (focus && props.items[index]) focusedKey.value = virtualItemKey(props.items[index]!)
     const rect = root.getBoundingClientRect()
-    const view = viewport()
+    const view = viewport(root)
     const top = rect.top + Math.floor(index / props.columns) * stride.value
     const delta =
       top < view.top
@@ -160,6 +167,7 @@ const registration = {
     while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY))
       scroller = scroller.parentElement
     if (delta) (scroller ?? window).scrollBy({ top: delta })
+    nearViewport.value = true
     measure()
     await nextTick()
     if (focus)
