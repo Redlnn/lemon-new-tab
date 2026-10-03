@@ -64,7 +64,7 @@
     "title": "Yerleşik uygulamalar"
   },
   "changelog": {
-    "hideMajor": "Büyük sürüm güncelleme bildirimini gizle",
+    "hideMajor": "Sürüm yükseltmelerinde değişiklik günlüğünü açma",
     "newVersionMsg": "Başlangıç sayfanız güncellendi!",
     "otherVersions": {
       "description": "Yalnızca son 5 sürüm dahildir. Tam sürüm bildirimini görüntülemek için aşağıdaki bağlantılara tıklayın:",

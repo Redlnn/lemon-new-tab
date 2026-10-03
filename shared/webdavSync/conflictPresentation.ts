@@ -165,7 +165,7 @@ const SETTING_TITLE_KEYS: Record<string, string> = {
   'bookmark.rightClickToOpen': 'bookmark.rightClickToOpen',
   'bookmark.showBtn': 'bookmark.showBtn',
   'bookmark.defaultSortMode': 'bookmark.defaultSort',
-  hideMajorChangelog: 'newtab:changelog.hideMajor',
+  hideMajorChangelog: 'settings:other.changelog.label',
   faviconCacheEnabled: 'other.faviconCache.label',
 }
 

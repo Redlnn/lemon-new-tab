@@ -64,7 +64,7 @@
     "title": "内置应用管理"
   },
   "changelog": {
-    "hideMajor": "不显示大版本更新日志",
+    "hideMajor": "版本升级时不弹出",
     "newVersionMsg": "你的起始页更新啦~",
     "otherVersions": {
       "description": "仅包含5个版本的更新日志，剩余内容请点击下方链接跳转查看：",

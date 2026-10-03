@@ -229,6 +229,10 @@
     "title": "Layout"
   },
   "other": {
+    "changelog": {
+      "description": "Still opens for major upgrades",
+      "label": "Don't open the changelog on version upgrades"
+    },
     "greeting": {
       "description": "Shown once each time the browser starts.",
       "label": "Startup greeting"

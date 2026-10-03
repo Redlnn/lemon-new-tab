@@ -229,6 +229,10 @@
     "title": "布局"
   },
   "other": {
+    "changelog": {
+      "description": "重大升级时仍会弹出",
+      "label": "版本升级时不弹出更新日志"
+    },
     "greeting": {
       "description": "每次启动浏览器后显示一次。",
       "label": "启动问候"

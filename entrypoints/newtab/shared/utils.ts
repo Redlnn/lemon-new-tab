@@ -7,14 +7,19 @@ function parseMajorMinor(value: string): [number, number] | null {
   return [major, minor]
 }
 
-export function shouldShowChangelog(previousVersion: string, nextVersion: string): boolean {
+export function shouldShowChangelog(
+  previousVersion: string,
+  nextVersion: string,
+  hideOnUpgrade: boolean,
+): boolean {
   const nextMajorMinor = parseMajorMinor(nextVersion)
   if (!nextMajorMinor) return false
   const previousMajorMinor = parseMajorMinor(previousVersion)
-  if (!previousMajorMinor) return true
+  if (!previousMajorMinor) return !hideOnUpgrade
+  // 主版本升级始终展示，开关只影响同一主版本内的次版本升级。
   if (previousMajorMinor[0] < nextMajorMinor[0]) return true
   if (previousMajorMinor[0] > nextMajorMinor[0]) return false
-  return previousMajorMinor[1] < nextMajorMinor[1]
+  return !hideOnUpgrade && previousMajorMinor[1] < nextMajorMinor[1]
 }
 
 /**

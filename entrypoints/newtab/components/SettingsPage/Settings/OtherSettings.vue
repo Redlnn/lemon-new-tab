@@ -441,10 +441,11 @@ function changeLanguage(lang: string) {
       </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">
-          {{ t('newtab:changelog.hideMajor') }}
+          {{ t('other.changelog.label') }}
           <SyncAvailabilityIcon catalog-key="settings" />
         </div>
         <el-switch v-model="settings.hideMajorChangelog" />
+        <p class="settings__item-note">{{ t('other.changelog.description') }}</p>
       </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">

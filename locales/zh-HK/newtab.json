@@ -64,7 +64,7 @@
     "title": "內置應用管理"
   },
   "changelog": {
-    "hideMajor": "不顯示大版本更新日誌",
+    "hideMajor": "版本升級時不彈出",
     "newVersionMsg": "你嘅起始頁更新着啦~",
     "otherVersions": {
       "description": "僅包含5個版本的更新日誌，其餘內容請點擊下方連結查看：",

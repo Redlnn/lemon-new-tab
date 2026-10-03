@@ -229,6 +229,10 @@
     "title": "Düzen"
   },
   "other": {
+    "changelog": {
+      "description": "Büyük güncellemelerde yine açılır",
+      "label": "Sürüm yükseltmelerinde değişiklik günlüğünü açma"
+    },
     "greeting": {
       "description": "Tarayıcı her açıldığında bir kez gösterilir.",
       "label": "Başlangıç selamlaması"

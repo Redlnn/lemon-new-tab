@@ -229,6 +229,10 @@
     "title": "佈局"
   },
   "other": {
+    "changelog": {
+      "description": "重大升級時仍會彈出",
+      "label": "版本升級時不彈出更新日誌"
+    },
     "greeting": {
       "description": "每次啟動瀏覽器後顯示一次。",
       "label": "啟動問候"

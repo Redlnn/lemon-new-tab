@@ -84,9 +84,13 @@ export function useAppNotifications(showChangelog: () => void | Promise<void>) {
       settings.readChangeLog = false
       ElMessage.primary(t('newtab:changelog.newVersionMsg', { version }))
 
-      const canAutoShow = shouldShowChangelog(settings.pluginVersion, version)
+      const canAutoShow = shouldShowChangelog(
+        settings.pluginVersion,
+        version,
+        settings.hideMajorChangelog,
+      )
 
-      if (canAutoShow && !settings.hideMajorChangelog) {
+      if (canAutoShow) {
         void showChangelog()
       } else {
         settings.pluginVersion = version

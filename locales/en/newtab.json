@@ -64,7 +64,7 @@
     "title": "Built-in apps"
   },
   "changelog": {
-    "hideMajor": "Hide major update changelog",
+    "hideMajor": "Don't open the changelog on version upgrades",
     "newVersionMsg": "Your start page has been updated!",
     "otherVersions": {
       "description": "Only the latest 5 versions are included. Click the links below to view the full changelog:",
