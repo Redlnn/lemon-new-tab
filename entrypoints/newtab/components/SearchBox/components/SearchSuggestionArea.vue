@@ -28,6 +28,8 @@ import { calculateExpression, hasCalculationOperator } from '@newtab/shared/sear
 import {
   browserHistorySuggestions,
   collectSuggestions,
+  searchHistorySuggestions,
+  websiteSuggestions,
   type SearchSuggestion,
 } from '@newtab/shared/search/providers'
 import { parseNavigableUrl } from '@newtab/shared/search/url'
@@ -175,17 +177,6 @@ async function remoteSuggestions(query: string, signal: AbortSignal): Promise<Se
   }
   return (list ?? []).map((text) => ({ provider: 'remote', action: 'search', text }))
 }
-function websiteSuggestions(
-  provider: 'quick-links' | 'top-sites',
-  items: readonly { title?: string; url: string }[],
-  query: string,
-): SearchSuggestion[] {
-  return items
-    .filter((item) =>
-      `${item.title ?? ''} ${item.url}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
-    )
-    .map((item) => ({ provider, action: 'navigate', text: item.title || item.url, url: item.url }))
-}
 async function refreshSuggestions(text = props.searchText) {
   const sourceText = navigationSourceText.value
   clearSearchSuggestions()
@@ -268,9 +259,7 @@ async function refreshSuggestions(text = props.searchText) {
       'search-history': async () => {
         await ensureHistoryLoaded()
         if (signal.aborted) return []
-        return cachedHistories.value
-          .filter((item) => item.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
-          .map((item) => ({ provider: 'search-history', action: 'search', text: item }))
+        return searchHistorySuggestions(cachedHistories.value, query)
       },
       remote: async () => {
         await debounce()

@@ -16,7 +16,31 @@ export interface SearchSuggestion {
 
 export type SuggestionProvider = (
   remaining: number,
-) => readonly SearchSuggestion[] | Promise<readonly SearchSuggestion[]>
+) => Iterable<SearchSuggestion> | Promise<Iterable<SearchSuggestion>>
+
+/** 按需生成本地候选，由收集器在去重后满额时停止遍历。 */
+export function* websiteSuggestions(
+  provider: 'quick-links' | 'top-sites',
+  items: readonly { title?: string; url: string }[],
+  query: string,
+): Generator<SearchSuggestion> {
+  const normalizedQuery = query.toLocaleLowerCase()
+  for (const item of items) {
+    if (`${item.title ?? ''} ${item.url}`.toLocaleLowerCase().includes(normalizedQuery))
+      yield { provider, action: 'navigate', text: item.title || item.url, url: item.url }
+  }
+}
+
+export function* searchHistorySuggestions(
+  histories: readonly string[],
+  query: string,
+): Generator<SearchSuggestion> {
+  const normalizedQuery = query.toLocaleLowerCase()
+  for (const text of histories) {
+    if (text.toLocaleLowerCase().includes(normalizedQuery))
+      yield { provider: 'search-history', action: 'search', text }
+  }
+}
 
 /** 按优先级逐个获取；名额计算在去重后进行，满额时不触碰后续提供器。 */
 export async function collectSuggestions({
@@ -65,6 +89,7 @@ export async function collectSuggestions({
         seen.add(key)
         items.push(item)
         added++
+        if (items.length >= 10 || (id === 'browser-history' && added >= browserHistoryLimit)) break
       }
       onUpdate(items.slice())
     } catch (error) {
