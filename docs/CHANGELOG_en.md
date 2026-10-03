@@ -10,6 +10,7 @@
 
 ### New Features✨
 
+- **Clock:** Added a Gradient Clock option under Colorful Clock Numbers. Time digits and separators use a gradient that follows the theme color and adapts to light and dark modes.
 - **Layout:** Added a date-size control.
 - **Layout:** Added double-clicking the blank background to toggle minimal mode.
 - **Layout:** Added an option to keep the clock and date visible while page elements fade when inactive.
@@ -68,6 +69,8 @@
 - Fixed Quick Links icons jumping during pagination at certain page widths, and prevented titles from the previous or next pages from being visible.
 - Fixed keyboard navigation clearing the search box and triggering new search suggestions.
 - Fixed styling issues in some components.
+- **Quick Links/Search:** Fixed editing, moving, or deleting the wrong item after another page changed the order.
+- **Permissions/Bookmarks:** Fixed permission flows getting stuck after closing the dialog, context-menu bookmark creation failing, matching folders omitting descendants, and bookmark names missing from deletion confirmations.
 
 ## 3.5.0 (Aug 01, 2026)
 
