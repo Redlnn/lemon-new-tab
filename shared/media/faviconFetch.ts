@@ -22,6 +22,8 @@ let cacheGeneration = 0
 let cleanupTimer: ReturnType<typeof setTimeout> | null = null
 let l2MutationQueue = Promise.resolve()
 let faviconHydrationTask: Promise<unknown> | null = null
+let lastCleanupAt = 0
+const PERSISTENT_CLEANUP_INTERVAL = 10_000
 
 function queueL2Mutation(task: () => Promise<void>): Promise<void> {
   const next = l2MutationQueue.then(task, task)
@@ -36,17 +38,22 @@ function cancelScheduledCleanup(): void {
 
 function schedulePersistentCleanup(generation: number): void {
   if (cleanupTimer) return
-  cleanupTimer = setTimeout(() => {
-    cleanupTimer = null
-    void queueL2Mutation(async () => {
-      if (!_cacheEnabled || generation !== cacheGeneration) return
-      await pruneFaviconCacheEntries()
-    })
-  }, 250)
+  cleanupTimer = setTimeout(
+    () => {
+      cleanupTimer = null
+      void queueL2Mutation(async () => {
+        if (!_cacheEnabled || generation !== cacheGeneration) return
+        await pruneFaviconCacheEntries()
+        lastCleanupAt = Date.now()
+      })
+    },
+    Math.max(250, PERSISTENT_CLEANUP_INTERVAL - (Date.now() - lastCleanupAt)),
+  )
 }
 
 async function persistL1Cache(generation: number): Promise<void> {
   const entries = [...l1Cache.entries()]
+  if (!entries.length) return
   await queueL2Mutation(async () => {
     if (!_cacheEnabled || generation !== cacheGeneration) return
     await setFaviconCacheEntries(entries)
@@ -77,10 +84,10 @@ export async function hydrateFaviconCache(enabled: boolean): Promise<void> {
   try {
     const entries = await entriesTask
     if (!_cacheEnabled || generationAtStart !== cacheGeneration) return
+    lastCleanupAt = Date.now()
 
     entries.sort((a, b) => a[1].fetchedAt - b[1].fetchedAt)
     for (const [origin, entry] of entries) l1Set(origin, entry)
-    schedulePersistentCleanup(generationAtStart)
   } finally {
     if (faviconHydrationTask === entriesTask) faviconHydrationTask = null
   }
@@ -90,6 +97,7 @@ export async function hydrateFaviconCache(enabled: boolean): Promise<void> {
 export async function clearFaviconCache(): Promise<void> {
   cacheGeneration += 1
   cancelScheduledCleanup()
+  lastCleanupAt = 0
   pendingFetches.clear()
   l1Cache.clear()
   await queueL2Mutation(clearFaviconCacheEntries)

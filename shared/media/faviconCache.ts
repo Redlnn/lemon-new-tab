@@ -1,11 +1,4 @@
-import {
-  idbClear,
-  idbDeleteMany,
-  idbGet,
-  idbGetAllEntries,
-  idbSet,
-  idbSetMany,
-} from '@/shared/storage/idb'
+import { idbClear, getDB, idbGet, idbSet, idbSetMany } from '@/shared/storage/idb'
 
 export type { FaviconCacheEntry } from '@/shared/storage/idb'
 
@@ -22,12 +15,24 @@ export async function getFaviconCacheEntry(origin: string) {
   }
 }
 
-/** 一次性读取全部持久化缓存，供新标签页挂载前预热 L1。 */
-export async function getAllFaviconCacheEntries(): Promise<
-  Array<readonly [string, import('@/shared/storage/idb').FaviconCacheEntry]>
-> {
+/** 预热和整理共用一次读取；同一事务内删除旧条目，避免误删其他标签页刚更新的图标。
+ * 仍返回读取到的旧条目供 L1 使用，保留过期图标先展示、后台刷新的行为。 */
+export async function getAllFaviconCacheEntries(
+  now = Date.now(),
+): Promise<Array<readonly [string, import('@/shared/storage/idb').FaviconCacheEntry]>> {
   try {
-    return await idbGetAllEntries('favicon')
+    const db = await getDB()
+    const transaction = db.transaction('favicon', 'readwrite')
+    const [keys, values] = await Promise.all([
+      transaction.store.getAllKeys(),
+      transaction.store.getAll(),
+    ])
+    const entries = values.map((value, index) => [String(keys[index]), value] as const)
+    await Promise.all([
+      ...selectFaviconEntriesToDelete(entries, now).map((key) => transaction.store.delete(key)),
+      transaction.done,
+    ])
+    return entries
   } catch {
     return []
   }
@@ -77,12 +82,7 @@ export function selectFaviconEntriesToDelete(
 
 /** 删除超过 TTL 或 200 条上限的最旧持久化缓存。 */
 export async function pruneFaviconCacheEntries(now = Date.now()): Promise<void> {
-  try {
-    const entries = await idbGetAllEntries('favicon')
-    await idbDeleteMany('favicon', selectFaviconEntriesToDelete(entries, now))
-  } catch {
-    // 缓存整理失败时静默处理
-  }
+  await getAllFaviconCacheEntries(now)
 }
 
 /** 清空所有 favicon 持久化缓存。用户主动清理时应将失败反馈给调用方。 */
