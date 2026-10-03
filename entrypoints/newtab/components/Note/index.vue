@@ -671,13 +671,14 @@ onScopeDispose(unwatchNotes)
 }
 
 .note-aside-title {
+  margin-bottom: 4px;
   font-size: var(--el-font-size-base);
   font-weight: bold;
 }
 
 .note-aside-preview {
   display: -webkit-box;
-  margin-top: 4px;
+  margin-bottom: 4px;
   overflow: hidden;
   -webkit-line-clamp: 2;
   font-size: var(--el-font-size-small);
