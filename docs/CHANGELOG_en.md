@@ -2,7 +2,9 @@
 
 > Translated by AI from Chinese.
 
-## Unreleased
+## 4.0.0 · A fresh page, more possibilities 🍋
+
+Lemon 4.0.0 is here! Capture an idea, change the scenery, find what you need with smarter search. More to enjoy in a familiar place—let's turn a fresh page together.
 
 ### Breaking Changes💥
 
@@ -33,7 +35,7 @@
 - **Notes:** The Notes shortcut can be added to or hidden from Quick Links through Built-in App Management, and hiding it can be undone.
 - **Sync:** Added experimental WebDAV backup and sync.
 - **Settings:** Reorganized settings sections and appearance.
-- **New Tab:** Added localized greetings that change with the time of day, appear once per browser session, and can be turned off under Other → General.
+- **New Tab:** Added randomly selected localized greetings for each time of day. They appear once per browser session and can be turned off under Other → General.
 - **Dock:** Added an entrance animation with an individual toggle in Performance & Effects.
 - **Quick Links, Dock, and Launchpad:** When a site has no favicon, its first title character can be used as the link icon.
   > Chromium-based browsers require icon caching to be enabled.
@@ -43,10 +45,12 @@
 ### Improvements⚡️
 
 - Improved performance across modules for faster responses and lower memory usage.
+- Addressed potential bugs to improve stability.
 - Removed third-party favicon services to reduce extra third-party requests.
 - Limited concurrent favicon fetches to prevent a burst of requests.
 - Clearing wallpaper or icon caches now reloads open new-tab pages and provides clearer failure hints and recovery.
 - Simplified some settings UI wording and reordered options.
+- **Settings:** Updated automatic changelog display: major upgrades still open it, while automatic display for minor upgrades can be disabled under Other → General.
 - Optimized drag-and-drop experience across modules.
 - **Settings:** Narrow-screen dialogs now fit the screen width, with transitions when sections expand or collapse.
 - **Sync:** Temporary network failures are retried automatically. After credentials expire or server permission is lost, sync can be resumed by updating credentials or granting permission in Settings.
