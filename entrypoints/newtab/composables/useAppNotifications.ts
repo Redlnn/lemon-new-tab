@@ -5,7 +5,6 @@ import { browser } from 'wxt/browser'
 import { version } from '@/package.json'
 
 import { requestExtensionUpdateNotice } from '@/shared/extensionUpdate'
-import { requestGreetingClaim } from '@/shared/greeting'
 import { useSettingsStore } from '@/shared/settings'
 import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
 
@@ -21,6 +20,30 @@ import { shouldShowChangelog } from '../shared/utils'
 export function useAppNotifications(showChangelog: () => void | Promise<void>) {
   const settings = useSettingsStore()
   const { t } = useTranslation()
+  let mounted = false
+  const canShowGreeting = () => mounted && document.visibilityState === 'visible'
+  const showGreeting = async () => {
+    if (!canShowGreeting()) return
+    const { greetingShown } = await browser.storage.session.get('greetingShown')
+    if (!canShowGreeting()) return
+    document.removeEventListener('visibilitychange', showGreeting)
+    if (greetingShown || !settings.greetingEnabled) return
+    ElMessage({
+      message: t(`newtab:notification.greeting.${getTimePeriod(new Date().getHours())}`),
+      duration: 5000,
+    })
+    // 仅在可见页面创建问候后记录，后台恢复的标签页不会消耗展示机会。
+    await browser.storage.session.set({ greetingShown: true })
+  }
+
+  // 问候独立于其他通知的异步请求，在页面挂载且可见后展示。
+  onMounted(() => {
+    mounted = true
+    if (settings.greetingEnabled) {
+      document.addEventListener('visibilitychange', showGreeting)
+      void showGreeting()
+    }
+  })
   const syncStateListener: Parameters<typeof browser.storage.onChanged.addListener>[0] = (
     changes,
     area,
@@ -66,15 +89,12 @@ export function useAppNotifications(showChangelog: () => void | Promise<void>) {
         settings.pluginVersion = version
       }
     }
-
-    if (settings.greetingEnabled && (await requestGreetingClaim())) {
-      ElMessage({
-        message: t(`newtab:notification.greeting.${getTimePeriod(new Date().getHours())}`),
-        duration: 5000,
-      })
-    }
   })
-  onBeforeUnmount(() => browser.storage.onChanged.removeListener(syncStateListener))
+  onBeforeUnmount(() => {
+    mounted = false
+    document.removeEventListener('visibilitychange', showGreeting)
+    browser.storage.onChanged.removeListener(syncStateListener)
+  })
 }
 
 async function showExtensionUpdateNotification(t: (key: string) => string): Promise<void> {
