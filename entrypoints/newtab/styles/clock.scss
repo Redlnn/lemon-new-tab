@@ -9,6 +9,17 @@
   }
 }
 
+@keyframes twinkle-gradient {
+  0% {
+    visibility: hidden;
+  }
+
+  50%,
+  100% {
+    visibility: visible;
+  }
+}
+
 .clock {
   --clock-color: var(--el-fill-color-blank);
   --clock-colorful-number: var(--el-color-primary-light-5);
@@ -112,6 +123,12 @@
 
   &--gradient .clock__time-container {
     text-shadow: none;
+
+    // 父元素的文字裁剪不随内联子元素透明度变化；显隐不会改变 tnum 的字体排版。
+    .clock__colon--blinking {
+      animation: twinkle-gradient 2s steps(1, end) infinite;
+      will-change: auto;
+    }
 
     .clock__time,
     .clock__new-container .clock__second {
