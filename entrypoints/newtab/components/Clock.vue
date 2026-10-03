@@ -124,6 +124,7 @@ const dateStyle = computed(() => {
     class="clock noselect"
     :class="[
       settings.clock.style.shadow ? 'clock--shadow' : undefined,
+      settings.clock.colorfulNum && settings.clock.gradient ? 'clock--gradient' : undefined,
       settings.clock.style.invertColor.light ? ['clock--invert', 'clock--light'] : undefined,
       settings.clock.style.invertColor.night ? ['clock--invert', 'clock--night'] : undefined,
     ]"
@@ -173,7 +174,7 @@ const dateStyle = computed(() => {
         </span>
       </div>
       <div class="clock__new-container" v-if="settings.clock.newStyle">
-        <span>{{ formattedTime.second }}</span>
+        <span class="clock__second">{{ formattedTime.second }}</span>
         <span style="grid-area: meridiem">
           {{ isChinese ? formattedDate.meridiemZH : formattedTime.meridiem }}
         </span>

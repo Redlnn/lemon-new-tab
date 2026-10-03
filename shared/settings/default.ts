@@ -17,6 +17,7 @@ export const defaultSettings = {
     enabled: true,
 
     colorfulNum: true,
+    gradient: false,
     newStyle: true,
     hour12: false,
 

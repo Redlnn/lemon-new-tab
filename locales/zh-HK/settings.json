@@ -121,6 +121,7 @@
     "blink": "閃爍時間分隔符",
     "blinkingTip": "關閉可減輕持續嘅 GPU 使用",
     "colorful": "多彩時鐘",
+    "gradient": "漸變時鐘",
     "dateSize": "日期大小",
     "hour12": "使用 12 小時制",
     "invertColor": {

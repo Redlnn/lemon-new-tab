@@ -187,6 +187,13 @@ function formatTransparency(value: number) {
         <div class="settings__label">{{ t('clock.colorful') }}</div>
         <el-switch v-model="settings.clock.colorfulNum" />
       </div>
+      <div
+        v-if="settings.clock.colorfulNum"
+        class="settings__item settings__item--horizontal settings__item--nested"
+      >
+        <div class="settings__label">{{ t('clock.gradient') }}</div>
+        <el-switch v-model="settings.clock.gradient" />
+      </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('clock.shadow') }}</div>
         <el-switch v-model="settings.clock.style.shadow" />

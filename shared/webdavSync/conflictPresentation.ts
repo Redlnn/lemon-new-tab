@@ -29,6 +29,7 @@ const SETTING_TITLE_KEYS: Record<string, string> = {
   'theme.keepClockVisibleOnIdle': 'theme.keepClockVisibleOnIdle',
   'clock.enabled': 'newtab:common.enable',
   'clock.colorfulNum': 'clock.colorful',
+  'clock.gradient': 'clock.gradient',
   'clock.newStyle': 'clock.newStyle',
   'clock.hour12': 'clock.hour12',
   'clock.meridiem.show': 'clock.meridiem.show',

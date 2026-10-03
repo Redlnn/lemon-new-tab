@@ -12,9 +12,13 @@
 .clock {
   --clock-color: var(--el-fill-color-blank);
   --clock-colorful-number: var(--el-color-primary-light-5);
-  --clock-time-shadow:
-    0 6px 13px color-mix(in oklch, var(--el-color-black), transparent 80%),
-    1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);
+  --clock-gradient-start: var(--el-color-primary-light-9);
+  --clock-gradient-middle: var(--el-color-primary-light-7);
+  --clock-gradient-end: var(--el-color-primary-light-5);
+  --clock-time-shadow-main: 0 6px 13px color-mix(in oklch, var(--el-color-black), transparent 70%);
+  --clock-time-shadow-detail: 1px 1px 2px
+    color-mix(in oklch, var(--el-color-black), transparent 90%);
+  --clock-time-shadow: var(--clock-time-shadow-main), var(--clock-time-shadow-detail);
   --clock-date-shadow:
     0 3px 6px color-mix(in oklch, var(--el-color-black), transparent 70%),
     1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);
@@ -105,6 +109,31 @@
       text-shadow: var(--clock-date-shadow);
     }
   }
+
+  &--gradient .clock__time-container {
+    text-shadow: none;
+
+    .clock__time,
+    .clock__new-container .clock__second {
+      display: inline-block;
+      color: transparent;
+      background-image: linear-gradient(
+        110deg,
+        var(--clock-gradient-start),
+        var(--clock-gradient-middle) 45%,
+        var(--clock-gradient-end)
+      );
+      background-clip: text;
+    }
+
+    .colorful {
+      color: inherit;
+    }
+  }
+
+  &--gradient.clock--shadow .clock__time-container {
+    filter: drop-shadow(var(--clock-time-shadow-main)) drop-shadow(var(--clock-time-shadow-detail));
+  }
 }
 
 html:not(.dark) .clock.clock--invert.clock--light {
@@ -114,9 +143,12 @@ html:not(.dark) .clock.clock--invert.clock--light {
 html.dark .clock {
   --clock-color: var(--el-text-color-primary);
   --clock-colorful-number: var(--el-color-primary-light-3);
-  --clock-time-shadow:
-    0 1px 8px color-mix(in oklch, var(--el-color-black), transparent 50%),
-    1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);
+  --clock-gradient-start: var(--el-color-primary-dark-2);
+  --clock-gradient-middle: var(--el-color-primary);
+  --clock-gradient-end: var(--el-color-primary-light-3);
+  --clock-time-shadow-main: 0 1px 8px color-mix(in oklch, var(--el-color-black), transparent 50%);
+  --clock-time-shadow-detail: 1px 1px 2px
+    color-mix(in oklch, var(--el-color-black), transparent 90%);
   --clock-date-shadow:
     0 1px 4px color-mix(in oklch, var(--el-color-black), transparent 50%),
     1px 1px 2px color-mix(in oklch, var(--el-color-black), transparent 90%);

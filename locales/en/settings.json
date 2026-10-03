@@ -121,6 +121,7 @@
     "blink": "Blinking colon",
     "blinkingTip": "Turning this off can reduce sustained GPU usage.",
     "colorful": "Colorful clock numbers",
+    "gradient": "Gradient clock",
     "dateSize": "Date size",
     "hour12": "12-hour clock",
     "invertColor": {

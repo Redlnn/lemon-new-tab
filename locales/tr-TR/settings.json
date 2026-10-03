@@ -121,6 +121,7 @@
     "blink": "Yanıp sönen iki nokta üst üste",
     "blinkingTip": "Bunu kapatmak sürekli GPU kullanımını azaltabilir.",
     "colorful": "Renkli saat rakamları",
+    "gradient": "Gradyan saat",
     "dateSize": "Tarih boyutu",
     "hour12": "12 saatlik saat",
     "invertColor": {
