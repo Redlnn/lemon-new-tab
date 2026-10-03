@@ -2,6 +2,16 @@ allowBuilds:
   '@parcel/watcher': true
   esbuild: true
 
+packageExtensions:
+  '@milkdown/components@7.22.2':
+    peerDependenciesMeta:
+      '@codemirror/language':
+        optional: true
+      '@codemirror/state':
+        optional: true
+      '@codemirror/view':
+        optional: true
+
 overrides:
   '@milkdown/crepe>@codemirror/commands': '-'
   '@milkdown/crepe>@codemirror/language': '-'

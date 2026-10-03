@@ -39,6 +39,8 @@ overrides:
   '@vue/shared': rc
   '@vue/compat': rc
 
+packageExtensionsChecksum: sha256-XCWDLl7MMbRUUpZt1DzHl5D49QGSWS1O+MaA+RcERb0=
+
 importers:
 
   .:
@@ -51,13 +53,13 @@ importers:
         version: 0.4.0
       '@milkdown/crepe':
         specifier: ^7.22.2
-        version: 7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(typescript@6.0.3)
+        version: 7.22.2(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(typescript@6.0.3)
       '@milkdown/kit':
         specifier: ^7.22.2
-        version: 7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)(typescript@6.0.3)
+        version: 7.22.2(typescript@6.0.3)
       '@milkdown/vue':
         specifier: ^7.22.2
-        version: 7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(typescript@6.0.3)(vue@3.6.0-rc.10(typescript@6.0.3))
+        version: 7.22.2(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(typescript@6.0.3)(vue@3.6.0-rc.10(typescript@6.0.3))
       '@vueuse/components':
         specifier: ^15.0.0
         version: 15.0.0(vue@3.6.0-rc.10(typescript@6.0.3))
@@ -130,7 +132,7 @@ importers:
         version: 0.12.6
       '@vitejs/plugin-vue':
         specifier: ^6.0.9
-        version: 6.0.9(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(vue@3.6.0-rc.10(typescript@6.0.3))
+        version: 6.0.9(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(vue@3.6.0-rc.10(typescript@6.0.3))
       '@vue/eslint-config-typescript':
         specifier: ^14.9.0
         version: 14.9.0(eslint-plugin-vue@10.11.1(@typescript-eslint/parser@8.71.0(eslint@10.11.0(jiti@2.7.0))(typescript@6.0.3))(eslint@10.11.0(jiti@2.7.0))(vue-eslint-parser@10.4.1(eslint@10.11.0(jiti@2.7.0))))(eslint@10.11.0(jiti@2.7.0))(typescript@6.0.3)
@@ -139,7 +141,7 @@ importers:
         version: 0.9.1(typescript@6.0.3)(vue@3.6.0-rc.10(typescript@6.0.3))
       '@wxt-dev/webextension-polyfill':
         specifier: ^1.0.0
-        version: 1.0.0(webextension-polyfill@0.12.0)(wxt@0.21.4(eslint@10.11.0(jiti@2.7.0))(rolldown@1.2.12)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(web-ext@10.7.0))
+        version: 1.0.0(webextension-polyfill@0.12.0)(wxt@0.21.4(eslint@10.11.0(jiti@2.7.0))(rolldown@1.2.12)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(web-ext@10.7.0))
       eslint:
         specifier: ^10.11.0
         version: 10.11.0(jiti@2.7.0)
@@ -171,47 +173,47 @@ importers:
         specifier: ^1.105.1
         version: 1.105.1
       stylelint:
-        specifier: ^17.15.0
-        version: 17.15.0(typescript@6.0.3)
+        specifier: ^17.16.0
+        version: 17.16.0(typescript@6.0.3)
       stylelint-config-recess-order:
         specifier: ^7.8.0
-        version: 7.8.0(stylelint-order@8.1.1(stylelint@17.15.0(typescript@6.0.3)))(stylelint@17.15.0(typescript@6.0.3))
+        version: 7.8.0(stylelint-order@8.1.1(stylelint@17.16.0(typescript@6.0.3)))(stylelint@17.16.0(typescript@6.0.3))
       stylelint-config-standard:
         specifier: ^40.0.0
-        version: 40.0.0(stylelint@17.15.0(typescript@6.0.3))
+        version: 40.0.0(stylelint@17.16.0(typescript@6.0.3))
       stylelint-config-standard-scss:
         specifier: ^17.0.0
-        version: 17.0.0(postcss@8.5.28)(stylelint@17.15.0(typescript@6.0.3))
+        version: 17.0.0(postcss@8.5.28)(stylelint@17.16.0(typescript@6.0.3))
       stylelint-config-standard-vue:
         specifier: ^2.0.0
-        version: 2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-recommended-vue@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-recommended-scss@17.0.1(postcss@8.5.28)(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-recommended@18.0.0(stylelint@17.15.0(typescript@6.0.3)))(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-standard-scss@17.0.0(postcss@8.5.28)(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-standard@40.0.0(stylelint@17.15.0(typescript@6.0.3)))(stylelint@17.15.0(typescript@6.0.3))
+        version: 2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-recommended-vue@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-recommended-scss@17.0.1(postcss@8.5.28)(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-recommended@18.0.0(stylelint@17.16.0(typescript@6.0.3)))(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-standard-scss@17.0.0(postcss@8.5.28)(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-standard@40.0.0(stylelint@17.16.0(typescript@6.0.3)))(stylelint@17.16.0(typescript@6.0.3))
       stylelint-order:
         specifier: ^8.1.1
-        version: 8.1.1(stylelint@17.15.0(typescript@6.0.3))
+        version: 8.1.1(stylelint@17.16.0(typescript@6.0.3))
       stylelint-scss:
         specifier: ^7.3.0
-        version: 7.3.0(stylelint@17.15.0(typescript@6.0.3))
+        version: 7.3.0(stylelint@17.16.0(typescript@6.0.3))
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
       unplugin-auto-import:
         specifier: ^21.1.0
-        version: 21.1.0(@vueuse/core@15.0.0(vue@3.6.0-rc.10(typescript@6.0.3)))(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
+        version: 21.1.0(@vueuse/core@15.0.0(vue@3.6.0-rc.10(typescript@6.0.3)))(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
       unplugin-icons:
         specifier: ^24.0.0
-        version: 24.0.0(@vue/compiler-vapor@3.6.0-rc.10)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
+        version: 24.0.0(@vue/compiler-vapor@3.6.0-rc.10)(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
       unplugin-vue-components:
         specifier: ^32.1.0
-        version: 32.1.0(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(vue@3.6.0-rc.10(typescript@6.0.3))
+        version: 32.1.0(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(vue@3.6.0-rc.10(typescript@6.0.3))
       unplugin-vue-markdown:
         specifier: ^32.1.1
-        version: 32.1.1(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
+        version: 32.1.1(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
       vite:
-        specifier: ^8.3.1
-        version: 8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)
+        specifier: ^8.3.2
+        version: 8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)
       vite-plugin-i18next-loader:
         specifier: ^4.1.0
-        version: 4.1.0(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
+        version: 4.1.0(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
       vite-svg-loader:
         specifier: ^5.1.3
         version: 5.1.3(vue@3.6.0-rc.10(typescript@6.0.3))
@@ -223,7 +225,7 @@ importers:
         version: 10.7.0
       wxt:
         specifier: ^0.21.4
-        version: 0.21.4(eslint@10.11.0(jiti@2.7.0))(rolldown@1.2.12)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(web-ext@10.7.0)
+        version: 0.21.4(eslint@10.11.0(jiti@2.7.0))(rolldown@1.2.12)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(web-ext@10.7.0)
 
 packages:
 
@@ -285,15 +287,6 @@ packages:
 
   '@cacheable/utils@2.5.0':
     resolution: {integrity: sha512-buipgOVDkkPXNR5+xBpDw7Zk2n1EvU7qBJCNUcL7rhQ//kfpOXPAvQ511Os0vpLYJ1pZnvudNytkQt2hst3wqA==}
-
-  '@codemirror/language@6.12.4':
-    resolution: {integrity: sha512-1q4PaT+o6PbgpkJt4Q8Fv5XJxTy4FUZ4MWETtyiDw3J0Pyr9E2vqcKL+k9wcvjNTIsauxvE7OfmWj3FRPHQ76A==}
-
-  '@codemirror/state@6.7.5':
-    resolution: {integrity: sha512-QjLbZmY1Au3JiRrDVYFLRD0BZ3SOKS9pR3yjIkd7u27YY8TFD9/Q9fhPnLV5l1mHFSo3hHU/N31vpwEJOx4owQ==}
-
-  '@codemirror/view@6.43.12':
-    resolution: {integrity: sha512-Nv0vxQ19NAqvB/c2pFzjIzFlzzJl7jmdtNkwOwGbn0Ks9mFAzibvumz7cQem5cRsFA2cEw2fg+uHZGbcHupLQQ==}
 
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
@@ -498,18 +491,6 @@ packages:
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
 
-  '@lezer/common@1.5.3':
-    resolution: {integrity: sha512-H0iErY4e43LpXbYDyBci5W4v/RwTgGV3YzYOlJPiGZ8RY8w51kVE+xLn1tg3Z6UmSfyETvtsUK3r7YsgDQEI7Q==}
-
-  '@lezer/highlight@1.2.5':
-    resolution: {integrity: sha512-O1GMVKgtf5YspFaRzpmqkVgMtIk2HG9uMAbH6wdAIdNh3TVzCsch/+cRi+6l2//UGDKe6NB9BW3cvuR5ezMQ0w==}
-
-  '@lezer/lr@1.4.10':
-    resolution: {integrity: sha512-rnCpTIBafOx4mRp43xOxDJbFipJm/c0cia/V5TiGlhmMa+wsSdoGmUN3w5Bqrks/09Q/D4tNAmWaT8p6NRi77A==}
-
-  '@marijn/find-cluster-break@1.0.4':
-    resolution: {integrity: sha512-Wy0V7+SGUjnF9/TkiM1hKVDPj7jKXduPNboMVtHTA8dySMURWqfg/JZ9E2Sq8JgSJmkl7k7Qe9FLeMSrSraWmQ==}
-
   '@material/material-color-utilities@0.4.0':
     resolution: {integrity: sha512-dlq6VExJReb8dhjj3a/yTigr3ncNwoFmL5Iy2ENtbDX03EmNeOEdZ+vsaGrj7RTuO+mB7L58II4LCsl4NpM8uw==}
 
@@ -531,6 +512,13 @@ packages:
       '@codemirror/language': ^6
       '@codemirror/state': ^6
       '@codemirror/view': ^6
+    peerDependenciesMeta:
+      '@codemirror/language':
+        optional: true
+      '@codemirror/state':
+        optional: true
+      '@codemirror/view':
+        optional: true
 
   '@milkdown/core@7.22.2':
     resolution: {integrity: sha512-grJ0enYKFwfV9Ur2GLiDtzOi7kzSqhCueBudqgfmmlx3HVGXwg78/CXsYDhn8cNFqpPSA0TMhdxIpBFKxXOMKA==}
@@ -1622,9 +1610,6 @@ packages:
     peerDependenciesMeta:
       typescript:
         optional: true
-
-  crelt@1.0.7:
-    resolution: {integrity: sha512-aK6BbWfhf4U/wCcLHKPJl/xa6VkVstRaPywWtMKGwuOLc/wZTyQYuoxgvZnNsBvv7Kg3YTBQYYBCggcviQczuA==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -3426,9 +3411,6 @@ packages:
   stubborn-utils@1.0.2:
     resolution: {integrity: sha512-zOh9jPYI+xrNOyisSelgym4tolKTJCQd5GBhK0+0xJvcYDcwlOoxF/rnFKQ2KRZknXSG9jWAp66fwP6AxN9STg==}
 
-  style-mod@4.1.4:
-    resolution: {integrity: sha512-XXWIQt633/EpAFx8aZDOTjBzrCaGmhvEQlQo6MVPfa2OzO2cWo+4hV9h+6UkHYlXGfy+ODXKUdP7Pthmcu5ATw==}
-
   stylelint-config-html@2.0.0:
     resolution: {integrity: sha512-Lk1NPEdUxzHkPv3ehktjpiOk4MPaqQ3H8fkvhxdWlQpaZCm9ze0SoMbRQLqkUxEMfPE1G9/x968uxm/+d2njoA==}
     engines: {node: ^22.12 || >=24}
@@ -3513,8 +3495,8 @@ packages:
     peerDependencies:
       stylelint: ^16.8.2 || ^17.0.0
 
-  stylelint@17.15.0:
-    resolution: {integrity: sha512-mWIkesYQvQjf4Kvdeu9ns0IL8/K/wtjaGxPqsPd6DlLZvaQxGysJsocxUDrBcyHQ5VleAk4uSMat4yMrVED7PA==}
+  stylelint@17.16.0:
+    resolution: {integrity: sha512-ejlWnbJ13x1GU32+zZXa6sYQJsKKkwSdv2B4rAdO3OWdEmvhSJKcXi5pOphQYSzyaj1kXpuGJr7pcMBNfDIuPw==}
     engines: {node: '>=20.19.0'}
     hasBin: true
 
@@ -3842,8 +3824,8 @@ packages:
     peerDependencies:
       vue: '>=3.2.13'
 
-  vite@8.3.1:
-    resolution: {integrity: sha512-/bvH9E9tmCXRGp2uXY3WbOldqpTwFkbha/8ANaEQ6VkxhH60KyqLwgZq6lG2y+4uT55x9+9eUHMpQ7uGnOCKjA==}
+  vite@8.3.2:
+    resolution: {integrity: sha512-SQr1x6W5vVSbROg7vsyXIaxK9b0G7zsT68acdWWRmnBUsgDieLCRG+Rep9WdZgcposvv/GSnr4GUUBqB3vXq6w==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -4100,26 +4082,6 @@ snapshots:
       hashery: 1.5.1
       keyv: 5.6.0
 
-  '@codemirror/language@6.12.4':
-    dependencies:
-      '@codemirror/state': 6.7.5
-      '@codemirror/view': 6.43.12
-      '@lezer/common': 1.5.3
-      '@lezer/highlight': 1.2.5
-      '@lezer/lr': 1.4.10
-      style-mod: 4.1.4
-
-  '@codemirror/state@6.7.5':
-    dependencies:
-      '@marijn/find-cluster-break': 1.0.4
-
-  '@codemirror/view@6.43.12':
-    dependencies:
-      '@codemirror/state': 6.7.5
-      crelt: 1.0.7
-      style-mod: 4.1.4
-      w3c-keyname: 2.2.8
-
   '@colors/colors@1.5.0':
     optional: true
 
@@ -4330,18 +4292,6 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@lezer/common@1.5.3': {}
-
-  '@lezer/highlight@1.2.5':
-    dependencies:
-      '@lezer/common': 1.5.3
-
-  '@lezer/lr@1.4.10':
-    dependencies:
-      '@lezer/common': 1.5.3
-
-  '@marijn/find-cluster-break@1.0.4': {}
-
   '@material/material-color-utilities@0.4.0': {}
 
   '@mdit-vue/plugin-component@3.0.2':
@@ -4358,11 +4308,8 @@ snapshots:
 
   '@mdit-vue/types@3.0.2': {}
 
-  '@milkdown/components@7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)(typescript@6.0.3)':
+  '@milkdown/components@7.22.2(typescript@6.0.3)':
     dependencies:
-      '@codemirror/language': 6.12.4
-      '@codemirror/state': 6.7.5
-      '@codemirror/view': 6.43.12
       '@floating-ui/dom': 1.8.0
       '@milkdown/core': 7.22.2
       '@milkdown/ctx': 7.22.2
@@ -4397,9 +4344,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@milkdown/crepe@7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(typescript@6.0.3)':
+  '@milkdown/crepe@7.22.2(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(typescript@6.0.3)':
     dependencies:
-      '@milkdown/kit': 7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)(typescript@6.0.3)
+      '@milkdown/kit': 7.22.2(typescript@6.0.3)
       clsx: 2.1.1
       prosemirror-virtual-cursor: 0.4.2(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)
       unist-util-visit: 5.1.0
@@ -4420,9 +4367,9 @@ snapshots:
 
   '@milkdown/exception@7.22.2': {}
 
-  '@milkdown/kit@7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)(typescript@6.0.3)':
+  '@milkdown/kit@7.22.2(typescript@6.0.3)':
     dependencies:
-      '@milkdown/components': 7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)(typescript@6.0.3)
+      '@milkdown/components': 7.22.2(typescript@6.0.3)
       '@milkdown/core': 7.22.2
       '@milkdown/ctx': 7.22.2
       '@milkdown/exception': 7.22.2
@@ -4632,10 +4579,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@milkdown/vue@7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(typescript@6.0.3)(vue@3.6.0-rc.10(typescript@6.0.3))':
+  '@milkdown/vue@7.22.2(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(typescript@6.0.3)(vue@3.6.0-rc.10(typescript@6.0.3))':
     dependencies:
-      '@milkdown/crepe': 7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(typescript@6.0.3)
-      '@milkdown/kit': 7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.5)(@codemirror/view@6.43.12)(typescript@6.0.3)
+      '@milkdown/crepe': 7.22.2(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(typescript@6.0.3)
+      '@milkdown/kit': 7.22.2(typescript@6.0.3)
       vue: 3.6.0-rc.10(typescript@6.0.3)
     transitivePeerDependencies:
       - '@codemirror/language'
@@ -5057,10 +5004,10 @@ snapshots:
 
   '@ungap/structured-clone@1.4.0': {}
 
-  '@vitejs/plugin-vue@6.0.9(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(vue@3.6.0-rc.10(typescript@6.0.3))':
+  '@vitejs/plugin-vue@6.0.9(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(vue@3.6.0-rc.10(typescript@6.0.3))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
-      vite: 8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)
+      vite: 8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)
       vue: 3.6.0-rc.10(typescript@6.0.3)
 
   '@volar/language-core@2.4.28':
@@ -5225,10 +5172,10 @@ snapshots:
       '@wxt-dev/browser': 0.3.4
       superlock: 1.3.5
 
-  '@wxt-dev/webextension-polyfill@1.0.0(webextension-polyfill@0.12.0)(wxt@0.21.4(eslint@10.11.0(jiti@2.7.0))(rolldown@1.2.12)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(web-ext@10.7.0))':
+  '@wxt-dev/webextension-polyfill@1.0.0(webextension-polyfill@0.12.0)(wxt@0.21.4(eslint@10.11.0(jiti@2.7.0))(rolldown@1.2.12)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(web-ext@10.7.0))':
     dependencies:
       webextension-polyfill: 0.12.0
-      wxt: 0.21.4(eslint@10.11.0(jiti@2.7.0))(rolldown@1.2.12)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(web-ext@10.7.0)
+      wxt: 0.21.4(eslint@10.11.0(jiti@2.7.0))(rolldown@1.2.12)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(web-ext@10.7.0)
 
   '@xmldom/xmldom@0.9.12': {}
 
@@ -5499,8 +5446,6 @@ snapshots:
       parse-json: 5.2.0
     optionalDependencies:
       typescript: 6.0.3
-
-  crelt@1.0.7: {}
 
   cross-spawn@7.0.6:
     dependencies:
@@ -7437,71 +7382,69 @@ snapshots:
 
   stubborn-utils@1.0.2: {}
 
-  style-mod@4.1.4: {}
-
-  stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.15.0(typescript@6.0.3)):
+  stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.16.0(typescript@6.0.3)):
     dependencies:
       postcss-html: 2.0.0(postcss@8.5.28)
-      stylelint: 17.15.0(typescript@6.0.3)
+      stylelint: 17.16.0(typescript@6.0.3)
 
-  stylelint-config-recess-order@7.8.0(stylelint-order@8.1.1(stylelint@17.15.0(typescript@6.0.3)))(stylelint@17.15.0(typescript@6.0.3)):
+  stylelint-config-recess-order@7.8.0(stylelint-order@8.1.1(stylelint@17.16.0(typescript@6.0.3)))(stylelint@17.16.0(typescript@6.0.3)):
     dependencies:
-      stylelint: 17.15.0(typescript@6.0.3)
-      stylelint-order: 8.1.1(stylelint@17.15.0(typescript@6.0.3))
+      stylelint: 17.16.0(typescript@6.0.3)
+      stylelint-order: 8.1.1(stylelint@17.16.0(typescript@6.0.3))
 
-  stylelint-config-recommended-scss@17.0.1(postcss@8.5.28)(stylelint@17.15.0(typescript@6.0.3)):
+  stylelint-config-recommended-scss@17.0.1(postcss@8.5.28)(stylelint@17.16.0(typescript@6.0.3)):
     dependencies:
       postcss-scss: 4.0.9(postcss@8.5.28)
-      stylelint: 17.15.0(typescript@6.0.3)
-      stylelint-config-recommended: 18.0.0(stylelint@17.15.0(typescript@6.0.3))
-      stylelint-scss: 7.3.0(stylelint@17.15.0(typescript@6.0.3))
+      stylelint: 17.16.0(typescript@6.0.3)
+      stylelint-config-recommended: 18.0.0(stylelint@17.16.0(typescript@6.0.3))
+      stylelint-scss: 7.3.0(stylelint@17.16.0(typescript@6.0.3))
     optionalDependencies:
       postcss: 8.5.28
 
-  stylelint-config-recommended-vue@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-recommended-scss@17.0.1(postcss@8.5.28)(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-recommended@18.0.0(stylelint@17.15.0(typescript@6.0.3)))(stylelint@17.15.0(typescript@6.0.3)):
+  stylelint-config-recommended-vue@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-recommended-scss@17.0.1(postcss@8.5.28)(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-recommended@18.0.0(stylelint@17.16.0(typescript@6.0.3)))(stylelint@17.16.0(typescript@6.0.3)):
     dependencies:
       postcss-html: 2.0.0(postcss@8.5.28)
       semver: 7.8.5
-      stylelint: 17.15.0(typescript@6.0.3)
-      stylelint-config-html: 2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.15.0(typescript@6.0.3))
-      stylelint-config-recommended: 18.0.0(stylelint@17.15.0(typescript@6.0.3))
+      stylelint: 17.16.0(typescript@6.0.3)
+      stylelint-config-html: 2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.16.0(typescript@6.0.3))
+      stylelint-config-recommended: 18.0.0(stylelint@17.16.0(typescript@6.0.3))
     optionalDependencies:
-      stylelint-config-recommended-scss: 17.0.1(postcss@8.5.28)(stylelint@17.15.0(typescript@6.0.3))
+      stylelint-config-recommended-scss: 17.0.1(postcss@8.5.28)(stylelint@17.16.0(typescript@6.0.3))
 
-  stylelint-config-recommended@18.0.0(stylelint@17.15.0(typescript@6.0.3)):
+  stylelint-config-recommended@18.0.0(stylelint@17.16.0(typescript@6.0.3)):
     dependencies:
-      stylelint: 17.15.0(typescript@6.0.3)
+      stylelint: 17.16.0(typescript@6.0.3)
 
-  stylelint-config-standard-scss@17.0.0(postcss@8.5.28)(stylelint@17.15.0(typescript@6.0.3)):
+  stylelint-config-standard-scss@17.0.0(postcss@8.5.28)(stylelint@17.16.0(typescript@6.0.3)):
     dependencies:
-      stylelint: 17.15.0(typescript@6.0.3)
-      stylelint-config-recommended-scss: 17.0.1(postcss@8.5.28)(stylelint@17.15.0(typescript@6.0.3))
-      stylelint-config-standard: 40.0.0(stylelint@17.15.0(typescript@6.0.3))
+      stylelint: 17.16.0(typescript@6.0.3)
+      stylelint-config-recommended-scss: 17.0.1(postcss@8.5.28)(stylelint@17.16.0(typescript@6.0.3))
+      stylelint-config-standard: 40.0.0(stylelint@17.16.0(typescript@6.0.3))
     optionalDependencies:
       postcss: 8.5.28
 
-  stylelint-config-standard-vue@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-recommended-vue@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-recommended-scss@17.0.1(postcss@8.5.28)(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-recommended@18.0.0(stylelint@17.15.0(typescript@6.0.3)))(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-standard-scss@17.0.0(postcss@8.5.28)(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-standard@40.0.0(stylelint@17.15.0(typescript@6.0.3)))(stylelint@17.15.0(typescript@6.0.3)):
+  stylelint-config-standard-vue@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-recommended-vue@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-recommended-scss@17.0.1(postcss@8.5.28)(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-recommended@18.0.0(stylelint@17.16.0(typescript@6.0.3)))(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-standard-scss@17.0.0(postcss@8.5.28)(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-standard@40.0.0(stylelint@17.16.0(typescript@6.0.3)))(stylelint@17.16.0(typescript@6.0.3)):
     dependencies:
       postcss-html: 2.0.0(postcss@8.5.28)
-      stylelint: 17.15.0(typescript@6.0.3)
-      stylelint-config-html: 2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.15.0(typescript@6.0.3))
-      stylelint-config-recommended-vue: 2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-recommended-scss@17.0.1(postcss@8.5.28)(stylelint@17.15.0(typescript@6.0.3)))(stylelint-config-recommended@18.0.0(stylelint@17.15.0(typescript@6.0.3)))(stylelint@17.15.0(typescript@6.0.3))
-      stylelint-config-standard: 40.0.0(stylelint@17.15.0(typescript@6.0.3))
+      stylelint: 17.16.0(typescript@6.0.3)
+      stylelint-config-html: 2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.16.0(typescript@6.0.3))
+      stylelint-config-recommended-vue: 2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-recommended-scss@17.0.1(postcss@8.5.28)(stylelint@17.16.0(typescript@6.0.3)))(stylelint-config-recommended@18.0.0(stylelint@17.16.0(typescript@6.0.3)))(stylelint@17.16.0(typescript@6.0.3))
+      stylelint-config-standard: 40.0.0(stylelint@17.16.0(typescript@6.0.3))
     optionalDependencies:
-      stylelint-config-standard-scss: 17.0.0(postcss@8.5.28)(stylelint@17.15.0(typescript@6.0.3))
+      stylelint-config-standard-scss: 17.0.0(postcss@8.5.28)(stylelint@17.16.0(typescript@6.0.3))
 
-  stylelint-config-standard@40.0.0(stylelint@17.15.0(typescript@6.0.3)):
+  stylelint-config-standard@40.0.0(stylelint@17.16.0(typescript@6.0.3)):
     dependencies:
-      stylelint: 17.15.0(typescript@6.0.3)
-      stylelint-config-recommended: 18.0.0(stylelint@17.15.0(typescript@6.0.3))
+      stylelint: 17.16.0(typescript@6.0.3)
+      stylelint-config-recommended: 18.0.0(stylelint@17.16.0(typescript@6.0.3))
 
-  stylelint-order@8.1.1(stylelint@17.15.0(typescript@6.0.3)):
+  stylelint-order@8.1.1(stylelint@17.16.0(typescript@6.0.3)):
     dependencies:
       postcss: 8.5.28
       postcss-sorting: 10.0.0(postcss@8.5.28)
-      stylelint: 17.15.0(typescript@6.0.3)
+      stylelint: 17.16.0(typescript@6.0.3)
 
-  stylelint-scss@7.3.0(stylelint@17.15.0(typescript@6.0.3)):
+  stylelint-scss@7.3.0(stylelint@17.16.0(typescript@6.0.3)):
     dependencies:
       '@csstools/css-calc': 3.4.2(@csstools/css-parser-algorithms@4.0.2(@csstools/css-tokenizer@4.0.2))(@csstools/css-tokenizer@4.0.2)
       '@csstools/css-parser-algorithms': 4.0.2(@csstools/css-tokenizer@4.0.2)
@@ -7514,9 +7457,9 @@ snapshots:
       postcss-resolve-nested-selector: 0.1.6
       postcss-selector-parser: 7.1.6
       postcss-value-parser: 4.2.0
-      stylelint: 17.15.0(typescript@6.0.3)
+      stylelint: 17.16.0(typescript@6.0.3)
 
-  stylelint@17.15.0(typescript@6.0.3):
+  stylelint@17.16.0(typescript@6.0.3):
     dependencies:
       '@csstools/css-calc': 3.4.2(@csstools/css-parser-algorithms@4.0.2(@csstools/css-tokenizer@4.0.2))(@csstools/css-tokenizer@4.0.2)
       '@csstools/css-parser-algorithms': 4.0.2(@csstools/css-tokenizer@4.0.2)
@@ -7721,7 +7664,7 @@ snapshots:
       trough: 2.2.0
       vfile: 6.0.3
 
-  unimport@6.5.0(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)):
+  unimport@6.5.0(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)):
     dependencies:
       acorn: 8.18.0
       escape-string-regexp: 5.0.0
@@ -7735,7 +7678,7 @@ snapshots:
       scule: 1.3.0
       strip-literal: 4.0.0
       tinyglobby: 0.2.17
-      unplugin: 3.4.0(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
+      unplugin: 3.4.0(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
       unplugin-utils: 0.3.2
     optionalDependencies:
       rolldown: 1.2.12
@@ -7771,13 +7714,13 @@ snapshots:
 
   universalify@2.0.1: {}
 
-  unplugin-auto-import@21.1.0(@vueuse/core@15.0.0(vue@3.6.0-rc.10(typescript@6.0.3)))(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)):
+  unplugin-auto-import@21.1.0(@vueuse/core@15.0.0(vue@3.6.0-rc.10(typescript@6.0.3)))(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)):
     dependencies:
       local-pkg: 1.2.1
       magic-string: 1.4.2
       picomatch: 4.0.7
-      unimport: 6.5.0(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
-      unplugin: 3.4.0(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
+      unimport: 6.5.0(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
+      unplugin: 3.4.0(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
       unplugin-utils: 0.3.2
     optionalDependencies:
       '@vueuse/core': 15.0.0(vue@3.6.0-rc.10(typescript@6.0.3))
@@ -7794,13 +7737,13 @@ snapshots:
       - vite
       - webpack
 
-  unplugin-icons@24.0.0(@vue/compiler-vapor@3.6.0-rc.10)(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)):
+  unplugin-icons@24.0.0(@vue/compiler-vapor@3.6.0-rc.10)(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)):
     dependencies:
       '@antfu/install-pkg': 1.1.0
       '@iconify/utils': 3.1.7
       local-pkg: 1.2.1
       obug: 2.2.1
-      unplugin: 3.4.0(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
+      unplugin: 3.4.0(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
     optionalDependencies:
       '@vue/compiler-vapor': 3.6.0-rc.10
     transitivePeerDependencies:
@@ -7820,7 +7763,7 @@ snapshots:
       pathe: 2.0.3
       picomatch: 4.0.7
 
-  unplugin-vue-components@32.1.0(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(vue@3.6.0-rc.10(typescript@6.0.3)):
+  unplugin-vue-components@32.1.0(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(vue@3.6.0-rc.10(typescript@6.0.3)):
     dependencies:
       chokidar: 5.0.0
       local-pkg: 1.2.1
@@ -7829,7 +7772,7 @@ snapshots:
       obug: 2.2.1
       picomatch: 4.0.7
       tinyglobby: 0.2.17
-      unplugin: 3.4.0(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
+      unplugin: 3.4.0(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
       unplugin-utils: 0.3.2
       vue: 3.6.0-rc.10(typescript@6.0.3)
     transitivePeerDependencies:
@@ -7844,15 +7787,15 @@ snapshots:
       - vite
       - webpack
 
-  unplugin-vue-markdown@32.1.1(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)):
+  unplugin-vue-markdown@32.1.1(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)):
     dependencies:
       '@mdit-vue/plugin-component': 3.0.2
       '@mdit-vue/plugin-frontmatter': 3.0.2
       '@mdit-vue/types': 3.0.2
       markdown-exit: 1.3.0
-      unplugin: 3.4.0(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
+      unplugin: 3.4.0(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
       unplugin-utils: 0.3.2
-      vite: 8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)
+      vite: 8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)
     transitivePeerDependencies:
       - '@farmfe/core'
       - '@rsbuild/core'
@@ -7864,14 +7807,14 @@ snapshots:
       - unloader
       - webpack
 
-  unplugin@3.4.0(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)):
+  unplugin@3.4.0(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)):
     dependencies:
       '@jridgewell/remapping': 2.3.5
       picomatch: 4.0.7
       webpack-virtual-modules: 0.6.2
     optionalDependencies:
       rolldown: 1.2.12
-      vite: 8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)
+      vite: 8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)
 
   update-notifier@7.3.1:
     dependencies:
@@ -7908,7 +7851,7 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite-plugin-i18next-loader@4.1.0(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)):
+  vite-plugin-i18next-loader@4.1.0(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)):
     dependencies:
       dot-prop: 10.2.0
       glob: 13.0.6
@@ -7916,7 +7859,7 @@ snapshots:
       marked: 18.0.14
       marked-terminal: 7.3.0(marked@18.0.14)
       ts-deepmerge: 8.0.0
-      vite: 8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)
+      vite: 8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)
 
   vite-svg-loader@5.1.3(vue@3.6.0-rc.10(typescript@6.0.3)):
     dependencies:
@@ -7926,7 +7869,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1):
+  vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -8056,7 +7999,7 @@ snapshots:
       is-wsl: 3.1.1
       powershell-utils: 0.2.1
 
-  wxt@0.21.4(eslint@10.11.0(jiti@2.7.0))(rolldown@1.2.12)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(web-ext@10.7.0):
+  wxt@0.21.4(eslint@10.11.0(jiti@2.7.0))(rolldown@1.2.12)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))(web-ext@10.7.0):
     dependencies:
       '@1natsu/wait-element': 4.2.0
       '@aklinker1/rollup-plugin-visualizer': 5.12.0
@@ -8086,8 +8029,8 @@ snapshots:
       tiny-open: 1.3.0
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      unimport: 6.5.0(rolldown@1.2.12)(vite@8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
-      vite: 8.3.1(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)
+      unimport: 6.5.0(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1))
+      vite: 8.3.2(@types/node@26.6.3)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)
     optionalDependencies:
       eslint: 10.11.0(jiti@2.7.0)
       typescript: 6.0.3
