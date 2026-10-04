@@ -168,7 +168,25 @@ const {
   onPermissionDialogResult,
 } = usePermission()
 
-provide(FOCUS_STATE, createFocusState())
+const focusStore = createFocusState()
+provide(FOCUS_STATE, focusStore)
+let backgroundPressDismissesUi = false
+
+function handleBackgroundPointerDown() {
+  // 点击外部会清除焦点、悬停或关闭浮层，需在按下时判断是否用于取消激活。
+  backgroundPressDismissesUi =
+    isOnlyTouchDevice.value &&
+    (focusStore.isFocused ||
+      Array.from(document.querySelectorAll('.yiyan:hover, .yiyan:focus-within, .el-popper')).some(
+        (element) => element.checkVisibility(),
+      ))
+}
+
+function handleBackgroundClick() {
+  if (isOnlyTouchDevice.value && !backgroundPressDismissesUi && !focusStore.isFocused) {
+    handleBackgroundContextMenu()
+  }
+}
 provide(OPEN_SETTINGS, toggleSettingsPage)
 provide(OPEN_SEARCH_ENGINE_PREFERENCE, showSearchEnginesSwitcher)
 provide(OPEN_BACKGROUND_PREFERENCE, showBackgroundSwitcher)
@@ -278,7 +296,8 @@ function toggleMinimalMode() {
       class="app"
       :class="mainClass"
       :aria-label="t('a11y.main')"
-      @click.self="isOnlyTouchDevice && handleBackgroundContextMenu()"
+      @pointerdown.self="handleBackgroundPointerDown"
+      @click.self="handleBackgroundClick"
       @contextmenu.prevent="handleBackgroundContextMenu"
       @dblclick.self="toggleMinimalMode"
     >
@@ -287,7 +306,8 @@ function toggleMinimalMode() {
         class="app__content"
         :style="contentStyle"
         :inert="minimalMode || undefined"
-        @click.self="isOnlyTouchDevice && handleBackgroundContextMenu()"
+        @pointerdown.self="handleBackgroundPointerDown"
+        @click.self="handleBackgroundClick"
         @dblclick.self="toggleMinimalMode"
       >
         <search-box v-if="settings.search.enabled" @contextmenu.stop />
