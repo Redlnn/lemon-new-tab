@@ -3,8 +3,9 @@ import { useTranslation } from 'i18next-vue'
 import { browser } from '#imports'
 
 import { resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
-import { useQuickLinksStore, type QuickLinkTarget } from '@/shared/quickLinks'
+import { useQuickLinksStore } from '@/shared/quickLinks'
 
+import { useAppDialogs } from '@newtab/composables/appDialogs'
 import { openUrlInIncognitoWindow } from '@newtab/shared/incognito'
 import { isSafeUrl } from '@newtab/shared/utils'
 
@@ -23,13 +24,13 @@ export type CtxQuickLinkItem = {
 
 export function useQuickLinkContextMenu(options: {
   refreshFn: () => Promise<void>
-  onOpenEditDialog?: (target: QuickLinkTarget) => void
   onPin?: (item: CtxQuickLinkItem) => Promise<void> | void
   onMove?: (item: CtxQuickLinkItem) => Promise<void> | void
 }) {
   const { t } = useTranslation()
   const quickLinksStore = useQuickLinksStore()
-  const { refreshFn, onOpenEditDialog } = options
+  const { refreshFn } = options
+  const dialogs = useAppDialogs()
 
   const ctxPosition = ref<DOMRect>(DOMRect.fromRect({ x: 0, y: 0 }))
   const ctxTriggerRef = ref({ getBoundingClientRect: () => ctxPosition.value })
@@ -124,7 +125,7 @@ export function useQuickLinkContextMenu(options: {
   const ctxEdit = (): void => {
     if (!ctxItem.value?.isPinned || !ctxItem.value.id) return
     const target = quickLinksStore.findQuickLinkTargetById(ctxItem.value.id)
-    if (target !== null) onOpenEditDialog?.(target)
+    if (target !== null) dialogs.open('quickLink', { mode: 'edit', target })
   }
 
   return {

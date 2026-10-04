@@ -7,12 +7,12 @@ import { browser } from 'wxt/browser'
 import { BgType } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 
+import { useAppDialogs } from '@newtab/composables/appDialogs'
 import {
   PermissionContext,
   PermissionResult,
   usePermission,
 } from '@newtab/composables/usePermission'
-import { OPEN_BACKGROUND_PREFERENCE } from '@newtab/shared/keys'
 import { isOnlyTouchDevice } from '@newtab/shared/touch'
 import { useLocalWallpaperStore } from '@newtab/shared/wallpaper'
 
@@ -26,7 +26,7 @@ const settings = useSettingsStore()
 
 const predefineMaskColor = ['#f2f3f5', '#000']
 
-const openBackgroundPreference = inject(OPEN_BACKGROUND_PREFERENCE)
+const dialogs = useAppDialogs()
 
 const { checkAndRequestPermission } = usePermission()
 const library = useLocalWallpaperStore()
@@ -109,10 +109,7 @@ const beforeCacheChange = async () => {
             pending-permission="wallpaper"
           />
         </div>
-        <el-button
-          :icon="BubbleChartRound"
-          @click="openBackgroundPreference && openBackgroundPreference()"
-        >
+        <el-button :icon="BubbleChartRound" @click="dialogs.open('background')">
           {{ t('search.clickToChange') }}
         </el-button>
       </div>

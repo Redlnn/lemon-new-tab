@@ -118,6 +118,9 @@ export function useRetiredCloudSync() {
   })
 
   return {
+    closeDialog: () => {
+      dialogVisible.value = false
+    },
     dialogLoaded,
     dialogVisible,
     dialogAcknowledgementOnly,

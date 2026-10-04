@@ -8,19 +8,6 @@ export interface FocusState {
 }
 export const FOCUS_STATE: InjectionKey<FocusState> = Symbol('focusState')
 
-// 打开设置页面
-export const OPEN_SETTINGS: InjectionKey<() => void> = Symbol('openSettings')
-
-// 打开搜索引擎偏好弹窗
-export const OPEN_SEARCH_ENGINE_PREFERENCE: InjectionKey<() => void> = Symbol(
-  'openSearchEnginePreference',
-)
-
-// 打开背景偏好弹窗
-export const OPEN_BACKGROUND_PREFERENCE: InjectionKey<() => void> = Symbol(
-  'openBackgroundPreference',
-)
-
 // 打开已退役云同步说明
 export const OPEN_SYNC_RETIREMENT: InjectionKey<() => void> = Symbol('openSyncRetirement')
 

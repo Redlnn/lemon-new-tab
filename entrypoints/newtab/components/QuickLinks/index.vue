@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import '@newtab/styles/quick-links.scss'
 import { useDebounceFn, useEventListener, useResizeObserver, useWindowSize } from '@vueuse/core'
+import '@newtab/styles/quick-links.scss'
 
 import {
   DragDropProvider,
@@ -19,10 +19,10 @@ import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   useQuickLinksStore,
   type QuickLinkGroup,
-  type QuickLinkTarget,
 } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 
+import { useAppDialogs } from '@newtab/composables/appDialogs'
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { QUICK_LINK_OPENED_MENU_CLOSE_FN } from '@newtab/shared/keys'
@@ -79,6 +79,7 @@ import { mergeTopSites } from './composables/useTopSitesMerge'
 import { useVirtualQuickLinkDnd, virtualItemKey } from './composables/useVirtualQuickLinkDnd'
 import { rawTopSites } from './utils/topSites'
 const focusStore = useFocusState()
+const dialogs = useAppDialogs()
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
 const scrollDnd = useVirtualQuickLinkDnd()
@@ -88,8 +89,6 @@ const { height } = useWindowSize({ type: 'visual' })
 
 const props = defineProps<{
   ready: boolean
-  onOpenAddDialog?: (groupId?: string) => void
-  onOpenEditDialog?: (target: QuickLinkTarget) => void
 }>()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
@@ -384,28 +383,31 @@ async function moveGroup(group: QuickLinkGroup, direction: -1 | 1) {
 
 async function openAddQuickLink() {
   if (!settings.quickLinks.grouping) {
-    props.onOpenAddDialog?.()
+    dialogs.open('quickLink', { mode: 'add' })
     return
   }
 
   const page = currentPageData.value
   if (page && !page.isTopSites && page.groupId !== topSitesGroupId) {
-    props.onOpenAddDialog?.(page.groupId)
+    dialogs.open('quickLink', { mode: 'add', groupId: page.groupId })
     return
   }
 
   const groupId = await groupSelectDialogRef.value?.open({
     title: t('newtab:quickLinks.groups.selectAddTarget'),
   })
-  if (groupId) props.onOpenAddDialog?.(groupId)
+  if (groupId) dialogs.open('quickLink', { mode: 'add', groupId: groupId })
 }
 
 function openAddQuickLinkForSection(section: ScrollSection) {
   if (!settings.quickLinks.grouping) {
-    props.onOpenAddDialog?.()
+    dialogs.open('quickLink', { mode: 'add' })
     return
   }
-  props.onOpenAddDialog?.(section.groupId ?? DEFAULT_QUICK_LINK_GROUP_ID)
+  dialogs.open('quickLink', {
+    mode: 'add',
+    groupId: section.groupId ?? DEFAULT_QUICK_LINK_GROUP_ID,
+  })
 }
 
 function openCtxMenu(event: MouseEvent | PointerEvent, item: DisplayItem): void {
@@ -1292,7 +1294,6 @@ defineExpose({ refresh, getActiveGroupId })
     <quick-link-context-menu
       ref="ctxMenuRef"
       :refresh-fn="refreshDebounced"
-      :on-open-edit-dialog="props.onOpenEditDialog"
       :on-pin="pinToGroup"
       :on-move="moveToGroup"
       :popper-class="popperClass"

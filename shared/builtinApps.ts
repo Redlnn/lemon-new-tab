@@ -26,9 +26,3 @@ export function resolveBuiltInAppId(value: { appId?: unknown; url: string }): Bu
   if (value.appId === 'note') return value.appId
   return getBuiltInAppId(value.url)
 }
-
-export function openBuiltInApp(id: BuiltInAppId): void {
-  window.dispatchEvent(
-    new CustomEvent<BuiltInAppId>('lemon-new-tab:open-built-in-app', { detail: id }),
-  )
-}

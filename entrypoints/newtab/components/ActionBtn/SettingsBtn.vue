@@ -11,17 +11,10 @@ import WallpaperRound from '~icons/ic/round-wallpaper'
 
 import { useSettingsStore } from '@/shared/settings'
 
+import { useAppDialogs } from '@newtab/composables/appDialogs'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 
-const emit = defineEmits<{
-  (e: 'open-settings'): void
-  (e: 'open-changelog'): void
-  (e: 'open-about'): void
-  (e: 'open-search-engine-preference'): void
-  (e: 'open-faq'): void
-  (e: 'open-background-switcher'): void
-  (e: 'open-builtin-apps'): void
-}>()
+const dialogs = useAppDialogs()
 
 const { t } = useTranslation()
 const settings = useSettingsStore()
@@ -76,30 +69,34 @@ function sponsorMessage() {
     </div>
     <template #dropdown>
       <el-dropdown-menu class="noselect">
-        <el-dropdown-item :icon="SettingsRound" @click="emit('open-settings')">
+        <el-dropdown-item :icon="SettingsRound" @click="dialogs.open('settings')">
           <span>{{ t('settings:title') }}</span>
         </el-dropdown-item>
-        <el-dropdown-item :icon="SearchRound" @click="emit('open-search-engine-preference')">
+        <el-dropdown-item :icon="SearchRound" @click="dialogs.open('searchEngines')">
           <span>{{ t('menu.searchEnginePreference') }}</span>
         </el-dropdown-item>
-        <el-dropdown-item :icon="WallpaperRound" @click="emit('open-background-switcher')">
+        <el-dropdown-item :icon="WallpaperRound" @click="dialogs.open('background')">
           <span>{{ t('menu.backgroundPreference') }}</span>
         </el-dropdown-item>
-        <el-dropdown-item :icon="Apps24Regular" @click="emit('open-builtin-apps')">
+        <el-dropdown-item :icon="Apps24Regular" @click="dialogs.open('builtinApps')">
           <span>{{ t('builtinApps.title') }}</span>
         </el-dropdown-item>
         <el-badge is-dot :offset="[-3, 17]" :hidden="settings.readChangeLog" style="width: 100%">
-          <el-dropdown-item :icon="AccessTimeFilledRound" divided @click="emit('open-changelog')">
+          <el-dropdown-item
+            :icon="AccessTimeFilledRound"
+            divided
+            @click="dialogs.open('changelog')"
+          >
             <span>{{ t('changelog.title') }}</span>
           </el-dropdown-item>
         </el-badge>
-        <el-dropdown-item :icon="HelpFilled" @click="emit('open-faq')">
+        <el-dropdown-item :icon="HelpFilled" @click="dialogs.open('faq')">
           <span>{{ t('menu.help') }}</span>
         </el-dropdown-item>
         <el-dropdown-item :icon="HeartFilled" @click="sponsorMessage">
           <span>{{ t('menu.sponsor') }}</span>
         </el-dropdown-item>
-        <el-dropdown-item :icon="InfoRound" divided @click="emit('open-about')">
+        <el-dropdown-item :icon="InfoRound" divided @click="dialogs.open('about')">
           <span>{{ t('menu.about') }}</span>
         </el-dropdown-item>
       </el-dropdown-menu>

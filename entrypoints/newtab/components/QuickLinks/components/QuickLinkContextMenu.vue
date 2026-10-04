@@ -14,7 +14,6 @@ import ContentCopyRound from '~icons/ic/round-content-copy'
 import OpenInNewRound from '~icons/ic/round-open-in-new'
 
 import { resolveBuiltInAppId } from '@/shared/builtinApps'
-import type { QuickLinkTarget } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 
 import { useQuickLinkContextMenu } from '../composables/useQuickLinkContextMenu'
@@ -23,7 +22,6 @@ import type { CtxQuickLinkItem } from '../composables/useQuickLinkContextMenu'
 const props = withDefaults(
   defineProps<{
     refreshFn: () => Promise<void>
-    onOpenEditDialog?: (target: QuickLinkTarget) => void
     onPin?: (item: CtxQuickLinkItem) => Promise<void> | void
     onMove?: (item: CtxQuickLinkItem) => Promise<void> | void
     onMoveLeft?: (item: CtxQuickLinkItem) => Promise<void> | void
@@ -69,7 +67,6 @@ const {
   ctxEdit,
 } = useQuickLinkContextMenu({
   refreshFn: props.refreshFn,
-  onOpenEditDialog: (index) => props.onOpenEditDialog?.(index),
   onPin: (item) => props.onPin?.(item),
   onMove: (item) => props.onMove?.(item),
 })

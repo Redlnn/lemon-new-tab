@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import '@newtab/styles/quick-links.scss'
 import { OnLongPress } from '@vueuse/components'
+import '@newtab/styles/quick-links.scss'
+
 import { useDebounceFn, useResizeObserver, useWindowSize } from '@vueuse/core'
 import { defineAsyncComponent } from 'vue'
 
@@ -8,14 +9,11 @@ import { useTranslation } from 'i18next-vue'
 import Apps24Regular from '~icons/fluent/apps-24-regular'
 import AddRound from '~icons/ic/round-add'
 
-import { openBuiltInApp, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
-import {
-  DEFAULT_QUICK_LINK_GROUP_ID,
-  useQuickLinksStore,
-  type QuickLinkTarget,
-} from '@/shared/quickLinks'
+import { resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
+import { DEFAULT_QUICK_LINK_GROUP_ID, useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 
+import { useAppDialogs } from '@newtab/composables/appDialogs'
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { isTouchEvent } from '@newtab/shared/touch'
@@ -33,12 +31,11 @@ const Launchpad = defineAsyncComponent(() => import('./Launchpad.vue'))
 
 const props = defineProps<{
   ready: boolean
-  onOpenAddDialog?: (groupId?: string) => void
-  onOpenEditDialog?: (target: QuickLinkTarget) => void
 }>()
 
 const { t } = useTranslation()
 const focusStore = useFocusState()
+const dialogs = useAppDialogs()
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
 
@@ -46,7 +43,7 @@ function openBuiltInItem(event: MouseEvent, item: { url: string; appId?: BuiltIn
   const appId = resolveBuiltInAppId(item)
   if (!appId) return
   event.preventDefault()
-  openBuiltInApp(appId)
+  dialogs.open(appId)
 }
 
 const perf = usePerfClasses(() => ({
@@ -169,10 +166,7 @@ watch(inlineDock, async () => {
   const after = dock.getBoundingClientRect()
   dock.style.removeProperty('transition')
   positionAnimation = dock.animate(
-    [
-      { translate: `${before.x - after.x}px ${before.y - after.y}px` },
-      { translate: '0 0' },
-    ],
+    [{ translate: `${before.x - after.x}px ${before.y - after.y}px` }, { translate: '0 0' }],
     { duration: 300, easing: 'ease' },
   )
 })
@@ -399,7 +393,10 @@ async function moveDockQuickLink(item: CtxQuickLinkItem, direction: -1 | 1) {
 }
 
 function openAddQuickLink() {
-  props.onOpenAddDialog?.(settings.quickLinks.grouping ? DEFAULT_QUICK_LINK_GROUP_ID : undefined)
+  dialogs.open('quickLink', {
+    mode: 'add',
+    groupId: settings.quickLinks.grouping ? DEFAULT_QUICK_LINK_GROUP_ID : undefined,
+  })
 }
 
 function toggleLaunchpad() {
@@ -558,12 +555,7 @@ defineExpose({ refresh, toggleLaunchpad })
       </template>
 
       <!-- 启动台覆盖层 -->
-      <Launchpad
-        v-if="launchpadLoaded"
-        v-model="showLaunchpad"
-        :on-open-add-dialog="props.onOpenAddDialog"
-        :on-open-edit-dialog="props.onOpenEditDialog"
-      />
+      <Launchpad v-if="launchpadLoaded" v-model="showLaunchpad" />
 
       <!-- 共享右键菜单 -->
       <quick-link-context-menu
@@ -573,7 +565,6 @@ defineExpose({ refresh, toggleLaunchpad })
         show-edit
         :show-move="settings.quickLinks.grouping"
         :refresh-fn="refreshDebounced"
-        :on-open-edit-dialog="props.onOpenEditDialog"
         :on-pin="pinToGroup"
         :on-move="moveToGroup"
         show-sort-actions

@@ -8,44 +8,24 @@ import { BgType } from '@/shared/enums'
 import { DEFAULT_QUICK_LINK_GROUP_ID } from '@/shared/quickLinks'
 import { defaultSettings, useSettingsStore } from '@/shared/settings'
 
-import {
-  FOCUS_STATE,
-  GET_ACTIVE_QUICK_LINK_GROUP_ID,
-  OPEN_BACKGROUND_PREFERENCE,
-  OPEN_SEARCH_ENGINE_PREFERENCE,
-  OPEN_SETTINGS,
-} from '@newtab/shared/keys'
+import { FOCUS_STATE, GET_ACTIVE_QUICK_LINK_GROUP_ID } from '@newtab/shared/keys'
 import { isOnlyTouchDevice } from '@newtab/shared/touch'
 
 import BookmarkBtn from './components/ActionBtn/BookmarkBtn.vue'
 import DownloadBgBtn from './components/ActionBtn/DownloadBgBtn.vue'
 import RefreshBgBtn from './components/ActionBtn/RefreshBgBtn.vue'
 import SettingsBtn from './components/ActionBtn/SettingsBtn.vue'
+import AppDialogHost from './components/AppDialogHost.vue'
 import Background from './components/Background.vue'
 import Clock from './components/Clock.vue'
 import Dock from './components/QuickLinks/Dock.vue'
 import QuickLinks from './components/QuickLinks/index.vue'
 import SearchBox from './components/SearchBox/index.vue'
 import YiYan from './components/YiYan.vue'
+import { APP_DIALOGS, createAppDialogs } from './composables/appDialogs'
 import { useAppNotifications } from './composables/useAppNotifications'
 import { useElementLang } from './composables/useElementLang'
 import { createFocusState } from './composables/useFocus'
-import {
-  AboutComp,
-  AddQuickLinkDialog,
-  BackgroundSwitcher,
-  Bookmark,
-  BuiltinAppsDialog,
-  Changelog,
-  Faq,
-  PermissionDialog,
-  SearchEnginesSwitcher,
-  SettingsPage,
-  SyncRetirementDialog,
-  Note,
-  useLazyAppComponents,
-} from './composables/useLazyAppComponents'
-import { usePermission } from './composables/usePermission'
 import { useQuickLinksBootstrap } from './composables/useQuickLinksBootstrap'
 import { useRetiredCloudSync } from './composables/useRetiredCloudSync'
 import { useThemeWatcher } from './composables/useThemeWatcher'
@@ -55,61 +35,14 @@ const QuickLinksRef = ref<InstanceType<typeof QuickLinks>>()
 const DockRef = ref<InstanceType<typeof Dock>>()
 const { t } = useTranslation()
 
-const {
-  settingsPageMounted,
-  settingsPageVisible,
-  changelogMounted,
-  changelogVisible,
-  faqMounted,
-  faqVisible,
-  aboutMounted,
-  aboutVisible,
-  searchEnginesSwitcherMounted,
-  searchEnginesSwitcherVisible,
-  backgroundSwitcherMounted,
-  backgroundSwitcherVisible,
-  bookmarkMounted,
-  bookmarkVisible,
-  addQuickLinkDialogMounted,
-  addQuickLinkDialogVisible,
-  quickLinkDialogRequest,
-  permissionDialogLoaded,
-  toggleSettingsPage,
-  showChangelog,
-  showFaq,
-  toggleAbout,
-  showSearchEnginesSwitcher,
-  showBackgroundSwitcher,
-  showBookmark,
-  openAddQuickLinkDialog,
-  openEditQuickLinkDialog,
-  noteMounted,
-  noteVisible,
-  builtinAppsMounted,
-  builtinAppsVisible,
-  showNote,
-  showBuiltinApps,
-} = useLazyAppComponents()
-
-function handleBuiltInApp(event: Event) {
-  if ((event as CustomEvent<string>).detail === 'note') showNote()
-}
-onMounted(() => window.addEventListener('lemon-new-tab:open-built-in-app', handleBuiltInApp))
-onBeforeUnmount(() =>
-  window.removeEventListener('lemon-new-tab:open-built-in-app', handleBuiltInApp),
-)
+const dialogs = createAppDialogs()
+provide(APP_DIALOGS, dialogs)
 
 const elLocale = useElementLang()
 const settings = useSettingsStore()
 const { quickLinksReady } = useQuickLinksBootstrap()
 const minimalMode = ref(false)
-const {
-  dialogLoaded: syncRetirementDialogLoaded,
-  dialogVisible: syncRetirementDialogVisible,
-  dialogAcknowledgementOnly: syncRetirementDialogAcknowledgementOnly,
-  downloadCloudData,
-  deleteCloudData,
-} = useRetiredCloudSync()
+const retirement = useRetiredCloudSync()
 
 // 主题/外观 watcher
 useThemeWatcher()
@@ -156,17 +89,9 @@ function handleBackgroundContextMenu() {
   ) {
     DockRef.value?.toggleLaunchpad()
   } else if (settings.bookmark.rightClickToOpen) {
-    void showBookmark()
+    dialogs.open('bookmark')
   }
 }
-
-const {
-  permissionDialogVisible,
-  currentHostname,
-  currentOnlyAll,
-  currentContext,
-  onPermissionDialogResult,
-} = usePermission()
 
 const focusStore = createFocusState()
 provide(FOCUS_STATE, focusStore)
@@ -187,24 +112,13 @@ function handleBackgroundClick() {
     handleBackgroundContextMenu()
   }
 }
-provide(OPEN_SETTINGS, toggleSettingsPage)
-provide(OPEN_SEARCH_ENGINE_PREFERENCE, showSearchEnginesSwitcher)
-provide(OPEN_BACKGROUND_PREFERENCE, showBackgroundSwitcher)
 provide(
   GET_ACTIVE_QUICK_LINK_GROUP_ID,
   () => QuickLinksRef.value?.getActiveGroupId() ?? DEFAULT_QUICK_LINK_GROUP_ID,
 )
 
 // 应用级通知（欢迎、缓存提示、版本更新）
-useAppNotifications(showChangelog)
-
-watch(
-  permissionDialogVisible,
-  (visible) => {
-    if (visible) permissionDialogLoaded.value = true
-  },
-  { immediate: true },
-)
+useAppNotifications(() => dialogs.open('changelog'))
 
 const bottomDockEnabled = computed(() => settings.dock.enabled && !settings.dock.replaceQuickLinks)
 
@@ -319,17 +233,9 @@ function toggleMinimalMode() {
           v-if="settings.quickLinks.enabled"
           ref="QuickLinksRef"
           :ready="quickLinksReady"
-          :on-open-add-dialog="openAddQuickLinkDialog"
-          :on-open-edit-dialog="openEditQuickLinkDialog"
           @contextmenu.stop
         />
-        <dock
-          v-if="settings.dock.enabled"
-          ref="DockRef"
-          :ready="quickLinksReady"
-          :on-open-add-dialog="openAddQuickLinkDialog"
-          :on-open-edit-dialog="openEditQuickLinkDialog"
-        />
+        <dock v-if="settings.dock.enabled" ref="DockRef" :ready="quickLinksReady" />
         <yi-yan v-if="settings.yiyan.enabled" @contextmenu.stop />
       </div>
     </main>
@@ -340,19 +246,11 @@ function toggleMinimalMode() {
       role="toolbar"
       :aria-label="t('a11y.actions')"
     >
-      <settings-btn
-        @open-settings="toggleSettingsPage"
-        @open-changelog="showChangelog"
-        @open-about="toggleAbout"
-        @open-search-engine-preference="showSearchEnginesSwitcher"
-        @open-faq="showFaq"
-        @open-background-switcher="showBackgroundSwitcher"
-        @open-builtin-apps="showBuiltinApps"
-      />
+      <settings-btn />
       <bookmark-btn
         v-if="settings.bookmark.showBtn"
         v-show="!minimalMode"
-        @open-bookmark-sidebar="showBookmark"
+        @open-bookmark-sidebar="dialogs.open('bookmark')"
       />
       <refresh-bg-btn
         v-if="
@@ -374,38 +272,6 @@ function toggleMinimalMode() {
       >
       </download-bg-btn>
     </div>
-    <settings-page v-if="settingsPageMounted" v-model="settingsPageVisible" />
-    <changelog v-if="changelogMounted" v-model="changelogVisible" />
-    <faq v-if="faqMounted" v-model="faqVisible" />
-    <about-comp v-if="aboutMounted" v-model="aboutVisible" />
-    <search-engines-switcher
-      v-if="searchEnginesSwitcherMounted"
-      v-model="searchEnginesSwitcherVisible"
-    />
-    <background-switcher v-if="backgroundSwitcherMounted" v-model="backgroundSwitcherVisible" />
-    <bookmark v-if="bookmarkMounted" v-model="bookmarkVisible" />
-    <add-quick-link-dialog
-      v-if="addQuickLinkDialogMounted"
-      v-model="addQuickLinkDialogVisible"
-      :request="quickLinkDialogRequest"
-      @saved="refreshQuickLinks"
-    />
-    <permission-dialog
-      v-if="permissionDialogLoaded"
-      v-model="permissionDialogVisible"
-      :hostname="currentHostname"
-      :only-all="currentOnlyAll"
-      :context="currentContext"
-      @result="onPermissionDialogResult"
-    />
-    <sync-retirement-dialog
-      v-if="syncRetirementDialogLoaded"
-      v-model="syncRetirementDialogVisible"
-      :acknowledgement-only="syncRetirementDialogAcknowledgementOnly"
-      @download="downloadCloudData"
-      @delete="deleteCloudData"
-    />
-    <note v-if="noteMounted" v-model="noteVisible" />
-    <builtin-apps-dialog v-if="builtinAppsMounted" v-model="builtinAppsVisible" />
+    <AppDialogHost :retirement="retirement" @quick-links-saved="refreshQuickLinks" />
   </el-config-provider>
 </template>

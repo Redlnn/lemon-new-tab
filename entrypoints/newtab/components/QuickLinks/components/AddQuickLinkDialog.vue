@@ -12,6 +12,7 @@ import {
 } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 
+import type { QuickLinkDialogRequest } from '@newtab/composables/appDialogs'
 import { useFaviconUpload } from '@newtab/composables/useFaviconUpload'
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import { formatUrl, isValidUrl } from '@newtab/shared/utils'
@@ -23,10 +24,6 @@ const quickLinksStore = useQuickLinksStore()
 const settings = useSettingsStore()
 const modelForm = ref<FormInstance>()
 const showDialog = defineModel<boolean>({ required: true })
-
-type QuickLinkDialogRequest =
-  | { mode: 'add'; groupId?: string }
-  | { mode: 'edit'; target: QuickLinkTarget }
 
 const props = defineProps<{
   request: QuickLinkDialogRequest | null

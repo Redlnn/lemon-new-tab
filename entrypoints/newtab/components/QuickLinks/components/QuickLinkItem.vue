@@ -4,10 +4,11 @@ import type { Component } from 'vue'
 
 import Pin12Regular from '~icons/fluent/pin-12-regular'
 
-import { openBuiltInApp, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
+import { resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 import { getFaviconDisplay } from '@/shared/media'
 import { useSettingsStore } from '@/shared/settings'
 
+import { useAppDialogs } from '@newtab/composables/appDialogs'
 import { isTouchEvent } from '@newtab/shared/touch'
 import { isValidUrl } from '@newtab/shared/utils'
 
@@ -25,6 +26,7 @@ const props = defineProps<{
   keyboardDrag?: boolean
 }>()
 
+const dialogs = useAppDialogs()
 const settings = useSettingsStore()
 // 用户保存的图标不参与解析，移除后才恢复对链接 favicon 的获取。
 const faviconDisplay = getFaviconDisplay(
@@ -53,7 +55,7 @@ const appId = computed(() => resolveBuiltInAppId(props))
 function openLink(event: MouseEvent) {
   if (!appId.value) return
   event.preventDefault()
-  openBuiltInApp(appId.value)
+  dialogs.open(appId.value)
 }
 
 function openFocusedLink(event: KeyboardEvent) {

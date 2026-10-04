@@ -7,11 +7,11 @@ import Search from '~icons/fa7-solid/magnifying-glass'
 
 import { useSettingsStore } from '@/shared/settings'
 
+import { useAppDialogs } from '@newtab/composables/appDialogs'
 import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 import { useCustomEngineFavicon } from '@newtab/shared/customSearchEngine/useCustomEngineFavicon'
-import { OPEN_SEARCH_ENGINE_PREFERENCE } from '@newtab/shared/keys'
 import { getVisibleBuiltInSearchEngineKeys, searchEngines } from '@newtab/shared/search'
 
 const { t } = useTranslation()
@@ -24,7 +24,7 @@ const focusStore = useFocusState()
 const settings = useSettingsStore()
 const customSearchEngineStore = useCustomSearchEngineStore()
 const searchEngineMenu = ref<TooltipInstance>()
-const openSearchEnginePreference = inject(OPEN_SEARCH_ENGINE_PREFERENCE)
+const dialogs = useAppDialogs()
 const { getCustomEngineFavicon } = useCustomEngineFavicon()
 const visibleBuiltInKeys = computed(() =>
   getVisibleBuiltInSearchEngineKeys(
@@ -51,7 +51,7 @@ function hide() {
 
 function openPreference() {
   hide()
-  openSearchEnginePreference?.()
+  dialogs.open('searchEngines')
 }
 
 let stop: () => void

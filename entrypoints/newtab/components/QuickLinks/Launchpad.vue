@@ -22,20 +22,19 @@ import AddRound from '~icons/ic/round-add'
 import DeleteRound from '~icons/ic/round-delete'
 import SettingsRound from '~icons/ic/round-settings'
 
-import { openBuiltInApp, resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
+import { resolveBuiltInAppId, type BuiltInAppId } from '@/shared/builtinApps'
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   useQuickLinksStore,
   type QuickLink,
   type QuickLinkGroup,
-  type QuickLinkTarget,
 } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 import { toggleDocumentClass } from '@/shared/theme'
 
+import { useAppDialogs } from '@newtab/composables/appDialogs'
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import { usePerfClasses } from '@newtab/composables/usePerfClasses'
-import { OPEN_SETTINGS } from '@newtab/shared/keys'
 
 import FaviconImage from './components/FaviconImage.vue'
 import QuickLinkContextMenu from './components/QuickLinkContextMenu.vue'
@@ -78,11 +77,6 @@ const refreshDebounced = useDebounceFn(refresh, 100)
 
 const model = defineModel<boolean>({ required: true })
 
-const props = defineProps<{
-  onOpenAddDialog?: (groupId?: string) => void
-  onOpenEditDialog?: (target: QuickLinkTarget) => void
-}>()
-
 type GroupView = {
   group: QuickLinkGroup
   items: QuickLinkViewItem[]
@@ -90,13 +84,14 @@ type GroupView = {
 }
 
 const { t } = useTranslation()
+const dialogs = useAppDialogs()
 const settings = useSettingsStore()
 
 function openBuiltInItem(event: MouseEvent, item: { url: string; appId?: BuiltInAppId }) {
   const appId = resolveBuiltInAppId(item)
   if (!appId) return
   event.preventDefault()
-  openBuiltInApp(appId)
+  dialogs.open(appId)
 }
 const quickLinksBlurEnabled = computed(
   () =>
@@ -134,8 +129,6 @@ const topSites = computed(() =>
 const legacyDndGroupId = FLAT_QUICK_LINK_DND_GROUP_ID
 const topSitesGroupId = TOP_SITES_DND_GROUP_ID
 const { isComposing: isImeComposing } = useImeAwareDialog()
-
-const openSettings = inject(OPEN_SETTINGS)
 
 const { width: windowWidth } = useWindowSize({ type: 'visual' })
 
@@ -431,7 +424,7 @@ async function moveGroup(groupId: string, direction: -1 | 1) {
 }
 
 function openAddQuickLink(groupId?: string) {
-  props.onOpenAddDialog?.(groupId ?? DEFAULT_QUICK_LINK_GROUP_ID)
+  dialogs.open('quickLink', { mode: 'add', groupId: groupId ?? DEFAULT_QUICK_LINK_GROUP_ID })
 }
 
 const { pinToGroup, moveToGroup, renameGroup, confirmDeleteGroup } = useQuickLinkGroupActions({
@@ -664,9 +657,9 @@ onBeforeUnmount(() => {
                 tabindex="0"
                 class="launchpad-settings action-btn setting-btn"
                 :aria-label="t('settings:title')"
-                @click="openSettings"
-                @keydown.enter.prevent="openSettings"
-                @keydown.space.prevent="openSettings"
+                @click="dialogs.open('settings')"
+                @keydown.enter.prevent="dialogs.open('settings')"
+                @keydown.space.prevent="dialogs.open('settings')"
               >
                 <el-icon><settings-round /></el-icon>
               </div>
@@ -1115,9 +1108,9 @@ onBeforeUnmount(() => {
                     class="launchpad-item"
                     :title="t('dock.launchpad.add')"
                     :aria-label="t('quickLinks.addLink')"
-                    @click="props.onOpenAddDialog?.()"
-                    @keydown.enter.prevent="props.onOpenAddDialog?.()"
-                    @keydown.space.prevent="props.onOpenAddDialog?.()"
+                    @click="dialogs.open('quickLink', { mode: 'add' })"
+                    @keydown.enter.prevent="dialogs.open('quickLink', { mode: 'add' })"
+                    @keydown.space.prevent="dialogs.open('quickLink', { mode: 'add' })"
                   >
                     <el-icon class="launchpad-item__icon launchpad-item__icon--add">
                       <add-round />
@@ -1175,7 +1168,6 @@ onBeforeUnmount(() => {
     <quick-link-context-menu
       ref="ctxMenuRef"
       :refresh-fn="refreshDebounced"
-      :on-open-edit-dialog="props.onOpenEditDialog"
       :popper-class="popperClass"
       show-edit
       show-move

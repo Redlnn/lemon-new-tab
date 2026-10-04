@@ -11,8 +11,8 @@ import {
 } from '@/shared/searchSuggestionProviders'
 import { useSettingsStore } from '@/shared/settings'
 
+import { useAppDialogs } from '@newtab/composables/appDialogs'
 import { useBrowserHistoryPermission } from '@newtab/composables/useBrowserHistoryPermission'
-import { OPEN_SEARCH_ENGINE_PREFERENCE } from '@newtab/shared/keys'
 import { BUILT_IN_SEARCH_ENGINE_KEYS, searchSuggestAPIs } from '@newtab/shared/search'
 
 import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
@@ -70,7 +70,7 @@ async function changeProvider(id: SearchSuggestionProviderId, checked: boolean) 
   )
 }
 
-const openSearchEnginePreference = inject(OPEN_SEARCH_ENGINE_PREFERENCE)
+const dialogs = useAppDialogs()
 const canRestoreBuiltInEngines = computed(
   () =>
     settings.search.hiddenBuiltInEngines.length > 0 ||
@@ -101,10 +101,7 @@ function restoreBuiltInSearchEngines() {
         <div class="settings__label">
           {{ t('search.defaultSearchEngine') }}
         </div>
-        <el-button
-          :icon="BubbleChartRound"
-          @click="openSearchEnginePreference && openSearchEnginePreference()"
-        >
+        <el-button :icon="BubbleChartRound" @click="dialogs.open('searchEngines')">
           {{ t('search.clickToChange') }}
         </el-button>
       </div>
