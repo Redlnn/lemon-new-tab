@@ -16,6 +16,7 @@
     "quickLinksGroups": "快速連結分組",
     "quickLinksPagination": "快速連結分頁",
     "refreshBackground": "重新整理背景",
+    "renameGroup": "重新命名分組 {{name}}",
     "searchInput": "搜尋關鍵字",
     "searchSuggestions": "搜尋建議"
   },

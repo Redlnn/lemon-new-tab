@@ -16,6 +16,7 @@
     "quickLinksGroups": "Quick Links groups",
     "quickLinksPagination": "Quick Links pagination",
     "refreshBackground": "Refresh background",
+    "renameGroup": "Rename group {{name}}",
     "searchInput": "Search keywords",
     "searchSuggestions": "Search suggestions"
   },

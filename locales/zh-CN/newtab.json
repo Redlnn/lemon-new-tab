@@ -16,6 +16,7 @@
     "quickLinksGroups": "快速导航分组",
     "quickLinksPagination": "快速导航分页",
     "refreshBackground": "刷新背景",
+    "renameGroup": "重命名分组 {{name}}",
     "searchInput": "搜索关键词",
     "searchSuggestions": "搜索建议"
   },

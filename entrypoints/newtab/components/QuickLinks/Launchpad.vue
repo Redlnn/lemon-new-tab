@@ -16,6 +16,7 @@ import ChevronDown20Filled from '~icons/fluent/chevron-down-20-filled'
 import ChevronLeft20Filled from '~icons/fluent/chevron-left-20-filled'
 import ChevronRight20Filled from '~icons/fluent/chevron-right-20-filled'
 import ChevronUp20Filled from '~icons/fluent/chevron-up-20-filled'
+import Edit20Filled from '~icons/fluent/edit-20-filled'
 import Pin12Regular from '~icons/fluent/pin-12-regular'
 import AddRound from '~icons/ic/round-add'
 import DeleteRound from '~icons/ic/round-delete'
@@ -715,6 +716,14 @@ onBeforeUnmount(() => {
                         <button
                           type="button"
                           class="launchpad-group__sort-btn"
+                          :aria-label="t('newtab:a11y.renameGroup', { name: view.group.name })"
+                          @click="groupNameRefs.get(view.group.id)?.beginEdit()"
+                        >
+                          <el-icon><edit20-filled /></el-icon>
+                        </button>
+                        <button
+                          type="button"
+                          class="launchpad-group__sort-btn"
                           :aria-label="t('newtab:a11y.moveGroupUp', { name: view.group.name })"
                           :disabled="userGroups[0]?.id === view.group.id"
                           @click="moveGroup(view.group.id, -1)"
@@ -731,6 +740,7 @@ onBeforeUnmount(() => {
                           <el-icon><chevron-down20-filled /></el-icon>
                         </button>
                         <button
+                          v-if="view.group.id !== DEFAULT_QUICK_LINK_GROUP_ID"
                           type="button"
                           class="launchpad-group__sort-btn"
                           :aria-label="t('newtab:a11y.deleteGroup', { name: view.group.name })"
