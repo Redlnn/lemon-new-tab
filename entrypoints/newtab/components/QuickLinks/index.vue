@@ -883,7 +883,16 @@ defineExpose({ refresh, getActiveGroupId })
             :key="section.key"
             class="quick-links__scroll-section"
           >
-            <h2 v-if="section.title" class="quick-links__scroll-title">{{ section.title }}</h2>
+            <h2 v-if="section.title" class="quick-links__scroll-title">
+              <quick-link-group-name
+                v-if="section.groupId && !section.isTopSites"
+                :name="section.title"
+                editable
+                plain
+                @rename="(name) => renameGroup(section.groupId!, name)"
+              />
+              <template v-else>{{ section.title }}</template>
+            </h2>
             <quick-link-virtual-grid
               :items="section.items"
               :columns="displayColumns"

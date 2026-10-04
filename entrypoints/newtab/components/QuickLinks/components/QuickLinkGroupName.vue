@@ -83,6 +83,7 @@ defineExpose({ beginEdit })
 
 <style scoped lang="scss">
 .quick-links__category-item--plain {
+  display: inline-flex;
   padding: 0;
   font-size: inherit;
   font-weight: inherit;
