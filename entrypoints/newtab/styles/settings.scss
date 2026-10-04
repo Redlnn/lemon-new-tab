@@ -440,6 +440,8 @@ html.colorful.dialog-transparent .settings__dialog {
     &::details-content {
       display: grid;
       grid-template-rows: 0fr;
+      padding-inline: 8px;
+      margin-inline: -8px;
       overflow: hidden;
       transition:
         grid-template-rows var(--el-transition-duration) ease,
@@ -474,7 +476,6 @@ html.colorful.dialog-transparent .settings__dialog {
     min-height: 0;
     padding-top: 0;
     margin-top: 0;
-    overflow: hidden;
     transition: padding-top var(--el-transition-duration) ease;
   }
 
