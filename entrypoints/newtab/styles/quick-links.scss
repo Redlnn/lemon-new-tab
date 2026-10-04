@@ -518,6 +518,7 @@ html.light .quick-links {
 
   .quick-links:hover &,
   .quick-links--dragging &,
+  &--menu-open,
   &:focus-within {
     opacity: 1;
   }

@@ -33,6 +33,7 @@ import QuickLinkContextMenu from './components/QuickLinkContextMenu.vue'
 import QuickLinkDragOverlay from './components/QuickLinkDragOverlay.vue'
 import QuickLinkDropTarget from './components/QuickLinkDropTarget.vue'
 import QuickLinkGroupName from './components/QuickLinkGroupName.vue'
+import QuickLinkGroupContextMenu from './components/QuickLinkGroupContextMenu.vue'
 import QuickLinkGroupSelectDialog from './components/QuickLinkGroupSelectDialog.vue'
 import QuickLinkItem from './components/QuickLinkItem.vue'
 import type { QuickLinkItemPresentation } from './components/quickLinkItemPresentation'
@@ -338,6 +339,9 @@ const openedMenuCloseFn = ref<(() => void) | null>(null)
 provide(QUICK_LINK_OPENED_MENU_CLOSE_FN, openedMenuCloseFn)
 
 const ctxMenuRef = useTemplateRef<InstanceType<typeof QuickLinkContextMenu>>('ctxMenuRef')
+const groupCtxMenuRef =
+  useTemplateRef<InstanceType<typeof QuickLinkGroupContextMenu>>('groupCtxMenuRef')
+const groupMenuVisible = ref(false)
 const groupSelectDialogRef =
   useTemplateRef<InstanceType<typeof QuickLinkGroupSelectDialog>>('groupSelectDialogRef')
 const { groupNameRefs, setGroupNameRef } = useGroupNameRefs()
@@ -358,6 +362,24 @@ async function updateCategoryGroupOrder(groups: QuickLinkGroup[]) {
   const changed = await quickLinksStore.reorderGroups(groups)
   if (!changed) return
   await refreshDebounced()
+}
+
+function openGroupCtxMenu(event: MouseEvent | PointerEvent, groupId: string) {
+  const group = userGroups.value.find((item) => item.id === groupId)
+  if (!group) return
+  openedMenuCloseFn.value?.()
+  groupCtxMenuRef.value?.open(event, group)
+  openedMenuCloseFn.value = () => groupCtxMenuRef.value?.close()
+}
+
+async function moveGroup(group: QuickLinkGroup, direction: -1 | 1) {
+  const groups = userGroups.value.slice()
+  const index = groups.findIndex((item) => item.id === group.id)
+  const targetIndex = index + direction
+  if (index < 0 || targetIndex < 0 || targetIndex >= groups.length) return
+  groups.splice(index, 1)
+  groups.splice(targetIndex, 0, group)
+  await updateCategoryGroupOrder(groups)
 }
 
 async function openAddQuickLink() {
@@ -886,7 +908,9 @@ defineExpose({ refresh, getActiveGroupId })
             <h2 v-if="section.title" class="quick-links__scroll-title">
               <quick-link-group-name
                 v-if="section.groupId && !section.isTopSites"
+                :ref="(el) => setGroupNameRef(section.groupId!, el)"
                 :name="section.title"
+                :on-context-menu="(event) => openGroupCtxMenu(event, section.groupId!)"
                 editable
                 plain
                 @rename="(name) => renameGroup(section.groupId!, name)"
@@ -965,7 +989,7 @@ defineExpose({ refresh, getActiveGroupId })
         <el-space
           v-if="!settings.quickLinks.useScroll && settings.quickLinks.grouping"
           class="noselect"
-          :class="categoryClass"
+          :class="[categoryClass, { 'quick-links__category--menu-open': groupMenuVisible }]"
           role="navigation"
           :aria-label="t('newtab:a11y.quickLinksGroups')"
         >
@@ -1000,11 +1024,11 @@ defineExpose({ refresh, getActiveGroupId })
                 <quick-link-group-name
                   :ref="(el) => setGroupNameRef(group.id, el)"
                   :name="group.name"
+                  :on-context-menu="(event) => openGroupCtxMenu(event, group.id)"
                   :active="currentPageData?.groupId === group.id"
                   editable
                   @select="selectGroup(group.id)"
                   @rename="(name) => renameGroup(group.id, name)"
-                  @contextmenu.prevent="confirmDeleteGroup(group)"
                 />
               </quick-link-drop-target>
             </quick-link-sortable-item>
@@ -1276,5 +1300,15 @@ defineExpose({ refresh, getActiveGroupId })
       show-move
     />
     <quick-link-group-select-dialog ref="groupSelectDialogRef" />
+    <quick-link-group-context-menu
+      ref="groupCtxMenuRef"
+      :groups="userGroups"
+      :show-sort-actions="settings.quickLinks.useScroll"
+      :popper-class="popperClass"
+      @rename="(group) => groupNameRefs.get(group.id)?.beginEdit()"
+      @delete="confirmDeleteGroup"
+      @move="moveGroup"
+      @visible-change="(visible) => (groupMenuVisible = visible)"
+    />
   </section>
 </template>
