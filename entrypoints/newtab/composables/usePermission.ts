@@ -48,13 +48,12 @@ export function usePermission() {
     onlyAll: boolean = false,
     context: PermissionContext = PermissionContext.OnlineWallpaper,
   ): Promise<PermissionResult> => {
-    const allPermissions = { origins: [`*://*/*`] }
-    const allGranted = await browser.permissions.contains(allPermissions)
-    const permissions = { origins: [`*://${hostname}/*`] }
-    const granted = await browser.permissions.contains(permissions)
-
-    if (allGranted) return PermissionResult.GrantedAll
-    if (!onlyAll && granted) return PermissionResult.GrantedCurrent
+    if (await browser.permissions.contains({ origins: ['*://*/*'] })) {
+      return PermissionResult.GrantedAll
+    }
+    if (!onlyAll && (await browser.permissions.contains({ origins: [`*://${hostname}/*`] }))) {
+      return PermissionResult.GrantedCurrent
+    }
 
     currentHostname.value = hostname
     currentOnlyAll.value = onlyAll
