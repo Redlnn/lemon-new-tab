@@ -11,6 +11,7 @@ import SecurityRound from '~icons/ic/round-security'
 import StorageRound from '~icons/ic/round-storage'
 
 import { downloadBlob } from '@/shared/download'
+import { createTaskScope } from '@/shared/taskScope'
 import {
   disconnectSyncConnection,
   deleteSyncCorruption,
@@ -39,6 +40,7 @@ import {
   displaySyncDifference,
   presentSyncConflict,
 } from '@/shared/webdavSync/conflictPresentation'
+import { webDavErrorKey } from '@/shared/webdavSync/errors'
 import type {
   JsonValue,
   LocalSyncStateV1,
@@ -123,8 +125,17 @@ const canRemoveRemoteWallpapers = computed(
     props.state.resourceOmissions.some((item) => item.kind === 'wallpaper'),
 )
 
+const conflictRows = computed(
+  () =>
+    new Map(
+      conflicts.value.map((conflict) => [
+        conflict.id,
+        presentSyncConflict(conflict, conflictDisplayContext.value, t),
+      ]),
+    ),
+)
 function displayConflict(conflict: SyncConflict) {
-  return presentSyncConflict(conflict, conflictDisplayContext.value, t)
+  return conflictRows.value.get(conflict.id)!
 }
 
 function displayDifference(difference: {
@@ -162,10 +173,12 @@ function preferAllConflicts(choice: 'local' | 'remote') {
   for (const conflict of conflicts.value) resolutions[conflict.id] = choice
 }
 
+const dateFormatter = new Intl.DateTimeFormat(undefined, {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+})
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
-    new Date(value),
-  )
+  return dateFormatter.format(new Date(value))
 }
 
 function applyConflictDetails(details: NonNullable<Awaited<ReturnType<typeof getSyncConflict>>>) {
@@ -176,288 +189,227 @@ function applyConflictDetails(details: NonNullable<Awaited<ReturnType<typeof get
 }
 
 function showError(error: unknown) {
-  ElMessage.error(error instanceof Error ? error.message : t('webdavSync.errors.unknown'))
+  ElMessage.error(t(webDavErrorKey(error), { defaultValue: t('webdavSync.errors.unknown') }))
 }
 
-async function loadConflicts() {
-  loading.value = true
-  try {
-    const details = await getSyncConflict()
-    if (details && details.conflicts.length === 0) {
-      await resolveSyncConflict([])
-      ElMessage.success(t('webdavSync.conflicts.resolved'))
-      conflictVisible.value = false
-      emit('updated')
-      return
-    }
-    if (details) applyConflictDetails(details)
-    else conflicts.value = []
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
+const tasks = createTaskScope((value) => {
+  loading.value = value
+}, showError)
+onScopeDispose(() => tasks.reset())
+
+function finish(message?: string) {
+  if (message) ElMessage.success(t(message))
+  model.value = null
+  emit('updated')
 }
 
-async function submitConflicts() {
+function updateConflicts(details: Awaited<ReturnType<typeof getSyncConflict>>) {
+  if (details?.conflicts.length) applyConflictDetails(details)
+  else finish('webdavSync.conflicts.resolved')
+}
+
+function loadConflicts() {
+  return tasks.run(
+    async (isCurrent) => {
+      const details = await getSyncConflict()
+      if (isCurrent() && details && !details.conflicts.length) await resolveSyncConflict([])
+      return details
+    },
+    (details) => {
+      if (details) updateConflicts(details)
+      else conflicts.value = []
+    },
+  )
+}
+
+function submitConflicts() {
   if (!allConflictsResolved.value) return
-  loading.value = true
-  try {
-    const values: SyncConflictResolution[] = conflicts.value.map((item) => {
-      const choice = resolutions[item.id]!
-      if (item.candidates?.length)
-        return { choice: 'candidate', candidateId: choice, conflictId: item.id }
-      if (choice === 'both')
-        return { choice, conflictId: item.id, duplicateId: crypto.randomUUID() }
-      return { choice: choice as 'local' | 'remote', conflictId: item.id }
-    })
+  const values: SyncConflictResolution[] = conflicts.value.map((item) => {
+    const choice = resolutions[item.id]!
+    if (item.candidates?.length)
+      return { choice: 'candidate', candidateId: choice, conflictId: item.id }
+    if (choice === 'both') return { choice, conflictId: item.id, duplicateId: crypto.randomUUID() }
+    return { choice: choice as 'local' | 'remote', conflictId: item.id }
+  })
+  return tasks.run(async () => {
     await resolveSyncConflict(values)
-    const details = await getSyncConflict()
-    if (details?.conflicts.length) {
-      applyConflictDetails(details)
-      return
-    }
-    ElMessage.success(t('webdavSync.conflicts.resolved'))
-    conflictVisible.value = false
-    emit('updated')
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
+    return getSyncConflict()
+  }, updateConflicts)
 }
 
-async function loadHistory() {
+function loadHistory() {
   historyPreview.value = undefined
-  loading.value = true
-  try {
-    history.value = await getSyncHistory()
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
+  return tasks.run(getSyncHistory, (value) => {
+    history.value = value
+  })
 }
 
-async function previewHistory(revision: BrowserSyncHistoryEntry) {
-  loading.value = true
-  try {
-    historyPreview.value = await previewSyncHistory(revision.revisionId)
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
+function previewHistory(revision: BrowserSyncHistoryEntry) {
+  return tasks.run(
+    () => previewSyncHistory(revision.revisionId),
+    (value) => {
+      historyPreview.value = value
+    },
+  )
 }
 
-async function restore(preview: BrowserSyncHistoryPreview) {
+async function confirm(description: string, title: string) {
   try {
-    await ElMessageBox.confirm(
-      t('webdavSync.history.restoreDescription'),
-      t('webdavSync.history.restoreTitle'),
-      { type: 'warning' },
-    )
+    await ElMessageBox.confirm(t(description), t(title), { type: 'warning' })
+    return true
   } catch {
-    return
-  }
-  loading.value = true
-  try {
-    await restoreSyncHistory(preview)
-    ElMessage.success(t('webdavSync.history.restored'))
-    historyPreview.value = undefined
-    await loadHistory()
-    emit('updated')
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
+    return false
   }
 }
 
-async function loadDevices() {
-  loading.value = true
-  try {
-    devices.value = await getSyncDevices()
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
+function restore(preview: BrowserSyncHistoryPreview) {
+  return tasks.run(
+    async (isCurrent) => {
+      if (
+        !(await confirm(
+          'webdavSync.history.restoreDescription',
+          'webdavSync.history.restoreTitle',
+        )) ||
+        !isCurrent()
+      )
+        return
+      await restoreSyncHistory(preview)
+      return getSyncHistory()
+    },
+    (value) => {
+      if (!value) return
+      history.value = value
+      historyPreview.value = undefined
+      ElMessage.success(t('webdavSync.history.restored'))
+      emit('updated')
+    },
+  )
 }
 
-async function unlock() {
+function loadDevices() {
+  return tasks.run(getSyncDevices, (value) => {
+    devices.value = value
+  })
+}
+
+function unlock() {
   if (!currentEncryptionPassword.value) return
-  loading.value = true
-  try {
-    await unlockSyncEncryption(currentEncryptionPassword.value)
-    currentEncryptionPassword.value = ''
-    encryptionVisible.value = false
-    emit('updated')
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
+  return tasks.run(
+    () => unlockSyncEncryption(currentEncryptionPassword.value),
+    () => {
+      currentEncryptionPassword.value = ''
+      finish()
+    },
+  )
 }
 
-async function loadRepair() {
+function loadRepair() {
   corruption.value = undefined
   corruptedDownloaded.value = false
   if (props.state.pauseReason !== 'corrupted-remote') return
-  loading.value = true
-  try {
-    corruption.value = await inspectSyncCorruption()
-    corruptedDownloaded.value = corruption.value.payloadMissing
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
+  return tasks.run(inspectSyncCorruption, (value) => {
+    corruption.value = value
+    corruptedDownloaded.value = value.payloadMissing
+  })
 }
 
-async function downloadCorruption() {
-  if (
-    !corruption.value?.actualPayloadHash ||
-    corruption.value.payloadSize === undefined ||
-    corruption.value.payloadMissing
+function downloadCorruption() {
+  const item = corruption.value
+  if (!item?.actualPayloadHash || item.payloadSize === undefined || item.payloadMissing) return
+  const { corruptedRevisionId, actualPayloadHash, payloadSize } = item
+  return tasks.run(
+    () => downloadSyncCorruption(corruptedRevisionId, actualPayloadHash, payloadSize),
+    (result) => {
+      downloadBlob(new Blob([result.bytes]), result.filename)
+      corruptedDownloaded.value = true
+    },
   )
-    return
-  loading.value = true
-  try {
-    const result = await downloadSyncCorruption(
-      corruption.value.corruptedRevisionId,
-      corruption.value.actualPayloadHash,
-      corruption.value.payloadSize,
-    )
-    downloadBlob(new Blob([result.bytes]), result.filename)
-    corruptedDownloaded.value = true
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
 }
 
-async function repairCorruption() {
-  if (!corruption.value || !corruptedDownloaded.value) return
-  loading.value = true
-  try {
-    await repairSyncCorruption({
-      actualPayloadHash: corruption.value.actualPayloadHash,
-      choice: corruption.value.localMatchesPrevious ? undefined : repairChoice.value,
-      downloaded: !corruption.value.payloadMissing,
-      revisionId: corruption.value.corruptedRevisionId,
-    })
-    ElMessage.success(t('webdavSync.repair.completed'))
-    try {
-      await ElMessageBox.confirm(
-        t('webdavSync.repair.deleteEvidenceDescription'),
-        t('webdavSync.repair.deleteEvidenceTitle'),
-        { type: 'warning' },
+function repairCorruption() {
+  const item = corruption.value
+  if (!item || !corruptedDownloaded.value) return
+  const choice = item.localMatchesPrevious ? undefined : repairChoice.value
+  return tasks.run(
+    async (isCurrent) => {
+      await repairSyncCorruption({
+        actualPayloadHash: item.actualPayloadHash,
+        choice,
+        downloaded: !item.payloadMissing,
+        revisionId: item.corruptedRevisionId,
+      })
+      if (!isCurrent()) return
+      ElMessage.success(t('webdavSync.repair.completed'))
+      if (
+        (await confirm(
+          'webdavSync.repair.deleteEvidenceDescription',
+          'webdavSync.repair.deleteEvidenceTitle',
+        )) &&
+        isCurrent()
+      ) {
+        await deleteSyncCorruption(item.corruptedRevisionId, item.actualPayloadHash)
+      }
+    },
+    () => finish(),
+  )
+}
+
+function retryStorageCheck() {
+  return tasks.run(syncNow, () => finish())
+}
+
+function removeRemoteWallpapers() {
+  return tasks.run(
+    async (isCurrent) => {
+      if (
+        !(await confirm(
+          'webdavSync.repair.removeWallpapersDescription',
+          'webdavSync.repair.removeWallpapersTitle',
+        )) ||
+        !isCurrent()
       )
-    } catch {
-      repairVisible.value = false
-      emit('updated')
-      return
-    }
-    await deleteSyncCorruption(
-      corruption.value.corruptedRevisionId,
-      corruption.value.actualPayloadHash,
-    )
-    repairVisible.value = false
-    emit('updated')
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
+        return false
+      await removeRemoteSyncWallpapers()
+      return true
+    },
+    (done) => {
+      if (done) finish('webdavSync.repair.removeWallpapersCompleted')
+    },
+  )
 }
 
-async function retryStorageCheck() {
-  loading.value = true
-  try {
-    await syncNow()
-    repairVisible.value = false
-    emit('updated')
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
-}
-
-async function removeRemoteWallpapers() {
-  try {
-    await ElMessageBox.confirm(
-      t('webdavSync.repair.removeWallpapersDescription'),
-      t('webdavSync.repair.removeWallpapersTitle'),
-      { type: 'warning' },
-    )
-  } catch {
-    return
-  }
-  loading.value = true
-  try {
-    await removeRemoteSyncWallpapers()
-    ElMessage.success(t('webdavSync.repair.removeWallpapersCompleted'))
-    repairVisible.value = false
-    emit('updated')
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
-}
-
-async function disconnect(deleteRemote: boolean) {
+function disconnect(deleteRemote: boolean) {
   if (deleteRemote && deleteConfirmation.value !== 'DELETE WEBDAV DATA') return
-  loading.value = true
-  try {
-    await disconnectSyncConnection(
-      deleteRemote,
-      deleteRemote ? deleteConfirmation.value : undefined,
-    )
-    ElMessage.success(
-      t(deleteRemote ? 'webdavSync.disconnect.deleted' : 'webdavSync.disconnect.disconnected'),
-    )
-    disconnectVisible.value = false
-    emit('updated')
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
+  return tasks.run(
+    () =>
+      disconnectSyncConnection(deleteRemote, deleteRemote ? deleteConfirmation.value : undefined),
+    () => {
+      finish(deleteRemote ? 'webdavSync.disconnect.deleted' : 'webdavSync.disconnect.disconnected')
+    },
+  )
 }
 
-async function clearDeletedConnection() {
-  loading.value = true
-  try {
-    await disconnectSyncConnection(false)
-    ElMessage.success(t('webdavSync.disconnect.disconnected'))
-    remoteDeletedVisible.value = false
-    emit('updated')
-  } catch (error) {
-    showError(error)
-  } finally {
-    loading.value = false
-  }
+function clearDeletedConnection() {
+  return disconnect(false)
 }
 
-async function loadDisconnectImpact() {
+function loadDisconnectImpact() {
   deleteConfirmation.value = ''
-  await Promise.all([loadDevices(), loadHistory()])
+  return Promise.all([loadDevices(), loadHistory()])
 }
 
 watch(
   model,
   (mode) => {
+    tasks.reset()
+    currentEncryptionPassword.value = ''
     if (mode === 'conflict') void loadConflicts()
     else if (mode === 'history') void loadHistory()
     else if (mode === 'devices') void loadDevices()
     else if (mode === 'repair') void loadRepair()
     else if (mode === 'disconnect') void loadDisconnectImpact()
   },
-  { immediate: true },
+  { immediate: true, flush: 'sync' },
 )
 </script>
 
