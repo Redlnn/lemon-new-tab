@@ -4,7 +4,7 @@ import i18next from 'i18next'
 import { getLang } from '@/shared/i18n'
 
 const elementLocales = import.meta.glob<{ default: Language }>(
-  '/node_modules/element-plus/es/locale/lang/*.mjs',
+  '/node_modules/element-plus/es/locale/lang/{en,zh-cn,zh-tw,zh-hk,zh-mo,tr}.mjs',
 )
 
 async function loadElementLocale(lng: string): Promise<Language> {

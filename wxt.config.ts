@@ -8,7 +8,6 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import Markdown from 'unplugin-vue-markdown/vite'
 import { defaultAllowedOrigins } from 'vite'
-import i18nextLoader from 'vite-plugin-i18next-loader'
 import svgLoader from 'vite-svg-loader'
 import { defineConfig } from 'wxt'
 
@@ -128,10 +127,6 @@ await import(workerUrl)`,
       Vue({
         include: [/\.vue$/, /\.md$/],
       }), // 自己添加 @vitejs/plugin-vue 不使用 @wxt-dev/module-vue
-      i18nextLoader({
-        paths: ['./locales'],
-        namespaceResolution: 'basename',
-      }),
       svgLoader(),
       Icons({ compiler: 'vue3' }),
       Markdown({
