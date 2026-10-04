@@ -2,25 +2,19 @@
 import { useTranslation } from 'i18next-vue'
 
 import { defaultSettings, useSettingsStore } from '@/shared/settings'
+import { BLUR_RANGE, EFFECT_SURFACES, TRANSPARENCY_RANGE } from '@/shared/settings/constraints'
 
 import { isOnlyTouchDevice } from '@newtab/shared/touch'
 
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
-const MAX_TRANSPARENCY = 95
-const MAX_BACKDROP_BLUR = 40
+const MAX_TRANSPARENCY = TRANSPARENCY_RANGE[1]
+const MAX_BACKDROP_BLUR = BLUR_RANGE[1]
 const MAX_WALLPAPER_BLUR = 100
-const EFFECT_SETTING_KEYS = [
-  'searchBar',
-  'quickLinks',
-  'yiyan',
-  'bookmark',
-  'dialog',
-  'actionBtns',
-] as const
+const EFFECT_SETTING_KEYS = EFFECT_SURFACES
 
-type EffectSettingKey = (typeof EFFECT_SETTING_KEYS)[number]
+type EffectSettingKey = (typeof EFFECT_SURFACES)[number]
 
 type EffectItem = {
   key: EffectSettingKey

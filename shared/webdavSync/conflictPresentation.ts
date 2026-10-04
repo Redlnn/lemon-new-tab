@@ -2,6 +2,7 @@ import {
   normalizeSuggestionProviders,
   suggestionProviderNameKey,
 } from '../searchSuggestionProviders.ts'
+import type { SettingPath } from '../settings/paths.ts'
 
 import type { JsonObject, JsonValue, SyncConflict, SyncSnapshotV1 } from './types.ts'
 
@@ -21,24 +22,12 @@ export interface SyncConflictPresentation {
   title: string
 }
 
-const SETTING_TITLE_KEYS: Record<string, string> = {
-  'theme.primaryColor': 'theme.primaryColor',
+// 同名字段直接使用配置路径，仅登记名称不同的例外。
+const SETTING_TITLE_ALIASES: Partial<Record<SettingPath, string>> = {
   'theme.colorfulMode': 'theme.colorful.label',
   'theme.monetColor': 'theme.monet.label',
-  'theme.idleHide': 'theme.idleHide',
-  'theme.keepClockVisibleOnIdle': 'theme.keepClockVisibleOnIdle',
-  'clock.enabled': 'newtab:common.enable',
   'clock.colorfulNum': 'clock.colorful',
-  'clock.gradient': 'clock.gradient',
-  'clock.newStyle': 'clock.newStyle',
-  'clock.hour12': 'clock.hour12',
-  'clock.meridiem.show': 'clock.meridiem.show',
-  'clock.meridiem.followSize': 'clock.meridiem.followSize',
-  'clock.showDate': 'clock.showDate',
-  'clock.showLunar': 'clock.showLunar',
-  'clock.showSeconds': 'clock.showSeconds',
   'clock.size': 'clock.size.title',
-  'clock.dateSize': 'clock.dateSize',
   'clock.weight.time': 'clock.weight.title',
   'clock.weight.date': 'clock.weight.dateTitle',
   'clock.style.shadow': 'clock.shadow',
@@ -46,31 +35,20 @@ const SETTING_TITLE_KEYS: Record<string, string> = {
   'clock.style.transparency': 'clock.transparency',
   'clock.style.invertColor.light': 'clock.invertColor.light',
   'clock.style.invertColor.night': 'clock.invertColor.dark',
-  'search.enabled': 'newtab:common.enable',
   'search.expandAlways': 'search.alwaysExpandSearchBar',
   'search.showIconAlways': 'search.alwaysShowIcon',
   'search.suggestionsEnabled': 'search.searchSuggestions',
-  'search.suggestionProviders': 'search.suggestionProviders',
-  'search.browserHistoryLimit': 'search.browserHistoryLimit',
   'search.suggestionAPI': 'search.searchSuggestionProvider',
   'search.engine': 'search.defaultSearchEngine',
   'search.builtInEngineOrder': 'webdavSync.conflicts.fields.searchEngineOrder',
   'search.hiddenBuiltInEngines': 'search.restoreHiddenEngines',
   'search.openInNewTab': 'common.openInNewTab',
   'search.recordHistory': 'search.recordSearchHistory',
-  'search.leftAlignInput': 'search.leftAlignInput',
   'search.style.shadow': 'search.shadow',
   'search.style.border': 'search.border',
-  'search.placeholder': 'search.placeholder',
-  'search.expandWidth': 'search.expandWidth',
-  'search.borderRadius': 'search.borderRadius',
   'background.bgType': 'background.change',
   'background.solid.light': 'background.library.solid',
   'background.solid.dark': 'background.library.solid',
-  'background.showDownloadBtn': 'background.showDownloadBtn',
-  'background.vignette': 'background.vignette',
-  'background.parallax': 'background.parallax',
-  'background.blur': 'background.blur',
   'background.mask.enabled': 'background.mask.enable',
   'background.mask.light': 'background.mask.color',
   'background.mask.night': 'background.mask.color',
@@ -80,93 +58,51 @@ const SETTING_TITLE_KEYS: Record<string, string> = {
   'background.online.cache.enabled': 'background.cache.label',
   'background.online.cache.duration': 'background.cache.duration',
   'background.online.cache.noExpires': 'background.cache.noExpires',
-  'quickLinks.enabled': 'newtab:common.enable',
-  'quickLinks.topSites': 'quickLinks.topSites',
-  'quickLinks.pinnedIcon': 'quickLinks.pinnedIcon',
   'quickLinks.openInNewTab': 'common.openInNewTab',
-  'quickLinks.paging': 'quickLinks.paging',
-  'quickLinks.grouping': 'quickLinks.grouping',
-  'quickLinks.useScroll': 'quickLinks.useScroll',
-  'quickLinks.pagingLoop': 'quickLinks.pagingLoop',
-  'quickLinks.showOnSearchFocus': 'quickLinks.showOnSearchFocus',
-  'quickLinks.iconSize': 'quickLinks.iconSize',
-  'quickLinks.iconRatio': 'quickLinks.iconRatio',
-  'quickLinks.iconBorderRadius': 'quickLinks.iconBorderRadius',
+  'quickLinks.paging': 'quickLinks.pagingMode',
+  'quickLinks.useScroll': 'quickLinks.scrollMode',
   'quickLinks.style.shadow': 'quickLinks.shadow',
   'quickLinks.style.border': 'quickLinks.border',
   'quickLinks.layout.rows': 'quickLinks.maxRows',
   'quickLinks.layout.columns': 'quickLinks.maxColumns',
-  'quickLinks.marginTop': 'quickLinks.marginTop',
-  'quickLinks.spacing.itemGapX': 'quickLinks.spacing.itemGapX',
-  'quickLinks.spacing.itemGapY': 'quickLinks.spacing.itemGapY',
-  'quickLinks.spacing.iconTitleGap': 'quickLinks.spacing.iconTitleGap',
   'quickLinks.title.show': 'quickLinks.showTitle',
   'quickLinks.title.extraWidth': 'quickLinks.titleExtraWidth',
   'quickLinks.title.whiteInLightMode': 'quickLinks.titleWhiteInLight',
-  'dock.enabled': 'newtab:common.enable',
   'dock.topSites': 'quickLinks.topSites',
   'dock.showOnSearchFocus': 'quickLinks.showOnSearchFocus',
   'dock.openInNewTab': 'common.openInNewTab',
-  'dock.limitCount': 'dock.limitCount',
-  'dock.maxCount': 'dock.maxCount',
   'dock.gap': 'quickLinks.spacing.itemGapX',
   'dock.iconSize': 'quickLinks.iconSize',
   'dock.iconRatio': 'quickLinks.iconRatio',
-  'dock.borderRadius': 'dock.borderRadius',
   'dock.launchpad.enabled': 'dock.launchpad.show',
   'dock.launchpad.topSites': 'quickLinks.topSites',
   'dock.launchpad.openInNewTab': 'common.openInNewTab',
-  'yiyan.enabled': 'newtab:common.enable',
-  'yiyan.alwaysShow': 'yiyan.alwaysShow',
-  'yiyan.provider': 'yiyan.provider',
   'yiyan.customLines': 'yiyan.customLinesLabel',
-  'yiyan.borderRadius': 'yiyan.borderRadius',
   'yiyan.style.shadow': 'yiyan.shadow',
-  'yiyan.style.invertColor.light': 'yiyan.invertColor.light',
-  'yiyan.style.invertColor.night': 'yiyan.invertColor.dark',
-  'perf.bgSwitchAnim': 'perf.bgSwitchAnim',
+  'yiyan.style.invertColor.light': 'clock.invertColor.light',
+  'yiyan.style.invertColor.night': 'clock.invertColor.dark',
   'perf.dockScale': 'perf.dock.scale',
-  'perf.bookmark.transparent': 'perf.bookmark.transparent',
-  'perf.bookmark.transparency': 'perf.transparency',
-  'perf.bookmark.blur': 'perf.bookmark.blur',
-  'perf.bookmark.blurIntensity': 'perf.blurIntensity',
-  'perf.dialog.transparent': 'perf.dialog.transparent',
-  'perf.dialog.transparency': 'perf.transparency',
-  'perf.dialog.blur': 'perf.dialog.blur',
-  'perf.dialog.blurIntensity': 'perf.blurIntensity',
-  'perf.dialog.animation': 'perf.dialog.animation',
-  'perf.focus.scale': 'perf.focus.scale',
-  'perf.focus.blur': 'perf.focus.blur',
-  'perf.quickLinks.transparent': 'perf.quickLinks.transparent',
-  'perf.quickLinks.transparency': 'perf.transparency',
-  'perf.quickLinks.blur': 'perf.quickLinks.blur',
-  'perf.quickLinks.blurIntensity': 'perf.blurIntensity',
-  'perf.searchBar.transparent': 'perf.searchBar.transparent',
-  'perf.searchBar.transparency': 'perf.transparency',
-  'perf.searchBar.blur': 'perf.searchBar.blur',
-  'perf.searchBar.blurIntensity': 'perf.blurIntensity',
   'perf.searchBar.launchAnim': 'search.launchAnim',
-  'perf.yiyan.transparent': 'perf.yiyan.transparent',
-  'perf.yiyan.transparency': 'perf.transparency',
-  'perf.yiyan.blur': 'perf.yiyan.blur',
-  'perf.yiyan.blurIntensity': 'perf.blurIntensity',
-  'perf.yiyan.ripple': 'perf.yiyan.ripple',
-  'perf.actionBtns.blur': 'perf.actionBtns.blur',
-  'perf.actionBtns.transparent': 'perf.actionBtns.transparent',
-  'perf.actionBtns.transparency': 'perf.transparency',
-  'perf.actionBtns.blurIntensity': 'perf.blurIntensity',
   'layout.mainPosition.type': 'layout.mainPosition.label',
   'layout.mainPosition.value': 'layout.mainPosition.label',
   'layout.actionBtnPosition': 'layout.actionBtn.label',
   'layout.actionBtnBorderRadius': 'layout.actionBtn.borderRadius',
-  'layout.globalBorderRadius': 'layout.globalBorderRadius',
-  'layout.minimalModeOnDoubleClick': 'layout.minimalModeOnDoubleClick',
   'bookmark.direction': 'bookmark.direction.title',
-  'bookmark.rightClickToOpen': 'bookmark.rightClickToOpen',
-  'bookmark.showBtn': 'bookmark.showBtn',
   'bookmark.defaultSortMode': 'bookmark.defaultSort',
   hideMajorChangelog: 'settings:other.changelog.label',
   faviconCacheEnabled: 'other.faviconCache.label',
+  'dock.launchpad.iconSize': 'quickLinks.iconSize',
+  'dock.launchpad.rightClickToOpen': 'bookmark.rightClickToOpen',
+  'perf.dockEnterAnim': 'perf.dock.enterAnim',
+}
+
+function settingTitleKey(path: string): string {
+  if (/^perf\.[^.]+\.(transparency|blurIntensity)$/.test(path))
+    return 'perf.' + path.slice(path.lastIndexOf('.') + 1)
+  return (
+    SETTING_TITLE_ALIASES[path as SettingPath] ??
+    (path.endsWith('.enabled') ? 'newtab:common.enable' : path)
+  )
 }
 
 const SETTING_SECTION_KEYS: Record<string, string> = {
@@ -248,11 +184,11 @@ function displayTitle(
   t: ConflictTranslator,
 ): string {
   const { path } = conflict
-  if (path.startsWith('settings.'))
-    return t(
-      SETTING_TITLE_KEYS[path.slice('settings.'.length)] ??
-        'webdavSync.conflicts.categories.settings',
-    )
+  if (path.startsWith('settings.')) {
+    const key = settingTitleKey(path.slice('settings.'.length))
+    const title = t(key)
+    return title === key ? t('webdavSync.conflicts.categories.settings') : title
+  }
   if (path === 'optional.onlineWallpaperUrl') return t('webdavSync.scope.onlineWallpaperUrl')
   if (path.startsWith('scope.')) return displayScopeLabel(path.slice('scope.'.length), t)
   if (path === 'scope') return t('webdavSync.scope.title')

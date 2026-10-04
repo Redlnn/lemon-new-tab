@@ -2,6 +2,7 @@ import { BgType, ClockWeight, DrawerDirection, SortMode } from '../enums.ts'
 import { BUILT_IN_SEARCH_ENGINE_KEYS, normalizeBuiltInSearchEngineOrder } from '../searchEngines.ts'
 import { normalizeSuggestionProviders } from '../searchSuggestionProviders.ts'
 
+import { BLUR_RANGE, EFFECT_SURFACES, TRANSPARENCY_RANGE } from './constraints.ts'
 import { defaultSettings } from './default.ts'
 
 type RecordValue = Record<string, unknown>
@@ -51,7 +52,7 @@ const ENUMS: Record<string, readonly unknown[]> = {
 }
 const INTEGER_RANGES: Record<string, readonly [number, number]> = {
   'clock.dateSize': [10, 50],
-  'clock.style.transparency': [0, 95],
+  'clock.style.transparency': TRANSPARENCY_RANGE,
   'search.borderRadius': [0, 50],
   'search.browserHistoryLimit': [1, 5],
   'quickLinks.iconBorderRadius': [0, 50],
@@ -62,9 +63,9 @@ const INTEGER_RANGES: Record<string, readonly [number, number]> = {
   'dock.launchpad.iconSize': [40, 96],
   'bookmark.drawerWidth': [200, Number.MAX_SAFE_INTEGER],
 }
-for (const surface of ['bookmark', 'dialog', 'searchBar', 'quickLinks', 'yiyan', 'actionBtns']) {
-  INTEGER_RANGES[`perf.${surface}.transparency`] = [0, 95]
-  INTEGER_RANGES[`perf.${surface}.blurIntensity`] = [0, 40]
+for (const surface of EFFECT_SURFACES) {
+  INTEGER_RANGES[`perf.${surface}.transparency`] = TRANSPARENCY_RANGE
+  INTEGER_RANGES[`perf.${surface}.blurIntensity`] = BLUR_RANGE
 }
 
 export function isSyncedSetting(path: string): boolean {
@@ -129,10 +130,9 @@ export function projectSettings(
         if (Object.keys(next).length) result[key] = next
       } else {
         if (syncOnly && !isSyncedSetting(path)) continue
-        if (present && !validLeaf(source[key], fallback, path) && strict)
-          throw new TypeError(`Invalid setting: ${path}`)
-        if (present && validLeaf(source[key], fallback, path))
-          result[key] = normalizeLeaf(source[key], path)
+        const valid = present && validLeaf(source[key], fallback, path)
+        if (present && !valid && strict) throw new TypeError(`Invalid setting: ${path}`)
+        if (valid) result[key] = normalizeLeaf(source[key], path)
         else if (defaults) result[key] = structuredClone(fallback)
       }
     }
