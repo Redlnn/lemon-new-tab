@@ -2,6 +2,27 @@
 
 > Translated by AI from Chinese.
 
+## 4.0.1
+
+### New Features✨
+
+- **Quick Links:** Right-click or long-press a group title to open a Rename / Delete menu. In scroll mode, Move Up / Move Down actions let you reorder groups.
+- **Launchpad:** Added a rename button beside each group title to edit it directly.
+
+### Improvements⚡️
+
+- **Quick Links:** Group tabs in paging mode stay visible on touch devices and devices with both touch and mouse input. They also remain visible when the pointer moves away while editing a title or using a group menu.
+- **Quick Links/Launchpad:** Hid the default group's delete action. Group menus also hide unavailable sorting actions at the first or last position.
+- **Settings:** Combined Quick Links scroll and paging modes into one switch, with browsing-mode recommendations based on screen width.
+
+### Bug Fixes🐛
+
+- **Touch screens:** Fixed tapping a blank area to dismiss the search box, quote, or menu accidentally opening the bookmarks sidebar or Launchpad.
+- **Quick Links:** Fixed double-clicking a group title in scroll mode failing to start renaming.
+- **Quick Links:** Fixed abnormal title spacing after adding groups ([#122](https://github.com/Redlnn/lemon-new-tab/issues/122)).
+- **Quick Links:** Fixed incorrect vertical alignment of group title text in paging mode.
+- **Settings:** Fixed switch shadows being clipped on the right in narrow-screen settings dialogs.
+
 ## 4.0.0 · A fresh page, more possibilities 🍋
 
 Lemon 4.0.0 is here! Capture an idea, change the scenery, find what you need with smarter search. More to enjoy in a familiar place—let's turn a fresh page together.
