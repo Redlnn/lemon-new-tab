@@ -2,6 +2,13 @@
 
 > Translated by AI from Chinese.
 
+## Unreleased
+
+### New Features✨
+
+- **Layout:** The main content area can now be positioned from the bottom, with search suggestions opening upward.
+- **Dock:** Dock can replace Quick Links. Opening the Launchpad moves Dock to the bottom of the page.
+
 ## 4.0.1
 
 ### New Features✨
