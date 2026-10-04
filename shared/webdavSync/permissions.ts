@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser'
 
-import { classifyWebDavAddress } from './webdav.ts'
+import { classifyWebDavAddress } from './address.ts'
 
 function requiredWebDavOrigins(address: string): string[] {
   const assessment = classifyWebDavAddress(address)

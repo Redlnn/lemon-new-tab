@@ -1,12 +1,11 @@
 import { defineStore } from 'pinia'
 
-import { createDraftWriter } from '@/shared/storage/syncWrite'
-
 import {
   customSearchEngineStorage,
   type CustomSearchEngineStorage,
   defaultCustomSearchEngine,
-} from './customSearchEngineStorage'
+} from '@/shared/customSearchEngines/storage'
+import { createDraftWriter } from '@/shared/storage/syncWrite'
 
 export const useCustomSearchEngineStore = defineStore('customSearchEngine', () => {
   const items = ref(structuredClone(defaultCustomSearchEngine.items))

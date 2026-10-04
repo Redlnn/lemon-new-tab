@@ -1,4 +1,4 @@
-import { jsonEquals } from '../webdavSync/canonical.ts'
+import { jsonEquals } from '../json.ts'
 
 import { rebaseLocalChanges } from './localChanges.ts'
 

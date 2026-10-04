@@ -1,4 +1,4 @@
-import { jsonEquals } from '../webdavSync/canonical.ts'
+import { jsonEquals } from '../json.ts'
 
 /** 只重放本机实际编辑，保留读取之后其他页面或同步写入的字段。 */
 export function rebaseLocalChanges<T>(before: T, edited: T, current: T): T {

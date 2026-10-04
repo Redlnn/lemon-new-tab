@@ -1,7 +1,10 @@
 import { DOMParser, type Element } from '@xmldom/xmldom'
 
-import { canonicalJson, hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
+import { canonicalJson, hashCanonicalJson, jsonEquals, sha256Hex } from '../json.ts'
+
+import { classifyWebDavAddress } from './address.ts'
 import { MAX_PBKDF2_ITERATIONS, MIN_PBKDF2_ITERATIONS } from './crypto.ts'
+import { WebDavError } from './errors.ts'
 import {
   HISTORY_RETENTION_DAYS,
   MAX_HISTORY_VERSIONS,
@@ -26,62 +29,6 @@ const PRODUCT_ID = 'lemon-new-tab'
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder('utf-8', { fatal: true })
-
-export type WebDavErrorCategory =
-  | 'data-too-large'
-  | 'permission-required'
-  | 'authentication'
-  | 'conflict'
-  | 'corrupted'
-  | 'forbidden'
-  | 'foreign-vault'
-  | 'format-too-new'
-  | 'generation-reset'
-  | 'insecure-http'
-  | 'encryption-locked'
-  | 'invalid-response'
-  | 'locked'
-  | 'network'
-  | 'not-found'
-  | 'precondition'
-  | 'rate-limited'
-  | 'redirect-cross-origin'
-  | 'redirect-insecure'
-  | 'redirect-required'
-  | 'response-too-large'
-  | 'server'
-  | 'storage-full'
-  | 'timeout'
-  | 'unsupported'
-
-export class WebDavError extends Error {
-  readonly category: WebDavErrorCategory
-  readonly status?: number
-
-  constructor(category: WebDavErrorCategory, message: string, status?: number) {
-    super(message)
-    this.name = 'WebDavError'
-    this.category = category
-    this.status = status
-  }
-}
-
-export interface SerializedWebDavError {
-  category: WebDavErrorCategory
-  status?: number
-}
-
-/** 只跨扩展消息边界传递决策所需字段，避免带出地址或凭据。 */
-export function serializeWebDavError(error: WebDavError): SerializedWebDavError {
-  return {
-    category: error.category,
-    ...(error.status === undefined ? {} : { status: error.status }),
-  }
-}
-
-export function deserializeWebDavError(error: SerializedWebDavError): WebDavError {
-  return new WebDavError(error.category, 'WebDAV connection test failed', error.status)
-}
 
 export interface WebDavConnection {
   baseUrl: string
@@ -142,70 +89,6 @@ export function requireConfiguredVaultInspection(
     throw new WebDavError('foreign-vault', 'Configured WebDAV vault identity changed')
   }
   return inspection
-}
-
-function isPrivateIpv4(hostname: string): boolean {
-  const values = hostname.split('.').map(Number)
-  if (
-    values.length !== 4 ||
-    values.some((value) => !Number.isInteger(value) || value < 0 || value > 255)
-  ) {
-    return false
-  }
-  const [a, b] = values as [number, number, number, number]
-  return (
-    a === 10 ||
-    a === 127 ||
-    (a === 169 && b === 254) ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168)
-  )
-}
-
-function isPrivateIpv6(hostname: string): boolean {
-  const normalized = hostname.replace(/^\[|\]$/g, '').toLowerCase()
-  return (
-    normalized === '::1' ||
-    normalized.startsWith('fc') ||
-    normalized.startsWith('fd') ||
-    normalized.startsWith('fe8') ||
-    normalized.startsWith('fe9') ||
-    normalized.startsWith('fea') ||
-    normalized.startsWith('feb')
-  )
-}
-
-export function classifyWebDavAddress(value: string): {
-  origin: string
-  permissionOrigin: string
-  transport: 'https' | 'local-http'
-} {
-  let url: URL
-  try {
-    url = new URL(value)
-  } catch {
-    throw new WebDavError('invalid-response', 'WebDAV address is invalid')
-  }
-  if (url.username || url.password || url.hash || url.search) {
-    throw new WebDavError('invalid-response', 'WebDAV address contains unsupported URL parts')
-  }
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
-    throw new WebDavError('invalid-response', 'WebDAV address must use HTTP or HTTPS')
-  }
-  const localHttp =
-    url.protocol === 'http:' &&
-    (url.hostname === 'localhost' ||
-      url.hostname.endsWith('.local') ||
-      isPrivateIpv4(url.hostname) ||
-      isPrivateIpv6(url.hostname))
-  if (url.protocol === 'http:' && !localHttp) {
-    throw new WebDavError('insecure-http', 'Public HTTP WebDAV addresses are not supported')
-  }
-  return {
-    origin: url.origin,
-    permissionOrigin: `${url.protocol}//${url.hostname}/*`,
-    transport: url.protocol === 'https:' ? 'https' : 'local-http',
-  }
 }
 
 function normalizeBaseUrl(connection: WebDavConnection): URL {

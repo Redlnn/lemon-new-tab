@@ -9,6 +9,8 @@ import {
 import { withSyncWriteLock } from '@/shared/storage/syncWrite'
 import { readWallpaperLibrary, wallpaperLibrarySignature } from '@/shared/wallpaperLibrary'
 
+import { canonicalJson, hashCanonicalJson, jsonEquals, sha256Hex } from '../json.ts'
+
 import {
   expectedAppliedSnapshot,
   preserveBaselineWallpapers,
@@ -24,7 +26,6 @@ import {
   type IncomingWallpaperResources,
 } from './browserData.ts'
 import { createBrowserWebDavRequestObserver } from './browserRedirects.ts'
-import { canonicalJson, hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
 import { inlineImageHashesAreValid } from './capture.ts'
 import { resolveSyncConflicts } from './conflicts.ts'
 import {
@@ -36,13 +37,14 @@ import {
 } from './crypto.ts'
 import type { SyncDifference } from './differences.ts'
 import { snapshotCoverage } from './domains.ts'
+import { DEFAULT_SYNC_SCOPE } from './domains.ts'
+import { WebDavError } from './errors.ts'
 import {
   deriveSnapshotTombstones,
   mustReinitializeDevice,
   pruneExpiredTombstones,
 } from './lifecycle.ts'
 import {
-  DEFAULT_SYNC_SCOPE,
   clearStoredConflict,
   getBaseline,
   getPublishRecovery,
@@ -98,7 +100,6 @@ import {
   probeWebDavAccess,
   requireConfiguredVaultInspection,
   WebDavClient,
-  WebDavError,
   type WebDavConnection,
   WebDavVaultRepository,
 } from './webdav.ts'

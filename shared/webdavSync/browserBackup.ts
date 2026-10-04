@@ -1,3 +1,4 @@
+import { customSearchEngineStorage } from '@/shared/customSearchEngines/storage'
 import { withNotesLock } from '@/shared/notes'
 import {
   ensureQuickLinksStableIds,
@@ -10,8 +11,6 @@ import { migrateSettingsToCurrent, type MigratableSettings } from '@/shared/sett
 import { withSyncWriteLock } from '@/shared/storage/syncWrite'
 import { getUiPreferences } from '@/shared/uiPreferences'
 
-import { customSearchEngineStorage } from '@newtab/shared/customSearchEngine/customSearchEngineStorage'
-
 import { mergeImportedSnapshot } from './apply.ts'
 import { parseJsonBackup, serializeJsonBackup, type ParsedLocalBackup } from './backupFormat.ts'
 import {
@@ -21,7 +20,7 @@ import {
 } from './browserData.ts'
 import { captureSyncSnapshot, deduplicateInlineImages } from './capture.ts'
 import { JSON_BACKUP_SCOPE } from './catalog.ts'
-import { DEFAULT_SYNC_SCOPE } from './localState.ts'
+import { DEFAULT_SYNC_SCOPE } from './domains.ts'
 import type { SyncScopePreferences, SyncSnapshotV1 } from './types.ts'
 
 const MAX_JSON_BACKUP_BYTES = 25 * 1024 * 1024

@@ -1,4 +1,5 @@
-import { jsonEquals } from './canonical.ts'
+import { jsonEquals } from '../json.ts'
+
 import { applyConflictCandidate, readConflictValue } from './conflicts.ts'
 import { mergeSyncSnapshots } from './merge.ts'
 import { normalizeRemoteSyncSettings } from './settingsWhitelist.ts'

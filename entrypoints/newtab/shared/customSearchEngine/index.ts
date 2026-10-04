@@ -1,2 +1,2 @@
 export * from './customSearchEngineStore'
-export * from './customSearchEngineStorage'
+export * from '@/shared/customSearchEngines/storage'

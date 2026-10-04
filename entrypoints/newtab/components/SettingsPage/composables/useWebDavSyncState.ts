@@ -1,8 +1,5 @@
-import {
-  DEFAULT_SYNC_SCOPE,
-  normalizeLocalSyncState,
-  webDavSyncStateStorage,
-} from '@/shared/webdavSync/localState'
+import { DEFAULT_SYNC_SCOPE } from '@/shared/webdavSync/domains'
+import { normalizeLocalSyncState, webDavSyncStateStorage } from '@/shared/webdavSync/localState'
 import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
 
 const state = shallowRef<LocalSyncStateV1>({

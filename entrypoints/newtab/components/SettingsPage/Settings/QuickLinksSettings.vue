@@ -5,8 +5,7 @@ import { useTranslation } from 'i18next-vue'
 import RestoreRound from '~icons/ic/round-restore'
 
 import { useSettingsStore } from '@/shared/settings'
-
-import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
+import { blockedTopSitesStorage } from '@/shared/topSites/storage'
 
 import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
 import { useQuickLinksGroupingChange } from '../composables/useQuickLinksGroupingChange'

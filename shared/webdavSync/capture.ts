@@ -1,6 +1,6 @@
+import { sha256Hex } from '../json.ts'
 import { projectNote } from '../notes/model.ts'
 
-import { sha256Hex } from './canonical.ts'
 import {
   MAX_SYNC_INLINE_IMAGE_BYTES,
   MAX_SYNC_INLINE_IMAGES_BYTES,
@@ -76,15 +76,6 @@ type ImageCandidate = BaseImageCandidate &
     | { kind: 'search-engine-icon'; owner: SyncCustomSearchEngineV1 }
   )
 
-function baselineHash(
-  baseline: SyncSnapshotV1 | undefined,
-  candidate: Pick<ImageCandidate, 'id' | 'kind'>,
-): string | undefined {
-  return candidate.kind === 'quick-link-icon'
-    ? baseline?.quickLinks?.items.find((item) => item.id === candidate.id)?.faviconHash
-    : baseline?.customSearchEngines?.items.find((item) => item.id === candidate.id)?.iconHash
-}
-
 function keepBaselineImage(
   snapshot: SyncSnapshotV1,
   baseline: SyncSnapshotV1 | undefined,
@@ -105,12 +96,29 @@ export async function deduplicateInlineImages(
 ): Promise<LocalResourceOmission[]> {
   const encoder = new TextEncoder()
   const candidates: ImageCandidate[] = []
+  const baselineHashes = new Map([
+    ...(baseline?.quickLinks?.items ?? []).map(
+      (item) => ['quick-link-icon:' + item.id, item.faviconHash] as const,
+    ),
+    ...(baseline?.customSearchEngines?.items ?? []).map(
+      (item) => ['search-engine-icon:' + item.id, item.iconHash] as const,
+    ),
+  ])
+  const images = new Map<string, Promise<{ bytes: number; hash: string }>>()
+  const imageInfo = (value: string) => {
+    let info = images.get(value)
+    if (!info) {
+      const bytes = encoder.encode(value)
+      info = sha256Hex(bytes).then((hash) => ({ bytes: bytes.byteLength, hash }))
+      images.set(value, info)
+    }
+    return info
+  }
   for (const item of snapshot.quickLinks?.items ?? []) {
     if (!item.favicon) continue
     candidates.push({
-      baselineHash: baselineHash(baseline, { id: item.id, kind: 'quick-link-icon' }),
-      bytes: encoder.encode(item.favicon).byteLength,
-      hash: await sha256Hex(item.favicon),
+      baselineHash: baselineHashes.get('quick-link-icon:' + item.id),
+      ...(await imageInfo(item.favicon)),
       id: item.id,
       kind: 'quick-link-icon',
       owner: item,
@@ -121,9 +129,8 @@ export async function deduplicateInlineImages(
   for (const item of snapshot.customSearchEngines?.items ?? []) {
     if (!item.icon) continue
     candidates.push({
-      baselineHash: baselineHash(baseline, { id: item.id, kind: 'search-engine-icon' }),
-      bytes: encoder.encode(item.icon).byteLength,
-      hash: await sha256Hex(item.icon),
+      baselineHash: baselineHashes.get('search-engine-icon:' + item.id),
+      ...(await imageInfo(item.icon)),
       id: item.id,
       kind: 'search-engine-icon',
       owner: item,

@@ -1,4 +1,5 @@
-import { jsonByteLength } from './canonical.ts'
+import { jsonByteLength } from '../json.ts'
+
 import type { SyncRevisionV1 } from './types.ts'
 
 const MAX_BYTES = 16 * 1024 * 1024

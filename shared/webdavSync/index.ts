@@ -1,6 +1,6 @@
 export * from './backupFormat.ts'
 export * from './apply.ts'
-export * from './canonical.ts'
+export * from '../json.ts'
 export * from './capture.ts'
 export * from './catalog.ts'
 export * from './conflictDetails.ts'

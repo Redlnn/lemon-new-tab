@@ -1,4 +1,5 @@
 import { openConfiguredVault, createClient } from './browserEngine.ts'
+import { WebDavError } from './errors.ts'
 import {
   clearWebDavConnection,
   getOrCreateSyncState,
@@ -7,7 +8,7 @@ import {
   webDavSyncConfigStorage,
 } from './localState.ts'
 import type { LocalSyncStateV1 } from './types.ts'
-import { WebDavError, WebDavVaultRepository, requireConfiguredVaultInspection } from './webdav.ts'
+import { WebDavVaultRepository, requireConfiguredVaultInspection } from './webdav.ts'
 
 export const DELETE_REMOTE_CONFIRMATION = 'DELETE WEBDAV DATA'
 

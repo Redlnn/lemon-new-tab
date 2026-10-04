@@ -1,4 +1,5 @@
-import { canonicalize, jsonEquals } from './canonical.ts'
+import { canonicalize, jsonEquals } from '../json.ts'
+
 import { SYNC_ENTITIES } from './domains.ts'
 import { pruneExpiredTombstones } from './lifecycle.ts'
 import { normalizeRemoteSyncSettings, pickSyncSettings } from './settingsWhitelist.ts'

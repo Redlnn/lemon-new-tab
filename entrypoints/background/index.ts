@@ -6,10 +6,10 @@ import {
   isExtensionUpdateMessage,
   markExtensionUpdateAvailable,
 } from '@/shared/extensionUpdate'
-import { isWebDavSyncMessage, type WebDavSyncMessage } from '@/shared/webdavSync/bridge'
 import { createSyncConflictDetails } from '@/shared/webdavSync/conflictDetails'
 import { SyncCoordinator } from '@/shared/webdavSync/coordinator'
 import { SYNC_DATA_KEYS } from '@/shared/webdavSync/domains'
+import { serializeWebDavError, WebDavError } from '@/shared/webdavSync/errors'
 import {
   getStoredConflict,
   hasPendingApply,
@@ -17,6 +17,7 @@ import {
   patchSyncState,
   webDavSyncConfigStorage,
 } from '@/shared/webdavSync/localState'
+import { isWebDavSyncMessage, type WebDavSyncMessage } from '@/shared/webdavSync/messages'
 import { hasExactWebDavPermission } from '@/shared/webdavSync/permissions'
 import { nextSyncRetry, SYNC_RETRY_ALARM } from '@/shared/webdavSync/retry'
 import {
@@ -24,14 +25,18 @@ import {
   syncWallpaperSettingsChanged,
 } from '@/shared/webdavSync/settingsWhitelist'
 import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
-import { serializeWebDavError, WebDavError } from '@/shared/webdavSync/webdav'
 
 import { initializeBookmarkCache } from './bookmarkCache'
 
 function routeWebDavMessage(handler: (message: WebDavSyncMessage) => Promise<unknown>) {
   return (message: unknown, sender: Browser.runtime.MessageSender) => {
     if (sender.id && sender.id !== browser.runtime.id) return undefined
-    return isWebDavSyncMessage(message) ? handler(message) : undefined
+    return isWebDavSyncMessage(message)
+      ? handler(message).then(
+          (value) => ({ ok: true, value }),
+          (error: unknown) => ({ ok: false, error: serializeWebDavError(error) }),
+        )
+      : undefined
   }
 }
 
@@ -142,18 +147,11 @@ export default defineBackground(() => {
     }
     if (message.type === 'webdav-sync:get-state') return getOrCreateSyncState()
     if (message.type === 'webdav-sync:preview-connection') {
-      try {
-        if (!(await hasExactWebDavPermission(message.input.connection.baseUrl))) {
-          throw new WebDavError('forbidden', 'WebDAV host permission is not granted')
-        }
-        const { previewBrowserWebDavSetup } = await import('@/shared/webdavSync/browserEngine')
-        return { ok: true, value: await previewBrowserWebDavSetup(message.input) }
-      } catch (error) {
-        if (!(error instanceof WebDavError)) throw error
-        const safeError = serializeWebDavError(error)
-        console.error('[webdav-sync] Connection test failed', safeError)
-        return { ok: false, error: safeError }
+      if (!(await hasExactWebDavPermission(message.input.connection.baseUrl))) {
+        throw new WebDavError('forbidden', 'WebDAV host permission is not granted')
       }
+      const { previewBrowserWebDavSetup } = await import('@/shared/webdavSync/browserEngine')
+      return previewBrowserWebDavSetup(message.input)
     }
     if (message.type === 'webdav-sync:connect') {
       const { connectBrowserWebDav } = await import('@/shared/webdavSync/browserEngine')

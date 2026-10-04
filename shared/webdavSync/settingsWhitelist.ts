@@ -1,6 +1,6 @@
+import { jsonEquals } from '../json.ts'
 import { projectSettings, SYNC_SETTING_PATHS } from '../settings/projection.ts'
 
-import { jsonEquals } from './canonical.ts'
 import type { JsonObject } from './types.ts'
 
 export { SYNC_SETTING_PATHS }
@@ -28,18 +28,22 @@ export function syncWallpaperSettingsChanged(previous: unknown, next: unknown): 
 
 function mergeObjects(target: JsonObject, incoming: JsonObject): JsonObject {
   const result = structuredClone(target)
-  for (const [key, value] of Object.entries(incoming)) {
-    const current = result[key]
-    result[key] =
-      current &&
-      value &&
-      typeof current === 'object' &&
-      typeof value === 'object' &&
-      !Array.isArray(current) &&
-      !Array.isArray(value)
-        ? mergeObjects(current, value)
-        : structuredClone(value)
+  const merge = (into: JsonObject, source: JsonObject) => {
+    for (const [key, value] of Object.entries(source)) {
+      const current = into[key]
+      if (
+        current &&
+        value &&
+        typeof current === 'object' &&
+        typeof value === 'object' &&
+        !Array.isArray(current) &&
+        !Array.isArray(value)
+      )
+        merge(current, value)
+      else into[key] = structuredClone(value)
+    }
   }
+  merge(result, incoming)
   return result
 }
 

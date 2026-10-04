@@ -1,3 +1,5 @@
+import { hashCanonicalJson, jsonEquals, sha256Hex } from '../json.ts'
+
 import { preserveExcludedScope } from './apply.ts'
 import { captureBrowserSyncSnapshot } from './browserData.ts'
 import {
@@ -12,9 +14,9 @@ import {
   type BrowserSyncHistoryEntry,
   type BrowserSyncHistoryPreview,
 } from './browserEngine.ts'
-import { hashCanonicalJson, jsonEquals, sha256Hex } from './canonical.ts'
 import { bytesToBase64, createEncryptionAad, decryptSyncBytes } from './crypto.ts'
 import { compareSyncSnapshots } from './differences.ts'
+import { WebDavError } from './errors.ts'
 import { deriveSnapshotTombstones } from './lifecycle.ts'
 import { getBaseline, getOrCreateSyncState, patchSyncState, setBaseline } from './localState.ts'
 import { findRevisionHeads, hasConfirmedCorruptionRepair } from './syncDecision.ts'
@@ -27,7 +29,6 @@ import type {
   SyncSnapshotV1,
   VaultMetadataV1,
 } from './types.ts'
-import { WebDavError } from './webdav.ts'
 
 const textDecoder = new TextDecoder('utf-8', { fatal: true })
 

@@ -14,16 +14,13 @@ import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import { clearExtensionData, reloadNewtabTabs } from '@/shared/settings/legacySettingsRecovery'
 import { idbClearMany } from '@/shared/storage/idb'
 import { clearWallpaperLibrary } from '@/shared/wallpaperLibrary'
-import {
-  disconnectSyncConnection,
-  getSyncState,
-  sendSyncDataChanged,
-} from '@/shared/webdavSync/bridge'
+import { disconnectSyncConnection, getSyncState } from '@/shared/webdavSync/bridge'
 import {
   applyPreparedBrowserImport,
   createBrowserJsonBackup,
   prepareBrowserImport,
 } from '@/shared/webdavSync/browserBackup'
+import { sendSyncDataChanged } from '@/shared/webdavSync/notifications'
 
 import {
   PermissionContext,

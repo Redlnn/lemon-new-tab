@@ -1,15 +1,18 @@
 import { browser } from 'wxt/browser'
 
+import { customSearchEngineStorage } from '@/shared/customSearchEngines/storage'
 import { getNoteSnapshot, withNotesLock, NoteSaveError, type NoteSnapshot } from '@/shared/notes'
 import { getQuickLinksStorageValue } from '@/shared/quickLinks'
 import type { CURRENT_CONFIG_SCHEMA } from '@/shared/settings'
 import {
   CURRENT_CONFIG_VERSION,
+  defaultSettings,
   normalizeCurrentSettings,
   settingsStorage,
 } from '@/shared/settings'
 import { idbDelete, idbGet } from '@/shared/storage/idb'
 import { withSyncWriteLock } from '@/shared/storage/syncWrite'
+import { blockedTopSitesStorage } from '@/shared/topSites/storage'
 import { getUiPreferences, uiPreferencesStorage } from '@/shared/uiPreferences'
 import {
   readWallpaperLibrary,
@@ -20,11 +23,9 @@ import {
   type WallpaperVariant,
 } from '@/shared/wallpaperLibrary'
 
-import { customSearchEngineStorage } from '@newtab/shared/customSearchEngine/customSearchEngineStorage'
-import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
+import { jsonEquals, sha256Hex } from '../json.ts'
 
 import { materializeQuickLinks, mergeSyncSettings } from './apply.ts'
-import { jsonEquals, sha256Hex } from './canonical.ts'
 import { captureSyncSnapshot, deduplicateInlineImages } from './capture.ts'
 import { JSON_BACKUP_SCOPE, MAX_SYNC_WALLPAPER_BYTES } from './catalog.ts'
 import {
@@ -71,10 +72,12 @@ export async function captureBrowserSyncSnapshotResult(
   notesOverride?: NoteSnapshot,
 ): Promise<BrowserSyncCaptureResult> {
   const [settings, quickLinks, searchEngines, ui, blockedTopSites, notes] = await Promise.all([
-    settingsStorage.getValue(),
-    getQuickLinksStorageValue(lockHeld),
-    customSearchEngineStorage.getValue(),
-    getUiPreferences(),
+    scope.settings || scope.onlineWallpaperUrl || scope.wallpapers
+      ? settingsStorage.getValue()
+      : defaultSettings,
+    scope.quickLinks ? getQuickLinksStorageValue(lockHeld) : { items: [] },
+    scope.customSearchEngines ? customSearchEngineStorage.getValue() : { items: [] },
+    scope.uiPreferences ? getUiPreferences() : { language: 'en', colorMode: 'auto' as const },
     scope.blockedTopSites ? blockedTopSitesStorage.getValue() : undefined,
     scope.notes ? (notesOverride ?? getNoteSnapshot(lockHeld)) : undefined,
   ])

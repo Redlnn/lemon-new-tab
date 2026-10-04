@@ -1,6 +1,7 @@
 import type { QuickLink, QuickLinksData } from '@/shared/quickLinks'
 
-import { jsonEquals } from './canonical.ts'
+import { jsonEquals } from '../json.ts'
+
 import { applySyncSettings, pickSyncSettings, mergeSyncSettingValues } from './settingsWhitelist.ts'
 import { normalizeSnapshotOrder, normalizeSyncQuickLinks } from './snapshotOrder.ts'
 import type {

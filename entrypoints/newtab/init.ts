@@ -8,7 +8,7 @@ function renderStartupError(error: unknown) {
 }
 
 async function bootstrapNewtab() {
-  const syncStartupTask = import('@/shared/webdavSync/bridge').then(
+  const syncStartupTask = import('@/shared/webdavSync/notifications').then(
     async ({ prepareSyncBeforeNewTabStartup, setupOnlineSyncTrigger }) => {
       await prepareSyncBeforeNewTabStartup()
       setupOnlineSyncTrigger()

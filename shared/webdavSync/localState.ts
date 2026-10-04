@@ -5,7 +5,7 @@ import { getDB, idbClear, idbDelete, idbGet, idbSet } from '@/shared/storage/idb
 
 import { CURRENT_CONFIG_VERSION } from '../settings/current.ts'
 
-import { SYNC_SCOPE_KEYS } from './domains.ts'
+import { DEFAULT_SYNC_SCOPE, SYNC_SCOPE_KEYS } from './domains.ts'
 import { decodeWorkingRecord, type WorkingRecord } from './recovery.ts'
 import type {
   LocalSyncStateV1,
@@ -16,18 +16,6 @@ import type {
 } from './types.ts'
 import type { SyncSource } from './version.ts'
 import type { WebDavConnection } from './webdav.ts'
-
-export const DEFAULT_SYNC_SCOPE: Readonly<SyncScopePreferences> = {
-  settings: true,
-  quickLinks: true,
-  notes: true,
-  customSearchEngines: true,
-  uiPreferences: true,
-  blockedTopSites: false,
-  wallpapers: false,
-  onlineWallpaperUrl: false,
-  userIcons: false,
-}
 
 function normalizeScope(value: Partial<SyncScopePreferences> | undefined): SyncScopePreferences {
   return Object.fromEntries(

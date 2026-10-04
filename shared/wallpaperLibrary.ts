@@ -1,7 +1,7 @@
 import type { IDBPTransaction } from 'idb'
 
+import { sha256Hex } from './json'
 import { getDB, idbGet, type LemonDBSchema } from './storage/idb'
-import { sha256Hex } from './webdavSync/canonical'
 
 export type WallpaperVariant = 'light' | 'dark'
 export interface WallpaperItem {

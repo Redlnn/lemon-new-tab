@@ -8,6 +8,7 @@ import DownloadRound from '~icons/ic/round-download'
 import LaunchRound from '~icons/ic/round-launch'
 
 import { BgType } from '@/shared/enums'
+import { sha256Hex } from '@/shared/json'
 import { useSettingsStore, type BingWallpaperResolution } from '@/shared/settings'
 import { idbGet } from '@/shared/storage/idb'
 import {
@@ -20,7 +21,6 @@ import {
   type WallpaperItem,
   type WallpaperVariant,
 } from '@/shared/wallpaperLibrary'
-import { sha256Hex } from '@/shared/webdavSync/canonical'
 
 import BaseDialog from '@newtab/components/BaseDialog.vue'
 import { bingWallpaperURLGetter, useLocalWallpaperStore } from '@newtab/shared/wallpaper'

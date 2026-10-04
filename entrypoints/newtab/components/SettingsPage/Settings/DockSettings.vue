@@ -3,8 +3,7 @@ import { useTranslation } from 'i18next-vue'
 import RestoreRound from '~icons/ic/round-restore'
 
 import { useSettingsStore } from '@/shared/settings'
-
-import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
+import { blockedTopSitesStorage } from '@/shared/topSites/storage'
 
 import { useQuickLinksGroupingChange } from '../composables/useQuickLinksGroupingChange'
 
@@ -193,10 +192,7 @@ async function restoreDefaultTopSites() {
           :show-tooltip="false"
         />
       </div>
-      <div
-        v-if="settings.dock.replaceQuickLinks"
-        class="settings__item settings__item--vertical"
-      >
+      <div v-if="settings.dock.replaceQuickLinks" class="settings__item settings__item--vertical">
         <div class="settings__label">{{ t('quickLinks.marginTop') }}</div>
         <el-slider
           v-model="settings.quickLinks.marginTop"

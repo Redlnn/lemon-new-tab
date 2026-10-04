@@ -7,16 +7,17 @@ import RoundWarningIcon from '~icons/ic/round-warning'
 
 import { idbGet } from '@/shared/storage/idb'
 import { readWallpaperLibrary, wallpaperStore } from '@/shared/wallpaperLibrary'
+import { classifyWebDavAddress } from '@/shared/webdavSync/address'
 import { connectSyncConnection, previewSyncConnection } from '@/shared/webdavSync/bridge'
 import type {
   BrowserWebDavSetupInput,
   BrowserWebDavSetupPreview,
 } from '@/shared/webdavSync/browserEngine'
 import { MAX_SYNC_WALLPAPER_BYTES } from '@/shared/webdavSync/catalog'
-import { DEFAULT_SYNC_SCOPE } from '@/shared/webdavSync/localState'
+import { DEFAULT_SYNC_SCOPE } from '@/shared/webdavSync/domains'
+import { WebDavError, webDavErrorKey } from '@/shared/webdavSync/errors'
 import { requestExactWebDavPermission } from '@/shared/webdavSync/permissions'
 import { isSyncScope } from '@/shared/webdavSync/validation'
-import { classifyWebDavAddress, WebDavError } from '@/shared/webdavSync/webdav'
 
 const emit = defineEmits<{ connected: [] }>()
 const model = defineModel<boolean>({ required: true })
@@ -123,32 +124,7 @@ function createInput(): BrowserWebDavSetupInput {
 }
 
 function readableError(error: unknown) {
-  if (error instanceof WebDavError) {
-    if (error.category === 'authentication') return t('webdavSync.setup.errors.authentication')
-    if (error.category === 'forbidden') return t('webdavSync.setup.errors.permission')
-    if (
-      error.category === 'redirect-required' ||
-      error.category === 'redirect-cross-origin' ||
-      error.category === 'redirect-insecure'
-    )
-      return t('webdavSync.errors.redirect-required')
-    if (error.category === 'network' || error.category === 'timeout')
-      return t('webdavSync.setup.errors.network')
-    if (error.category === 'encryption-locked') return t('webdavSync.setup.errors.encryption')
-    if (error.category === 'foreign-vault') return t('webdavSync.setup.errors.foreign')
-    if (error.category === 'format-too-new') return t('webdavSync.setup.errors.format')
-    if (error.category === 'storage-full') return t('webdavSync.errors.storage-full')
-    if (error.category === 'unsupported') return t('webdavSync.setup.errors.unsupported')
-    return t('webdavSync.errors.unknown')
-  }
-  const message = error instanceof Error ? error.message : String(error)
-  if (/authentication|401|password/i.test(message))
-    return t('webdavSync.setup.errors.authentication')
-  if (/permission|denied|403/i.test(message)) return t('webdavSync.setup.errors.permission')
-  if (/encrypted|encryption/i.test(message)) return t('webdavSync.setup.errors.encryption')
-  if (/foreign|unrelated/i.test(message)) return t('webdavSync.setup.errors.foreign')
-  if (/newer|format/i.test(message)) return t('webdavSync.setup.errors.format')
-  return message || t('webdavSync.errors.unknown')
+  return t(webDavErrorKey(error), { defaultValue: t('webdavSync.errors.unknown') })
 }
 
 async function inspectWallpapers() {
@@ -174,7 +150,7 @@ async function testConnection() {
   testing.value = true
   try {
     if (!(await requestExactWebDavPermission(form.url.trim()))) {
-      throw new Error(t('webdavSync.setup.errors.permission'))
+      throw new WebDavError('forbidden', 'WebDAV permission is required')
     }
     preview.value = await previewSyncConnection(createInput())
     ElMessage.success(t('webdavSync.setup.test.success'))

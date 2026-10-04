@@ -79,3 +79,15 @@ export function snapshotCoverage(snapshot: SyncSnapshotV1): SyncScopePreferences
     ]),
   ) as unknown as SyncScopePreferences
 }
+
+export const DEFAULT_SYNC_SCOPE: Readonly<SyncScopePreferences> = {
+  settings: true,
+  quickLinks: true,
+  notes: true,
+  customSearchEngines: true,
+  uiPreferences: true,
+  blockedTopSites: false,
+  wallpapers: false,
+  onlineWallpaperUrl: false,
+  userIcons: false,
+}

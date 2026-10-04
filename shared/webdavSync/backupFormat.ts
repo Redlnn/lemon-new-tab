@@ -1,6 +1,6 @@
+import { canonicalJson } from '../json.ts'
 import { CURRENT_CONFIG_VERSION } from '../settings/current.ts'
 
-import { canonicalJson } from './canonical.ts'
 import { decodeSyncSnapshot } from './snapshotCodec.ts'
 import type { SyncSnapshotV1 } from './types.ts'
 import { validateStoredSyncSnapshot } from './validation.ts'

@@ -1,4 +1,8 @@
-import type { JsonObject, JsonValue } from './types.ts'
+export type JsonPrimitive = boolean | null | number | string
+export type JsonValue = JsonPrimitive | JsonObject | JsonValue[]
+export interface JsonObject {
+  [key: string]: JsonValue
+}
 
 function normalizeJsonValue(value: unknown, seen: Set<object>): JsonValue {
   if (value === null || typeof value === 'boolean' || typeof value === 'string') return value

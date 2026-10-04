@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
+import { jsonEquals } from '@/shared/json'
 import { createDraftWriter, withSyncWriteLock } from '@/shared/storage/syncWrite'
-import { jsonEquals } from '@/shared/webdavSync/canonical'
 
 import type { CURRENT_CONFIG_SCHEMA } from './current'
 import { defaultSettings } from './default'
@@ -72,5 +72,13 @@ export const useSettingsStore = defineStore('option', () => {
   const getRawState = (): CURRENT_CONFIG_SCHEMA => toRaw(state) as CURRENT_CONFIG_SCHEMA
   const isApplyingStorage = () => applyingStorage
 
-  return { ...toRefs(state), init, deinit, save, getRawState, isApplyingStorage, setDockReplaceQuickLinks }
+  return {
+    ...toRefs(state),
+    init,
+    deinit,
+    save,
+    getRawState,
+    isApplyingStorage,
+    setDockReplaceQuickLinks,
+  }
 })

@@ -1,6 +1,6 @@
+import { jsonByteLength } from '../json.ts'
 import { assertNoteSnapshotSize } from '../notes/model.ts'
 
-import { jsonByteLength } from './canonical.ts'
 import {
   MAX_SYNC_INLINE_IMAGE_BYTES,
   MAX_SYNC_INLINE_IMAGES_BYTES,

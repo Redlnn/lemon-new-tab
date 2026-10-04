@@ -1,4 +1,5 @@
-import { jsonEquals } from './canonical.ts'
+import { jsonEquals } from '../json.ts'
+
 import type { JsonObject, JsonValue, SyncConflict, SyncSnapshotV1 } from './types.ts'
 
 const MISSING = Symbol('missing')

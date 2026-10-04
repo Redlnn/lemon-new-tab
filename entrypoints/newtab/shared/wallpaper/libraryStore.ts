@@ -43,7 +43,7 @@ export const useLocalWallpaperStore = defineStore('localWallpaperLibrary', () =>
   async function changed() {
     await reload()
     channel.postMessage(null)
-    const { sendSyncDataChanged } = await import('@/shared/webdavSync/bridge')
+    const { sendSyncDataChanged } = await import('@/shared/webdavSync/notifications')
     sendSyncDataChanged()
   }
   async function select(variant: WallpaperVariant, id: string) {

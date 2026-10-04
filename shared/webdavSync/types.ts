@@ -1,8 +1,5 @@
-export type JsonPrimitive = boolean | null | number | string
-export type JsonValue = JsonPrimitive | JsonObject | JsonValue[]
-export interface JsonObject {
-  [key: string]: JsonValue
-}
+import type { JsonObject, JsonValue } from '../json.ts'
+export type { JsonObject, JsonValue, JsonPrimitive } from '../json.ts'
 
 export type ColorModePreference = 'auto' | 'dark' | 'light'
 

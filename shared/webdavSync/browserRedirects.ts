@@ -1,7 +1,8 @@
 import { browser } from 'wxt/browser'
 
+import { WebDavError } from './errors.ts'
 import { hasExactWebDavPermission } from './permissions.ts'
-import { WebDavError, type WebDavRequestObserver } from './webdav.ts'
+import { type WebDavRequestObserver } from './webdav.ts'
 
 /** 每个客户端操作只检查一次权限；下次操作重新读取，支持权限收回与重新授权。 */
 export function createBrowserWebDavRequestObserver(address: string): WebDavRequestObserver {

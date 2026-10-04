@@ -4,8 +4,7 @@ import type { TopSites } from 'webextension-polyfill'
 import browser from 'webextension-polyfill'
 
 import { fetchFaviconWithCache, warmFaviconCache } from '@/shared/media'
-
-import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
+import { blockedTopSitesStorage } from '@/shared/topSites/storage'
 
 import { createSingleFlightCache } from './singleFlightCache'
 
