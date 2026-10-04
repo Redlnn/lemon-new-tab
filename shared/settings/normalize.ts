@@ -7,6 +7,8 @@ export function normalizeCurrentSettings(settings: CURRENT_CONFIG_SCHEMA): CURRE
     defaults: true,
     strict: false,
   }) as unknown as CURRENT_CONFIG_SCHEMA
+  if (!current.dock.enabled) current.dock.replaceQuickLinks = false
+  if (current.dock.replaceQuickLinks) current.quickLinks.enabled = false
   const { bing } = current.background
   if (!bing.id) bing.cachedResolution = null
   else if (!bing.cachedResolution) bing.cachedResolution = '1080p'

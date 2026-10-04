@@ -9,10 +9,13 @@ export type MainPositionType =
 
 export interface SettingsSchemaV12 extends Omit<
   SettingsSchemaV11,
-  'version' | 'background' | 'search' | 'perf' | 'clock' | 'layout'
+  'version' | 'background' | 'search' | 'perf' | 'clock' | 'layout' | 'dock'
 > {
   version: 12
   greetingEnabled: boolean
+  dock: SettingsSchemaV11['dock'] & {
+    replaceQuickLinks: boolean
+  }
   layout: Omit<SettingsSchemaV11['layout'], 'mainPosition'> & {
     mainPosition: { type: MainPositionType; value: number }
   }

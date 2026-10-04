@@ -155,6 +155,7 @@ export const defaultSettings = {
 
   dock: {
     enabled: false,
+    replaceQuickLinks: false,
 
     topSites: true,
     showOnSearchFocus: true,

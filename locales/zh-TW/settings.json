@@ -192,6 +192,9 @@
     "touchDeviceDisabledNote": "觸控裝置已停用此項。"
   },
   "dock": {
+    "replaceQuickLinks": "使用 Dock 取代快速連結",
+    "replaceQuickLinksTip": "不妨試試在搜尋設定中開啟「{{option}}」，讓版面更舒展。",
+    "replaceQuickLinksLayoutTip": "也可以在版面設定中適度增加距頂部距離，讓頁面配置更寬鬆。",
     "actionBtnNote": "開啟 Dock 後，功能按鈕只能放在頂部（可在「佈局」中選擇左/右）",
     "borderRadius": "圓角",
     "launchpad": {
@@ -391,7 +394,7 @@
     "iconCacheTip": "建議開啟「設定-其他-圖示快取」以嘗試取得更高清晰度的圖示。",
     "iconRatio": "圖示填充比例",
     "iconSize": "圖示大小",
-    "marginTop": "區域上邊距",
+    "marginTop": "與上方內容的間距",
     "maxColumns": "最大欄數",
     "maxItemsTipForChrome": "最常造訪最多只有 10 個喔～",
     "maxRows": "最大列數",
@@ -419,7 +422,7 @@
     "pagingModeTip": "建議寬螢幕裝置選擇翻頁模式，以獲得更好的瀏覽體驗。"
   },
   "search": {
-    "alwaysExpandSearchBar": "一直展開搜尋框",
+    "alwaysExpandSearchBar": "始終展開搜尋框",
     "alwaysShowIcon": "始終顯示搜尋引擎圖示",
     "authorizeHistory": "授權讀取歷史紀錄",
     "border": "顯示搜尋框邊框",

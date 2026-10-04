@@ -60,9 +60,17 @@ export const useSettingsStore = defineStore('option', () => {
     await writer.save()
   }
 
+  const setDockReplaceQuickLinks = (enabled: boolean) => {
+    state.dock.replaceQuickLinks = enabled
+    if (enabled) {
+      state.dock.enabled = true
+      state.quickLinks.enabled = false
+    }
+  }
+
   // 返回原始（非响应式）底层状态对象，对structuredClone安全
   const getRawState = (): CURRENT_CONFIG_SCHEMA => toRaw(state) as CURRENT_CONFIG_SCHEMA
   const isApplyingStorage = () => applyingStorage
 
-  return { ...toRefs(state), init, deinit, save, getRawState, isApplyingStorage }
+  return { ...toRefs(state), init, deinit, save, getRawState, isApplyingStorage, setDockReplaceQuickLinks }
 })

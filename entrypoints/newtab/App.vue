@@ -206,9 +206,11 @@ watch(
   { immediate: true },
 )
 
+const bottomDockEnabled = computed(() => settings.dock.enabled && !settings.dock.replaceQuickLinks)
+
 // Dock 占用底部空间时，将操作按钮位置同步为对应的顶部位置，保证渲染与持久化设置一致。
 watch(
-  [() => settings.dock.enabled, () => settings.layout.actionBtnPosition],
+  [bottomDockEnabled, () => settings.layout.actionBtnPosition],
   ([dockEnabled, actionBtnPosition]) => {
     if (!dockEnabled || !actionBtnPosition.startsWith('bottom')) return
     settings.layout.actionBtnPosition = actionBtnPosition.replace(
@@ -290,7 +292,7 @@ function toggleMinimalMode() {
       alignCenter: true,
     }"
     :message="{
-      placement: settings.dock.enabled ? 'top' : 'bottom',
+      placement: bottomDockEnabled ? 'top' : 'bottom',
     }"
   >
     <main
@@ -321,7 +323,6 @@ function toggleMinimalMode() {
           :on-open-edit-dialog="openEditQuickLinkDialog"
           @contextmenu.stop
         />
-        <yi-yan v-if="settings.yiyan.enabled" @contextmenu.stop />
         <dock
           v-if="settings.dock.enabled"
           ref="DockRef"
@@ -329,6 +330,7 @@ function toggleMinimalMode() {
           :on-open-add-dialog="openAddQuickLinkDialog"
           :on-open-edit-dialog="openEditQuickLinkDialog"
         />
+        <yi-yan v-if="settings.yiyan.enabled" @contextmenu.stop />
       </div>
     </main>
     <background ref="BackgroundRef" />

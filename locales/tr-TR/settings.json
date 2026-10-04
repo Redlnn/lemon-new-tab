@@ -192,6 +192,9 @@
     "touchDeviceDisabledNote": "Bu seçenek yalnızca dokunmatik cihazlarda devre dışıdır."
   },
   "dock": {
+    "replaceQuickLinks": "Hızlı Bağlantılar yerine Dock kullan",
+    "replaceQuickLinksTip": "Daha ferah bir düzen için Arama ayarlarında “{{option}}” seçeneğini açmayı deneyebilirsiniz.",
+    "replaceQuickLinksLayoutTip": "Sayfaya biraz daha alan kazandırmak için Düzen ayarlarında üstten uzaklığı da biraz artırabilirsiniz.",
     "actionBtnNote": "Dock etkinleştirildiğinde, düğme çubuğu yalnızca üste yerleştirilebilir (Düzen ayarlarında sol/sağ seçin)",
     "borderRadius": "Köşe yarıçapı",
     "launchpad": {
@@ -391,7 +394,7 @@
     "iconCacheTip": "Daha yüksek çözünürlüklü simgeleri almaya çalışmak için Ayarlar → Diğer → Simge önbelleği seçeneğini etkinleştirmeyi düşünün.",
     "iconRatio": "Simge oranı",
     "iconSize": "Simge boyutu",
-    "marginTop": "Alan üst boşluğu",
+    "marginTop": "Üstteki içerikle aralık",
     "maxColumns": "Maksimum sütun",
     "maxItemsTipForChrome": "İpucu: En fazla 10 en çok ziyaret edilen bağlantınız olabilir.",
     "maxRows": "Maksimum satır",

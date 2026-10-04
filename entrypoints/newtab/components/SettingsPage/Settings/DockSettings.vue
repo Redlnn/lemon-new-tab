@@ -35,8 +35,28 @@ async function restoreDefaultTopSites() {
         class="settings__item settings__item--horizontal settings__item--with-note settings-control-wide"
       >
         <div class="settings__label">{{ t('newtab:common.enable') }}</div>
-        <el-switch v-model="settings.dock.enabled" />
-        <p class="settings__item-note">{{ t('dock.actionBtnNote') }}</p>
+        <el-switch
+          v-model="settings.dock.enabled"
+          @change="!$event && settings.setDockReplaceQuickLinks(false)"
+        />
+        <p v-if="!settings.dock.replaceQuickLinks" class="settings__item-note">
+          {{ t('dock.actionBtnNote') }}
+        </p>
+      </div>
+      <div
+        class="settings__item settings__item--horizontal settings__item--with-note settings-control-wide"
+      >
+        <div class="settings__label">{{ t('dock.replaceQuickLinks') }}</div>
+        <el-switch
+          :model-value="settings.dock.replaceQuickLinks"
+          @change="settings.setDockReplaceQuickLinks(Boolean($event))"
+        />
+        <p v-if="settings.dock.replaceQuickLinks" class="settings__item-note">
+          <template v-if="!settings.search.expandAlways">
+            {{ t('dock.replaceQuickLinksTip', { option: t('search.alwaysExpandSearchBar') }) }}
+          </template>
+          {{ t('dock.replaceQuickLinksLayoutTip') }}
+        </p>
       </div>
       <template v-if="settings.dock.enabled">
         <div class="settings__item settings__item--horizontal">
@@ -168,6 +188,20 @@ async function restoreDefaultTopSites() {
           v-model="settings.dock.gap"
           :min="3"
           :max="10"
+          show-input
+          :show-input-controls="false"
+          :show-tooltip="false"
+        />
+      </div>
+      <div
+        v-if="settings.dock.replaceQuickLinks"
+        class="settings__item settings__item--vertical"
+      >
+        <div class="settings__label">{{ t('quickLinks.marginTop') }}</div>
+        <el-slider
+          v-model="settings.quickLinks.marginTop"
+          :min="10"
+          :max="150"
           show-input
           :show-input-controls="false"
           :show-tooltip="false"

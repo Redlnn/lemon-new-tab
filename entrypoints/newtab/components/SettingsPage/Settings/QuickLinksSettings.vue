@@ -42,9 +42,27 @@ const alertType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'inf
       content-class="settings-control-grid"
       mobile-open
     >
-      <div class="settings__item settings__item--horizontal">
+      <div class="settings__item settings__item--horizontal settings-control-wide">
         <div class="settings__label">{{ t('newtab:common.enable') }}</div>
-        <el-switch v-model="settings.quickLinks.enabled" />
+        <el-switch
+          v-model="settings.quickLinks.enabled"
+          :disabled="settings.dock.replaceQuickLinks"
+        />
+      </div>
+      <div
+        class="settings__item settings__item--horizontal settings__item--with-note settings-control-wide"
+      >
+        <div class="settings__label">{{ t('dock.replaceQuickLinks') }}</div>
+        <el-switch
+          :model-value="settings.dock.replaceQuickLinks"
+          @change="settings.setDockReplaceQuickLinks(Boolean($event))"
+        />
+        <p v-if="settings.dock.replaceQuickLinks" class="settings__item-note">
+          <template v-if="!settings.search.expandAlways">
+            {{ t('dock.replaceQuickLinksTip', { option: t('search.alwaysExpandSearchBar') }) }}
+          </template>
+          {{ t('dock.replaceQuickLinksLayoutTip') }}
+        </p>
       </div>
       <template v-if="settings.quickLinks.enabled">
         <div class="settings__item settings__item--horizontal">
@@ -63,7 +81,7 @@ const alertType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'inf
           </p>
         </div>
       </template>
-      <el-alert :type="alertType" show-icon :closable="false">
+      <el-alert v-if="settings.quickLinks.enabled" :type="alertType" show-icon :closable="false">
         <p style="margin: 0.5em 0">1. {{ t('quickLinks.tip') }}</p>
         <p style="margin: 0.5em 0">
           2. {{ t('quickLinks.iconCacheTip') }}

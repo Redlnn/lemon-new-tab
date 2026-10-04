@@ -192,6 +192,9 @@
     "touchDeviceDisabledNote": "触控设备已禁用此项。"
   },
   "dock": {
+    "replaceQuickLinks": "使用Dock代替快速导航",
+    "replaceQuickLinksTip": "可以试试在搜索设置中开启“{{option}}”，让布局更舒展。",
+    "replaceQuickLinksLayoutTip": "也可以在布局设置中适当增大距顶部距离，让页面布局更从容。",
     "actionBtnNote": "开启 Dock 后，功能按钮只能放在顶部（可在「布局」中选择左/右）",
     "borderRadius": "圆角",
     "launchpad": {
@@ -391,7 +394,7 @@
     "iconCacheTip": "建议打开「设置-其他-图标缓存」以尝试获取更高清晰度的图标。",
     "iconRatio": "图标填充比例",
     "iconSize": "图标大小",
-    "marginTop": "区域上边距",
+    "marginTop": "与上方内容的间距",
     "maxColumns": "最大列数",
     "maxItemsTipForChrome": "最常访问的上限只有 10 个噢~",
     "maxRows": "最大行数",
@@ -419,7 +422,7 @@
     "pagingModeTip": "建议宽屏设备选择翻页模式，以获得更好的浏览体验。"
   },
   "search": {
-    "alwaysExpandSearchBar": "一直展开搜索框",
+    "alwaysExpandSearchBar": "始终展开搜索框",
     "alwaysShowIcon": "始终显示搜索引擎图标",
     "authorizeHistory": "授权读取历史",
     "border": "显示搜索框边框",

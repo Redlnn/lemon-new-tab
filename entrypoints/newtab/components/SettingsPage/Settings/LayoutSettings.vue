@@ -41,7 +41,7 @@ const actionBtnOptions: BtnCorner[] = [
   { value: 'bottom-right', label: 'layout.actionBtn.bottomRight' },
 ]
 
-const dockEnabled = computed(() => settings.dock.enabled)
+const dockEnabled = computed(() => settings.dock.enabled && !settings.dock.replaceQuickLinks)
 const quickLinksScrollEnabled = computed(
   () => settings.quickLinks.enabled && settings.quickLinks.useScroll,
 )

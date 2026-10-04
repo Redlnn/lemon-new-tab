@@ -192,6 +192,9 @@
     "touchDeviceDisabledNote": "This option is disabled on touch-only devices."
   },
   "dock": {
+    "replaceQuickLinks": "Use Dock instead of Quick Links",
+    "replaceQuickLinksTip": "For a more spacious layout, you might like to enable “{{option}}” in Search settings.",
+    "replaceQuickLinksLayoutTip": "You can also slightly increase the distance from the top in Layout settings to give the page more breathing room.",
     "actionBtnNote": "When Dock is enabled, the button bar can only be placed at the top (choose left/right in Layout settings)",
     "borderRadius": "Radius",
     "launchpad": {
@@ -391,7 +394,7 @@
     "iconCacheTip": "Consider enabling Settings → Other → Icon cache to attempt fetching higher-resolution icons.",
     "iconRatio": "Icon ratio",
     "iconSize": "Icon size",
-    "marginTop": "Area top margin",
+    "marginTop": "Spacing from content above",
     "maxColumns": "Maximum columns",
     "maxItemsTipForChrome": "Tip: You can only have up to 10 most visited links.",
     "maxRows": "Maximum rows",

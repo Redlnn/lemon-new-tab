@@ -125,7 +125,7 @@ const isHideDock = computed(() => {
 })
 
 // ---- Dock 缩放逻辑（正弦波曲线，直接操作 DOM CSS 变量，不走响应式）----
-const { width: windowWidth } = useWindowSize({ type: 'visual' })
+const { width: windowWidth, height: windowHeight } = useWindowSize({ type: 'visual' })
 
 const CURVE_RANGE = computed(() => {
   if (windowWidth.value <= 600) return 130
@@ -152,6 +152,31 @@ const addBtnEl = ref<HTMLElement | null>(null)
 const launchpadBtnEl = ref<HTMLElement | null>(null)
 const showLaunchpad = ref(false)
 const launchpadLoaded = ref(false)
+const inlineDock = computed(() => settings.dock.replaceQuickLinks && !showLaunchpad.value)
+const replacementMarginTop = computed(() =>
+  windowHeight.value > 500 ? `${settings.quickLinks.marginTop}px` : undefined,
+)
+let positionAnimation: Animation | undefined
+
+// 保留原位置的占位，通过前后坐标差让 Dock 平滑往返，快速切换时从当前位置继续。
+watch(inlineDock, async () => {
+  const dock = dockRef.value
+  if (!dock) return
+  const before = dock.getBoundingClientRect()
+  positionAnimation?.cancel()
+  dock.style.transition = 'none'
+  await nextTick()
+  const after = dock.getBoundingClientRect()
+  dock.style.removeProperty('transition')
+  positionAnimation = dock.animate(
+    [
+      { translate: `${before.x - after.x}px ${before.y - after.y}px` },
+      { translate: '0 0' },
+    ],
+    { duration: 300, easing: 'ease' },
+  )
+})
+onBeforeUnmount(() => positionAnimation?.cancel())
 
 // 合并动态+静态，供 cacheNaturalCenters / updateScales 使用
 const scalableEls = computed(() => {
@@ -386,12 +411,17 @@ defineExpose({ refresh, toggleLaunchpad })
 </script>
 
 <template>
+  <div
+    v-if="settings.dock.replaceQuickLinks && showLaunchpad"
+    aria-hidden="true"
+    :style="{ height: `${settings.dock.iconSize + 10}px`, marginTop: replacementMarginTop }"
+  />
   <Transition appear name="dock" :css="settings.perf.dockEnterAnim">
     <div
       v-if="ready"
       ref="dockRef"
       class="dock noselect"
-      :class="dockClass"
+      :class="[dockClass, { 'dock--replace-quick-links': inlineDock }]"
       :style="{
         '--dock-opacity': isHideDock,
         pointerEvents: isHideDock === '0' ? 'none' : 'auto',
@@ -400,6 +430,7 @@ defineExpose({ refresh, toggleLaunchpad })
         '--dock-icon-inset': (settings.dock.iconSize * (1 - settings.dock.iconRatio)) / 2 + 'px',
         '--dock-radius': settings.dock.borderRadius + 'px',
         '--gap-size': settings.dock.gap + 'px',
+        marginTop: inlineDock ? replacementMarginTop : undefined,
       }"
       @pointerenter="onPointerEnter"
       @mouseenter="onMouseEnter"
@@ -560,6 +591,7 @@ defineExpose({ refresh, toggleLaunchpad })
 @use '@newtab/styles/mixins/acrylic.scss' as acrylic;
 
 .dock {
+  --dock-translate-x: -50%;
   --dock-background: var(--el-bg-color-overlay);
   --dock-item-background: var(--el-color-primary-light-9);
   --dock-padding: 5px;
@@ -579,7 +611,7 @@ defineExpose({ refresh, toggleLaunchpad })
   border-radius: var(--dock-radius);
   box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
   opacity: var(--dock-opacity, 1);
-  transform: translateX(-50%);
+  transform: translateX(var(--dock-translate-x));
   transition:
     opacity var(--el-transition-duration-fast) ease,
     bottom var(--el-transition-duration-fast) ease,
@@ -594,6 +626,16 @@ defineExpose({ refresh, toggleLaunchpad })
     --dock-background: var(--le-bg-color-overlay-quick-links);
     --dock-item-background: var(--le-bg-color-overlay-quick-links-strong);
   }
+
+  &--replace-quick-links {
+    --dock-translate-x: 0%;
+
+    position: relative;
+    inset: auto;
+    flex-shrink: 0;
+    align-items: center;
+    align-self: center;
+  }
 }
 
 html.colorful .dock:not(.dock--opacity) {
@@ -602,7 +644,7 @@ html.colorful .dock:not(.dock--opacity) {
 }
 
 .app:has(.yiyan) {
-  .dock {
+  .dock:not(.dock--replace-quick-links) {
     @media (height <= 800px) {
       bottom: 10px;
     }
@@ -712,11 +754,11 @@ html.colorful .dock-tooltip {
 
 .dock-enter-from {
   opacity: 0;
-  transform: translate(-50%, 20px);
+  transform: translate(var(--dock-translate-x), 20px);
 }
 
 .dock-enter-to {
   opacity: var(--dock-opacity, 1);
-  transform: translateX(-50%);
+  transform: translateX(var(--dock-translate-x));
 }
 </style>
