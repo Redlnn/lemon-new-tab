@@ -607,6 +607,7 @@ html.light .quick-links {
 
 .quick-links__category-groups .quick-link-dnd-sortable {
   display: inline-flex;
+  min-width: 0;
 }
 
 .quick-links__category-title-drop {
