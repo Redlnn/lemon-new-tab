@@ -249,6 +249,7 @@ watch(
 
 const mainClass = computed(() => ({
   'app--quick-links-scroll': quickLinksScrollEnabled.value,
+  'app--bottom': settings.layout.mainPosition.type.startsWith('bottom-'),
   'app--minimal': minimalMode.value,
 }))
 
@@ -264,10 +265,11 @@ const mainStyle = computed<StyleValue>(() => {
   if (pos.type === 'center') {
     return { justifyContent: 'center' }
   }
-  if (pos.type === 'dvh') {
-    return [{ paddingTop: `${pos.value}vh` }, { paddingTop: `${pos.value}dvh` }]
+  const padding = pos.type.startsWith('bottom-') ? 'paddingBottom' : 'paddingTop'
+  if (pos.type.endsWith('dvh')) {
+    return [{ [padding]: `${pos.value}vh` }, { [padding]: `${pos.value}dvh` }]
   }
-  return { paddingTop: `${pos.value}px` }
+  return { [padding]: `${pos.value}px` }
 })
 
 async function refreshQuickLinks() {

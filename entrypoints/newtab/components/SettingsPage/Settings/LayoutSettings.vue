@@ -16,7 +16,22 @@ const mainPositionOptions: { value: MainPositionType; label: string }[] = [
   { value: 'center', label: 'layout.mainPosition.center' },
   { value: 'dvh', label: 'layout.mainPosition.dvh' },
   { value: 'px', label: 'layout.mainPosition.px' },
+  { value: 'bottom-dvh', label: 'layout.mainPosition.bottomDvh' },
+  { value: 'bottom-px', label: 'layout.mainPosition.bottomPx' },
 ]
+
+const mainPositionFromBottom = computed(() =>
+  settings.layout.mainPosition.type.startsWith('bottom-'),
+)
+const mainPositionUsesDvh = computed(() => settings.layout.mainPosition.type.endsWith('dvh'))
+const mainPositionValueLabel = computed(() => {
+  if (mainPositionFromBottom.value) {
+    return mainPositionUsesDvh.value
+      ? 'layout.mainPosition.bottomDvhValue'
+      : 'layout.mainPosition.bottomPxValue'
+  }
+  return mainPositionUsesDvh.value ? 'layout.mainPosition.dvhValue' : 'layout.mainPosition.pxValue'
+})
 
 type BtnCorner = { value: ActionBtnPosition; label: string; topOnly?: true }
 const actionBtnOptions: BtnCorner[] = [
@@ -65,23 +80,22 @@ function selectActionBtn(pos: ActionBtnPosition) {
         <p v-if="quickLinksScrollEnabled" class="settings__item-note">
           {{ t('layout.mainPosition.quickLinksScrollNote') }}
         </p>
+        <p v-if="mainPositionFromBottom" class="settings__item-note">
+          {{ t('layout.mainPosition.bottomNote') }}
+        </p>
       </div>
       <div
         v-if="settings.layout.mainPosition.type !== 'center'"
         class="settings__item settings__item--vertical"
       >
         <div class="settings__label">
-          {{
-            settings.layout.mainPosition.type === 'dvh'
-              ? t('layout.mainPosition.dvhValue')
-              : t('layout.mainPosition.pxValue')
-          }}
+          {{ t(mainPositionValueLabel) }}
         </div>
         <el-slider
           v-model="settings.layout.mainPosition.value"
           :min="0"
-          :max="settings.layout.mainPosition.type === 'dvh' ? 80 : 500"
-          :step="settings.layout.mainPosition.type === 'dvh' ? 1 : 10"
+          :max="mainPositionUsesDvh ? 80 : 500"
+          :step="mainPositionUsesDvh ? 1 : 10"
           show-input
           :show-input-controls="false"
           :show-tooltip="false"

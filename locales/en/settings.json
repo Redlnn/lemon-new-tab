@@ -216,6 +216,11 @@
     "dockBorderRadius": "Dock radius",
     "globalBorderRadius": "Other component radius",
     "mainPosition": {
+      "bottomDvh": "From bottom (%)",
+      "bottomDvhValue": "Distance from bottom (dvh)",
+      "bottomNote": "Search suggestions open upward when positioned from the bottom. We recommend disabling Quick Links and using Dock instead.",
+      "bottomPx": "From bottom (px)",
+      "bottomPxValue": "Distance from bottom (px)",
       "center": "Center",
       "dvh": "From top (%)",
       "dvhValue": "Distance from top (dvh)",

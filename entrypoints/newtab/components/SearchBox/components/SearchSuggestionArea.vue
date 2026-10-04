@@ -106,6 +106,7 @@ const perf = usePerfClasses(() => ({
 }))
 const suggestionAreaPerfClass = computed(() => [
   {
+    'search-suggestion-area--upward': settings.layout.mainPosition.type.startsWith('bottom-'),
     'search-suggestion-area--shadow': settings.search.style.shadow,
     'search-suggestion-area--dark':
       settings.background.bgType === BgType.None && displayedSuggestions.value.length > 0,
@@ -423,6 +424,11 @@ defineExpose({
 
   &--shadow {
     box-shadow: var(--el-box-shadow);
+  }
+
+  &--upward {
+    top: auto;
+    bottom: calc(100% + 16px);
   }
 
   &.search-suggestion-area--opacity {

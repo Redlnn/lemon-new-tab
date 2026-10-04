@@ -216,6 +216,11 @@
     "dockBorderRadius": "Dock köşe yarıçapı",
     "globalBorderRadius": "Diğer bileşen köşe yarıçapı",
     "mainPosition": {
+      "bottomDvh": "Alttan (%)",
+      "bottomDvhValue": "Alttan uzaklık (dvh)",
+      "bottomNote": "Alttan konumlandırıldığında arama önerileri yukarı doğru açılır. Hızlı Bağlantıları kapatıp Dock kullanmanızı öneririz.",
+      "bottomPx": "Alttan (px)",
+      "bottomPxValue": "Alttan uzaklık (px)",
       "center": "Orta",
       "dvh": "Üstten (%)",
       "dvhValue": "Üstten uzaklık (dvh)",

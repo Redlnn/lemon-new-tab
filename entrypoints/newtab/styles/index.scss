@@ -100,6 +100,10 @@ html.dialog-acrylic .el-message-box {
     overscroll-behavior-y: contain;
   }
 
+  &--bottom {
+    justify-content: safe flex-end;
+  }
+
   &__content {
     display: flex;
     flex-direction: column;
@@ -112,6 +116,10 @@ html.dialog-acrylic .el-message-box {
   &--minimal &__content {
     pointer-events: none;
     opacity: 0;
+  }
+
+  &--bottom &__content {
+    flex-shrink: 0;
   }
 }
 

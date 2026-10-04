@@ -216,6 +216,11 @@
     "dockBorderRadius": "Dock 圓角",
     "globalBorderRadius": "其他元件圓角",
     "mainPosition": {
+      "bottomDvh": "距底部（%）",
+      "bottomDvhValue": "距底部距離（dvh）",
+      "bottomNote": "距底部定位時，搜尋建議將向上彈出。建議關閉快速連結，改用 Dock。",
+      "bottomPx": "距底部（px）",
+      "bottomPxValue": "距底部距離（px）",
       "center": "居中",
       "dvh": "距頂部（%）",
       "dvhValue": "距頂部距離（dvh）",

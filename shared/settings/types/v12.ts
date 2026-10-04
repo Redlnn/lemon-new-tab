@@ -2,12 +2,20 @@ import type { SearchSuggestionProviderId } from '../../searchSuggestionProviders
 
 import type { SettingsSchemaV11 } from './v11'
 
+export type MainPositionType =
+  | SettingsSchemaV11['layout']['mainPosition']['type']
+  | 'bottom-dvh'
+  | 'bottom-px'
+
 export interface SettingsSchemaV12 extends Omit<
   SettingsSchemaV11,
-  'version' | 'background' | 'search' | 'perf' | 'clock'
+  'version' | 'background' | 'search' | 'perf' | 'clock' | 'layout'
 > {
   version: 12
   greetingEnabled: boolean
+  layout: Omit<SettingsSchemaV11['layout'], 'mainPosition'> & {
+    mainPosition: { type: MainPositionType; value: number }
+  }
   clock: SettingsSchemaV11['clock'] & {
     gradient: boolean
   }
