@@ -512,6 +512,10 @@ html.light .quick-links {
   opacity: 0;
   transition: opacity 0.2s ease;
 
+  @media (any-pointer: coarse) {
+    opacity: 1;
+  }
+
   .quick-links:hover &,
   .quick-links--dragging &,
   &:focus-visible {
