@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
+
 import { useTranslation } from 'i18next-vue'
 import RestoreRound from '~icons/ic/round-restore'
 
