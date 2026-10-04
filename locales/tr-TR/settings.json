@@ -390,7 +390,8 @@
     "maxColumns": "Maksimum sütun",
     "maxItemsTipForChrome": "İpucu: En fazla 10 en çok ziyaret edilen bağlantınız olabilir.",
     "maxRows": "Maksimum satır",
-    "paging": "Sayfalandırmayı etkinleştir",
+    "navigationMode": "Gezinme modu",
+    "pagingMode": "Sayfalama modu",
     "pagingLoop": "Sayfalar arasında döngü",
     "pinnedIcon": "Sabitlenmiş simgeyi göster",
     "restoreDefault": "Gizli bağlantıları kurtar",
@@ -408,8 +409,9 @@
     "titleExtraWidth": "Başlık genişletme genişliği",
     "titleWhiteInLight": "Aydınlık modda beyaz metin kullan",
     "topSites": "En çok ziyaret edilenleri göster",
-    "useScroll": "Kaydırmayı kullan",
-    "useScrollTouchTip": "Daha iyi bir gezinti deneyimi için mobil cihazlarda önerilir."
+    "scrollMode": "Kaydırma modu",
+    "scrollModeTip": "Dikey ekranlı cihazlarda daha iyi bir gezinti deneyimi için kaydırma modu önerilir.",
+    "pagingModeTip": "Geniş ekranlı cihazlarda daha iyi bir gezinti deneyimi için sayfalama modu önerilir."
   },
   "search": {
     "alwaysExpandSearchBar": "Arama çubuğunu her zaman genişlet",

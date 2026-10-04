@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core'
 import { useTranslation } from 'i18next-vue'
 import RestoreRound from '~icons/ic/round-restore'
 
 import { useSettingsStore } from '@/shared/settings'
 
 import { blockedTopSitesStorage } from '@newtab/shared/storages/topSitesStorage'
-import { isHasTouchDevice } from '@newtab/shared/touch'
 
 import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
 import { useQuickLinksGroupingChange } from '../composables/useQuickLinksGroupingChange'
@@ -13,6 +13,7 @@ import { useQuickLinksGroupingChange } from '../composables/useQuickLinksGroupin
 import SettingsSection from './SettingsSection.vue'
 
 const { t } = useTranslation('settings')
+const isNarrowScreen = useMediaQuery('(width < 599px)')
 
 const isChromium = import.meta.env.CHROME || import.meta.env.EDGE || import.meta.env.OPERA
 const isChrome = import.meta.env.CHROME
@@ -25,17 +26,8 @@ async function restoreDefaultTopSites() {
 }
 
 function handleUseScrollChange(enabled: boolean | string | number) {
-  if (enabled) {
-    settings.quickLinks.paging = false
-  }
   settings.quickLinks.useScroll = Boolean(enabled)
-}
-
-function handlePagingChange(enabled: boolean | string | number) {
-  if (enabled) {
-    settings.quickLinks.useScroll = false
-  }
-  settings.quickLinks.paging = Boolean(enabled)
+  settings.quickLinks.paging = !enabled
 }
 
 const alertType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'info'))
@@ -85,20 +77,19 @@ const alertType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'inf
       :summary="t('common.sections.summary.behavior')"
       content-class="settings-control-grid"
     >
-      <div class="settings__item settings__item--horizontal settings__item--with-note">
-        <div class="settings__label">{{ t('quickLinks.useScroll') }}</div>
-        <el-switch :model-value="settings.quickLinks.useScroll" @change="handleUseScrollChange" />
-        <p v-if="isHasTouchDevice" class="settings__item-note">
-          {{ t('quickLinks.useScrollTouchTip') }}
+      <div
+        class="settings__item settings__item--horizontal settings__item--with-note settings-control-wide"
+      >
+        <div class="settings__label">{{ t('quickLinks.navigationMode') }}</div>
+        <el-switch
+          :model-value="settings.quickLinks.useScroll"
+          :active-text="t('quickLinks.scrollMode')"
+          :inactive-text="t('quickLinks.pagingMode')"
+          @change="handleUseScrollChange"
+        />
+        <p class="settings__item-note">
+          {{ t(isNarrowScreen ? 'quickLinks.scrollModeTip' : 'quickLinks.pagingModeTip') }}
         </p>
-      </div>
-      <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('quickLinks.paging') }}</div>
-        <el-switch :model-value="settings.quickLinks.paging" @change="handlePagingChange" />
-      </div>
-      <div v-if="settings.quickLinks.paging" class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('quickLinks.pagingLoop') }}</div>
-        <el-switch v-model="settings.quickLinks.pagingLoop" />
       </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('quickLinks.pinnedIcon') }}</div>
@@ -110,6 +101,10 @@ const alertType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'inf
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('common.openInNewTab') }}</div>
         <el-switch v-model="settings.quickLinks.openInNewTab" />
+      </div>
+      <div v-if="!settings.quickLinks.useScroll" class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('quickLinks.pagingLoop') }}</div>
+        <el-switch v-model="settings.quickLinks.pagingLoop" />
       </div>
     </SettingsSection>
 

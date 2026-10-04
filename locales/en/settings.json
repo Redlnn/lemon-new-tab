@@ -390,7 +390,8 @@
     "maxColumns": "Maximum columns",
     "maxItemsTipForChrome": "Tip: You can only have up to 10 most visited links.",
     "maxRows": "Maximum rows",
-    "paging": "Enable paging",
+    "navigationMode": "Navigation mode",
+    "pagingMode": "Paging mode",
     "pagingLoop": "Loop pages",
     "pinnedIcon": "Show pinned icon",
     "restoreDefault": "Recover hidden links",
@@ -408,8 +409,9 @@
     "titleExtraWidth": "Title expand width",
     "titleWhiteInLight": "Use white text in light mode",
     "topSites": "Show most visited",
-    "useScroll": "Use scrolling",
-    "useScrollTouchTip": "Recommended on mobile devices for a better browsing experience."
+    "scrollMode": "Scroll mode",
+    "scrollModeTip": "Scroll mode is recommended on portrait devices for a better browsing experience.",
+    "pagingModeTip": "Paging mode is recommended on widescreen devices for a better browsing experience."
   },
   "search": {
     "alwaysExpandSearchBar": "Always expand search bar",

@@ -390,7 +390,8 @@
     "maxColumns": "最大列数",
     "maxItemsTipForChrome": "最常访问的上限只有 10 个噢~",
     "maxRows": "最大行数",
-    "paging": "启用翻页",
+    "navigationMode": "浏览模式",
+    "pagingMode": "翻页模式",
     "pagingLoop": "翻页循环",
     "pinnedIcon": "显示置顶图标",
     "restoreDefault": "恢复隐藏的链接",
@@ -408,8 +409,9 @@
     "titleExtraWidth": "标题扩展宽度",
     "titleWhiteInLight": "浅色模式下使用白色文字",
     "topSites": "展示最常访问",
-    "useScroll": "使用滚动",
-    "useScrollTouchTip": "建议移动端开启此开关以获得更好的浏览体验。"
+    "scrollMode": "滚动模式",
+    "scrollModeTip": "建议竖屏设备选择滚动模式，以获得更好的浏览体验。",
+    "pagingModeTip": "建议宽屏设备选择翻页模式，以获得更好的浏览体验。"
   },
   "search": {
     "alwaysExpandSearchBar": "一直展开搜索框",

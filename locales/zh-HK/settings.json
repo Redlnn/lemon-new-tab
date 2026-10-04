@@ -390,7 +390,8 @@
     "maxColumns": "最大欄數",
     "maxItemsTipForChrome": "僅支援最多 10 個常用網站",
     "maxRows": "最大列數",
-    "paging": "啟用翻頁",
+    "navigationMode": "瀏覽模式",
+    "pagingMode": "翻頁模式",
     "pagingLoop": "翻頁循環",
     "pinnedIcon": "顯示釘選圖示",
     "restoreDefault": "還原隱藏的連結",
@@ -408,8 +409,9 @@
     "titleExtraWidth": "標題擴展寬度",
     "titleWhiteInLight": "淺色模式下使用白色文字",
     "topSites": "顯示最常瀏覽網站",
-    "useScroll": "使用滾動",
-    "useScrollTouchTip": "建議流動裝置開啟此開關，以獲得更好的瀏覽體驗。"
+    "scrollMode": "滾動模式",
+    "scrollModeTip": "建議直向螢幕裝置選擇滾動模式，以獲得更好的瀏覽體驗。",
+    "pagingModeTip": "建議寬螢幕裝置選擇翻頁模式，以獲得更好的瀏覽體驗。"
   },
   "search": {
     "alwaysExpandSearchBar": "一直展開搜尋框",

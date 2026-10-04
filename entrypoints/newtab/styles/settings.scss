@@ -547,6 +547,15 @@ html.colorful.dialog-transparent .settings__dialog {
     height: 35px;
     padding: 0 10px;
   }
+
+  .el-switch__label.el-switch__label--left,
+  .el-switch__label.el-switch__label--right {
+    font-weight: normal;
+
+    &:not(.is-active) {
+      color: var(--el-text-color-regular);
+    }
+  }
 }
 
 .settings__item-note {
