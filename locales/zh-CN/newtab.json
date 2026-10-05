@@ -265,7 +265,8 @@
     "moveRight": "右移",
     "pin": "置顶",
     "unpin": "取消置顶",
-    "unpinMessage": "已取消置顶该链接"
+    "unpinMessage": "已取消置顶该链接",
+    "fetchingFavicon": "正在后台获取图标..."
   },
   "search": {
     "browserHistory": "浏览",

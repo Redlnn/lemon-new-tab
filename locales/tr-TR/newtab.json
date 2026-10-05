@@ -265,7 +265,8 @@
     "moveRight": "Sağa taşı",
     "pin": "Sabitle",
     "unpin": "Sabitlemeyi kaldır",
-    "unpinMessage": "Bağlantının sabitlemesi kaldırıldı."
+    "unpinMessage": "Bağlantının sabitlemesi kaldırıldı.",
+    "fetchingFavicon": "Arka planda simge alınıyor..."
   },
   "search": {
     "browserHistory": "Ziyaretler",

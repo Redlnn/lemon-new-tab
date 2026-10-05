@@ -265,7 +265,8 @@
     "moveRight": "右移",
     "pin": "釘選",
     "unpin": "取消釘選",
-    "unpinMessage": "已取消釘選此連結"
+    "unpinMessage": "已取消釘選此連結",
+    "fetchingFavicon": "正在後台獲取圖示..."
   },
   "search": {
     "browserHistory": "瀏覽",
