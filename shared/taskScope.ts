@@ -17,7 +17,10 @@ export function createTaskScope(busy: (value: boolean) => void, error: (cause: u
         const value = await work(isCurrent)
         if (isCurrent()) apply?.(value)
       } catch (cause) {
-        if (isCurrent()) error(cause)
+        if (isCurrent()) {
+          error(cause)
+          throw cause
+        }
       } finally {
         if (isCurrent()) busy(--pending > 0)
       }

@@ -32,7 +32,10 @@ export interface BrowserSyncConflictDetails {
 async function sendMessage<T>(message: WebDavSyncMessage): Promise<T> {
   const result: { ok: true; value: T } | { ok: false; error: SerializedWebDavError } =
     await browser.runtime.sendMessage(message)
-  if (!result.ok) throw deserializeWebDavError(result.error)
+  if (!result.ok) {
+    console.error(result)
+    throw deserializeWebDavError(result.error)
+  }
   return result.value
 }
 
