@@ -134,6 +134,7 @@ async function refresh(checkStorage = false) {
         : await getSyncState()
   } catch (error) {
     ElMessage.error(t(webDavErrorKey(error), { defaultValue: t('webdavSync.errors.unknown') }))
+    throw error
   } finally {
     loading.value = false
   }
@@ -148,6 +149,7 @@ async function runSync() {
   } catch (error) {
     ElMessage.error(t(webDavErrorKey(error), { defaultValue: t('webdavSync.errors.unknown') }))
     await refresh()
+    throw error
   } finally {
     syncing.value = false
   }
@@ -160,6 +162,7 @@ async function changeScope(key: keyof SyncScopePreferences, value: boolean | str
     state.value = await updateSyncPreferences({ scope: { [key]: enabled } })
   } catch (error) {
     ElMessage.error(t(webDavErrorKey(error), { defaultValue: t('webdavSync.errors.unknown') }))
+    throw error
   } finally {
     updatingScope.value = null
   }
@@ -171,6 +174,7 @@ async function changeEnabled(value: boolean | string | number) {
     state.value = await updateSyncPreferences({ enabled: Boolean(value) })
   } catch (error) {
     ElMessage.error(t(webDavErrorKey(error), { defaultValue: t('webdavSync.errors.unknown') }))
+    throw error
   } finally {
     updatingEnabled.value = false
   }
@@ -202,6 +206,7 @@ async function restorePermission() {
     await runSync()
   } catch (error) {
     ElMessage.error(t(webDavErrorKey(error), { defaultValue: t('webdavSync.errors.unknown') }))
+    throw error
   }
 }
 
@@ -214,6 +219,7 @@ async function saveCredentials() {
     await runSync()
   } catch (error) {
     ElMessage.error(t(webDavErrorKey(error), { defaultValue: t('webdavSync.errors.unknown') }))
+    throw error
   } finally {
     savingCredentials.value = false
   }

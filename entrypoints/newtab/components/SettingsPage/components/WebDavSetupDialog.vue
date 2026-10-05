@@ -156,6 +156,7 @@ async function testConnection() {
     ElMessage.success(t('webdavSync.setup.test.success'))
   } catch (error) {
     testError.value = readableError(error)
+    throw error
   } finally {
     testing.value = false
   }
