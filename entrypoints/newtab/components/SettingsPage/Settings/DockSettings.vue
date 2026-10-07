@@ -59,6 +59,10 @@ async function restoreDefaultTopSites() {
       </div>
       <template v-if="settings.dock.enabled">
         <div class="settings__item settings__item--horizontal">
+          <div class="settings__label">{{ t('common.openInNewTab') }}</div>
+          <el-switch v-model="settings.dock.openInNewTab" />
+        </div>
+        <div class="settings__item settings__item--horizontal">
           <div class="settings__label">{{ t('quickLinks.showOnSearchFocus') }}</div>
           <el-switch v-model="settings.dock.showOnSearchFocus" />
         </div>
@@ -131,10 +135,6 @@ async function restoreDefaultTopSites() {
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('quickLinks.topSites') }}</div>
         <el-switch v-model="settings.dock.topSites" />
-      </div>
-      <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('common.openInNewTab') }}</div>
-        <el-switch v-model="settings.dock.openInNewTab" />
       </div>
       <div class="settings__item settings__item--horizontal settings__item--with-note">
         <div class="settings__label">{{ t('quickLinks.fallbackToTitleInitial') }}</div>
