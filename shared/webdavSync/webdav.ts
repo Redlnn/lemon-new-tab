@@ -417,7 +417,10 @@ function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
 }
 
 export async function probeWebDavAccess(client: WebDavClient): Promise<void> {
-  const directory = `.lemon-new-tab-probe-${crypto.randomUUID()}`
+  const suffix = (
+    await sha256Hex(textEncoder.encode(`${Date.now()}-${crypto.randomUUID()}`))
+  ).slice(0, 6)
+  const directory = `LemonNewTab-${suffix}`
   const filename = `probe-${crypto.randomUUID()}.bin`
   const path = `${directory}/${filename}`
   const expected = crypto.getRandomValues(new Uint8Array(32))
