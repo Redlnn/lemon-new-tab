@@ -140,13 +140,6 @@ const MAX_SCALE = computed(() => {
 })
 
 const dockRef = ref<HTMLElement | null>(null)
-// 按文档顺序存放所有需缩放的元素（item 与 gap 交替）
-// 动态部分（v-for 生成）：每次更新前清空后重新收集
-const scalableDynEls = shallowRef<HTMLElement[]>([])
-// 静态部分（不在 v-for 内）：只在挂载时收集，不受 onBeforeUpdate 影响
-const addBtnEl = ref<HTMLElement | null>(null)
-// 启动台入口（静态）
-const launchpadBtnEl = ref<HTMLElement | null>(null)
 const showLaunchpad = ref(false)
 const launchpadLoaded = ref(false)
 const inlineDock = computed(() => settings.dock.replaceQuickLinks && !showLaunchpad.value)
@@ -172,19 +165,16 @@ watch(inlineDock, async () => {
 })
 onBeforeUnmount(() => positionAnimation?.cancel())
 
-// 合并动态+静态，供 cacheNaturalCenters / updateScales 使用
-const scalableEls = computed(() => {
-  const els: HTMLElement[] = []
-  if (launchpadBtnEl.value) els.push(launchpadBtnEl.value)
-  els.push(...scalableDynEls.value)
-  if (addBtnEl.value) els.push(addBtnEl.value)
-  return els
-})
+// 布局测量时按 DOM 顺序收集，避免子组件更新时函数 ref 重复追加或保留旧节点。
+let scalableEls: HTMLElement[] = []
 // 缓存元素在 scale=1 时的中心点 X 坐标，避免放大后位置偏移导致波形变形
 let naturalCenters: number[] = []
 
 function cacheNaturalCenters(): void {
-  naturalCenters = scalableEls.value.map((el) => {
+  scalableEls = Array.from(
+    dockRef.value?.querySelectorAll<HTMLElement>(':scope > .dock-item, :scope > .dock-gap') ?? [],
+  )
+  naturalCenters = scalableEls.map((el) => {
     if (!el) return 0
     const { left, width } = el.getBoundingClientRect()
     return left + width / 2
@@ -202,7 +192,7 @@ function scaleCurve(curveCentreX: number, itemCentreX: number): number {
 }
 
 function updateScales(clientX: number | null): void {
-  const els = scalableEls.value
+  const els = scalableEls
   for (let i = 0; i < els.length; i++) {
     const el = els[i]
     if (!el) continue
@@ -272,34 +262,6 @@ function onMouseLeave(): void {
   applyTransition(TRANSITION_DURATION)
   updateScales(null)
   transitionTimer = setTimeout(() => applyTransition('0s'), 80)
-}
-
-// 每次 DOM 更新前只清空动态部分，静态元素 ref 不受影响
-onBeforeUpdate(() => {
-  scalableDynEls.value = []
-})
-
-function setScalableRef(el: unknown): void {
-  let node: HTMLElement | null = null
-  if (el instanceof HTMLElement) {
-    node = el
-  } else if (
-    el !== null &&
-    typeof el === 'object' &&
-    '$el' in el &&
-    el.$el instanceof HTMLElement
-  ) {
-    node = el.$el
-  }
-  if (node) scalableDynEls.value.push(node)
-}
-
-function setAddBtnRef(el: unknown): void {
-  addBtnEl.value = el instanceof HTMLElement ? el : null
-}
-
-function setLaunchpadBtnRef(el: unknown): void {
-  launchpadBtnEl.value = el instanceof HTMLElement ? el : null
 }
 
 // ---- 右键上下文菜单 ----
@@ -454,7 +416,6 @@ defineExpose({ refresh, toggleLaunchpad })
             tabindex="0"
             class="dock-item"
             :aria-label="t('dock.launchpad.title')"
-            :ref="setLaunchpadBtnRef"
             @click="toggleLaunchpad"
             @keydown.enter.prevent="toggleLaunchpad"
             @keydown.space.prevent="toggleLaunchpad"
@@ -465,7 +426,6 @@ defineExpose({ refresh, toggleLaunchpad })
         <div
           v-if="settings.dock.launchpad.enabled && visibleQuickLinksData.length > 0"
           class="dock-gap"
-          :ref="setScalableRef"
         ></div>
       </template>
       <template v-for="(item, idx) in visibleQuickLinksData" :key="`pin-${idx}`">
@@ -484,7 +444,6 @@ defineExpose({ refresh, toggleLaunchpad })
             class="dock-item"
             draggable="false"
             :href="item.url"
-            :ref="setScalableRef"
             :aria-label="item.title"
             :target="settings.dock.openInNewTab ? '_blank' : '_self'"
             :rel="settings.dock.openInNewTab ? 'noopener noreferrer' : undefined"
@@ -499,11 +458,7 @@ defineExpose({ refresh, toggleLaunchpad })
             />
           </a>
         </el-tooltip>
-        <div
-          v-if="idx !== visibleQuickLinksData.length - 1"
-          class="dock-gap"
-          :ref="setScalableRef"
-        ></div>
+        <div v-if="idx !== visibleQuickLinksData.length - 1" class="dock-gap"></div>
       </template>
       <template
         v-if="
@@ -511,9 +466,9 @@ defineExpose({ refresh, toggleLaunchpad })
           visibleTopSites.length > 0
         "
       >
-        <div class="dock-gap" :ref="setScalableRef"></div>
+        <div class="dock-gap"></div>
         <div class="dock-separator"></div>
-        <div class="dock-gap" :ref="setScalableRef"></div>
+        <div class="dock-gap"></div>
       </template>
       <template v-for="(item, j) in visibleTopSites" :key="`top-${j}`">
         <el-tooltip
@@ -532,7 +487,6 @@ defineExpose({ refresh, toggleLaunchpad })
             class="dock-item"
             draggable="false"
             :href="item.url"
-            :ref="setScalableRef"
             :aria-label="item.title"
             :target="settings.dock.openInNewTab ? '_blank' : '_self'"
             :rel="settings.dock.openInNewTab ? 'noopener noreferrer' : undefined"
@@ -543,13 +497,13 @@ defineExpose({ refresh, toggleLaunchpad })
             <favicon-image :url="item.url" :favicon="item.favicon" :title="item.title" />
           </OnLongPress>
         </el-tooltip>
-        <div v-if="j !== visibleTopSites.length - 1" class="dock-gap" :ref="setScalableRef"></div>
+        <div v-if="j !== visibleTopSites.length - 1" class="dock-gap"></div>
       </template>
       <template v-if="!settings.dock.launchpad.enabled">
-        <div class="dock-gap" :ref="setScalableRef"></div>
+        <div class="dock-gap"></div>
         <div class="dock-separator"></div>
-        <div class="dock-gap" :ref="setScalableRef"></div>
-        <div class="dock-item" :ref="setAddBtnRef" @click="openAddQuickLink">
+        <div class="dock-gap"></div>
+        <div class="dock-item" @click="openAddQuickLink">
           <add-round />
         </div>
       </template>
