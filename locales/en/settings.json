@@ -611,7 +611,8 @@
     },
     "disconnect": {
       "deleteAction": "Permanently delete and disconnect",
-      "deleteDescription": "Only the LemonNewTab directory with the correct ownership marker is deleted. If deletion fails, this device keeps its connection so you can retry.",
+      "deleteDescription": "Clears the sync directory and keeps the empty folder by default. Select the option below to also delete the folder",
+      "deleteDirectory": "Also delete the sync directory folder",
       "deleteTitle": "Permanently delete the remote sync vault",
       "deleted": "Remote sync data was deleted and this device disconnected",
       "disconnected": "Remote data kept and this device disconnected",

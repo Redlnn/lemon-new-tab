@@ -98,6 +98,7 @@ import {
 } from './version.ts'
 import {
   probeWebDavAccess,
+  cleanupWebDavProbes,
   requireConfiguredVaultInspection,
   WebDavClient,
   type WebDavConnection,
@@ -1269,12 +1270,24 @@ async function inspectBrowserWebDavSetup(input: BrowserWebDavSetupInput): Promis
     createBrowserWebDavRequestObserver(input.connection.baseUrl),
   )
   const repository = new WebDavVaultRepository(client, input.directory)
-  await probeWebDavAccess(client)
-  const inspection = await repository.inspect()
+  return navigator.locks.request('lemon-webdav-setup', () =>
+    inspectBrowserWebDavSetupLocked(input, client, repository),
+  )
+}
+
+async function inspectBrowserWebDavSetupLocked(
+  input: BrowserWebDavSetupInput,
+  client: WebDavClient,
+  repository: WebDavVaultRepository,
+): Promise<SetupInspection> {
+  let inspection = await repository.inspect()
+  await cleanupWebDavProbes(client, repository.directory)
+  if (inspection.state === 'foreign') inspection = await repository.inspect()
+  if (inspection.state === 'foreign') {
+    throw new WebDavError('foreign-vault', 'WebDAV directory contains unrelated data')
+  }
+  await probeWebDavAccess(client, repository.directory)
   if (inspection.state !== 'ready') {
-    if (inspection.state === 'foreign') {
-      throw new WebDavError('foreign-vault', 'WebDAV directory contains unrelated data')
-    }
     const capture = await captureBrowserSyncSnapshotResult(setupScope(input))
     return {
       local: capture.snapshot,

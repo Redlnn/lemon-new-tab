@@ -48,6 +48,7 @@ export async function updateBrowserSyncPreferences(input: {
 export async function disconnectBrowserWebDav(input: {
   deleteRemote: boolean
   confirmationText?: string
+  deleteDirectory?: boolean
 }): Promise<LocalSyncStateV1> {
   const state = await getOrCreateSyncState()
   if (!state.configured) return state
@@ -55,8 +56,8 @@ export async function disconnectBrowserWebDav(input: {
     if (input.confirmationText !== DELETE_REMOTE_CONFIRMATION || !state.vaultId) {
       throw new WebDavError('forbidden', 'Remote deletion confirmation is invalid')
     }
-    const opened = await openConfiguredVault()
-    await opened.repository.deleteOwnedVault(state.vaultId)
+    const opened = await openConfiguredVault(false)
+    await opened.repository.deleteOwnedVault(state.vaultId, input.deleteDirectory)
   }
   await clearWebDavConnection()
   return getOrCreateSyncState()

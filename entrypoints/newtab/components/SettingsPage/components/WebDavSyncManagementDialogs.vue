@@ -78,6 +78,7 @@ const corruptedDownloaded = ref(false)
 const repairChoice = ref<'local' | 'previous'>('previous')
 const currentEncryptionPassword = ref('')
 const deleteConfirmation = ref('')
+const deleteDirectory = ref(false)
 
 const allConflictsResolved = computed<boolean>(
   () =>
@@ -382,7 +383,11 @@ function disconnect(deleteRemote: boolean) {
   if (deleteRemote && deleteConfirmation.value !== 'DELETE WEBDAV DATA') return
   return tasks.run(
     () =>
-      disconnectSyncConnection(deleteRemote, deleteRemote ? deleteConfirmation.value : undefined),
+      disconnectSyncConnection(
+        deleteRemote,
+        deleteRemote ? deleteConfirmation.value : undefined,
+        deleteDirectory.value,
+      ),
     () => {
       finish(deleteRemote ? 'webdavSync.disconnect.deleted' : 'webdavSync.disconnect.disconnected')
     },
@@ -395,6 +400,7 @@ function clearDeletedConnection() {
 
 function loadDisconnectImpact() {
   deleteConfirmation.value = ''
+  deleteDirectory.value = false
   return Promise.all([loadDevices(), loadHistory()])
 }
 
@@ -818,6 +824,11 @@ watch(
           >
             {{ t('webdavSync.disconnect.deleteDescription') }}
           </el-alert>
+          <p>
+            <el-checkbox v-model="deleteDirectory" :disabled="loading">
+              {{ t('webdavSync.disconnect.deleteDirectory') }}
+            </el-checkbox>
+          </p>
           <p>
             {{ t('webdavSync.disconnect.typePrompt', { text: 'DELETE WEBDAV DATA' }) }}
           </p>

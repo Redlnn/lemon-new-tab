@@ -163,6 +163,7 @@ export default defineBackground(() => {
         disconnectBrowserWebDav({
           deleteRemote: message.deleteRemote,
           confirmationText: message.confirmationText,
+          deleteDirectory: message.deleteDirectory,
         }),
       )
     }

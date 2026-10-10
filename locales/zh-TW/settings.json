@@ -611,7 +611,8 @@
     },
     "disconnect": {
       "deleteAction": "永久刪除並中斷",
-      "deleteDescription": "只刪除具有正確擁有權標記的 LemonNewTab 專屬目錄。刪除失敗時會保留本機連線設定。",
+      "deleteDescription": "清空同步目錄，預設保留空資料夾；勾選下方選項可同時刪除資料夾",
+      "deleteDirectory": "同時刪除同步目錄資料夾",
       "deleteTitle": "永久刪除整個雲端同步庫",
       "deleted": "雲端同步資料已刪除，本機已中斷",
       "disconnected": "已保留雲端資料並中斷",
