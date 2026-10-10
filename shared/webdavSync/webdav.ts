@@ -442,8 +442,11 @@ export async function probeWebDavAccess(client: WebDavClient): Promise<void> {
     passed = true
   } finally {
     const cleanup = async () => {
-      if (created) await client.delete(path, true)
-      await client.delete(`${directory}/`, true)
+      try {
+        if (created) await client.delete(path, true)
+      } finally {
+        await client.delete(`${directory}/`, true)
+      }
     }
     if (passed) await cleanup()
     else await cleanup().catch(() => undefined)
