@@ -611,7 +611,8 @@
     },
     "disconnect": {
       "deleteAction": "Kalıcı olarak sil ve bağlantıyı kes",
-      "deleteDescription": "Yalnızca doğru sahiplik işaretine sahip LemonNewTab dizini silinir. Silme başarısız olursa yeniden deneyebilmeniz için bu cihazın bağlantısı korunur.",
+      "deleteDescription": "Eşitleme dizini temizlenir ve boş klasör varsayılan olarak korunur. Klasörü de silmek için aşağıdaki seçeneği işaretleyin",
+      "deleteDirectory": "Eşitleme dizini klasörünü de sil",
       "deleteTitle": "Uzak eşitleme kasasını kalıcı olarak sil",
       "deleted": "Uzak eşitleme verileri silindi ve bu cihazın bağlantısı kesildi",
       "disconnected": "Uzak veriler korundu ve bu cihazın bağlantısı kesildi",
