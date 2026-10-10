@@ -611,7 +611,8 @@
     },
     "disconnect": {
       "deleteAction": "永久删除并断开",
-      "deleteDescription": "只删除具有正确所有权标记的 LemonNewTab 专属目录。删除失败时保留本机连接配置。",
+      "deleteDescription": "清空同步目录，默认保留空文件夹；勾选下方选项可同时删除文件夹",
+      "deleteDirectory": "同时删除同步目录文件夹",
       "deleteTitle": "永久删除整个云端同步库",
       "deleted": "云端同步数据已删除，本机已断开",
       "disconnected": "已保留云端数据并断开",

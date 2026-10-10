@@ -84,6 +84,7 @@ async function confirmAndRun(
 
 async function confirmClearExtensionData() {
   const includeSync = ref(false)
+  const deleteDirectory = ref(false)
   const syncState = await getSyncState().catch(() => null)
   const resetMode = ref<'delete' | 'keep'>('keep')
   try {
@@ -118,6 +119,9 @@ async function confirmClearExtensionData() {
                     ),
                   ],
                 ),
+                ...(resetMode.value === 'delete'
+                  ? [renderDeleteDirectoryOption(deleteDirectory)]
+                  : []),
               ]
             : []),
         ]),
@@ -145,7 +149,20 @@ async function confirmClearExtensionData() {
       return
     }
   }
-  void clearExtensionDataAndReload(includeSync.value, selectedMode)
+  void clearExtensionDataAndReload(includeSync.value, selectedMode, deleteDirectory.value)
+}
+
+function renderDeleteDirectoryOption(model: { value: boolean }) {
+  return h('p', null, [
+    h(
+      ElCheckbox,
+      {
+        modelValue: model.value,
+        'onUpdate:modelValue': (value: CheckboxValueType) => (model.value = value === true),
+      },
+      () => t('webdavSync.disconnect.deleteDirectory'),
+    ),
+  ])
 }
 
 async function confirmClearWallpaperData() {
@@ -223,6 +240,7 @@ async function clearWallpaperData() {
 async function clearExtensionDataAndReload(
   includeLegacySync: boolean,
   resetMode: 'delete' | 'keep',
+  deleteDirectory: boolean,
 ) {
   await runClearAndReload(t('other.purge.confirm.data.purging'), async () => {
     const state = await getSyncState().catch(() => null)
@@ -230,6 +248,7 @@ async function clearExtensionDataAndReload(
       await disconnectSyncConnection(
         resetMode === 'delete',
         resetMode === 'delete' ? 'DELETE WEBDAV DATA' : undefined,
+        deleteDirectory,
       )
     }
     await clearExtensionData({ includeSync: includeLegacySync })
@@ -300,21 +319,25 @@ async function chooseImportMode(configured: boolean) {
 
 async function disconnectBeforeReplacement() {
   const disposition = ref<'delete' | 'keep'>('keep')
+  const deleteDirectory = ref(false)
   await ElMessageBox.confirm(
     () =>
-      h(
-        ElRadioGroup,
-        {
-          modelValue: disposition.value,
-          'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
-            if (value === 'delete' || value === 'keep') disposition.value = value
+      h('div', null, [
+        h(
+          ElRadioGroup,
+          {
+            modelValue: disposition.value,
+            'onUpdate:modelValue': (value: string | number | boolean | undefined) => {
+              if (value === 'delete' || value === 'keep') disposition.value = value
+            },
           },
-        },
-        () => [
-          h(ElRadio, { value: 'keep' }, () => t('other.importExport.syncMode.keepRemote')),
-          h(ElRadio, { value: 'delete' }, () => t('other.importExport.syncMode.deleteRemote')),
-        ],
-      ),
+          () => [
+            h(ElRadio, { value: 'keep' }, () => t('other.importExport.syncMode.keepRemote')),
+            h(ElRadio, { value: 'delete' }, () => t('other.importExport.syncMode.deleteRemote')),
+          ],
+        ),
+        ...(disposition.value === 'delete' ? [renderDeleteDirectoryOption(deleteDirectory)] : []),
+      ]),
     t('other.importExport.syncMode.disconnectTitle'),
     { type: 'warning' },
   )
@@ -329,6 +352,7 @@ async function disconnectBeforeReplacement() {
   await disconnectSyncConnection(
     disposition.value === 'delete',
     disposition.value === 'delete' ? 'DELETE WEBDAV DATA' : undefined,
+    deleteDirectory.value,
   )
 }
 

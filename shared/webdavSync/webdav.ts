@@ -910,12 +910,49 @@ export class WebDavVaultRepository {
     return commits
   }
 
-  async deleteOwnedVault(expectedVaultId: string): Promise<void> {
+  async deleteOwnedVault(expectedVaultId: string, deleteDirectory = false): Promise<void> {
     const inspection = await this.inspect()
     if (inspection.state !== 'ready' || inspection.metadata.vaultId !== expectedVaultId) {
       throw new WebDavError('foreign-vault', 'WebDAV vault ownership could not be verified')
     }
-    await this.client.delete(`${this.directory}/`)
+    await this.deleteCollectionContents(this.directory)
+    const markerPath = `${this.directory}/vault.json`
+    try {
+      await this.client.delete(markerPath, true)
+      if (deleteDirectory) await this.client.delete(`${this.directory}/`)
+    } catch (error) {
+      // 最后一步失败时恢复标记，保留本机连接可重试删除。
+      await this.client
+        .put(markerPath, canonicalJson(inspection.metadata), { contentType: 'application/json' })
+        .catch(() => undefined)
+      throw error
+    }
+  }
+
+  private async deleteCollectionContents(path: string): Promise<void> {
+    const collectionUrl = this.client.resolve(`${path}/`)
+    const collectionPath = decodeURIComponent(collectionUrl.pathname).replace(/\/$/, '')
+    const children = (await this.client.list(path)).filter((entry) => {
+      const url = new URL(entry.url)
+      const pathname = decodeURIComponent(url.pathname).replace(/\/$/, '')
+      if (url.origin === collectionUrl.origin && pathname === collectionPath) return false
+      if (
+        url.origin !== collectionUrl.origin ||
+        !entry.name ||
+        entry.name === '.' ||
+        entry.name === '..' ||
+        /[/\\]/.test(entry.name) ||
+        pathname !== `${collectionPath}/${entry.name}`
+      ) {
+        throw new WebDavError('invalid-response', 'WebDAV deletion entry is outside its directory')
+      }
+      return !(path === this.directory && entry.name === 'vault.json')
+    })
+    for (const entry of children) {
+      const childPath = `${path}/${entry.name}`
+      if (entry.isCollection) await this.deleteCollectionContents(childPath)
+      await this.client.delete(`${childPath}${entry.isCollection ? '/' : ''}`, true)
+    }
   }
 
   async deleteRevision(metadata: VaultMetadataV1, revisionId: string): Promise<void> {

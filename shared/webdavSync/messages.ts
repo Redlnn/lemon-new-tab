@@ -16,7 +16,12 @@ export type WebDavSyncMessage =
       >
     }
   | { type: 'webdav-sync:data-changed' }
-  | { type: 'webdav-sync:disconnect'; deleteRemote: boolean; confirmationText?: string }
+  | {
+      type: 'webdav-sync:disconnect'
+      deleteRemote: boolean
+      confirmationText?: string
+      deleteDirectory?: boolean
+    }
   | { type: 'webdav-sync:inspect-corruption' }
   | {
       type: 'webdav-sync:download-corruption'
@@ -111,7 +116,9 @@ const validators: Record<WebDavSyncMessage['type'], (value: MessageRecord) => bo
   'webdav-sync:connect': (m) => setup(m.input) && preview(m.expected),
   'webdav-sync:preview-connection': (m) => setup(m.input),
   'webdav-sync:disconnect': (m) =>
-    typeof m.deleteRemote === 'boolean' && optionalString(m.confirmationText),
+    typeof m.deleteRemote === 'boolean' &&
+    optionalString(m.confirmationText) &&
+    optionalBoolean(m.deleteDirectory),
   'webdav-sync:download-corruption': (m) => string(m.actualPayloadHash) && string(m.revisionId),
   'webdav-sync:delete-corruption': (m) =>
     optionalString(m.actualPayloadHash) && string(m.revisionId),

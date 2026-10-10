@@ -100,11 +100,13 @@ export function deleteSyncCorruption(
 export function disconnectSyncConnection(
   deleteRemote: boolean,
   confirmationText?: string,
+  deleteDirectory = false,
 ): Promise<LocalSyncStateV1> {
   return sendStateMessage({
     type: 'webdav-sync:disconnect',
     deleteRemote,
     confirmationText,
+    deleteDirectory,
   } satisfies WebDavSyncMessage)
 }
 
