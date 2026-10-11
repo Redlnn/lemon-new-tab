@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import '@newtab/styles/dialog.scss'
 import { useElementVisibility, useWindowSize } from '@vueuse/core'
+import { useId } from 'vue'
 
-import { useLocale, type DialogInstance, type ScrollbarInstance } from 'element-plus'
+import { useLocale, type ScrollbarInstance } from 'element-plus'
 import CloseRound from '~icons/ic/round-close'
 
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
@@ -28,7 +29,8 @@ const emit = defineEmits<{
 
 const headerRef = useTemplateRef('headerRef')
 const scrollbarRef = ref<ScrollbarInstance>()
-const dialogRef = ref<DialogInstance>()
+const scrollClass = `base-dialog-scroll-${useId().replace(/[^a-zA-Z0-9_-]/g, '-')}`
+const scrollReady = ref(false)
 const { isComposing } = useImeAwareDialog()
 
 const headerIsVisible = useElementVisibility(headerRef)
@@ -41,11 +43,14 @@ function onClose() {
 }
 
 function onClosed() {
+  scrollReady.value = false
   emit('closed')
 }
 
-function onOpen() {
+async function onOpen() {
   emit('open')
+  await nextTick()
+  scrollReady.value = true
   scrollbarRef.value?.setScrollTop(0)
   scrollbarRef.value?.update()
 }
@@ -54,18 +59,10 @@ function onScroll(e: { scrollLeft: number; scrollTop: number }) {
   emit('scroll', e)
 }
 
-const dialogId = computed(() => {
-  return (
-    (dialogRef.value?.$el as HTMLElement)?.nextElementSibling?.firstElementChild?.getAttribute(
-      'aria-describedby',
-    ) ?? null
-  )
-})
 </script>
 
 <template>
   <el-dialog
-    ref="dialogRef"
     v-model="model"
     :width="windowWidth < 650 ? '93%' : (props.width ?? 600)"
     :class="[containerClass, 'base-dialog']"
@@ -106,15 +103,15 @@ const dialogId = computed(() => {
       :style="{ opacity: !headerIsVisible ? 1 : 0 }"
     ></div>
     <div class="base-dialog-container">
-      <el-scrollbar ref="scrollbarRef" class="base-dialog-scrollbar" @scroll="onScroll">
+      <el-scrollbar ref="scrollbarRef" class="base-dialog-scrollbar" :wrap-class="scrollClass" @scroll="onScroll">
         <div ref="headerRef" class="base-dialog-list-title noselect">
           {{ title }}
         </div>
         <slot></slot>
         <div class="base-dialog-bottom-spacing"></div>
         <el-backtop
-          v-if="dialogId"
-          :target="`#${dialogId} .el-scrollbar__wrap`"
+          v-if="scrollReady && model"
+          :target="`.${scrollClass}`"
           style="position: absolute"
           :right="15"
           :bottom="20"
