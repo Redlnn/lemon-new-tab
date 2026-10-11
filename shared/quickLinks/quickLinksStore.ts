@@ -10,7 +10,10 @@ import {
   resolveBuiltInAppId,
   type BuiltInAppId,
 } from '@/shared/builtinApps'
+import { jsonEquals } from '@/shared/json'
 import { useSettingsStore } from '@/shared/settings'
+import { normalizeCurrentSettings } from '@/shared/settings/normalize'
+import { settingsStorage } from '@/shared/settings/settingsStorage'
 import { createDraftWriter, withSyncWriteLock } from '@/shared/storage/syncWrite'
 import { normalizeUrlForDedup } from '@/shared/url'
 import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
@@ -234,8 +237,8 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   const persistSnapshot = (snapshot: QuickLinksData) => writer.save(snapshot)
 
   const init = async () => {
-    if (loaded.value) return
     if (initTask) return await initTask
+    if (loaded.value) return
 
     initTask = (async () => {
       const quickLinksData = await getQuickLinksStorageValue()
@@ -262,50 +265,72 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
   const syncApplying = ref(false)
   let groupingTail: Promise<void> = Promise.resolve()
 
-  const convertGrouping = (enabled: boolean): boolean => {
+  const convertGrouping = (data: QuickLinksData, enabled: boolean): QuickLinksData => {
+    const currentGroups = data.groups ?? []
     if (enabled) {
-      if (groupState.value.length > 0) {
-        if (getGroup(DEFAULT_QUICK_LINK_GROUP_ID)) return false
-        ensureDefaultGroup()
-      } else {
-        groupState.value = [
-          {
-            id: DEFAULT_QUICK_LINK_GROUP_ID,
-            name: getDefaultGroupName(),
-            items: flatItems.value.map(withRuntimeIcon),
-          },
-        ]
-        flatItems.value = []
-      }
-    } else {
-      if (groupState.value.length === 0) return false
-      flatItems.value = flattenQuickLinkGroups(groupState.value, { dedupe: true })
-      groupState.value = []
+      if (currentGroups.some((group) => group.id === DEFAULT_QUICK_LINK_GROUP_ID)) return data
+      const groups = [
+        {
+          id: DEFAULT_QUICK_LINK_GROUP_ID,
+          name: getDefaultGroupName(),
+          items: currentGroups.length ? [] : data.items,
+        },
+        ...currentGroups,
+      ]
+      return { items: flattenQuickLinkGroups(groups), groups }
     }
-    return true
+    return currentGroups.length
+      ? { items: flattenQuickLinkGroups(currentGroups, { dedupe: true }), groups: [] }
+      : data
   }
 
   const queueGroupingChange = (enabled?: boolean): Promise<void> => {
     const task = groupingTail.then(async () => {
-      // 先等待同一写入锁下的远端应用，再读取成对更新后的设置与导航数据。
       await withSyncWriteLock(async () => {
         const stored = (await browser.storage.local.get('webdavSyncState')) as {
           webdavSyncState?: LocalSyncStateV1
         }
         syncApplying.value = stored.webdavSyncState?.pending?.phase === 'applying-local'
-        if (!syncApplying.value) writer.receive(await getQuickLinksStorageValue(true))
+        if (syncApplying.value) {
+          if (enabled !== undefined) throw new Error('Quick links are being synchronized')
+          return
+        }
+        const [storedSettings, storedLinks] = await Promise.all([
+          settingsStorage.raw.getValue(),
+          getQuickLinksStorageValue(true),
+        ])
+        const settingsCommit = settings.prepareCommit(
+          normalizeCurrentSettings(storedSettings),
+          (value) =>
+            enabled === undefined
+              ? value
+              : {
+                  ...value,
+                  quickLinks: { ...value.quickLinks, grouping: enabled },
+                },
+        )
+        const target = settingsCommit.value.quickLinks.grouping
+        const linksCommit = writer.prepareCommit(storedLinks, (value) =>
+          convertGrouping(value, target),
+        )
+        try {
+          if (
+            !jsonEquals(storedSettings, settingsCommit.value) ||
+            !jsonEquals(storedLinks, linksCommit.value)
+          ) {
+            await browser.storage.local.set({
+              settings: settingsCommit.value,
+              quickLinks: linksCommit.value,
+            })
+          }
+          linksCommit.commit()
+          settingsCommit.commit()
+        } catch (error) {
+          linksCommit.cancel()
+          settingsCommit.cancel()
+          throw error
+        }
       })
-      if (syncApplying.value) {
-        if (enabled !== undefined) throw new Error('Quick links are being synchronized')
-        return
-      }
-      const target = enabled ?? settings.quickLinks.grouping
-      const changed = convertGrouping(target)
-      if (changed || enabled !== undefined) await persistSnapshot(getSnapshot())
-      if (enabled !== undefined) {
-        settings.quickLinks.grouping = enabled
-        await settings.save()
-      }
     })
     groupingTail = task.catch(() => undefined)
     return task
@@ -347,6 +372,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
 
   const save = async (data?: QuickLinksData) => {
     if (!loaded.value && !data) await init()
+    await groupingTail
     if (data) {
       applyItems(data.items, data.groups)
       loaded.value = true

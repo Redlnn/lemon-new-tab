@@ -46,6 +46,15 @@ export function createDraftWriter<T>(
   let received: T
   let failed: { before: T; next: T } | undefined
   const echoes = new Set<string>()
+  const rememberEcho = (value: T) => {
+    const hash = JSON.stringify(value)
+    echoes.add(hash)
+    // 通知可能先于 setValue 返回，也可能延后到下一次保存。
+    if (echoes.size > 32) echoes.delete(echoes.values().next().value!)
+    return hash
+  }
+  const localChanges = (before: T, next: T) =>
+    failed ? { before: failed.before, next: rebase(before, next, failed.next) } : { before, next }
   const receive = (value: T) => {
     const hash = JSON.stringify(value)
     if (echoes.delete(hash)) return
@@ -62,6 +71,39 @@ export function createDraftWriter<T>(
       base = structuredClone(value)
       applyDraft(structuredClone(value))
     },
+    /** 调用方持有写入锁；先准备多个草稿，统一写入成功后再回填。 */
+    prepareCommit(current: T, transform: (value: T) => T = (value) => value) {
+      const draft = structuredClone(readDraft())
+      const changes = localChanges(base, draft)
+      const value = transform(rebase(changes.before, changes.next, current))
+      const hash = jsonEquals(current, value) ? undefined : rememberEcho(value)
+      const version = receivedVersion
+      let settled = false
+      pending++
+      return {
+        value,
+        commit() {
+          if (settled) return
+          settled = true
+          pending--
+          failed = undefined
+          const nextDraft = transform(rebase(draft, readDraft(), value))
+          base = structuredClone(value)
+          if (!jsonEquals(readDraft(), nextDraft)) applyDraft(nextDraft)
+        },
+        cancel() {
+          if (settled) return
+          settled = true
+          pending--
+          if (hash) echoes.delete(hash)
+          if (!pending && version !== receivedVersion) {
+            const nextDraft = rebase(base, readDraft(), received)
+            base = structuredClone(received)
+            applyDraft(nextDraft)
+          }
+        },
+      }
+    },
     async save(value = readDraft()) {
       const before = base
       const next = structuredClone(value)
@@ -69,12 +111,7 @@ export function createDraftWriter<T>(
       pending++
       try {
         await withSyncWriteLock(async () => {
-          const changes = failed
-            ? {
-                before: failed.before,
-                next: rebase(before, next, failed.next),
-              }
-            : { before, next }
+          const changes = localChanges(before, next)
           let hash: string | undefined
           try {
             const current = await storage.getValue()
@@ -83,10 +120,7 @@ export function createDraftWriter<T>(
               failed = undefined
               return
             }
-            hash = JSON.stringify(merged)
-            echoes.add(hash)
-            // 通知可能先于 setValue 返回，也可能延后到下一次保存。
-            if (echoes.size > 32) echoes.delete(echoes.values().next().value!)
+            hash = rememberEcho(merged)
             await storage.setValue(merged)
             failed = undefined
           } catch (error) {

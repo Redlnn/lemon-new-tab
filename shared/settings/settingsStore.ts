@@ -85,6 +85,7 @@ export const useSettingsStore = defineStore('option', () => {
     save,
     getRawState,
     isApplyingStorage,
+    prepareCommit: writer.prepareCommit,
     setDockReplaceQuickLinks,
   }
 })
