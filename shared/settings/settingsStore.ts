@@ -12,6 +12,7 @@ export const useSettingsStore = defineStore('option', () => {
   const state = reactive(structuredClone(defaultSettings as CURRENT_CONFIG_SCHEMA))
   let unwatchStorage: (() => void) | null = null
   let applyingStorage = false
+  let disposed = false
 
   const writer = createDraftWriter(
     settingsStorage.raw,
@@ -34,6 +35,7 @@ export const useSettingsStore = defineStore('option', () => {
       if (!jsonEquals(stored, current)) await settingsStorage.raw.setValue(current)
       return current
     })
+    if (disposed) return
     console.log('[Settings] Initializing settings storage with config version', settings.version)
 
     // 清除过期的 blob url，避免使用失效的 URL
@@ -55,6 +57,10 @@ export const useSettingsStore = defineStore('option', () => {
     unwatchStorage?.()
     unwatchStorage = null
   }
+  onScopeDispose(() => {
+    disposed = true
+    deinit()
+  })
 
   const save = async () => {
     await writer.save()
