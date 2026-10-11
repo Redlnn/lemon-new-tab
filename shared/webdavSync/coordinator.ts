@@ -9,6 +9,7 @@ export class SyncCoordinator {
   private active: Promise<void> | null = null
   private debounceTimer: ReturnType<typeof setTimeout> | undefined
   private queuedTrigger: SyncTrigger | undefined
+  private readonly exclusiveTasks: Array<() => Promise<void>> = []
   private readonly port: SyncCoordinatorPort
   private readonly debounceMs: number
 
@@ -27,9 +28,32 @@ export class SyncCoordinator {
 
   trigger(trigger: SyncTrigger): Promise<void> {
     this.queuedTrigger = preferTrigger(this.queuedTrigger, trigger)
+    return this.start()
+  }
+
+  runExclusive<T>(task: () => Promise<T>, synchronizeAfter = true): Promise<T> {
+    const result = new Promise<T>((resolve, reject) => {
+      this.exclusiveTasks.push(async () => {
+        try {
+          resolve(await task())
+        } catch (error) {
+          reject(error)
+        } finally {
+          if (synchronizeAfter) this.queuedTrigger = preferTrigger(this.queuedTrigger, 'natural')
+        }
+      })
+    })
+    // 独占任务的错误由 result 返回；同步任务仍通过 trigger 返回并自行记录状态。
+    void this.start().catch(() => undefined)
+    return result
+  }
+
+  private start(): Promise<void> {
     if (!this.active) {
       this.active = this.drain().finally(() => {
         this.active = null
+        if (this.exclusiveTasks.length || this.queuedTrigger)
+          void this.start().catch(() => undefined)
       })
     }
     return this.active
@@ -41,8 +65,14 @@ export class SyncCoordinator {
   }
 
   private async drain(): Promise<void> {
-    while (this.queuedTrigger) {
+    while (this.exclusiveTasks.length || this.queuedTrigger) {
+      const task = this.exclusiveTasks.shift()
+      if (task) {
+        await task()
+        continue
+      }
       const trigger = this.queuedTrigger
+      if (!trigger) continue
       this.queuedTrigger = undefined
       if (await this.port.isConfigured(trigger)) await this.port.synchronize(trigger)
     }

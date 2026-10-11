@@ -71,13 +71,11 @@ export default defineBackground(() => {
 
   let applyingRemote = false
   let configured = false
-  let maintenance = false
-  let maintenanceTail: Promise<void> = Promise.resolve()
   const coordinator = new SyncCoordinator({
     isConfigured: async (trigger) => {
       const config = await webDavSyncConfigStorage.getValue()
       configured = Boolean(config)
-      if (!config || maintenance) return false
+      if (!config) return false
       const state = await getOrCreateSyncState()
       return Boolean(
         state.configured &&
@@ -97,23 +95,6 @@ export default defineBackground(() => {
       else await browser.alarms.clear(SYNC_RETRY_ALARM)
     },
   })
-  const runMaintenance = <T>(task: () => Promise<T>): Promise<T> => {
-    const run = maintenanceTail.then(async () => {
-      maintenance = true
-      await coordinator.trigger('manual')
-      try {
-        return await task()
-      } finally {
-        maintenance = false
-        void coordinator.trigger('natural')
-      }
-    })
-    maintenanceTail = run.then(
-      () => undefined,
-      () => undefined,
-    )
-    return run
-  }
   const scheduleConfiguredDataChange = () => {
     if (configured) coordinator.dataChanged()
   }
@@ -155,11 +136,11 @@ export default defineBackground(() => {
     }
     if (message.type === 'webdav-sync:connect') {
       const { connectBrowserWebDav } = await import('@/shared/webdavSync/browserEngine')
-      return runMaintenance(() => connectBrowserWebDav(message.input, message.expected))
+      return coordinator.runExclusive(() => connectBrowserWebDav(message.input, message.expected))
     }
     if (message.type === 'webdav-sync:disconnect') {
       const { disconnectBrowserWebDav } = await import('@/shared/webdavSync/browserLifecycle')
-      return runMaintenance(() =>
+      return coordinator.runExclusive(() =>
         disconnectBrowserWebDav({
           deleteRemote: message.deleteRemote,
           confirmationText: message.confirmationText,
@@ -173,39 +154,41 @@ export default defineBackground(() => {
     }
     if (message.type === 'webdav-sync:list-history') {
       const { listBrowserSyncHistory } = await import('@/shared/webdavSync/browserManagement')
-      return runMaintenance(listBrowserSyncHistory)
+      return coordinator.runExclusive(listBrowserSyncHistory, false)
     }
     if (message.type === 'webdav-sync:preview-history') {
       const { previewBrowserSyncHistory } = await import('@/shared/webdavSync/browserManagement')
-      return runMaintenance(() => previewBrowserSyncHistory(message.revisionId))
+      return coordinator.runExclusive(() => previewBrowserSyncHistory(message.revisionId), false)
     }
     if (message.type === 'webdav-sync:list-devices') {
       const { listBrowserSyncDevices } = await import('@/shared/webdavSync/browserManagement')
-      return runMaintenance(listBrowserSyncDevices)
+      return coordinator.runExclusive(listBrowserSyncDevices, false)
     }
     if (message.type === 'webdav-sync:remove-remote-wallpapers') {
       const { removeBrowserRemoteWallpapers } =
         await import('@/shared/webdavSync/browserManagement')
-      return runMaintenance(removeBrowserRemoteWallpapers)
+      return coordinator.runExclusive(removeBrowserRemoteWallpapers)
     }
     if (message.type === 'webdav-sync:inspect-corruption') {
       const { inspectBrowserSyncCorruption } = await import('@/shared/webdavSync/browserManagement')
-      return runMaintenance(inspectBrowserSyncCorruption)
+      return coordinator.runExclusive(inspectBrowserSyncCorruption, false)
     }
     if (message.type === 'webdav-sync:download-corruption') {
       const { downloadBrowserCorruptedPayload } =
         await import('@/shared/webdavSync/browserManagement')
-      return runMaintenance(() =>
-        downloadBrowserCorruptedPayload({
-          revisionId: message.revisionId,
-          actualPayloadHash: message.actualPayloadHash,
-        }),
+      return coordinator.runExclusive(
+        () =>
+          downloadBrowserCorruptedPayload({
+            revisionId: message.revisionId,
+            actualPayloadHash: message.actualPayloadHash,
+          }),
+        false,
       )
     }
     if (message.type === 'webdav-sync:delete-corruption') {
       const { deleteBrowserCorruptedRevision } =
         await import('@/shared/webdavSync/browserManagement')
-      return runMaintenance(() =>
+      return coordinator.runExclusive(() =>
         deleteBrowserCorruptedRevision({
           revisionId: message.revisionId,
           actualPayloadHash: message.actualPayloadHash,
@@ -216,7 +199,7 @@ export default defineBackground(() => {
       // 没有本机应用日志时，打开新标签页不应等待后台的远端网络任务。
       if (!(await hasPendingApply())) return getOrCreateSyncState()
       const { resumePendingBrowserApply } = await import('@/shared/webdavSync/browserData')
-      await runMaintenance(async () => {
+      await coordinator.runExclusive(async () => {
         try {
           await resumePendingBrowserApply()
         } catch (error) {
@@ -228,25 +211,27 @@ export default defineBackground(() => {
     }
     if (message.type === 'webdav-sync:unlock-encryption') {
       const { unlockBrowserEncryption } = await import('@/shared/webdavSync/browserEngine')
-      const state = await runMaintenance(() => unlockBrowserEncryption(message.password))
+      const state = await coordinator.runExclusive(() => unlockBrowserEncryption(message.password))
       await coordinator.trigger('manual')
       return state
     }
     if (message.type === 'webdav-sync:resolve-conflict') {
       const { resolveBrowserSyncConflict } = await import('@/shared/webdavSync/browserEngine')
-      return runMaintenance(() => resolveBrowserSyncConflict(message.resolutions))
+      return coordinator.runExclusive(() => resolveBrowserSyncConflict(message.resolutions))
     }
     if (message.type === 'webdav-sync:restore-history') {
       const { restoreBrowserSyncHistory } = await import('@/shared/webdavSync/browserManagement')
-      return runMaintenance(() => restoreBrowserSyncHistory(message.revisionId, message.expected))
+      return coordinator.runExclusive(() =>
+        restoreBrowserSyncHistory(message.revisionId, message.expected),
+      )
     }
     if (message.type === 'webdav-sync:repair-corruption') {
       const { repairBrowserSyncCorruption } = await import('@/shared/webdavSync/browserManagement')
-      return runMaintenance(() => repairBrowserSyncCorruption(message))
+      return coordinator.runExclusive(() => repairBrowserSyncCorruption(message))
     }
     if (message.type === 'webdav-sync:update-preferences') {
       const { updateBrowserSyncPreferences } = await import('@/shared/webdavSync/browserLifecycle')
-      return runMaintenance(() =>
+      return coordinator.runExclusive(() =>
         updateBrowserSyncPreferences({
           enabled: message.enabled,
           scope: message.scope,
@@ -256,7 +241,7 @@ export default defineBackground(() => {
     if (message.type === 'webdav-sync:update-credentials') {
       const { updateBrowserWebDavCredentials } =
         await import('@/shared/webdavSync/browserLifecycle')
-      return runMaintenance(() => updateBrowserWebDavCredentials(message))
+      return coordinator.runExclusive(() => updateBrowserWebDavCredentials(message))
     }
     if (message.type === 'webdav-sync:immediate') {
       const state = await getOrCreateSyncState()
