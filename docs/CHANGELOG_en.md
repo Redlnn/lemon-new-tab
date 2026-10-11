@@ -8,6 +8,17 @@
 
 - **Layout:** The main content area can now be positioned from the bottom, with search suggestions opening upward.
 - **Dock:** Dock can replace Quick Links. Opening the Launchpad moves Dock to the bottom of the page.
+- **Sync:** Clearing WebDAV cloud data now keeps the empty sync folder by default, with an option to delete the folder as well.
+
+### Improvements⚡️
+
+- **Dock:** Moved the “Open in New Tab” option to Dock's General settings.
+- **Sync:** WebDAV connection checks now run inside the sync folder and automatically clean up leftover test files ([#123](https://github.com/Redlnn/lemon-new-tab/issues/123)).
+
+### Bug Fixes🐛
+
+- **Dock:** Fixed hover magnification failing after pinning a website.
+- **Sync:** Fixed earlier requests overwriting current content or showing outdated errors after reopening a sync management dialog.
 
 ## 4.0.1
 
