@@ -30,7 +30,7 @@ const emit = defineEmits<{
 const headerRef = useTemplateRef('headerRef')
 const scrollbarRef = ref<ScrollbarInstance>()
 const scrollClass = `base-dialog-scroll-${useId().replace(/[^a-zA-Z0-9_-]/g, '-')}`
-const scrollReady = ref(false)
+const scrollReady = computed(() => Boolean(scrollbarRef.value?.wrapRef))
 const { isComposing } = useImeAwareDialog()
 
 const headerIsVisible = useElementVisibility(headerRef)
@@ -43,14 +43,11 @@ function onClose() {
 }
 
 function onClosed() {
-  scrollReady.value = false
   emit('closed')
 }
 
-async function onOpen() {
+function onOpen() {
   emit('open')
-  await nextTick()
-  scrollReady.value = true
   scrollbarRef.value?.setScrollTop(0)
   scrollbarRef.value?.update()
 }
@@ -58,7 +55,6 @@ async function onOpen() {
 function onScroll(e: { scrollLeft: number; scrollTop: number }) {
   emit('scroll', e)
 }
-
 </script>
 
 <template>
@@ -103,7 +99,12 @@ function onScroll(e: { scrollLeft: number; scrollTop: number }) {
       :style="{ opacity: !headerIsVisible ? 1 : 0 }"
     ></div>
     <div class="base-dialog-container">
-      <el-scrollbar ref="scrollbarRef" class="base-dialog-scrollbar" :wrap-class="scrollClass" @scroll="onScroll">
+      <el-scrollbar
+        ref="scrollbarRef"
+        class="base-dialog-scrollbar"
+        :wrap-class="scrollClass"
+        @scroll="onScroll"
+      >
         <div ref="headerRef" class="base-dialog-list-title noselect">
           {{ title }}
         </div>
