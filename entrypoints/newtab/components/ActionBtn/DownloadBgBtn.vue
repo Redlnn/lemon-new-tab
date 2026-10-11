@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { useRafFn } from '@vueuse/core'
 import { ref } from 'vue'
 
 import { useTranslation } from 'i18next-vue'
@@ -14,14 +15,16 @@ import {
 
 const playing = ref(false)
 const canAnimation = ref(true)
+const { resume: updatePlayingNextFrame } = useRafFn(() => (playing.value = canAnimation.value), {
+  immediate: false,
+  once: true,
+})
 const { t } = useTranslation()
 
 function play() {
   if (playing.value) return
   canAnimation.value = true
-  requestAnimationFrame(() => {
-    playing.value = true
-  })
+  updatePlayingNextFrame()
 }
 
 function onEnd(e: TransitionEvent) {
@@ -30,9 +33,7 @@ function onEnd(e: TransitionEvent) {
   if (!(e.target as Element).classList.contains('arrow1')) return
 
   canAnimation.value = false
-  requestAnimationFrame(() => {
-    playing.value = false
-  })
+  updatePlayingNextFrame()
 }
 
 const settings = useSettingsStore()
