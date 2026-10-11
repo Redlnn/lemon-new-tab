@@ -4,7 +4,7 @@ interface FetchOptions extends RequestInit {
   responseEncoding?: string
 }
 
-class EnhancedFetchError extends Error {
+export class EnhancedFetchError extends Error {
   readonly kind: 'timeout' | 'http' | 'network' | 'invalid-data'
   readonly url: string
   readonly status?: number

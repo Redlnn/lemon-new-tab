@@ -32,6 +32,10 @@ import {
   websiteSuggestions,
   type SearchSuggestion,
 } from '@newtab/shared/search/providers'
+import {
+  requestSearchSuggestions,
+  waitForSuggestionDelay,
+} from '@newtab/shared/search/suggestionRetry'
 import { parseNavigableUrl } from '@newtab/shared/search/url'
 
 import SuggestListItem from './SuggestListItem.vue'
@@ -144,36 +148,13 @@ function hideSearchHistories() {
   isShowSearchHistories.value = false
 }
 
-/** 中止时也结束等待，让已失效的提供器链及时退出。 */
-function waitForDelay(ms: number, signal: AbortSignal) {
-  return new Promise<void>((resolve) => {
-    const finish = () => {
-      clearTimeout(timer)
-      signal.removeEventListener('abort', finish)
-      resolve()
-    }
-    const timer = setTimeout(finish, ms)
-    signal.addEventListener('abort', finish, { once: true })
-    if (signal.aborted) finish()
-  })
-}
 async function remoteSuggestions(query: string, signal: AbortSignal): Promise<SearchSuggestion[]> {
   const apiId = settings.search.suggestionAPI
   const cacheKey = `${apiId}:${query}`
   let list = searchSuggestCache.get(cacheKey)
   if (!list) {
     const api = searchSuggestAPIs[apiId] ?? searchSuggestAPIs.bing
-    for (let attempt = 0; attempt <= 2; attempt++) {
-      if (signal.aborted) return []
-      try {
-        list = await api.parser(query, signal)
-        break
-      } catch (error) {
-        if (signal.aborted) return []
-        if (attempt === 2) throw error
-        await waitForDelay(100, signal)
-      }
-    }
+    list = await requestSearchSuggestions(() => api.parser(query, signal), signal)
     if (!signal.aborted && list?.length) searchSuggestCache.set(cacheKey, list)
   }
   return (list ?? []).map((text) => ({ provider: 'remote', action: 'search', text }))
@@ -193,7 +174,7 @@ async function refreshSuggestions(text = props.searchText) {
   // 本地提供器立即执行；浏览器历史和远端请求共用本次输入的防抖期限。
   const startedAt = Date.now()
   const debounce = async () => {
-    await waitForDelay(Math.max(0, 250 - (Date.now() - startedAt)), signal)
+    await waitForSuggestionDelay(Math.max(0, 250 - (Date.now() - startedAt)), signal)
   }
   const result =
     enabled.includes('calculator') && hasCalculationOperator(query)
