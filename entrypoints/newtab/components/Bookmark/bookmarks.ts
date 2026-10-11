@@ -14,38 +14,7 @@ import type { BookmarkResultNode } from './bookmark.worker'
 let worker: Worker | null = null
 let languageChangedListener: ((lang: string) => void) | null = null
 
-const bookmarkListeners: {
-  created?: (id: string, bookmark: Browser.bookmarks.BookmarkTreeNode) => void
-  removed?: (
-    id: string,
-    removeInfo: {
-      parentId: string
-      index: number
-      node: Browser.bookmarks.BookmarkTreeNode
-    },
-  ) => void
-  changed?: (
-    id: string,
-    changeInfo: {
-      title?: string
-      url?: string | undefined
-    },
-  ) => void
-  moved?: (
-    id: string,
-    moveInfo: {
-      parentId: string
-      index: number
-      oldParentId: string
-      oldIndex: number
-    },
-  ) => void
-  childrenReordered?: (id: string, reorderInfo: { childIds: string[] }) => void
-  importBegan?: () => void
-  importEnded?: () => void
-} = {}
-
-type BookmarkListenerKey = keyof typeof bookmarkListeners
+const bookmarkListenerCleanups = new Map<object, () => void>()
 
 let importingBookmarks = false
 type BookmarkTreeNode = Browser.bookmarks.BookmarkTreeNode
@@ -53,36 +22,13 @@ let bookmarkNodeIndex = new Map<string, BookmarkTreeNode>()
 let workerReady = false
 let pendingWorkerInit: BookmarkTreeNode[] | null = null
 
-function setBookmarkListener<K extends BookmarkListenerKey>(
-  key: K,
-  listener: NonNullable<(typeof bookmarkListeners)[K]>,
-  addListener: (listener: NonNullable<(typeof bookmarkListeners)[K]>) => void,
+function listenToBookmarks<T extends (...args: never[]) => unknown>(
+  event: { addListener(listener: T): void; removeListener(listener: T): void },
+  listener: T,
 ) {
-  if (bookmarkListeners[key]) return
-  bookmarkListeners[key] = listener
-  try {
-    addListener(listener)
-  } catch (error) {
-    delete bookmarkListeners[key]
-    throw error
-  }
-}
-
-function unsetBookmarkListener<K extends BookmarkListenerKey>(
-  key: K,
-  removeListener: (listener: NonNullable<(typeof bookmarkListeners)[K]>) => void,
-  eventName: string,
-) {
-  const listener = bookmarkListeners[key]
-  if (!listener) return
-
-  try {
-    removeListener(listener as NonNullable<(typeof bookmarkListeners)[K]>)
-  } catch (error) {
-    console.warn(`[bookmark] Failed to remove ${eventName} listener:`, error)
-  }
-
-  delete bookmarkListeners[key]
+  if (bookmarkListenerCleanups.has(event)) return
+  event.addListener(listener)
+  bookmarkListenerCleanups.set(event, () => event.removeListener(listener))
 }
 
 function hasBookmarkContent(nodes: BookmarkTreeNode[]) {
@@ -145,8 +91,6 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     }
   }
 
-  // 根据 `searchQuery` 过滤后的树。如果查询为空则返回完整的排序树。
-  const filteredTree = computed(() => filteredResult.value)
   const reloadBookmarks = (reason: string) => {
     void loadBookmarks(true).catch((error) => {
       console.error(`[bookmark] Failed to reload bookmarks after ${reason}:`, error)
@@ -238,7 +182,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     worker = createExtensionWorker(bookmarkWorkerUrl)
     if (!languageChangedListener) {
       languageChangedListener = () => {
-        triggerFilter()
+        postWorkerFilter()
       }
       i18next.on('languageChanged', languageChangedListener)
     }
@@ -294,85 +238,59 @@ export const useBookmarkStore = defineStore('bookmark', () => {
   }
 
   const ensureBookmarkListeners = () => {
-    setBookmarkListener(
-      'created',
-      () => {
-        if (!importingBookmarks || !bookmarkListeners.importEnded) {
-          reloadBookmarks('onCreated')
-        }
-      },
-      (listener) => browser.bookmarks.onCreated.addListener(listener),
-    )
-    setBookmarkListener(
-      'removed',
-      () => reloadBookmarks('onRemoved'),
-      (listener) => browser.bookmarks.onRemoved.addListener(listener),
-    )
-    setBookmarkListener(
-      'changed',
-      (id, changeInfo) => {
-        const node = getBookmarkNode(id)
-        const fields = Object.keys(changeInfo)
-        if (
-          !(import.meta.env.CHROME || import.meta.env.EDGE) ||
-          !hasNativeSnapshot ||
-          loadTask ||
-          importingBookmarks ||
-          !node ||
-          !fields.length ||
-          fields.some((key) => key !== 'title' && key !== 'url') ||
-          ('title' in changeInfo && typeof changeInfo.title !== 'string') ||
-          ('url' in changeInfo && (typeof changeInfo.url !== 'string' || !node.url))
-        ) {
-          reloadBookmarks('onChanged')
-          return
-        }
-        Object.assign(node, changeInfo)
-        triggerRef(tree)
-        showNativeTree()
-        postWorkerPatch(id, changeInfo)
-      },
-      (listener) => browser.bookmarks.onChanged.addListener(listener),
-    )
-    setBookmarkListener(
-      'moved',
-      (id) => {
-        let deferred = false
-        for (const move of pendingMoves) {
-          if (move.id !== id) continue
-          move.receivedEvent = true
-          deferred = true
-        }
-        // 同一节点在移动完成前的事件由完成后的原生快照覆盖，不推断事件内容。
-        if (!deferred) reloadBookmarks('onMoved')
-      },
-      (listener) => browser.bookmarks.onMoved.addListener(listener),
-    )
+    listenToBookmarks(browser.bookmarks.onCreated, () => {
+      if (!importingBookmarks || !bookmarkListenerCleanups.has(browser.bookmarks.onImportEnded)) {
+        reloadBookmarks('onCreated')
+      }
+    })
+    listenToBookmarks(browser.bookmarks.onRemoved, () => reloadBookmarks('onRemoved'))
+    listenToBookmarks(browser.bookmarks.onChanged, (id, changeInfo) => {
+      const node = getBookmarkNode(id)
+      const fields = Object.keys(changeInfo)
+      if (
+        !(import.meta.env.CHROME || import.meta.env.EDGE) ||
+        !hasNativeSnapshot ||
+        loadTask ||
+        importingBookmarks ||
+        !node ||
+        !fields.length ||
+        fields.some((key) => key !== 'title' && key !== 'url') ||
+        ('title' in changeInfo && typeof changeInfo.title !== 'string') ||
+        ('url' in changeInfo && (typeof changeInfo.url !== 'string' || !node.url))
+      ) {
+        reloadBookmarks('onChanged')
+        return
+      }
+      Object.assign(node, changeInfo)
+      triggerRef(tree)
+      showNativeTree()
+      postWorkerPatch(id, changeInfo)
+    })
+    listenToBookmarks(browser.bookmarks.onMoved, (id) => {
+      let deferred = false
+      for (const move of pendingMoves) {
+        if (move.id !== id) continue
+        move.receivedEvent = true
+        deferred = true
+      }
+      // 同一节点在移动完成前的事件由完成后的原生快照覆盖，不推断事件内容。
+      if (!deferred) reloadBookmarks('onMoved')
+    })
     if (browser.bookmarks.onChildrenReordered) {
-      setBookmarkListener(
-        'childrenReordered',
-        () => reloadBookmarks('onChildrenReordered'),
-        (listener) => browser.bookmarks.onChildrenReordered.addListener(listener),
+      listenToBookmarks(browser.bookmarks.onChildrenReordered, () =>
+        reloadBookmarks('onChildrenReordered'),
       )
     }
     if (browser.bookmarks.onImportBegan) {
-      setBookmarkListener(
-        'importBegan',
-        () => {
-          importingBookmarks = true
-        },
-        (listener) => browser.bookmarks.onImportBegan.addListener(listener),
-      )
+      listenToBookmarks(browser.bookmarks.onImportBegan, () => {
+        importingBookmarks = true
+      })
     }
     if (browser.bookmarks.onImportEnded) {
-      setBookmarkListener(
-        'importEnded',
-        () => {
-          importingBookmarks = false
-          reloadBookmarks('onImportEnded')
-        },
-        (listener) => browser.bookmarks.onImportEnded.addListener(listener),
-      )
+      listenToBookmarks(browser.bookmarks.onImportEnded, () => {
+        importingBookmarks = false
+        reloadBookmarks('onImportEnded')
+      })
     }
   }
 
@@ -459,14 +377,6 @@ export const useBookmarkStore = defineStore('bookmark', () => {
   const setSortMode = (mode: SortMode) => {
     if (sortMode.value === mode) return
     sortMode.value = mode
-    triggerFilter()
-  }
-
-  const updateFilteredResult = () => {
-    triggerFilter()
-  }
-
-  const triggerFilter = () => {
     postWorkerFilter()
   }
 
@@ -476,42 +386,14 @@ export const useBookmarkStore = defineStore('bookmark', () => {
       languageChangedListener = null
     }
 
-    // 移除书签事件监听
-    unsetBookmarkListener(
-      'created',
-      (listener) => browser.bookmarks.onCreated.removeListener(listener),
-      'onCreated',
-    )
-    unsetBookmarkListener(
-      'removed',
-      (listener) => browser.bookmarks.onRemoved.removeListener(listener),
-      'onRemoved',
-    )
-    unsetBookmarkListener(
-      'changed',
-      (listener) => browser.bookmarks.onChanged.removeListener(listener),
-      'onChanged',
-    )
-    unsetBookmarkListener(
-      'moved',
-      (listener) => browser.bookmarks.onMoved.removeListener(listener),
-      'onMoved',
-    )
-    unsetBookmarkListener(
-      'childrenReordered',
-      (listener) => browser.bookmarks.onChildrenReordered.removeListener(listener),
-      'onChildrenReordered',
-    )
-    unsetBookmarkListener(
-      'importBegan',
-      (listener) => browser.bookmarks.onImportBegan.removeListener(listener),
-      'onImportBegan',
-    )
-    unsetBookmarkListener(
-      'importEnded',
-      (listener) => browser.bookmarks.onImportEnded.removeListener(listener),
-      'onImportEnded',
-    )
+    for (const cleanup of bookmarkListenerCleanups.values()) {
+      try {
+        cleanup()
+      } catch (error) {
+        console.warn('[bookmark] Failed to remove listener:', error)
+      }
+    }
+    bookmarkListenerCleanups.clear()
     importingBookmarks = false
 
     if (worker) {
@@ -547,8 +429,6 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     searchQuery,
     filteredResult,
     firstMatchPath,
-    filteredTree,
-    initWorker,
     loadBookmarks,
     moveBookmark,
     getBookmarkNode,
@@ -556,9 +436,7 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     isBookmarkSelfOrDescendant,
     _setSortMode,
     setSortMode,
-    updateFilteredResult,
-    triggerFilter,
-    terminateWorker,
+    updateFilteredResult: postWorkerFilter,
     dispose,
   }
 })

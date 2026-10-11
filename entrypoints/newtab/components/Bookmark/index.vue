@@ -98,8 +98,7 @@ watch(
 )
 
 function handleDrawerClosed() {
-  if (opened.value) return
-
+  // closed 先于 model 更新，直接按关闭事件清理。
   activeMap.value = {}
   preserveMoveView = false
   draggedNodeId.value = null
