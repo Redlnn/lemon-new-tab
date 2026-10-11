@@ -398,11 +398,6 @@ function getFlatSortableIndex(storeIndex: number) {
   return currentSortableIndexByStoreIndex.value.get(storeIndex) ?? 0
 }
 
-function getLaunchpadContextStoreIndexes(groupId: string) {
-  if (!settings.quickLinks.grouping) return getCurrentSortableStoreIndexes()
-  return groupViews.value.find((view) => view.group.id === groupId)?.sortableStoreIndexes ?? []
-}
-
 async function createGroupInline() {
   const group = await quickLinksStore.createGroup('')
   await refreshDebounced()
@@ -418,7 +413,7 @@ async function moveGroup(groupId: string, direction: -1 | 1) {
   const [group] = nextGroups.splice(index, 1)
   if (!group) return
   nextGroups.splice(targetIndex, 0, group)
-  const changed = await quickLinksStore.reorderGroups(nextGroups)
+  const changed = await quickLinksStore.reorderGroups(nextGroups.map((group) => group.id))
   if (!changed) return
   await refreshDebounced()
 }
@@ -469,31 +464,18 @@ function scheduleLaunchpadPageSwitch(point: { x: number; y: number } | null) {
 }
 
 function getLaunchpadMoveTarget(
-  source: Extract<QuickLinkDndData, { kind: 'quick-link' }>,
   target: QuickLinkDndData | null,
   sortableMove: ReturnType<typeof getSortableMoveState>,
 ) {
-  const fallbackGroupId = settings.quickLinks.grouping ? source.groupId : legacyDndGroupId
-  const fallbackStoreIndex = settings.quickLinks.grouping
-    ? quickLinksStore.getGroupItemCount(fallbackGroupId)
-    : currentFlatContainerInsertIndex.value
   const fallbackTarget = {
-    groupId: fallbackGroupId,
-    sortableIndex: getLaunchpadContextStoreIndexes(fallbackGroupId).length,
-    storeIndex: fallbackStoreIndex,
+    groupId: legacyDndGroupId,
+    sortableIndex: currentSortableStoreIndexes.value.length,
+    storeIndex: currentFlatContainerInsertIndex.value,
   }
-  const targetForQuickLink =
-    target?.kind === 'quick-link-group'
-      ? {
-          ...target,
-          sortableIndex: getLaunchpadContextStoreIndexes(target.groupId).length,
-          storeIndex: quickLinksStore.getGroupItemCount(target.groupId),
-        }
-      : target
-  const moveTarget = resolveQuickLinkMoveTarget(targetForQuickLink, fallbackTarget)
+  const moveTarget = resolveQuickLinkMoveTarget(target, fallbackTarget)
   if (!moveTarget || moveTarget.groupId === topSitesGroupId) return null
 
-  if (targetForQuickLink?.kind !== 'quick-link') {
+  if (target?.kind !== 'quick-link') {
     return {
       groupId: moveTarget.groupId,
       storeIndex: moveTarget.storeIndex,
@@ -502,11 +484,10 @@ function getLaunchpadMoveTarget(
 
   const targetGroupId = sortableMove.toGroupId ?? moveTarget.groupId
   if (targetGroupId === topSitesGroupId) return null
-  const targetStoreIndexes = getLaunchpadContextStoreIndexes(targetGroupId)
   return {
     groupId: targetGroupId,
     storeIndex: resolveStoreIndexFromSortableIndex(
-      targetStoreIndexes,
+      currentSortableStoreIndexes.value,
       sortableMove.toSortableIndex,
       moveTarget.storeIndex,
     ),
@@ -559,7 +540,7 @@ async function handleLaunchpadDragEnd(event: DragEndEvent) {
 
     const moveTarget = settings.quickLinks.grouping
       ? virtualDnd.destination(event)
-      : getLaunchpadMoveTarget(source, target, sortableMove)
+      : getLaunchpadMoveTarget(target, sortableMove)
     if (!moveTarget) return
 
     try {

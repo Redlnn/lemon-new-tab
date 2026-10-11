@@ -498,30 +498,19 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     return true
   }
 
-  const reorderGroups = async (visibleOrderedGroups: QuickLinkGroup[]) => {
+  const reorderGroups = async (orderedIds: readonly string[]) => {
     const rawCurrentGroups = toRaw(groupState.value).map((g) => toRaw(g))
-    const orderedIds = new Set(visibleOrderedGroups.map((g) => g.id))
-    const currentVisibleIds = rawCurrentGroups.filter((g) => orderedIds.has(g.id)).map((g) => g.id)
-    const nextVisibleIds = visibleOrderedGroups.map((g) => g.id)
-
+    const idToGroup = new Map(rawCurrentGroups.map((g) => [g.id, g]))
     if (
-      currentVisibleIds.length === nextVisibleIds.length &&
-      currentVisibleIds.every((id, index) => id === nextVisibleIds[index])
+      orderedIds.length !== rawCurrentGroups.length ||
+      new Set(orderedIds).size !== orderedIds.length ||
+      orderedIds.some((id) => !idToGroup.has(id)) ||
+      orderedIds.every((id, index) => id === rawCurrentGroups[index]?.id)
     ) {
       return false
     }
 
-    const idToGroup = new Map(rawCurrentGroups.map((g) => [g.id, g]))
-    const nextGroups = visibleOrderedGroups
-      .map((g) => idToGroup.get(g.id))
-      .filter((g): g is QuickLinkGroup => Boolean(g))
-    const hiddenDefault = rawCurrentGroups.find(
-      (g) => g.id === DEFAULT_QUICK_LINK_GROUP_ID && !orderedIds.has(g.id),
-    )
-    const hiddenOther = rawCurrentGroups.filter(
-      (g) => !orderedIds.has(g.id) && g.id !== DEFAULT_QUICK_LINK_GROUP_ID,
-    )
-    groupState.value = [...(hiddenDefault ? [hiddenDefault] : []), ...nextGroups, ...hiddenOther]
+    groupState.value = orderedIds.map((id) => idToGroup.get(id)!)
     await save()
     return true
   }

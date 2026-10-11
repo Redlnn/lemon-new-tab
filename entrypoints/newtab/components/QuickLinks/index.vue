@@ -158,14 +158,6 @@ const pageLookup = computed(() => {
   return map
 })
 
-const scrollSectionLookup = computed(() => {
-  const map = new Map<string, ScrollSection>()
-  for (const section of scrollSections.value) {
-    map.set(getDisplayGroupId(section.groupId), section)
-  }
-  return map
-})
-
 // 始终使用完整 pages 长度，以支持关闭翻页时也能切换分组
 const paginationTotalItems = computed(() => pages.value.length)
 const paginationItemsPerPage = ref(1)
@@ -232,12 +224,6 @@ function getItemDndDisabled(item: DisplayItem) {
 }
 
 function getSortableStoreIndexesForContext(groupId: string, pageIndex?: number) {
-  if (settings.quickLinks.useScroll) {
-    const section = scrollSectionLookup.value.get(groupId)
-    if (section?.isTopSites) return []
-    return section?.sortableStoreIndexes ?? []
-  }
-
   const page =
     pageIndex !== undefined
       ? pageLookup.value.get(`${groupId}:${pageIndex}`)
@@ -358,7 +344,7 @@ async function createGroupInline() {
 }
 
 async function updateCategoryGroupOrder(groups: QuickLinkGroup[]) {
-  const changed = await quickLinksStore.reorderGroups(groups)
+  const changed = await quickLinksStore.reorderGroups(groups.map((group) => group.id))
   if (!changed) return
   await refreshDebounced()
 }
