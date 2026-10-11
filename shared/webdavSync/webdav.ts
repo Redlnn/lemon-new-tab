@@ -209,7 +209,7 @@ function firstDavElement(parent: Element, localName: string): Element | undefine
   return [...parent.getElementsByTagNameNS('*', localName)][0]
 }
 
-export function parseWebDavMultiStatus(xml: string, requestUrl: URL): WebDavEntry[] {
+function parseMultiStatusResponses(xml: string): Element[] {
   let document: ReturnType<DOMParser['parseFromString']>
   try {
     document = new DOMParser({
@@ -223,6 +223,9 @@ export function parseWebDavMultiStatus(xml: string, requestUrl: URL): WebDavEntr
   if (document.getElementsByTagName('parsererror').length > 0) {
     throw new WebDavError('invalid-response', 'WebDAV returned malformed XML')
   }
+  if (document.documentElement?.localName !== 'multistatus') {
+    throw new WebDavError('invalid-response', 'WebDAV returned no multistatus document')
+  }
   const responseElements = [
     ...document.getElementsByTagNameNS('DAV:', 'response'),
     ...document.getElementsByTagNameNS('*', 'response'),
@@ -231,8 +234,11 @@ export function parseWebDavMultiStatus(xml: string, requestUrl: URL): WebDavEntr
   if (uniqueElements.length > MAX_PROPFIND_ENTRIES) {
     throw new WebDavError('response-too-large', 'WebDAV directory contains too many entries')
   }
+  return uniqueElements
+}
 
-  return uniqueElements.map((element) => {
+export function parseWebDavMultiStatus(xml: string, requestUrl: URL): WebDavEntry[] {
+  return parseMultiStatusResponses(xml).map((element) => {
     const href = directText(firstDavElement(element, 'href'))
     if (!href) throw new WebDavError('invalid-response', 'WebDAV entry is missing its path')
     const entryUrl = new URL(href, requestUrl)
@@ -316,6 +322,31 @@ export class WebDavClient {
     await this.request('DELETE', path, { timeoutMs: METADATA_TIMEOUT_MS }, async (response) => {
       if (!(ignoreMissing && response.status === 404) && !response.ok)
         throw statusError(response.status)
+      if (response.status === 207) {
+        let xml: string
+        const bytes = await readBoundedBytes(response, MAX_PROPFIND_BYTES)
+        try {
+          xml = textDecoder.decode(bytes)
+        } catch {
+          throw new WebDavError('invalid-response', 'WebDAV returned malformed XML')
+        }
+        const entries = parseMultiStatusResponses(xml)
+        if (!entries.length)
+          throw new WebDavError('invalid-response', 'WebDAV deletion result is empty')
+        for (const entry of entries) {
+          const status = directText(firstDavElement(entry, 'status'))
+          const match = status?.match(/^HTTP\/\d+(?:\.\d+)?\s+(\d{3})(?:\s|$)/)
+          if (!match)
+            throw new WebDavError(
+              'invalid-response',
+              'WebDAV deletion result is missing its status',
+            )
+          const code = Number(match[1])
+          if (!(ignoreMissing && code === 404) && (code < 200 || code >= 300))
+            throw statusError(code)
+        }
+        return
+      }
       await response.body?.cancel()
     })
   }
@@ -431,30 +462,7 @@ export async function cleanupWebDavProbe(
   ) {
     throw new WebDavError('invalid-response', 'WebDAV probe directory path is invalid')
   }
-  let entries: WebDavEntry[]
-  try {
-    entries = await client.list(directory)
-  } catch (error) {
-    if (error instanceof WebDavError && error.category === 'not-found') return
-    throw error
-  }
-  const directoryUrl = client.resolve(directory).href.replace(/\/$/, '')
-  const files = entries.filter((entry) => entry.url.replace(/\/$/, '') !== directoryUrl)
-  if (
-    files.some(
-      (entry) =>
-        entry.isCollection ||
-        entry.name !== PROBE_FILENAME ||
-        entry.url !== client.resolve(`${directory}/${entry.name}`).href,
-    )
-  ) {
-    throw new WebDavError('foreign-vault', 'WebDAV probe directory contains unrelated data')
-  }
-  try {
-    for (const entry of files) await client.delete(`${directory}/${entry.name}`, true)
-  } finally {
-    await client.delete(`${directory}/`, true)
-  }
+  await client.delete(`${directory}/`, true)
 }
 
 export async function cleanupWebDavProbes(client: WebDavClient, vaultDirectory: string): Promise<void> {
@@ -915,7 +923,7 @@ export class WebDavVaultRepository {
     if (inspection.state !== 'ready' || inspection.metadata.vaultId !== expectedVaultId) {
       throw new WebDavError('foreign-vault', 'WebDAV vault ownership could not be verified')
     }
-    await this.deleteCollectionContents(this.directory)
+    await this.deleteVaultContents()
     const markerPath = `${this.directory}/vault.json`
     try {
       await this.client.delete(markerPath, true)
@@ -929,10 +937,10 @@ export class WebDavVaultRepository {
     }
   }
 
-  private async deleteCollectionContents(path: string): Promise<void> {
-    const collectionUrl = this.client.resolve(`${path}/`)
+  private async deleteVaultContents(): Promise<void> {
+    const collectionUrl = this.client.resolve(`${this.directory}/`)
     const collectionPath = decodeURIComponent(collectionUrl.pathname).replace(/\/$/, '')
-    const children = (await this.client.list(path)).filter((entry) => {
+    const children = (await this.client.list(this.directory)).filter((entry) => {
       const url = new URL(entry.url)
       const pathname = decodeURIComponent(url.pathname).replace(/\/$/, '')
       if (url.origin === collectionUrl.origin && pathname === collectionPath) return false
@@ -946,11 +954,10 @@ export class WebDavVaultRepository {
       ) {
         throw new WebDavError('invalid-response', 'WebDAV deletion entry is outside its directory')
       }
-      return !(path === this.directory && entry.name === 'vault.json')
+      return entry.name !== 'vault.json'
     })
     for (const entry of children) {
-      const childPath = `${path}/${entry.name}`
-      if (entry.isCollection) await this.deleteCollectionContents(childPath)
+      const childPath = `${this.directory}/${entry.name}`
       await this.client.delete(`${childPath}${entry.isCollection ? '/' : ''}`, true)
     }
   }
