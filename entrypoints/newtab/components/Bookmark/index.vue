@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useDebounceFn, useElementSize } from '@vueuse/core'
+import { useDebounceFn, useElementSize, useTimeoutFn } from '@vueuse/core'
 
 import {
   DragDropProvider,
@@ -65,7 +65,11 @@ const drawerWidth = ref(settings.bookmark.drawerWidth)
 const editDialogRef = ref<InstanceType<typeof BookmarkEditDialog>>()
 const groupSelectDialogRef = ref<InstanceType<typeof QuickLinkGroupSelectDialog>>()
 const animateTreeChanges = ref(false)
-let treeAnimationTimer: ReturnType<typeof setTimeout> | null = null
+const { start: finishTreeAnimationLater, stop: stopTreeAnimation } = useTimeoutFn(
+  () => (animateTreeChanges.value = false),
+  200,
+  { immediate: false },
+)
 const draggedNodeId = ref<string | null>(null)
 const dropPreview = ref<BookmarkDropPreview | null>(null)
 // 一次移动可能收到多次原生/Worker 刷新；同一浏览上下文中保留用户当前视图。
@@ -99,6 +103,9 @@ watch(
 
 function handleDrawerClosed() {
   // closed 先于 model 更新，直接按关闭事件清理。
+  updateStoreDebounced.cancel()
+  stopTreeAnimation()
+  animateTreeChanges.value = false
   activeMap.value = {}
   preserveMoveView = false
   draggedNodeId.value = null
@@ -108,10 +115,7 @@ function handleDrawerClosed() {
   store.dispose()
 }
 
-onUnmounted(() => {
-  if (treeAnimationTimer) clearTimeout(treeAnimationTimer)
-  store.dispose()
-})
+onBeforeUnmount(() => store.dispose())
 
 const searchQuery = ref('')
 const { isComposing, handleCompositionStart, handleCompositionEnd } =
@@ -126,6 +130,7 @@ const updateStoreDebounced = useDebounceFn(() => {
   store.searchQuery = searchQuery.value
   store.updateFilteredResult()
 }, 200)
+onScopeDispose(() => updateStoreDebounced.cancel())
 
 function handleInput() {
   if (isComposing.value) {
@@ -185,12 +190,9 @@ provideBookmarkItemContext({
 watch(
   activeMap,
   () => {
+    if (!opened.value) return
     animateTreeChanges.value = true
-    if (treeAnimationTimer) clearTimeout(treeAnimationTimer)
-    treeAnimationTimer = setTimeout(() => {
-      animateTreeChanges.value = false
-      treeAnimationTimer = null
-    }, 200)
+    finishTreeAnimationLater()
   },
   { deep: true },
 )
