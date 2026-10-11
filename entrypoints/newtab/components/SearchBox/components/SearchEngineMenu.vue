@@ -54,13 +54,13 @@ function openPreference() {
   dialogs.open('searchEngines')
 }
 
-let stop: () => void
 const showingToast = ref(false)
 const currentEngineName = ref('')
+const { start: hideToastLater } = useTimeoutFn(() => (showingToast.value = false), 1000, {
+  immediate: false,
+})
 
 function showEngineToast() {
-  if (stop) stop()
-
   // 获取当前搜索引擎的名字
   if (isBuiltInEngine.value) {
     const engine = searchEngines[settings.search.engine as keyof typeof searchEngines]
@@ -71,11 +71,7 @@ function showEngineToast() {
 
   // 显示提示
   showingToast.value = true
-  // 3秒后自动隐藏
-  const { stop: timeoutStop } = useTimeoutFn(() => {
-    showingToast.value = false
-  }, 1000)
-  stop = timeoutStop
+  hideToastLater()
 }
 
 const perf = usePerfClasses(() => ({

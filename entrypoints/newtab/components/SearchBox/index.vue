@@ -45,6 +45,9 @@ type SearchSuggestionAreaController = {
 const searchBox = useTemplateRef('searchBox')
 const searchForm = useTemplateRef('searchForm')
 const searchInput = useTemplateRef('searchInput')
+const { start: focusSearchInputLater } = useTimeoutFn(() => searchInput.value?.focus(), 10, {
+  immediate: false,
+})
 const suggestionArea = ref<SearchSuggestionAreaController>()
 const searchEngineMenuRef = ref<typeof SearchEngineMenu>()
 const searchSuggestionListId = 'search-suggestion-list'
@@ -118,7 +121,7 @@ onClickOutside(searchBox, (e) => {
 
   if (activeElement.value?.classList.contains('search-engine-menu')) {
     searchEngineMenuRef.value?.hide()
-    useTimeoutFn(() => searchInput.value?.focus(), 10)
+    focusSearchInputLater()
     return
   }
 
