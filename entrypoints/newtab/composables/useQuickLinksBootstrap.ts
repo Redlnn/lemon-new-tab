@@ -1,8 +1,5 @@
-import i18next from 'i18next'
-
 import { browser } from 'wxt/browser'
 
-import { builtInApps, builtInAppUrl } from '@/shared/builtinApps'
 import { useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 
@@ -36,18 +33,7 @@ export function useQuickLinksBootstrap() {
       await quickLinksStore.init()
       // 仅没有任何历史快速导航存储的新安装才注入，删除入口后不会再次出现。
       if (!legacy.quickLinks && !legacy.bookmark && quickLinksStore.items.length === 0) {
-        await quickLinksStore.insertFlatQuickLink({
-          quickLink: {
-            url: builtInAppUrl('note'),
-            title: i18next.t('newtab:builtinApps.note'),
-            icon: builtInApps.note.icon,
-            appId: 'note',
-          },
-          index: 0,
-        })
-      }
-      if (settings.quickLinks.grouping) {
-        await quickLinksStore.enableGroupingFromItems()
+        await quickLinksStore.setBuiltInAppEnabled('note', true)
       }
       await topSitesTask
       quickLinksReady.value = true

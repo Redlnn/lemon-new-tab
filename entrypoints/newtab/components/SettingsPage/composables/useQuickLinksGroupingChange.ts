@@ -1,17 +1,14 @@
 import { useTranslation } from 'i18next-vue'
 
 import { useQuickLinksStore } from '@/shared/quickLinks'
-import { useSettingsStore } from '@/shared/settings'
 
 export function useQuickLinksGroupingChange() {
   const { t } = useTranslation('settings')
-  const settings = useSettingsStore()
   const quickLinksStore = useQuickLinksStore()
 
   const handleGroupingChange = async (enabled: boolean | string | number) => {
     if (enabled) {
-      await quickLinksStore.enableGroupingFromItems()
-      settings.quickLinks.grouping = true
+      await quickLinksStore.setGroupingEnabled(true)
       return
     }
 
@@ -26,12 +23,10 @@ export function useQuickLinksGroupingChange() {
         },
       )
     } catch {
-      settings.quickLinks.grouping = true
       return
     }
 
-    await quickLinksStore.disableGroupingToItems()
-    settings.quickLinks.grouping = false
+    await quickLinksStore.setGroupingEnabled(false)
   }
 
   return {

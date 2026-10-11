@@ -223,12 +223,6 @@ const currentFlatContainerInsertIndex = computed(() => {
 async function refresh() {
   await quickLinksStore.init()
 
-  if (
-    settings.quickLinks.grouping &&
-    !quickLinksStore.groups.some((group) => group.id === DEFAULT_QUICK_LINK_GROUP_ID)
-  ) {
-    await quickLinksStore.enableGroupingFromItems()
-  }
   if (settings.dock.launchpad.topSites) {
     await getTopSites()
   }

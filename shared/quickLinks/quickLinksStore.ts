@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 
 import i18next from 'i18next'
 
+import { browser } from 'wxt/browser'
+
 import {
   builtInApps,
   builtInAppUrl,
@@ -9,8 +11,9 @@ import {
   type BuiltInAppId,
 } from '@/shared/builtinApps'
 import { useSettingsStore } from '@/shared/settings'
-import { createDraftWriter } from '@/shared/storage/syncWrite'
+import { createDraftWriter, withSyncWriteLock } from '@/shared/storage/syncWrite'
 import { normalizeUrlForDedup } from '@/shared/url'
+import type { LocalSyncStateV1 } from '@/shared/webdavSync/types'
 
 import { rebaseQuickLinkChanges } from './localChanges'
 import { flattenQuickLinkGroups, moveQuickLinkArrayItem } from './quickLinkAlgorithms'
@@ -32,10 +35,6 @@ export type QuickLinkTarget =
       groupId: string
       index: number
     }
-
-type QuickLinksSaveOptions = {
-  groupingEnabled?: boolean
-}
 
 type MoveQuickLinkOptions = {
   fromGroupId: string
@@ -214,8 +213,8 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     }
   }
 
-  const getSnapshot = (groupingEnabled = settings.quickLinks.grouping): QuickLinksData => {
-    if (groupingEnabled && groupState.value.length > 0) {
+  const getSnapshot = (): QuickLinksData => {
+    if (groupState.value.length > 0) {
       const snapshotGroups = groupState.value.map(toStorageQuickLinkGroup)
       return {
         items: flattenQuickLinkGroups(snapshotGroups),
@@ -227,7 +226,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
 
   const writer = createDraftWriter(
     quickLinksStorage.raw,
-    () => getSnapshot(groupState.value.length > 0),
+    getSnapshot,
     (value) => applyItems(value.items, value.groups),
     defaultQuickLinksData,
     rebaseQuickLinkChanges,
@@ -242,6 +241,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
       const quickLinksData = await getQuickLinksStorageValue()
       writer.reset(quickLinksData)
       loaded.value = true
+      await queueGroupingChange()
     })()
 
     try {
@@ -259,67 +259,99 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     loaded.value = true
   }
 
+  const syncApplying = ref(false)
+  let groupingTail: Promise<void> = Promise.resolve()
+
+  const convertGrouping = (enabled: boolean): boolean => {
+    if (enabled) {
+      if (groupState.value.length > 0) {
+        if (getGroup(DEFAULT_QUICK_LINK_GROUP_ID)) return false
+        ensureDefaultGroup()
+      } else {
+        groupState.value = [
+          {
+            id: DEFAULT_QUICK_LINK_GROUP_ID,
+            name: getDefaultGroupName(),
+            items: flatItems.value.map(withRuntimeIcon),
+          },
+        ]
+        flatItems.value = []
+      }
+    } else {
+      if (groupState.value.length === 0) return false
+      flatItems.value = flattenQuickLinkGroups(groupState.value, { dedupe: true })
+      groupState.value = []
+    }
+    return true
+  }
+
+  const queueGroupingChange = (enabled?: boolean): Promise<void> => {
+    const task = groupingTail.then(async () => {
+      // 先等待同一写入锁下的远端应用，再读取成对更新后的设置与导航数据。
+      await withSyncWriteLock(async () => {
+        const stored = (await browser.storage.local.get('webdavSyncState')) as {
+          webdavSyncState?: LocalSyncStateV1
+        }
+        syncApplying.value = stored.webdavSyncState?.pending?.phase === 'applying-local'
+        if (!syncApplying.value) writer.receive(await getQuickLinksStorageValue(true))
+      })
+      if (syncApplying.value) {
+        if (enabled !== undefined) throw new Error('Quick links are being synchronized')
+        return
+      }
+      const target = enabled ?? settings.quickLinks.grouping
+      const changed = convertGrouping(target)
+      if (changed || enabled !== undefined) await persistSnapshot(getSnapshot())
+      if (enabled !== undefined) {
+        settings.quickLinks.grouping = enabled
+        await settings.save()
+      }
+    })
+    groupingTail = task.catch(() => undefined)
+    return task
+  }
+
+  const reconcileGrouping = () => {
+    if (!loaded.value || initTask) return
+    void queueGroupingChange().catch((error) => {
+      console.error('[quick-links] Failed to reconcile grouping:', error)
+    })
+  }
   const stopStorageWatch = quickLinksStorage.watch((newValue) => {
     if (!newValue) return
     writer.receive(newValue)
   })
-  onScopeDispose(stopStorageWatch)
+  const stopGroupingWatch = watch(
+    () => [settings.quickLinks.grouping, syncApplying.value],
+    reconcileGrouping,
+  )
+  const onSyncStateChanged: Parameters<typeof browser.storage.onChanged.addListener>[0] = (
+    changes,
+    area,
+  ) => {
+    if (area !== 'local' || !changes.webdavSyncState) return
+    const state = changes.webdavSyncState.newValue as LocalSyncStateV1 | undefined
+    syncApplying.value = state?.pending?.phase === 'applying-local'
+  }
+  browser.storage.onChanged.addListener(onSyncStateChanged)
+  onScopeDispose(() => {
+    stopStorageWatch()
+    stopGroupingWatch()
+    browser.storage.onChanged.removeListener(onSyncStateChanged)
+  })
 
-  const save = async (data?: QuickLinksData, options?: QuickLinksSaveOptions) => {
-    if (!loaded.value && !data) {
-      await init()
-    }
-    const groupingEnabled = options?.groupingEnabled ?? settings.quickLinks.grouping
+  const setGroupingEnabled = async (enabled: boolean) => {
+    await init()
+    await queueGroupingChange(enabled)
+  }
+
+  const save = async (data?: QuickLinksData) => {
+    if (!loaded.value && !data) await init()
     if (data) {
-      applyItems(data.items, groupingEnabled ? data.groups : [])
+      applyItems(data.items, data.groups)
       loaded.value = true
-    } else if (!groupingEnabled && groupState.value.length > 0) {
-      flatItems.value = flattenQuickLinkGroups(groupState.value)
-      groupState.value = []
     }
-    await persistSnapshot(getSnapshot(groupingEnabled))
-  }
-
-  const enableGroupingFromItems = async () => {
-    if (!loaded.value) {
-      await init()
-    }
-    const defaultGroup = getGroup(DEFAULT_QUICK_LINK_GROUP_ID)
-    const hasGroupedItems = groupState.value.some((group) => group.items.length > 0)
-    if (defaultGroup && (hasGroupedItems || flatItems.value.length === 0)) {
-      return
-    }
-
-    const runtimeItems = flatItems.value.map(withRuntimeIcon)
-
-    if (groupState.value.length === 0) {
-      groupState.value = [
-        {
-          id: DEFAULT_QUICK_LINK_GROUP_ID,
-          name: getDefaultGroupName(),
-          items: runtimeItems,
-        },
-      ]
-    } else if (defaultGroup) {
-      defaultGroup.items = runtimeItems
-    } else {
-      const group = ensureDefaultGroup()
-      if (!hasGroupedItems) group.items = runtimeItems
-    }
-    flatItems.value = []
-    // 直接写入，避免设置开关尚未更新时 save() 将刚创建的分组清空。
-    await persistSnapshot(getSnapshot(true))
-  }
-
-  const disableGroupingToItems = async () => {
-    if (!loaded.value) {
-      await init()
-    }
-    if (groupState.value.length === 0) return
-
-    flatItems.value = flattenQuickLinkGroups(groupState.value, { dedupe: true })
-    groupState.value = []
-    await save()
+    await persistSnapshot(getSnapshot())
   }
 
   const createGroup = async (name: string): Promise<QuickLinkGroup> => {
@@ -356,20 +388,16 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     await save()
   }
 
-  const addQuickLinkToGroup = async (
-    groupId: string,
-    quickLink: QuickLink,
-    options?: QuickLinksSaveOptions,
-  ) => {
+  const addQuickLinkToGroup = async (groupId: string, quickLink: QuickLink) => {
     const group = getGroupForInsert(groupId)
     if (!group) return
     group.items.push(withStableId(quickLink))
-    await save(undefined, options)
+    await save()
   }
 
   const addFlatQuickLink = async (quickLink: QuickLink) => {
     flatItems.value.push(withStableId(quickLink))
-    await save(undefined, { groupingEnabled: false })
+    await save()
   }
 
   const updateFlatQuickLink = async (index: number, quickLink: QuickLink) => {
@@ -378,14 +406,14 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     const next = withStableId(quickLink, current)
     if (isSameQuickLink(current, next)) return false
     flatItems.value.splice(index, 1, next)
-    await save(undefined, { groupingEnabled: false })
+    await save()
     return true
   }
 
   const removeFlatQuickLink = async (index: number): Promise<QuickLink | null> => {
     if (!flatItems.value[index]) return null
     const [removed] = flatItems.value.splice(index, 1)
-    await save(undefined, { groupingEnabled: false })
+    await save()
     return removed ?? null
   }
 
@@ -555,7 +583,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     const existing = flatItems.value.find(matches)
     flatItems.value = flatItems.value.filter((item) => !matches(item))
     if (enabled) flatItems.value.unshift(existing ?? createItem())
-    await save(undefined, { groupingEnabled: false })
+    await save()
   }
 
   return {
@@ -568,8 +596,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     getGroup,
     getDefaultGroupItems,
     getGroupItemCount,
-    enableGroupingFromItems,
-    disableGroupingToItems,
+    setGroupingEnabled,
     ensureDefaultGroup,
     createGroup,
     renameGroup,

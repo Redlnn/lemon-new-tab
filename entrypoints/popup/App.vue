@@ -34,7 +34,7 @@ const currentTab = shallowRef<{
 const isLoading = ref(true)
 const isAdded = ref(false)
 const isAlreadyExists = ref(false)
-const groupingEnabled = ref(false)
+const groupingEnabled = computed(() => settings.quickLinks.grouping)
 const isResetting = ref(false)
 const resetError = shallowRef<Error | null>(null)
 const includeSync = ref(false)
@@ -100,9 +100,8 @@ watchEffect(async () => {
 onMounted(async () => {
   if (props.hasInvalidSettings) return
 
-  groupingEnabled.value = settings.quickLinks.grouping ?? false
-
   try {
+    await settings.init()
     const [tabs] = await Promise.all([
       browser.tabs.query({ active: true, currentWindow: true }),
       quickLinksStore.init(),
@@ -157,9 +156,7 @@ async function addCurrentPage() {
   }
 
   if (groupingEnabled.value) {
-    await quickLinksStore.addQuickLinkToGroup(DEFAULT_QUICK_LINK_GROUP_ID, quickLink, {
-      groupingEnabled: true,
-    })
+    await quickLinksStore.addQuickLinkToGroup(DEFAULT_QUICK_LINK_GROUP_ID, quickLink)
   } else {
     await quickLinksStore.addFlatQuickLink(quickLink)
   }

@@ -792,12 +792,7 @@ watch(
 
 watch(
   () => settings.quickLinks.grouping,
-  async (enabled) => {
-    if (enabled) {
-      await quickLinksStore.enableGroupingFromItems()
-    } else {
-      await quickLinksStore.disableGroupingToItems()
-    }
+  async () => {
     await refreshDebounced()
   },
 )
