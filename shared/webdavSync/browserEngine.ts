@@ -317,7 +317,19 @@ export function mergeTombstones(
   return pruneExpiredTombstones([...values.values()])
 }
 
-export async function createRevision(input: {
+function prepareRevisionSnapshot(snapshot: SyncSnapshotV1): SyncSnapshotV1 {
+  return decodeSyncSnapshot(
+    snapshot,
+    {
+      formatVersion: 1,
+      settingsSchemaVersion: CURRENT_CONFIG_VERSION,
+      pluginVersion: browser.runtime.getManifest().version,
+    },
+    browser.runtime.getManifest().version,
+  )
+}
+
+async function createRevision(input: {
   metadata: VaultMetadataV1
   state: LocalSyncStateV1
   operationId: string
@@ -329,16 +341,7 @@ export async function createRevision(input: {
   tombstones: TombstoneV1[]
   assets: AssetReferenceV1[]
 }): Promise<SyncRevisionV1> {
-  const cleaned = decodeSyncSnapshot(
-    input.snapshot,
-    {
-      formatVersion: 1,
-      settingsSchemaVersion: CURRENT_CONFIG_VERSION,
-      pluginVersion: browser.runtime.getManifest().version,
-    },
-    browser.runtime.getManifest().version,
-  )
-  const snapshot = { ...cleaned, scope: snapshotCoverage(cleaned) }
+  const snapshot = { ...input.snapshot, scope: snapshotCoverage(input.snapshot) }
   return {
     formatVersion: 1,
     settingsSchemaVersion: CURRENT_CONFIG_VERSION,
@@ -495,15 +498,7 @@ export async function publishAndFinalize(input: {
   corruptedRevisionToIgnore?: string
 }): Promise<void> {
   // 合并结果必须在上传任何资源及提交之前通过同一份当前结构和容量校验。
-  const cleaned = decodeSyncSnapshot(
-    input.snapshot,
-    {
-      formatVersion: 1,
-      settingsSchemaVersion: CURRENT_CONFIG_VERSION,
-      pluginVersion: browser.runtime.getManifest().version,
-    },
-    browser.runtime.getManifest().version,
-  )
+  const cleaned = prepareRevisionSnapshot(input.snapshot)
   let revisionId = input.pending.revisionId ?? crypto.randomUUID()
   let pending = await setPendingPhase(input.pending, 'captured', revisionId)
   let snapshot = cleaned
@@ -525,7 +520,7 @@ export async function publishAndFinalize(input: {
     ) {
       throw error
     }
-    snapshot = preserveBaselineWallpapers(snapshot, await getBaseline())
+    snapshot = prepareRevisionSnapshot(preserveBaselineWallpapers(snapshot, await getBaseline()))
     assets = await resolveRevisionAssets(
       input.repository,
       input.metadata,
@@ -587,7 +582,7 @@ export async function publishAndFinalize(input: {
       await input.repository.deleteRevision(input.metadata, revisionId).catch(() => undefined)
       revisionId = crypto.randomUUID()
       pending = await setPendingPhase(pending, 'assets-uploaded', revisionId)
-      snapshot = preserveBaselineWallpapers(snapshot, await getBaseline())
+      snapshot = prepareRevisionSnapshot(preserveBaselineWallpapers(snapshot, await getBaseline()))
       assets = await resolveRevisionAssets(
         input.repository,
         input.metadata,
