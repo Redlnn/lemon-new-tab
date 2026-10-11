@@ -57,6 +57,7 @@ export function usePagedGridLayout() {
   const updateMaxCols = useDebounceFn(() => {
     maxFitCols.value = computeFitColumns()
   }, 100)
+  onScopeDispose(() => updateMaxCols.cancel())
 
   // 纯最大行数
   const maxFitRows = computed(() =>
@@ -95,6 +96,7 @@ export function useDockLayout() {
   const updateMaxCols = useDebounceFn(() => {
     maxFitCols.value = computeFitColumns()
   }, 100)
+  onScopeDispose(() => updateMaxCols.cancel())
 
   return { updateMaxCols, maxFitCols }
 }

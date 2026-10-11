@@ -2,7 +2,7 @@
 import { OnLongPress } from '@vueuse/components'
 import '@newtab/styles/quick-links.scss'
 
-import { useDebounceFn, useResizeObserver, useWindowSize } from '@vueuse/core'
+import { useDebounceFn, useRafFn, useResizeObserver, useTimeoutFn, useWindowSize } from '@vueuse/core'
 import { defineAsyncComponent } from 'vue'
 
 import { useTranslation } from 'i18next-vue'
@@ -69,6 +69,7 @@ const dockTooltipClass = computed(
 const { updateMaxCols, maxFitCols } = useDockLayout()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
+onScopeDispose(() => refreshDebounced.cancel())
 const quickLinks = computed(() =>
   settings.quickLinks.grouping
     ? quickLinksStore.getDefaultGroupItems().slice()
@@ -149,13 +150,19 @@ const replacementMarginTop = computed(() =>
 let positionAnimation: Animation | undefined
 
 // 保留原位置的占位，通过前后坐标差让 Dock 平滑往返，快速切换时从当前位置继续。
-watch(inlineDock, async () => {
+watch(inlineDock, async (_inline, _previous, onCleanup) => {
   const dock = dockRef.value
   if (!dock) return
+  let active = true
+  onCleanup(() => {
+    active = false
+    dock.style.removeProperty('transition')
+  })
   const before = dock.getBoundingClientRect()
   positionAnimation?.cancel()
   dock.style.transition = 'none'
   await nextTick()
+  if (!active) return
   const after = dock.getBoundingClientRect()
   dock.style.removeProperty('transition')
   positionAnimation = dock.animate(
@@ -204,18 +211,25 @@ function updateScales(clientX: number | null): void {
   }
 }
 
-async function refreshDockScaleLayout() {
-  await nextTick()
+function measureDockScaleLayout() {
   cacheNaturalCenters()
   updateScales(null)
-  requestAnimationFrame(() => {
-    cacheNaturalCenters()
-    updateScales(null)
-  })
-  window.setTimeout(() => {
-    cacheNaturalCenters()
-    updateScales(null)
-  }, 180)
+}
+
+const { resume: measureDockNextFrame } = useRafFn(measureDockScaleLayout, {
+  immediate: false,
+  once: true,
+})
+const { start: measureDockAfterTransition } = useTimeoutFn(measureDockScaleLayout, 180, {
+  immediate: false,
+})
+
+async function refreshDockScaleLayout() {
+  await nextTick()
+  if (!dockRef.value) return
+  measureDockScaleLayout()
+  measureDockNextFrame()
+  measureDockAfterTransition()
 }
 
 watch(
@@ -226,7 +240,9 @@ watch(
   { flush: 'post' },
 )
 
-let transitionTimer: ReturnType<typeof setTimeout> | null = null
+const { start: finishScaleTransition } = useTimeoutFn(() => applyTransition('0s'), 80, {
+  immediate: false,
+})
 
 // 追踪当前交互是否来自触屏，用于混合设备（鼠标+触屏）的判断
 const isUsingTouch = ref(false)
@@ -242,9 +258,8 @@ function applyTransition(duration: string): void {
 function onMouseEnter(e: MouseEvent): void {
   if (!settings.perf.dockScale || isUsingTouch.value) return
 
-  if (transitionTimer) clearTimeout(transitionTimer)
   applyTransition(TRANSITION_DURATION)
-  transitionTimer = setTimeout(() => applyTransition('0s'), 80)
+  finishScaleTransition()
   cacheNaturalCenters() // 在缩放发生前缓存自然位置
   updateScales(e.clientX)
 }
@@ -258,10 +273,9 @@ function onMouseMove(e: MouseEvent): void {
 function onMouseLeave(): void {
   if (!settings.perf.dockScale || isUsingTouch.value) return
 
-  if (transitionTimer) clearTimeout(transitionTimer)
   applyTransition(TRANSITION_DURATION)
   updateScales(null)
-  transitionTimer = setTimeout(() => applyTransition('0s'), 80)
+  finishScaleTransition()
 }
 
 // ---- 右键上下文菜单 ----

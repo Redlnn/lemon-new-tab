@@ -1,4 +1,4 @@
-import { useSwipe, useTimeoutFn } from '@vueuse/core'
+import { useRafFn, useSwipe, useTimeoutFn } from '@vueuse/core'
 
 export interface UseQuickLinksPagination {
   currentPage: Ref<number>
@@ -35,6 +35,11 @@ export function useQuickLinksPagination(
   const noTransition = ref(false)
   const preloadTargetPage = ref<number | null>(null)
   let transitionVersion = 0
+  let disposed = false
+  onScopeDispose(() => {
+    disposed = true
+    transitionVersion++
+  })
 
   const totalPages = computed(() => {
     // 防止除以 0 导致 Infinity
@@ -54,14 +59,45 @@ export function useQuickLinksPagination(
     }
   })
 
-  const restoreTransitionNextFrame = () => {
-    requestAnimationFrame(() => {
+  const { resume: restoreTransitionNextFrame, pause: stopRestoreTransition } = useRafFn(
+    () => {
       noTransition.value = false
-    })
-  }
+      isAnimating.value = false
+    },
+    { immediate: false, once: true },
+  )
+
+  // 在 setup 作用域内创建，后续翻页只重启计时，卸载时自动停止。
+  const { start: finishPageAnimationLater, stop: stopPageAnimation } = useTimeoutFn(
+    (targetPage: number, version: number) => {
+      if (version !== transitionVersion) return
+      // 禁用 transition，防止内容更新时触发二次动画。
+      noTransition.value = true
+      slideDirection.value = null
+      currentPage.value = targetPage
+      preloadTargetPage.value = null
+      restoreTransitionNextFrame()
+    },
+    ANIMATION_DURATION,
+    { immediate: false },
+  )
+
+  let pendingPageAnimation: (() => void) | undefined
+  const { resume: animatePreloadedPageNextFrame, pause: stopPreloadedPageAnimation } = useRafFn(
+    () => {
+      const animate = pendingPageAnimation
+      pendingPageAnimation = undefined
+      animate?.()
+    },
+    { immediate: false, once: true },
+  )
 
   const resetPagingTransition = () => {
+    if (disposed) return
     transitionVersion++
+    stopPageAnimation()
+    stopPreloadedPageAnimation()
+    pendingPageAnimation = undefined
     isAnimating.value = false
     slideDirection.value = null
     preloadTargetPage.value = null
@@ -70,31 +106,16 @@ export function useQuickLinksPagination(
   }
 
   const animateToPage = (targetPage: number, direction: 'left' | 'right') => {
-    if (isAnimating.value) return
+    if (disposed || isAnimating.value) return
     if (targetPage < 0 || targetPage >= totalPages.value) return
     if (targetPage === currentPage.value) return
 
     const version = ++transitionVersion
+    stopRestoreTransition()
     isAnimating.value = true
     slideDirection.value = direction
 
-    // 动画结束后更新页码
-    useTimeoutFn(() => {
-      if (version !== transitionVersion) return
-      // 禁用 transition，防止内容更新时触发二次动画
-      noTransition.value = true
-      slideDirection.value = null
-      currentPage.value = targetPage
-      // 清除预加载标记（如果有）
-      preloadTargetPage.value = null
-
-      // 在下一帧恢复 transition
-      requestAnimationFrame(() => {
-        if (version !== transitionVersion) return
-        noTransition.value = false
-        isAnimating.value = false
-      })
-    }, ANIMATION_DURATION)
+    finishPageAnimationLater(targetPage, version)
   }
 
   const prevPage = () => {
@@ -114,7 +135,7 @@ export function useQuickLinksPagination(
   }
 
   const goToPage = (page: number) => {
-    if (page < 0 || page >= totalPages.value || page === currentPage.value) return
+    if (disposed || page < 0 || page >= totalPages.value || page === currentPage.value) return
 
     const distance = Math.abs(page - currentPage.value)
     const direction = page > currentPage.value ? 'left' : 'right'
@@ -127,13 +148,14 @@ export function useQuickLinksPagination(
 
       // 等待 DOM 更新后再执行翻页动画
       nextTick(() => {
-        // 等待一帧确保内容已渲染
-        requestAnimationFrame(() => {
+        if (version !== transitionVersion) return
+        pendingPageAnimation = () => {
           if (version !== transitionVersion) return
           // 执行翻页动画（不清除 preloadTargetPage，让动画期间目标内容保持在相邻位置）
           // preloadTargetPage 会在 animateToPage 动画结束后清除
           animateToPage(page, direction)
-        })
+        }
+        animatePreloadedPageNextFrame()
       })
     } else {
       // 相邻页直接翻页

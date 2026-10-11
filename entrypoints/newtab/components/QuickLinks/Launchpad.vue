@@ -74,6 +74,7 @@ import { useVirtualQuickLinkDnd, virtualItemKey } from './composables/useVirtual
 import { getTopSites, rawTopSites } from './utils/topSites'
 
 const refreshDebounced = useDebounceFn(refresh, 100)
+onScopeDispose(() => refreshDebounced.cancel())
 
 const model = defineModel<boolean>({ required: true })
 

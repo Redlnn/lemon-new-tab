@@ -92,6 +92,7 @@ const props = defineProps<{
 }>()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
+onScopeDispose(() => refreshDebounced.cancel())
 const quickLinks = computed(() => quickLinksStore.items.slice())
 const topSites = computed(() =>
   settings.quickLinks.topSites
