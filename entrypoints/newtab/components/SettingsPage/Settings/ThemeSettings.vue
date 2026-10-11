@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useTimeoutFn } from '@vueuse/core'
-
 import { useTranslation } from 'i18next-vue'
 import ComputerRound from '~icons/ic/round-computer'
 import DarkModeRound from '~icons/ic/round-dark-mode'
@@ -16,7 +14,7 @@ import {
   PermissionResult,
   usePermission,
 } from '@newtab/composables/usePermission'
-import { colorMode as mode, preferredDark } from '@newtab/shared/colorMode'
+import { currentColorMode as currentMode, setColorMode } from '@newtab/shared/colorMode'
 import { useLocalWallpaperStore } from '@newtab/shared/wallpaper'
 
 import SyncAvailabilityIcon from '../components/SyncAvailabilityIcon.vue'
@@ -56,47 +54,6 @@ const predefineColorsMap = [
 ]
 
 const predefineColors = predefineColorsMapClassic.concat(predefineColorsMapAcgn).map((i) => i.value)
-
-const currentMode = ref(mode.store.value as 'auto' | 'dark' | 'light')
-
-function changeByPreferred() {
-  if (preferredDark.value) {
-    document.documentElement.classList.add('dark')
-    document.documentElement.classList.remove('light')
-  } else {
-    document.documentElement.classList.add('light')
-    document.documentElement.classList.remove('dark')
-  }
-}
-
-function setColorMode(newMode: 'auto' | 'dark' | 'light') {
-  if (newMode === currentMode.value) return
-
-  if (newMode === 'auto') {
-    if ((currentMode.value === 'dark') !== preferredDark.value) {
-      changeByPreferred()
-      useTimeoutFn(() => {
-        mode.store.value = 'auto'
-      }, 300)
-    } else {
-      mode.store.value = 'auto'
-    }
-  } else if (newMode === 'dark') {
-    document.documentElement.classList.add('dark')
-    document.documentElement.classList.remove('light')
-    useTimeoutFn(() => {
-      mode.store.value = 'dark'
-    }, 300)
-  } else {
-    document.documentElement.classList.add('light')
-    document.documentElement.classList.remove('dark')
-    useTimeoutFn(() => {
-      mode.store.value = 'light'
-    }, 300)
-  }
-
-  currentMode.value = newMode
-}
 
 const { checkAndRequestPermission } = usePermission()
 const monetPermissionPending = ref(false)

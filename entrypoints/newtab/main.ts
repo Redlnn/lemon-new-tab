@@ -9,29 +9,12 @@ import { hydrateFaviconCache, setFaviconCacheEnabled } from '@/shared/media'
 import { useSettingsStore } from '@/shared/settings'
 import { applyStoredMonetColors, getMonetColors } from '@/shared/theme'
 
-import { colorMode, initColorModePreference, preferredDark } from '@newtab/shared/colorMode'
+import { initColorModePreference } from '@newtab/shared/colorMode'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 
 import App from './App.vue'
 import { setupAutoSaveSettings } from './shared/autoSaveSettings'
 import { changeTheme } from './shared/theme'
-
-const { store } = colorMode
-watch(
-  preferredDark,
-  () => {
-    if (store.value === 'auto') {
-      if (preferredDark.value) {
-        document.documentElement.classList.add('dark')
-        document.documentElement.classList.remove('light')
-      } else {
-        document.documentElement.classList.add('light')
-        document.documentElement.classList.remove('dark')
-      }
-    }
-  },
-  { immediate: true },
-)
 
 export const main = async () => {
   const banner = `\n%c Lemon New Tab %c ${version}%c\n\n`
