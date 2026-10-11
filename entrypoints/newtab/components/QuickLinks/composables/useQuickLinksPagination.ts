@@ -112,6 +112,7 @@ export function useQuickLinksPagination(
 
     const version = ++transitionVersion
     stopRestoreTransition()
+    noTransition.value = false
     isAnimating.value = true
     slideDirection.value = direction
 
