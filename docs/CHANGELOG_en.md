@@ -2,23 +2,28 @@
 
 > Translated by AI from Chinese.
 
-## Unreleased
+## A fresh page, more possibilities 🍋
+
+Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you need with smarter search. More to enjoy in a familiar place—let's turn a fresh page together.
+
+## 4.1.0
 
 ### New Features✨
 
 - **Layout:** The main content area can now be positioned from the bottom, with search suggestions opening upward.
 - **Dock:** Dock can replace Quick Links. Opening the Launchpad moves Dock to the bottom of the page.
-- **Sync:** Clearing WebDAV cloud data now keeps the empty sync folder by default, with an option to delete the folder as well.
 
 ### Improvements⚡️
 
+- Optimize performance and resource usage
 - **Dock:** Moved the “Open in New Tab” option to Dock's General settings.
-- **Sync:** WebDAV connection checks now run inside the sync folder and automatically clean up leftover test files ([#123](https://github.com/Redlnn/lemon-new-tab/issues/123)).
 
 ### Bug Fixes🐛
 
-- **Dock:** Fixed hover magnification failing after pinning a website.
-- **Sync:** Fixed earlier requests overwriting current content or showing outdated errors after reopening a sync management dialog.
+- **Dock:** Fixed hover magnification failing for the pinned icon after pinning a website.
+- **Sync:** Fixed some issues in the sync module.
+- **Sync:** Fixed WebDAV connection checks failing because Nutstore does not allow deleting the top-level directory ([#123](https://github.com/Redlnn/lemon-new-tab/issues/123)).
+  > Added an option to choose whether to delete the top-level directory when clearing WebDAV cloud data; deletion may fail.
 
 ## 4.0.1
 
@@ -41,9 +46,7 @@
 - **Quick Links:** Fixed incorrect vertical alignment of group title text in paging mode.
 - **Settings:** Fixed switch shadows being clipped on the right in narrow-screen settings dialogs.
 
-## 4.0.0 · A fresh page, more possibilities 🍋
-
-Lemon 4.0.0 is here! Capture an idea, change the scenery, find what you need with smarter search. More to enjoy in a familiar place—let's turn a fresh page together.
+## 4.0.0
 
 ### Breaking Changes💥
 
