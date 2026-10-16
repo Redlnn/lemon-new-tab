@@ -2,7 +2,13 @@
 import { OnLongPress } from '@vueuse/components'
 import '@newtab/styles/quick-links.scss'
 
-import { useDebounceFn, useRafFn, useResizeObserver, useTimeoutFn, useWindowSize } from '@vueuse/core'
+import {
+  useDebounceFn,
+  useRafFn,
+  useResizeObserver,
+  useTimeoutFn,
+  useWindowSize,
+} from '@vueuse/core'
 import { defineAsyncComponent } from 'vue'
 
 import { useTranslation } from 'i18next-vue'
@@ -18,6 +24,7 @@ import { useFocusState } from '@newtab/composables/useFocus'
 import usePerfClasses from '@newtab/composables/usePerfClasses'
 import { isTouchEvent } from '@newtab/shared/touch'
 
+import DockGroupFolder from './components/DockGroupFolder.vue'
 import FaviconImage from './components/FaviconImage.vue'
 import QuickLinkContextMenu from './components/QuickLinkContextMenu.vue'
 import QuickLinkGroupSelectDialog from './components/QuickLinkGroupSelectDialog.vue'
@@ -70,15 +77,28 @@ const { updateMaxCols, maxFitCols } = useDockLayout()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
 onScopeDispose(() => refreshDebounced.cancel())
+const dockGroupId = computed(() =>
+  quickLinksStore.getGroup(settings.dock.groupId)
+    ? settings.dock.groupId
+    : DEFAULT_QUICK_LINK_GROUP_ID,
+)
 const quickLinks = computed(() =>
   settings.quickLinks.grouping
-    ? quickLinksStore.getDefaultGroupItems().slice()
+    ? (quickLinksStore.getGroup(dockGroupId.value)?.items ?? []).slice()
     : quickLinksStore.items.slice(),
+)
+const folderGroups = computed(() =>
+  settings.quickLinks.grouping && settings.dock.showOtherGroups
+    ? quickLinksStore.groups.filter((group) => group.id !== dockGroupId.value)
+    : [],
 )
 const topSites = computed(() =>
   settings.dock.topSites
     ? mergeTopSites(rawTopSites.value, {
-        quickLinks: quickLinks.value,
+        quickLinks:
+          settings.quickLinks.grouping && settings.dock.showOtherGroups
+            ? quickLinksStore.items.slice()
+            : quickLinks.value,
         noCap: true,
       })
     : [],
@@ -88,11 +108,24 @@ async function refresh() {
   await refreshDockScaleLayout()
 }
 
-// 根据屏幕宽度初始两个区块的可见项目
-const visibleQuickLinksData = computed(() => quickLinks.value.slice(0, maxFitCols.value))
-const visibleTopSites = computed(() =>
-  topSites.value.slice(0, Math.max(0, maxFitCols.value - visibleQuickLinksData.value.length)),
+// 文件夹最多占一半槽位（向下取整），其余槽位优先展示所选分组的链接。
+const visibleFolderGroups = computed(() =>
+  folderGroups.value.slice(0, Math.floor(maxFitCols.value / 2)),
 )
+const visibleQuickLinksData = computed(() =>
+  quickLinks.value.slice(0, Math.max(0, maxFitCols.value - visibleFolderGroups.value.length)),
+)
+const visibleTopSites = computed(() =>
+  topSites.value.slice(
+    0,
+    Math.max(
+      0,
+      maxFitCols.value - visibleQuickLinksData.value.length - visibleFolderGroups.value.length,
+    ),
+  ),
+)
+
+watch([visibleQuickLinksData, visibleFolderGroups, visibleTopSites], refreshDebounced)
 
 // 屏幕尺寸变化时更新最大列数
 // useResizeObserver 会在开始观察时立即触发一次，因此不需要额外的 onMounted 刷新调用
@@ -102,17 +135,15 @@ useResizeObserver(document.documentElement, () => {
 })
 
 watch(
-  () => [settings.dock.iconSize, settings.dock.limitCount, settings.dock.maxCount],
+  () => [
+    settings.dock.iconSize,
+    settings.dock.gap,
+    settings.dock.limitCount,
+    settings.dock.maxCount,
+  ],
   async () => {
     updateMaxCols()
     await refreshDebounced()
-  },
-)
-
-watch(
-  () => settings.dock.topSites,
-  () => {
-    refreshDebounced()
   },
 )
 
@@ -246,6 +277,14 @@ const { start: finishScaleTransition } = useTimeoutFn(() => applyTransition('0s'
 
 // 追踪当前交互是否来自触屏，用于混合设备（鼠标+触屏）的判断
 const isUsingTouch = ref(false)
+// 弹层定位依赖图标尺寸，打开到退场结束期间保持 Dock 原始尺寸。
+const openFolderIds = new Set<string>()
+
+function onFolderShow(groupId: string) {
+  openFolderIds.add(groupId)
+  applyTransition('0s')
+  updateScales(null)
+}
 
 function onPointerEnter(e: PointerEvent): void {
   isUsingTouch.value = e.pointerType !== 'mouse'
@@ -256,7 +295,7 @@ function applyTransition(duration: string): void {
 }
 
 function onMouseEnter(e: MouseEvent): void {
-  if (!settings.perf.dockScale || isUsingTouch.value) return
+  if (!settings.perf.dockScale || isUsingTouch.value || openFolderIds.size) return
 
   applyTransition(TRANSITION_DURATION)
   finishScaleTransition()
@@ -265,13 +304,13 @@ function onMouseEnter(e: MouseEvent): void {
 }
 
 function onMouseMove(e: MouseEvent): void {
-  if (!settings.perf.dockScale || isUsingTouch.value) return
+  if (!settings.perf.dockScale || isUsingTouch.value || openFolderIds.size) return
 
   updateScales(e.clientX)
 }
 
 function onMouseLeave(): void {
-  if (!settings.perf.dockScale || isUsingTouch.value) return
+  if (!settings.perf.dockScale || isUsingTouch.value || openFolderIds.size) return
 
   applyTransition(TRANSITION_DURATION)
   updateScales(null)
@@ -288,13 +327,14 @@ function openDockItemMenu(
   item: { url: string; title?: string },
   isPinned: boolean,
   originalIndex: number,
+  groupId = dockGroupId.value,
 ): void {
   ctxMenuRef.value?.open(event, {
     url: item.url,
     title: item.title || '',
     isPinned,
     originalIndex,
-    groupId: isPinned && settings.quickLinks.grouping ? DEFAULT_QUICK_LINK_GROUP_ID : undefined,
+    groupId: isPinned && settings.quickLinks.grouping ? groupId : undefined,
   })
 }
 
@@ -324,9 +364,9 @@ const { pinToGroup, moveToGroup } = useQuickLinkGroupActions({
   t,
 })
 
-function getDockQuickLinkCount() {
+function getDockQuickLinkCount(groupId = dockGroupId.value) {
   if (!settings.quickLinks.grouping) return quickLinksStore.items.length
-  return quickLinksStore.getGroupItemCount(DEFAULT_QUICK_LINK_GROUP_ID)
+  return quickLinksStore.getGroupItemCount(groupId)
 }
 
 function canMoveDockQuickLinkLeft(item: CtxQuickLinkItem) {
@@ -334,17 +374,17 @@ function canMoveDockQuickLinkLeft(item: CtxQuickLinkItem) {
 }
 
 function canMoveDockQuickLinkRight(item: CtxQuickLinkItem) {
-  return item.isPinned && item.originalIndex < getDockQuickLinkCount() - 1
+  return item.isPinned && item.originalIndex < getDockQuickLinkCount(item.groupId) - 1
 }
 
 async function moveDockQuickLink(item: CtxQuickLinkItem, direction: -1 | 1) {
   if (!item.isPinned || !item.id) return
   const target = quickLinksStore.findQuickLinkTargetById(item.id)
   if (target === null) return
-  if (typeof target !== 'number' && target.groupId !== DEFAULT_QUICK_LINK_GROUP_ID) return
+  if (typeof target !== 'number' && target.groupId !== item.groupId) return
   const fromIndex = typeof target === 'number' ? target : target.index
   const toIndex = fromIndex + direction
-  if (toIndex < 0 || toIndex >= getDockQuickLinkCount()) return
+  if (toIndex < 0 || toIndex >= getDockQuickLinkCount(item.groupId)) return
   try {
     const changed =
       typeof target !== 'number'
@@ -368,10 +408,10 @@ async function moveDockQuickLink(item: CtxQuickLinkItem, direction: -1 | 1) {
   }
 }
 
-function openAddQuickLink() {
+function openAddQuickLink(groupId = dockGroupId.value) {
   dialogs.open('quickLink', {
     mode: 'add',
-    groupId: settings.quickLinks.grouping ? DEFAULT_QUICK_LINK_GROUP_ID : undefined,
+    groupId: settings.quickLinks.grouping ? groupId : undefined,
   })
 }
 
@@ -438,11 +478,11 @@ defineExpose({ refresh, toggleLaunchpad })
           </div>
         </el-tooltip>
         <div
-          v-if="settings.dock.launchpad.enabled && visibleQuickLinksData.length > 0"
+          v-if="visibleQuickLinksData.length > 0 || visibleFolderGroups.length > 0"
           class="dock-gap"
         ></div>
       </template>
-      <template v-for="(item, idx) in visibleQuickLinksData" :key="`pin-${idx}`">
+      <template v-for="(item, idx) in visibleQuickLinksData" :key="item.id ?? item.url">
         <el-tooltip
           :content="item.title"
           placement="top"
@@ -474,9 +514,24 @@ defineExpose({ refresh, toggleLaunchpad })
         </el-tooltip>
         <div v-if="idx !== visibleQuickLinksData.length - 1" class="dock-gap"></div>
       </template>
+      <div v-if="visibleQuickLinksData.length && visibleFolderGroups.length" class="dock-gap"></div>
+      <template v-for="(group, idx) in visibleFolderGroups" :key="group.id">
+        <dock-group-folder
+          :group="group"
+          :popper-class="dockTooltipClass"
+          @open-item="openBuiltInItem"
+          @item-menu="(event, item, index) => openDockItemMenu(event, item, true, index, group.id)"
+          @add="openAddQuickLink(group.id)"
+          @show="onFolderShow(group.id)"
+          @hide="openFolderIds.delete(group.id)"
+        />
+        <div v-if="idx !== visibleFolderGroups.length - 1" class="dock-gap"></div>
+      </template>
       <template
         v-if="
-          (settings.dock.launchpad.enabled || visibleQuickLinksData.length > 0) &&
+          (settings.dock.launchpad.enabled ||
+            visibleQuickLinksData.length > 0 ||
+            visibleFolderGroups.length > 0) &&
           visibleTopSites.length > 0
         "
       >
@@ -517,7 +572,7 @@ defineExpose({ refresh, toggleLaunchpad })
         <div class="dock-gap"></div>
         <div class="dock-separator"></div>
         <div class="dock-gap"></div>
-        <div class="dock-item" @click="openAddQuickLink">
+        <div class="dock-item" @click="openAddQuickLink()">
           <add-round />
         </div>
       </template>

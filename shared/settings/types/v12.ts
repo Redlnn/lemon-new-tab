@@ -15,6 +15,8 @@ export interface SettingsSchemaV12 extends Omit<
   greetingEnabled: boolean
   dock: SettingsSchemaV11['dock'] & {
     replaceQuickLinks: boolean
+    groupId: string
+    showOtherGroups: boolean
   }
   layout: Omit<SettingsSchemaV11['layout'], 'mainPosition'> & {
     mainPosition: { type: MainPositionType; value: number }

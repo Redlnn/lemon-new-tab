@@ -12,11 +12,14 @@ Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you ne
 
 - **Layout:** The main content area can now be positioned from the bottom, with search suggestions opening upward.
 - **Dock:** Dock can replace Quick Links. Opening the Launchpad moves Dock to the bottom of the page.
+- **Dock:** When grouping is enabled, choose which group to display in Dock. The Default group is selected initially.
+- **Dock:** Other groups can be shown as folders. Click to expand their links in a scrollable panel showing up to three rows, with support for adding links and context menus.
 
 ### Improvements⚡️
 
 - Optimize performance and resource usage
 - **Dock:** Moved the “Open in New Tab” option to Dock's General settings.
+- **Dock:** Raised the minimum value of Maximum count to 3; existing values of 1 or 2 are automatically adjusted to 3. Folders occupy at most half the available slots, rounded down, with the remaining slots prioritizing links from the selected group.
 
 ### Bug Fixes🐛
 

@@ -71,6 +71,7 @@ const SETTING_TITLE_ALIASES: Partial<Record<SettingPath, string>> = {
   'dock.topSites': 'quickLinks.topSites',
   'dock.showOnSearchFocus': 'quickLinks.showOnSearchFocus',
   'dock.openInNewTab': 'common.openInNewTab',
+  'dock.groupId': 'dock.displayGroup',
   'dock.gap': 'quickLinks.spacing.itemGapX',
   'dock.iconSize': 'quickLinks.iconSize',
   'dock.iconRatio': 'quickLinks.iconRatio',
@@ -304,6 +305,16 @@ function displayValue(
       value.filter((id): id is string => typeof id === 'string'),
     ).map((id) => t(suggestionProviderNameKey(id)))
     return names.length ? names.join('、') : t('search.noSuggestionProviders')
+  }
+  if (conflict.path === 'settings.dock.groupId' && typeof value === 'string') {
+    return (
+      context.quickLinkGroups[value] ??
+      t(
+        value === 'default'
+          ? 'newtab:quickLinks.groups.default'
+          : 'webdavSync.conflicts.values.unknownGroup',
+      )
+    )
   }
   if (isOrderPath(conflict.path)) return t('webdavSync.conflicts.values.orderChanged')
   if (isIconPath(conflict.path)) {

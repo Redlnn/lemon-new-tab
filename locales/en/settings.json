@@ -192,6 +192,9 @@
     "touchDeviceDisabledNote": "This option is disabled on touch-only devices."
   },
   "dock": {
+    "displayGroup": "Group shown in Dock",
+    "showOtherGroups": "Show other groups as folders",
+    "emptyGroup": "No links in this group yet",
     "replaceQuickLinks": "Use Dock instead of Quick Links",
     "replaceQuickLinksTip": "For a more spacious layout, you might like to enable “{{option}}” in Search settings.",
     "replaceQuickLinksLayoutTip": "You can also slightly increase the distance from the top in Layout settings to give the page more breathing room.",

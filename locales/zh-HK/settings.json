@@ -192,6 +192,9 @@
     "touchDeviceDisabledNote": "觸控裝置已停用此項。"
   },
   "dock": {
+    "displayGroup": "在 Dock 中顯示的群組",
+    "showOtherGroups": "以資料夾形式顯示其他群組",
+    "emptyGroup": "此群組暫無連結",
     "replaceQuickLinks": "使用 Dock 取代快速導航",
     "replaceQuickLinksTip": "不妨試試在搜尋設定中開啟「{{option}}」，讓版面更舒展。",
     "replaceQuickLinksLayoutTip": "也可以在版面設定中適度增加距頂部距離，讓頁面配置更寬鬆。",

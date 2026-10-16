@@ -156,6 +156,8 @@ export const defaultSettings = {
   dock: {
     enabled: false,
     replaceQuickLinks: false,
+    groupId: 'default',
+    showOtherGroups: false,
 
     topSites: true,
     showOnSearchFocus: true,

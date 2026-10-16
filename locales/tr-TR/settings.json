@@ -192,6 +192,9 @@
     "touchDeviceDisabledNote": "Bu seçenek yalnızca dokunmatik cihazlarda devre dışıdır."
   },
   "dock": {
+    "displayGroup": "Dock'ta gösterilen grup",
+    "showOtherGroups": "Diğer grupları klasör olarak göster",
+    "emptyGroup": "Bu grupta henüz bağlantı yok",
     "replaceQuickLinks": "Hızlı Bağlantılar yerine Dock kullan",
     "replaceQuickLinksTip": "Daha ferah bir düzen için Arama ayarlarında “{{option}}” seçeneğini açmayı deneyebilirsiniz.",
     "replaceQuickLinksLayoutTip": "Sayfaya biraz daha alan kazandırmak için Düzen ayarlarında üstten uzaklığı da biraz artırabilirsiniz.",

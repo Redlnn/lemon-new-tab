@@ -2,6 +2,7 @@
 import { useTranslation } from 'i18next-vue'
 import RestoreRound from '~icons/ic/round-restore'
 
+import { DEFAULT_QUICK_LINK_GROUP_ID, useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 import { blockedTopSitesStorage } from '@/shared/topSites/storage'
 
@@ -13,6 +14,16 @@ const { t } = useTranslation('settings')
 
 const isChrome = import.meta.env.CHROME
 const settings = useSettingsStore()
+const quickLinksStore = useQuickLinksStore()
+const dockGroupId = computed({
+  get: () =>
+    quickLinksStore.getGroup(settings.dock.groupId)
+      ? settings.dock.groupId
+      : DEFAULT_QUICK_LINK_GROUP_ID,
+  set: (value: string) => {
+    settings.dock.groupId = value
+  },
+})
 const { handleGroupingChange } = useQuickLinksGroupingChange()
 
 async function restoreDefaultTopSites() {
@@ -73,6 +84,23 @@ async function restoreDefaultTopSites() {
             {{ t('quickLinks.groupingTip') }}
           </p>
         </div>
+        <template v-if="settings.quickLinks.grouping">
+          <div class="settings__item settings__item--vertical">
+            <div class="settings__label">{{ t('dock.displayGroup') }}</div>
+            <el-select v-model="dockGroupId" :aria-label="t('dock.displayGroup')">
+              <el-option
+                v-for="group in quickLinksStore.groups"
+                :key="group.id"
+                :label="group.name"
+                :value="group.id"
+              />
+            </el-select>
+          </div>
+          <div class="settings__item settings__item--horizontal">
+            <div class="settings__label">{{ t('dock.showOtherGroups') }}</div>
+            <el-switch v-model="settings.dock.showOtherGroups" />
+          </div>
+        </template>
       </template>
     </SettingsSection>
 
@@ -151,7 +179,7 @@ async function restoreDefaultTopSites() {
         <div class="settings__label">{{ t('dock.maxCount') }}</div>
         <el-slider
           v-model="settings.dock.maxCount"
-          :min="1"
+          :min="3"
           :max="20"
           show-input
           :show-input-controls="false"

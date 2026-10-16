@@ -87,7 +87,7 @@ export function useDockLayout() {
     // n * unitWidth - marginH <= containerWidth
     // n < (containerWidth + marginH) / unitWidth
     const raw = Math.floor((containerWidth + marginH) / unitWidth)
-    return Math.max(1, settings.dock.limitCount ? Math.min(settings.dock.maxCount, raw) : raw)
+    return Math.max(3, settings.dock.limitCount ? Math.min(settings.dock.maxCount, raw) : raw)
   }
 
   // 最大列数
