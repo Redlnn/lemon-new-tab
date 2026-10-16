@@ -14,6 +14,7 @@ Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you ne
 - **Dock:** Dock can replace Quick Links. Opening the Launchpad moves Dock to the bottom of the page.
 - **Dock:** When grouping is enabled, choose which group to display in Dock. The Default group is selected initially.
 - **Dock:** Other groups can be shown as folders. Click to expand their links in a scrollable panel showing up to three rows, with support for adding links and context menus.
+- **Settings:** Closing and reopening Settings within the same new tab now preserves the last open page and scroll positions by default. Enable “Don't save settings window scroll position” under Other → General to reset only the scroll positions.
 
 ### Improvements⚡️
 
@@ -23,6 +24,7 @@ Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you ne
 
 ### Bug Fixes🐛
 
+- **Settings:** Fixed the missing back-to-menu button on settings detail pages after switching from desktop to narrow-screen layout.
 - **Dock:** Fixed hover magnification failing for the pinned icon after pinning a website.
 - **Sync:** Fixed some issues in the sync module.
 - **Sync:** Fixed WebDAV connection checks failing because Nutstore does not allow deleting the top-level directory ([#123](https://github.com/Redlnn/lemon-new-tab/issues/123)).

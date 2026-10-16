@@ -240,6 +240,7 @@
     "title": "佈局"
   },
   "other": {
+    "disableSettingsScrollRestore": "不儲存設定視窗捲動位置",
     "changelog": {
       "description": "重大升級時仍會彈出",
       "label": "版本升級時不彈出更新日誌"

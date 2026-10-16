@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ScrollbarInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import ChevronRightRound from '~icons/ic/round-chevron-right'
 
@@ -7,6 +8,12 @@ import Icon from '@/assets/icon.svg?component'
 import { MENU_ITEMS } from '../composables/useSettingsRouter'
 
 const { t } = useTranslation('settings')
+const scrollbarRef = useTemplateRef<ScrollbarInstance>('scrollbar')
+
+defineExpose({
+  getScrollTop: () => scrollbarRef.value?.wrapRef?.scrollTop ?? 0,
+  setScrollTop: (top: number) => scrollbarRef.value?.setScrollTop(top),
+})
 
 interface Props {
   isMobile?: boolean
@@ -40,7 +47,7 @@ function handleMenuSelect(key: string) {
         </el-icon>
         <span v-else>{{ t('title') }}</span>
       </div>
-      <el-scrollbar style="height: calc(100% - 83px)">
+      <el-scrollbar ref="scrollbar" style="height: calc(100% - 83px)">
         <el-menu-item
           v-for="item in MENU_ITEMS"
           :key="item.key"

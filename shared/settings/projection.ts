@@ -24,6 +24,7 @@ const SYNC_GROUPS = new Set([
   'layout',
   'bookmark',
   'hideMajorChangelog',
+  'disableSettingsScrollRestore',
   'faviconCacheEnabled',
 ])
 const LOCAL_PATHS = new Set([

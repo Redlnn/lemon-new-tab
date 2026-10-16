@@ -270,6 +270,7 @@ export const defaultSettings = {
 
   hideMajorChangelog: true,
   greetingEnabled: true,
+  disableSettingsScrollRestore: false,
   readChangeLog: false,
   faviconCacheEnabled: false,
 

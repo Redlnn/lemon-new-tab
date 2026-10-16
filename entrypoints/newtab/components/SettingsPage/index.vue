@@ -28,9 +28,14 @@ const settings = useSettingsStore()
 const { width: windowWidth } = useWindowSize({ type: 'visual' })
 const opened = defineModel<boolean>({ required: true })
 const { isComposing } = useImeAwareDialog()
+const menuViewRef = useTemplateRef<InstanceType<typeof SettingsMenuView>>('menuViewRef')
+const detailViewRef = useTemplateRef<InstanceType<typeof SettingsDetailView>>('detailViewRef')
+const scrollPositions = { menu: 0, detail: 0 }
 
 const isMobile = computed(() => windowWidth.value < MOBILE_BREAKPOINT)
 const isCollapse = computed(() => windowWidth.value < COLLAPSE_BREAKPOINT && !isMobile.value)
+
+router.reset(isMobile.value ? SettingsRoute.MENU : SettingsRoute.THEME)
 
 const currentPageTitle = computed(() => {
   if (router.isAtMenu.value) return t('title')
@@ -42,9 +47,23 @@ const slideTransitionName = computed(() =>
   isMobile.value ? (router.isForward.value ? 'settings-slide-left' : 'settings-slide-right') : '',
 )
 
-const resetRouter = () => router.reset(isMobile.value ? SettingsRoute.MENU : SettingsRoute.THEME)
+function rememberScrollPositions() {
+  scrollPositions.menu = settings.disableSettingsScrollRestore
+    ? 0
+    : (menuViewRef.value?.getScrollTop() ?? scrollPositions.menu)
+  scrollPositions.detail = settings.disableSettingsScrollRestore
+    ? 0
+    : (detailViewRef.value?.getScrollTop() ?? scrollPositions.detail)
+}
+
+async function restoreScrollPositions() {
+  await nextTick()
+  menuViewRef.value?.setScrollTop(settings.disableSettingsScrollRestore ? 0 : scrollPositions.menu)
+  detailViewRef.value?.setScrollTop(settings.disableSettingsScrollRestore ? 0 : scrollPositions.detail)
+}
 
 async function handleClose() {
+  rememberScrollPositions()
   if (settings.yiyan.provider === 'custom') {
     settings.yiyan.customLines = settings.yiyan.customLines
       .split('\n')
@@ -70,17 +89,13 @@ watch(windowWidth, (newWidth, oldWidth) => {
   if (oldWidth) {
     const wasMobile = oldWidth < MOBILE_BREAKPOINT
     const isNowMobile = newWidth < MOBILE_BREAKPOINT
-    if (wasMobile !== isNowMobile) resetRouter()
+    if (wasMobile !== isNowMobile) {
+      if (opened.value) rememberScrollPositions()
+      if (!isNowMobile && router.isAtMenu.value) router.reset(SettingsRoute.THEME)
+      if (opened.value) void restoreScrollPositions()
+    }
   }
 })
-
-watch(
-  opened,
-  (visible) => {
-    if (visible) resetRouter()
-  },
-  { immediate: true },
-)
 </script>
 
 <template>
@@ -98,12 +113,12 @@ watch(
     :close-on-press-escape="!isComposing"
     header-class="settings-header noselect"
     body-class="settings-dialog-body"
+    @open="restoreScrollPositions"
     @close="handleClose"
-    @closed="resetRouter"
   >
     <template #header="{ close, titleId }">
       <button
-        v-if="isMobile ? router.canGoBack.value : true"
+        v-if="!isMobile || !router.isAtMenu.value"
         class="settings-back-btn"
         :aria-label="t('a11y.back')"
         :disabled="!isMobile && !router.canGoBack.value"
@@ -135,6 +150,7 @@ watch(
     <div class="settings-layout">
       <settings-menu-view
         v-if="!isMobile"
+        ref="menuViewRef"
         :is-collapse="isCollapse"
         :active-key="router.currentRoute.value"
         @select="handleMenuSelect"
@@ -144,6 +160,7 @@ watch(
         <settings-menu-view
           v-if="router.isAtMenu.value"
           key="menu"
+          ref="menuViewRef"
           is-mobile
           :active-key="router.currentRoute.value"
           @select="handleMenuSelect"

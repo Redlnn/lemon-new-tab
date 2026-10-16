@@ -240,6 +240,7 @@
     "title": "Düzen"
   },
   "other": {
+    "disableSettingsScrollRestore": "Ayarlar penceresinin kaydırma konumunu kaydetme",
     "changelog": {
       "description": "Büyük güncellemelerde yine açılır",
       "label": "Sürüm yükseltmelerinde değişiklik günlüğünü açma"

@@ -13,6 +13,7 @@ export interface SettingsSchemaV12 extends Omit<
 > {
   version: 12
   greetingEnabled: boolean
+  disableSettingsScrollRestore: boolean
   dock: SettingsSchemaV11['dock'] & {
     replaceQuickLinks: boolean
     groupId: string

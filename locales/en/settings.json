@@ -240,6 +240,7 @@
     "title": "Layout"
   },
   "other": {
+    "disableSettingsScrollRestore": "Don't save settings window scroll position",
     "changelog": {
       "description": "Still opens for major upgrades",
       "label": "Don't open the changelog on version upgrades"

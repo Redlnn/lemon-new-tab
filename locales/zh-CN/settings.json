@@ -240,6 +240,7 @@
     "title": "布局"
   },
   "other": {
+    "disableSettingsScrollRestore": "不保存设置窗口滚动位置",
     "changelog": {
       "description": "重大升级时仍会弹出",
       "label": "版本升级时不弹出更新日志"
