@@ -26,6 +26,7 @@ overrides:
   '@milkdown/crepe>@types/lodash-es': '-'
   '@milkdown/crepe>remark-math': '-'
   # glob: '^13.0.6' # 统一版本
+  sass: 'npm:sass-embedded@^1.105.2' # 替换为高性能实现
   markdown-it: 'npm:markdown-exit@^1.3.0' # 替换为高性能实现
   # -----
   'ini': '^7.0.0'
