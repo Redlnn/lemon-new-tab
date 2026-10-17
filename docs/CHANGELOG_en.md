@@ -20,7 +20,6 @@ Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you ne
 
 - Optimize performance and resource usage
 - **Dock:** Moved the “Open in New Tab” option to Dock's General settings.
-- **Dock:** Raised the minimum value of Maximum count to 3; existing values of 1 or 2 are automatically adjusted to 3. Folders occupy at most half the available slots, rounded down, with the remaining slots prioritizing links from the selected group.
 
 ### Bug Fixes🐛
 

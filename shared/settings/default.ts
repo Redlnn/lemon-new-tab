@@ -158,6 +158,7 @@ export const defaultSettings = {
     replaceQuickLinks: false,
     groupId: 'default',
     showOtherGroups: false,
+    folderCount: 5,
 
     topSites: true,
     showOnSearchFocus: true,

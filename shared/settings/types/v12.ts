@@ -18,6 +18,7 @@ export interface SettingsSchemaV12 extends Omit<
     replaceQuickLinks: boolean
     groupId: string
     showOtherGroups: boolean
+    folderCount: number
   }
   layout: Omit<SettingsSchemaV11['layout'], 'mainPosition'> & {
     mainPosition: { type: MainPositionType; value: number }

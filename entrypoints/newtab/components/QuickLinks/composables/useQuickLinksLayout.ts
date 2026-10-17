@@ -90,13 +90,5 @@ export function useDockLayout() {
     return Math.max(3, settings.dock.limitCount ? Math.min(settings.dock.maxCount, raw) : raw)
   }
 
-  // 最大列数
-  const maxFitCols = ref(computeFitColumns())
-
-  const updateMaxCols = useDebounceFn(() => {
-    maxFitCols.value = computeFitColumns()
-  }, 100)
-  onScopeDispose(() => updateMaxCols.cancel())
-
-  return { updateMaxCols, maxFitCols }
+  return { maxFitCols: computed(computeFitColumns) }
 }

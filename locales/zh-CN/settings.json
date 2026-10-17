@@ -194,6 +194,7 @@
   "dock": {
     "displayGroup": "在 Dock 中展示的分组",
     "showOtherGroups": "以文件夹形式展示其余分组",
+    "folderCount": "文件夹数量",
     "emptyGroup": "此分组暂无链接",
     "replaceQuickLinks": "使用Dock代替快速导航",
     "replaceQuickLinksTip": "可以试试在搜索设置中开启“{{option}}”，让布局更舒展。",

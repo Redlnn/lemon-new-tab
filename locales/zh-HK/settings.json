@@ -194,6 +194,7 @@
   "dock": {
     "displayGroup": "在 Dock 中顯示的群組",
     "showOtherGroups": "以資料夾形式顯示其他群組",
+    "folderCount": "資料夾數量",
     "emptyGroup": "此群組暫無連結",
     "replaceQuickLinks": "使用 Dock 取代快速導航",
     "replaceQuickLinksTip": "不妨試試在搜尋設定中開啟「{{option}}」，讓版面更舒展。",

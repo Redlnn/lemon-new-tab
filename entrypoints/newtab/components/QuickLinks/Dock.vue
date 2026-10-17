@@ -73,7 +73,7 @@ const dockTooltipClass = computed(
     `dock-tooltip noselect${quickLinksTransparencyEnabled.value ? ' dock-tooltip--opacity' : ''}${quickLinksBlurEnabled.value ? ' dock-tooltip--blur' : ''}`,
 )
 
-const { updateMaxCols, maxFitCols } = useDockLayout()
+const { maxFitCols } = useDockLayout()
 
 const refreshDebounced = useDebounceFn(refresh, 100)
 onScopeDispose(() => refreshDebounced.cancel())
@@ -108,29 +108,26 @@ async function refresh() {
   await refreshDockScaleLayout()
 }
 
-// 文件夹最多占一半槽位（向下取整），其余槽位优先展示所选分组的链接。
-const visibleFolderGroups = computed(() =>
-  folderGroups.value.slice(0, Math.floor(maxFitCols.value / 2)),
+const folderCount = computed(() =>
+  settings.quickLinks.grouping && settings.dock.showOtherGroups
+    ? Math.min(settings.dock.folderCount, maxFitCols.value)
+    : 0,
 )
-const visibleQuickLinksData = computed(() =>
-  quickLinks.value.slice(0, Math.max(0, maxFitCols.value - visibleFolderGroups.value.length)),
+const visibleFolderGroups = computed(() => folderGroups.value.slice(0, folderCount.value))
+// 达到槽位上限时只展示文件夹，即使分组不足也不补链接。
+const linkSlots = computed(() =>
+  folderCount.value === maxFitCols.value ? 0 : maxFitCols.value - visibleFolderGroups.value.length,
 )
+const visibleQuickLinksData = computed(() => quickLinks.value.slice(0, linkSlots.value))
 const visibleTopSites = computed(() =>
-  topSites.value.slice(
-    0,
-    Math.max(
-      0,
-      maxFitCols.value - visibleQuickLinksData.value.length - visibleFolderGroups.value.length,
-    ),
-  ),
+  topSites.value.slice(0, Math.max(0, linkSlots.value - visibleQuickLinksData.value.length)),
 )
 
 watch([visibleQuickLinksData, visibleFolderGroups, visibleTopSites], refreshDebounced)
 
-// 屏幕尺寸变化时更新最大列数
+// 屏幕尺寸变化时刷新缩放测量
 // useResizeObserver 会在开始观察时立即触发一次，因此不需要额外的 onMounted 刷新调用
 useResizeObserver(document.documentElement, () => {
-  updateMaxCols()
   refreshDebounced()
 })
 
@@ -141,10 +138,7 @@ watch(
     settings.dock.limitCount,
     settings.dock.maxCount,
   ],
-  async () => {
-    updateMaxCols()
-    await refreshDebounced()
-  },
+  refreshDebounced,
 )
 
 const isHideDock = computed(() => {
@@ -514,7 +508,11 @@ defineExpose({ refresh, toggleLaunchpad })
         </el-tooltip>
         <div v-if="idx !== visibleQuickLinksData.length - 1" class="dock-gap"></div>
       </template>
-      <div v-if="visibleQuickLinksData.length && visibleFolderGroups.length" class="dock-gap"></div>
+      <template v-if="visibleQuickLinksData.length && visibleFolderGroups.length">
+        <div class="dock-gap"></div>
+        <div class="dock-separator"></div>
+        <div class="dock-gap"></div>
+      </template>
       <template v-for="(group, idx) in visibleFolderGroups" :key="group.id">
         <dock-group-folder
           :group="group"

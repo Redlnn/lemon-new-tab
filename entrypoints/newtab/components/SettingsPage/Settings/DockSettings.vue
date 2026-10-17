@@ -6,6 +6,8 @@ import { DEFAULT_QUICK_LINK_GROUP_ID, useQuickLinksStore } from '@/shared/quickL
 import { useSettingsStore } from '@/shared/settings'
 import { blockedTopSitesStorage } from '@/shared/topSites/storage'
 
+import { useDockLayout } from '@newtab/components/QuickLinks/composables/useQuickLinksLayout'
+
 import { useQuickLinksGroupingChange } from '../composables/useQuickLinksGroupingChange'
 
 import SettingsSection from './SettingsSection.vue'
@@ -15,6 +17,13 @@ const { t } = useTranslation('settings')
 const isChrome = import.meta.env.CHROME
 const settings = useSettingsStore()
 const quickLinksStore = useQuickLinksStore()
+const { maxFitCols } = useDockLayout()
+const folderCount = computed({
+  get: () => Math.min(settings.dock.folderCount, maxFitCols.value),
+  set: (value: number) => {
+    settings.dock.folderCount = value
+  },
+})
 const dockGroupId = computed({
   get: () =>
     quickLinksStore.getGroup(settings.dock.groupId)
@@ -99,6 +108,21 @@ async function restoreDefaultTopSites() {
           <div class="settings__item settings__item--horizontal">
             <div class="settings__label">{{ t('dock.showOtherGroups') }}</div>
             <el-switch v-model="settings.dock.showOtherGroups" />
+          </div>
+          <div
+            v-if="settings.dock.showOtherGroups"
+            class="settings__item settings__item--vertical settings__item"
+          >
+            <div class="settings__label">{{ t('dock.folderCount') }}</div>
+            <el-slider
+              v-model="folderCount"
+              :aria-label="t('dock.folderCount')"
+              :min="1"
+              :max="maxFitCols"
+              show-input
+              :show-input-controls="false"
+              :show-tooltip="false"
+            />
           </div>
         </template>
       </template>

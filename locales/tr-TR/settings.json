@@ -194,6 +194,7 @@
   "dock": {
     "displayGroup": "Dock'ta gösterilen grup",
     "showOtherGroups": "Diğer grupları klasör olarak göster",
+    "folderCount": "Klasör sayısı",
     "emptyGroup": "Bu grupta henüz bağlantı yok",
     "replaceQuickLinks": "Hızlı Bağlantılar yerine Dock kullan",
     "replaceQuickLinksTip": "Daha ferah bir düzen için Arama ayarlarında “{{option}}” seçeneğini açmayı deneyebilirsiniz.",

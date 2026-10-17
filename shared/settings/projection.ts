@@ -62,6 +62,7 @@ const INTEGER_RANGES: Record<string, readonly [number, number]> = {
   'layout.globalBorderRadius': [0, 40],
   'dock.borderRadius': [0, 40],
   'dock.maxCount': [3, 20],
+  'dock.folderCount': [1, Number.MAX_SAFE_INTEGER],
   'dock.launchpad.iconSize': [40, 96],
   'bookmark.drawerWidth': [200, Number.MAX_SAFE_INTEGER],
 }
