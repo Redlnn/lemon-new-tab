@@ -201,6 +201,8 @@ onBeforeUnmount(() => positionAnimation?.cancel())
 let scalableEls: HTMLElement[] = []
 // 缓存元素在 scale=1 时的中心点 X 坐标，避免放大后位置偏移导致波形变形
 let naturalCenters: number[] = []
+let dockPointerX: number | null = null
+let scaleLayoutPending = false
 
 function cacheNaturalCenters(): void {
   scalableEls = Array.from(
@@ -237,8 +239,16 @@ function updateScales(clientX: number | null): void {
 }
 
 function measureDockScaleLayout() {
-  cacheNaturalCenters()
+  // 弹层退场前保留当前布局，避免重新测量改变其锚点。
+  if (openFolderIds.size) {
+    scaleLayoutPending = true
+    return
+  }
+  scaleLayoutPending = false
+  applyTransition('0s')
   updateScales(null)
+  cacheNaturalCenters()
+  updateScales(settings.perf.dockScale && !isUsingTouch.value ? dockPointerX : null)
 }
 
 const { resume: measureDockNextFrame } = useRafFn(measureDockScaleLayout, {
@@ -271,13 +281,19 @@ const { start: finishScaleTransition } = useTimeoutFn(() => applyTransition('0s'
 
 // 追踪当前交互是否来自触屏，用于混合设备（鼠标+触屏）的判断
 const isUsingTouch = ref(false)
-// 弹层定位依赖图标尺寸，打开到退场结束期间保持 Dock 原始尺寸。
+// 弹层打开到退场结束期间冻结当前缩放，保持图标和弹层锚点稳定。
 const openFolderIds = new Set<string>()
 
 function onFolderShow(groupId: string) {
   openFolderIds.add(groupId)
-  applyTransition('0s')
-  updateScales(null)
+}
+
+function onFolderHide(groupId: string) {
+  if (!openFolderIds.delete(groupId) || openFolderIds.size) return
+  if (scaleLayoutPending) measureDockScaleLayout()
+  applyTransition(TRANSITION_DURATION)
+  updateScales(settings.perf.dockScale && !isUsingTouch.value ? dockPointerX : null)
+  finishScaleTransition()
 }
 
 function onPointerEnter(e: PointerEvent): void {
@@ -289,6 +305,7 @@ function applyTransition(duration: string): void {
 }
 
 function onMouseEnter(e: MouseEvent): void {
+  dockPointerX = e.clientX
   if (!settings.perf.dockScale || isUsingTouch.value || openFolderIds.size) return
 
   applyTransition(TRANSITION_DURATION)
@@ -298,12 +315,14 @@ function onMouseEnter(e: MouseEvent): void {
 }
 
 function onMouseMove(e: MouseEvent): void {
+  dockPointerX = e.clientX
   if (!settings.perf.dockScale || isUsingTouch.value || openFolderIds.size) return
 
   updateScales(e.clientX)
 }
 
 function onMouseLeave(): void {
+  dockPointerX = null
   if (!settings.perf.dockScale || isUsingTouch.value || openFolderIds.size) return
 
   applyTransition(TRANSITION_DURATION)
@@ -521,7 +540,7 @@ defineExpose({ refresh, toggleLaunchpad })
           @item-menu="(event, item, index) => openDockItemMenu(event, item, true, index, group.id)"
           @add="openAddQuickLink(group.id)"
           @show="onFolderShow(group.id)"
-          @hide="openFolderIds.delete(group.id)"
+          @hide="onFolderHide(group.id)"
         />
         <div v-if="idx !== visibleFolderGroups.length - 1" class="dock-gap"></div>
       </template>
