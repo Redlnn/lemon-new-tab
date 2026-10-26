@@ -465,7 +465,10 @@ export async function cleanupWebDavProbe(
   await client.delete(`${directory}/`, true)
 }
 
-export async function cleanupWebDavProbes(client: WebDavClient, vaultDirectory: string): Promise<void> {
+export async function cleanupWebDavProbes(
+  client: WebDavClient,
+  vaultDirectory: string,
+): Promise<void> {
   const root = normalizeVaultDirectory(vaultDirectory)
   let entries: WebDavEntry[]
   try {

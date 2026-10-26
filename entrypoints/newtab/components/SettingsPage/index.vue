@@ -59,7 +59,9 @@ function rememberScrollPositions() {
 async function restoreScrollPositions() {
   await nextTick()
   menuViewRef.value?.setScrollTop(settings.disableSettingsScrollRestore ? 0 : scrollPositions.menu)
-  detailViewRef.value?.setScrollTop(settings.disableSettingsScrollRestore ? 0 : scrollPositions.detail)
+  detailViewRef.value?.setScrollTop(
+    settings.disableSettingsScrollRestore ? 0 : scrollPositions.detail,
+  )
 }
 
 async function handleClose() {
