@@ -9,7 +9,6 @@ import { hydrateFaviconCache, setFaviconCacheEnabled } from '@/shared/media'
 import { useSettingsStore } from '@/shared/settings'
 import { applyStoredMonetColors, getMonetColors } from '@/shared/theme'
 
-import { initColorModePreference } from '@newtab/shared/colorMode'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 
 import App from './App.vue'
@@ -35,7 +34,6 @@ export const main = async () => {
   // 必须先加载设置：组件渲染依赖设置（主题、v-if 控制等）
   await useSettingsStore().init()
   const settings = useSettingsStore()
-  await initColorModePreference()
 
   // 缓存预热不阻塞应用外壳；图标消费者会复用同一个预热任务。
   void hydrateFaviconCache(settings.faviconCacheEnabled)
@@ -43,7 +41,7 @@ export const main = async () => {
 
   changeTheme(settings.theme.primaryColor)
 
-  // 清除 index.html 内联脚本设置的临时内联样式，让 CSS 变量接管
+  // 正式样式已加载，释放首帧画布保护，让主题变量与颜色模式接管。
   document.documentElement.style.removeProperty('background-color')
   document.documentElement.style.removeProperty('color-scheme')
 

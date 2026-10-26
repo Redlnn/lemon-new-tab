@@ -14,11 +14,18 @@ async function bootstrapNewtab() {
       setupOnlineSyncTrigger()
     },
   )
-  const [{ initI18n }, { shouldStartApp }] = await Promise.all([
+  // 模块加载与本地恢复并行；读取偏好及检查设置前，先等恢复提交完成。
+  const [{ initI18n }, { shouldStartApp }, { initColorModePreference }] = await Promise.all([
     import('@/shared/i18n'),
     import('@/shared/settings/bootstrap'),
+    import('./shared/colorMode'),
+    syncStartupTask,
   ])
-  const [, canStartApp] = await Promise.all([initI18n(), shouldStartApp(), syncStartupTask])
+  const [, canStartApp] = await Promise.all([
+    initI18n(),
+    shouldStartApp(),
+    initColorModePreference(),
+  ])
   if (!canStartApp) {
     return
   }
