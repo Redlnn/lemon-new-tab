@@ -7,31 +7,21 @@
     <meta name="color-scheme" content="light dark" />
     <script src="/theme-init.js"></script>
     <style>
-      html,
-      html.light {
-        background-color: #f2f3f5;
-      }
-
-      html.light {
+      :root,
+      :root.light {
         color-scheme: light;
+        background-color: var(--el-bg-color-page, #f2f3f5);
       }
 
-      html.dark {
+      :root.dark {
         color-scheme: dark;
-        background-color: #0a0a0a;
-      }
-
-      @media (prefers-color-scheme: light) {
-        html:not(.dark, .light) {
-          color-scheme: light;
-          background-color: #f2f3f5;
-        }
+        background-color: var(--el-bg-color-page, #0a0a0a);
       }
 
       @media (prefers-color-scheme: dark) {
-        html:not(.dark, .light) {
+        :root:not(.dark, .light) {
           color-scheme: dark;
-          background-color: #0a0a0a;
+          background-color: var(--el-bg-color-page, #0a0a0a);
         }
       }
     </style>
