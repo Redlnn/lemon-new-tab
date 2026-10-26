@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import './bg-switcher.scss'
-import { useDark, useElementSize } from '@vueuse/core'
+import { useElementSize } from '@vueuse/core'
 
 import { DragDropProvider, type DragEndEvent } from '@dnd-kit/vue'
 import { useTranslation } from 'i18next-vue'
@@ -23,6 +23,7 @@ import {
 } from '@/shared/wallpaperLibrary'
 
 import BaseDialog from '@newtab/components/BaseDialog.vue'
+import { isDark } from '@newtab/shared/colorMode'
 import { bingWallpaperURLGetter, useLocalWallpaperStore } from '@newtab/shared/wallpaper'
 import { readWallpaperMetadata } from '@newtab/shared/wallpaper/thumbnail'
 
@@ -33,7 +34,6 @@ const opened = defineModel<boolean>({ required: true })
 const { t } = useTranslation('settings')
 const settings = useSettingsStore()
 const local = useLocalWallpaperStore()
-const isDark = useDark()
 const variant = ref<WallpaperVariant>(isDark.value ? 'dark' : 'light')
 const managing = ref(false)
 const expanded = ref(false)

@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import {
   promiseTimeout,
-  useDark,
   useDocumentVisibility,
   useEventListener,
   useThrottleFn,
@@ -18,6 +17,7 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { useBackgroundMonet } from '@newtab/composables/useBackgroundMonet'
 import { useFocusState } from '@newtab/composables/useFocus'
+import { isDark } from '@newtab/shared/colorMode'
 import { isOnlyTouchDevice } from '@newtab/shared/touch'
 import {
   bingWallpaperURLGetter,
@@ -31,8 +31,6 @@ import {
 
 let animationDuration = 1250
 let hasShortenedFade = false
-
-const isDark = useDark()
 
 const focusStore = useFocusState()
 const settings = useSettingsStore()
