@@ -230,6 +230,7 @@
     "addDialog": {
       "extensionIconTip": "你也可以点击浏览器扩展菜单中的图标，将当前页面添加到快速导航。",
       "invalidUrlError": "无效的地址，请重新输入~",
+      "nameRequiredError": "名称不能为空~",
       "uploadFaviconAlert": "没有上传图标时建议打开「设置-其他-图标缓存」以自动获取图标"
     },
     "addLink": "添加链接",

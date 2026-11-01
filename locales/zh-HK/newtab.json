@@ -230,6 +230,7 @@
     "addDialog": {
       "extensionIconTip": "你亦可以透過點擊瀏覽器擴充功能選單中的圖示，將目前頁面加入快速連結。",
       "invalidUrlError": "網址無效，請重新輸入",
+      "nameRequiredError": "名稱不能為空~",
       "uploadFaviconAlert": "冇上載圖示時，建議開啟「設定-其他-圖示快取」以自動取得圖示"
     },
     "addLink": "新增連結",

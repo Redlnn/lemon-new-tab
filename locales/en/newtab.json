@@ -230,6 +230,7 @@
     "addDialog": {
       "extensionIconTip": "You can also add the current page to Quick Links by clicking the icon in the browser extensions menu.",
       "invalidUrlError": "Invalid URL. Please input a new one",
+      "nameRequiredError": "Name cannot be empty",
       "uploadFaviconAlert": "If you don't upload an icon, consider enabling Settings → Other → Icon cache to automatically fetch icons."
     },
     "addLink": "Add Link",

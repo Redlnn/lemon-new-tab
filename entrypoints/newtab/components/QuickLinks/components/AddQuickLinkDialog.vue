@@ -88,6 +88,12 @@ watch(
 )
 
 async function submit() {
+  const title = data.title.trim()
+  if (!title) {
+    ElMessage.error(t('quickLinks.addDialog.nameRequiredError'))
+    return
+  }
+
   if (!isValidUrl(data.url)) {
     ElMessage.error(t('quickLinks.addDialog.invalidUrlError'))
     return
@@ -95,7 +101,7 @@ async function submit() {
 
   const quickLink = {
     url: formatUrl(data.url),
-    title: data.title.trim(),
+    title,
     ...(!data.favicon ? {} : { favicon: data.favicon }),
     ...(!data.faviconSource ? {} : { faviconSource: data.faviconSource }),
   }

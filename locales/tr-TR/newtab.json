@@ -230,6 +230,7 @@
     "addDialog": {
       "extensionIconTip": "Geçerli sayfayı Hızlı Bağlantılara eklemek için tarayıcı uzantıları menüsündeki simgeye de tıklayabilirsiniz.",
       "invalidUrlError": "Geçersiz URL. Lütfen yeni bir tane girin",
+      "nameRequiredError": "Ad boş olamaz",
       "uploadFaviconAlert": "Bir simge yüklemezseniz, simgeleri otomatik olarak almak için Ayarlar → Diğer → Simge önbelleği seçeneğini etkinleştirmeyi düşünün."
     },
     "addLink": "Bağlantı Ekle",
