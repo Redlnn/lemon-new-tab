@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
-
 import { useSortable } from '@dnd-kit/vue/sortable'
 import type { DropdownInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
@@ -22,8 +20,7 @@ const props = defineProps<{
   group: 'built-in' | 'custom'
   name: string
   url: string
-  icon?: Component
-  iconUrl?: string
+  iconUrl: string
   isActive?: boolean
   canHide?: boolean
   popperClass: string
@@ -111,10 +108,7 @@ function openTouchMenu(event: Event) {
     @contextmenu.stop.prevent="openMenu"
     @[QUICK_LINK_TOUCH_CONTEXT_MENU_EVENT].stop="openTouchMenu"
   >
-    <el-icon v-if="icon" size="16" class="se-switcher-item__icon">
-      <component :is="icon" />
-    </el-icon>
-    <div v-else class="se-switcher-item__icon">
+    <div class="se-switcher-item__icon">
       <img :src="iconUrl" alt="" />
     </div>
     <div class="se-switcher-item__content">

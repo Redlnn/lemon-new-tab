@@ -197,7 +197,7 @@ async function handleDragEnd(event: DragEndEvent) {
             group="built-in"
             :name="t(searchEngines[key].nameKey)"
             :url="searchEngines[key].url"
-            :icon="searchEngines[key].icon"
+            :icon-url="searchEngines[key].iconUrl"
             :is-active="settings.search.engine === key"
             :can-hide="availableEngineIds.length > 1"
             :popper-class="enginePopperClass"

@@ -26,7 +26,7 @@ async function toggleNote() {
     <div class="builtin-apps-grid">
       <div class="builtin-app-card">
         <el-icon :size="60" :alt="t('builtinApps.note')">
-          <component :is="builtInApps.note.icon" />
+          <img :src="builtInApps.note.iconUrl" />
         </el-icon>
         <strong>{{ t('builtinApps.note') }}</strong>
         <el-button :type="hasNote ? 'danger' : 'primary'" plain @click="toggleNote">
@@ -55,7 +55,7 @@ async function toggleNote() {
 
   .el-icon {
     padding: 15px;
-    background-color: var(--el-color-primary-light-3);
+    background-color: var(--el-color-primary-light-8);
     border-radius: 50%;
   }
 

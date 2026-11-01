@@ -1,10 +1,10 @@
 import type { BuiltInSearchEngineKey } from '@/shared/searchEngines'
 
-import Baidu from '@newtab/assets/baidu.svg?skipsvgo'
-import Bing from '@newtab/assets/bing.svg?skipsvgo'
-import DuckDuckGo from '@newtab/assets/duckduckgo.svg?skipsvgo'
-import Google from '@newtab/assets/google.svg?skipsvgo'
-import Yandex from '@newtab/assets/yandex.svg?skipsvgo'
+import baiduIconUrl from '@newtab/assets/baidu.svg?url&no-inline'
+import bingIconUrl from '@newtab/assets/bing.svg?url&no-inline'
+import duckDuckGoIconUrl from '@newtab/assets/duckduckgo.svg?url&no-inline'
+import googleIconUrl from '@newtab/assets/google.svg?url&no-inline'
+import yandexIconUrl from '@newtab/assets/yandex.svg?url&no-inline'
 import { useCustomSearchEngineStore } from '@newtab/shared/customSearchEngine'
 
 import { baiduSuggestParser, bingSuggestParser, googleSuggestParser } from './suggestParser'
@@ -17,27 +17,27 @@ export const searchEngines = {
   google: {
     nameKey: 'newtab:search.engines.google',
     url: 'https://www.google.com/search?q=%s',
-    icon: Google,
+    iconUrl: googleIconUrl,
   },
   baidu: {
     nameKey: 'newtab:search.engines.baidu',
     url: 'https://www.baidu.com/#ie=utf-8&wd=%s',
-    icon: Baidu,
+    iconUrl: baiduIconUrl,
   },
   bing: {
     nameKey: 'newtab:search.engines.bing',
     url: 'https://www.bing.com/search?q=%s',
-    icon: Bing,
+    iconUrl: bingIconUrl,
   },
   yandex: {
     nameKey: 'newtab:search.engines.yandex',
     url: 'https://yandex.com/search?text=%s',
-    icon: Yandex,
+    iconUrl: yandexIconUrl,
   },
   duckduckgo: {
     nameKey: 'newtab:search.engines.duckduckgo',
     url: 'https://duckduckgo.com/?q=%s',
-    icon: DuckDuckGo,
+    iconUrl: duckDuckGoIconUrl,
   },
 } as const satisfies Record<BuiltInSearchEngineKey, unknown>
 

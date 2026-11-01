@@ -1,6 +1,4 @@
-import { markRaw } from 'vue'
-
-import NoteIcon from '@newtab/assets/note.svg?component'
+import noteIconUrl from '@newtab/assets/note.svg?url&no-inline'
 
 export const BUILT_IN_APP_URL_PREFIX = 'lemon-new-tab://app/'
 export type BuiltInAppId = 'note'
@@ -9,7 +7,7 @@ export const builtInApps = {
   note: {
     id: 'note',
     titleKey: 'builtinApps.note',
-    icon: markRaw(NoteIcon),
+    iconUrl: noteIconUrl,
   },
 } as const
 

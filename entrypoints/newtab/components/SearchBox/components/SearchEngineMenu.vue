@@ -112,9 +112,9 @@ defineExpose({ hide, showEngineToast })
           @click="settings.search.engine = key"
         >
           <div style="display: flex; align-items: center">
-            <el-icon class="search-engine-menu-item__icon"
-              ><component :is="searchEngines[key].icon"
-            /></el-icon>
+            <el-icon class="search-engine-menu-item__icon">
+              <img :src="searchEngines[key].iconUrl" class="search-engine-menu__image" alt="" />
+            </el-icon>
             <span>{{ t(searchEngines[key].nameKey) }}</span>
           </div>
           <div
@@ -170,7 +170,11 @@ defineExpose({ hide, showEngineToast })
         </div>
       </template>
       <el-icon v-if="isBuiltInEngine" class="search-engine-menu__icon">
-        <component :is="searchEngines[settings.search.engine as keyof typeof searchEngines].icon" />
+        <img
+          :src="searchEngines[settings.search.engine as keyof typeof searchEngines].iconUrl"
+          class="search-engine-menu__image"
+          alt=""
+        />
       </el-icon>
       <el-icon v-else-if="!currentCustomEngine" class="search-engine-menu__icon">
         <search />
@@ -191,6 +195,12 @@ defineExpose({ hide, showEngineToast })
 @use '@newtab/styles/mixins/acrylic.scss' as acrylic;
 
 .search-engine-menu {
+  &__image {
+    width: 1em;
+    height: 1em;
+    object-fit: contain;
+  }
+
   &.is-customized {
     --search-engine-menu-padding: 5px;
     --el-popper-border-radius: var(--search-border-radius, 15px);

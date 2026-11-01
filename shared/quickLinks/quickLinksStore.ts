@@ -77,7 +77,7 @@ function toStorageQuickLink(item: QuickLink): QuickLink {
     url: item.url,
     title: item.title,
   }
-  if (item.favicon !== undefined) {
+  if (item.favicon !== undefined && !item.appId) {
     quickLink.favicon = item.favicon
     if (item.faviconSource !== undefined) quickLink.faviconSource = item.faviconSource
   }
@@ -87,7 +87,7 @@ function toStorageQuickLink(item: QuickLink): QuickLink {
 
 function withRuntimeIcon(item: QuickLink): QuickLink {
   const appId = resolveBuiltInAppId(item)
-  return appId ? { ...item, appId, icon: builtInApps[appId].icon } : item
+  return appId ? { ...item, appId, favicon: builtInApps[appId].iconUrl } : item
 }
 
 function toStorageQuickLinkGroup(group: QuickLinkGroup): QuickLinkGroup {
@@ -595,7 +595,7 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
       id: crypto.randomUUID(),
       url: builtInAppUrl(id),
       title: i18next.t(`newtab:${builtInApps[id].titleKey}`),
-      icon: builtInApps[id].icon,
+      favicon: builtInApps[id].iconUrl,
       appId: id,
     })
     if (groupState.value.length > 0) {
