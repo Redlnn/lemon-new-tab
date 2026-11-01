@@ -1,6 +1,7 @@
 // shared/media/faviconFetch.ts
 import { browser, storage } from '#imports'
 
+import { getBuiltinFavicon } from './builtinFavicons'
 import {
   clearFaviconCacheEntries,
   FAVICON_CACHE_TTL,
@@ -516,7 +517,7 @@ async function probeViaImageElement(pageUrl: string): Promise<string | null> {
 // ---------------------------------------------------------------------------
 
 /**
- * 返回 pageUrl 的 favicon，优先查询 L1（内存）→ L2（持久化）缓存。
+ * 返回 pageUrl 的 favicon，优先使用内置站点图标，否则查询 L1（内存）→ L2（持久化）缓存。
  * 若命中但已过期，会在后台异步刷新并更新缓存；函数会立即返回当前（可能已过期或默认的）值，避免阻塞 UI。
  *
  * 返回值为 base64 数据 URL 或普通 URL（可通过前缀 'data:' 判断）。
@@ -526,6 +527,9 @@ export async function fetchFaviconWithCache(
   pageUrl: string,
   allowChromiumNativeFallback = false,
 ): Promise<string | null> {
+  const builtin = getBuiltinFavicon(pageUrl)
+  if (builtin) return builtin
+
   // 启动预热期间的所有消费者共用同一个批量读取，避免退化为逐条 IndexedDB 查询。
   if (faviconHydrationTask) await faviconHydrationTask
 
@@ -636,7 +640,7 @@ async function doFetch(
 }
 
 /**
- * 将已知 favicon 直接写入 L1/L2 缓存，跳过网络请求。
+ * 内置站点图标直接返回本地资源 URL；其他已知 favicon 写入 L1/L2 缓存。
  * 若已有未过期条目则不做任何修改。
  * 只会存进 base64，获取失败则不会缓存。
  * 目前用处：
@@ -648,6 +652,9 @@ export async function warmFaviconCache(
   faviconData: string,
   type: FaviconCacheEntry['type'] = 'url',
 ): Promise<string | null> {
+  const builtin = getBuiltinFavicon(pageUrl)
+  if (builtin) return builtin
+
   if (!_cacheEnabled) return null
   const origin = toOrigin(pageUrl)
   if (!origin) return null
@@ -712,10 +719,13 @@ export async function warmFaviconCache(
 }
 
 /**
- * 同步查询 L1 内存缓存，命中则返回已有数据，否则返回 null。
+ * 同步返回内置站点图标或 L1 内存缓存，均未命中时返回 null。
  * 不检查过期时间，仅供「避免翻页闪烁」等需要快速同步取值的场景使用。
  */
 export function peekFaviconFromL1(pageUrl: string): string | null {
+  const builtin = getBuiltinFavicon(pageUrl)
+  if (builtin) return builtin
+
   const origin = toOrigin(pageUrl)
   if (!origin) return null
   return l1Cache.get(origin)?.data ?? null

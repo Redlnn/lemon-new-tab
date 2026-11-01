@@ -11,6 +11,7 @@ import {
   type BuiltInAppId,
 } from '@/shared/builtinApps'
 import { jsonEquals } from '@/shared/json'
+import { getBuiltinFavicon } from '@/shared/media/builtinFavicons'
 import { useSettingsStore } from '@/shared/settings'
 import { normalizeCurrentSettings } from '@/shared/settings/normalize'
 import { settingsStorage } from '@/shared/settings/settingsStorage'
@@ -77,7 +78,11 @@ function toStorageQuickLink(item: QuickLink): QuickLink {
     url: item.url,
     title: item.title,
   }
-  if (item.favicon !== undefined && !item.appId) {
+  if (
+    item.favicon !== undefined &&
+    !item.appId &&
+    !(item.faviconSource === 'automatic' && getBuiltinFavicon(item.url))
+  ) {
     quickLink.favicon = item.favicon
     if (item.faviconSource !== undefined) quickLink.faviconSource = item.faviconSource
   }
@@ -87,7 +92,12 @@ function toStorageQuickLink(item: QuickLink): QuickLink {
 
 function withRuntimeIcon(item: QuickLink): QuickLink {
   const appId = resolveBuiltInAppId(item)
-  return appId ? { ...item, appId, favicon: builtInApps[appId].iconUrl } : item
+  if (appId) return { ...item, appId, favicon: builtInApps[appId].iconUrl }
+  // 旧版本可能保存过带构建 hash 的内置图标路径；自动图标始终交给运行时解析。
+  if (item.faviconSource === 'automatic' && getBuiltinFavicon(item.url)) {
+    return { ...item, favicon: undefined, faviconSource: undefined }
+  }
+  return item
 }
 
 function toStorageQuickLinkGroup(group: QuickLinkGroup): QuickLinkGroup {

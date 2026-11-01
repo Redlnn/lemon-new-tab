@@ -3,7 +3,7 @@ import type { FormInstance, UploadRequestOptions } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import Plus from '~icons/fa7-solid/plus'
 
-import { fetchFaviconWithCache } from '@/shared/media'
+import { fetchFaviconWithCache, getBuiltinFavicon } from '@/shared/media'
 import {
   DEFAULT_QUICK_LINK_GROUP_ID,
   useQuickLinksStore,
@@ -98,6 +98,14 @@ async function submit() {
     title: data.title.trim(),
     ...(!data.favicon ? {} : { favicon: data.favicon }),
     ...(!data.faviconSource ? {} : { faviconSource: data.faviconSource }),
+  }
+
+  if (!quickLink.favicon) {
+    const builtin = getBuiltinFavicon(quickLink.url)
+    if (builtin) {
+      quickLink.favicon = builtin
+      quickLink.faviconSource = 'automatic'
+    }
   }
 
   if (editingId.value !== null) {

@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 import { unref, watch } from 'vue'
 
 export * from './verify'
+export { getBuiltinFavicon } from './builtinFavicons'
 export {
   clearFaviconCache,
   fetchFaviconWithCache,

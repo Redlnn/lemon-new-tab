@@ -3,7 +3,7 @@ import { useTranslation } from 'i18next-vue'
 
 import { browser } from 'wxt/browser'
 
-import { fetchFaviconWithCache, warmFaviconCache } from '@/shared/media'
+import { fetchFaviconWithCache, getBuiltinFavicon, warmFaviconCache } from '@/shared/media'
 import { DEFAULT_QUICK_LINK_GROUP_ID, useQuickLinksStore } from '@/shared/quickLinks'
 import { useSettingsStore } from '@/shared/settings'
 import {
@@ -77,6 +77,11 @@ watchEffect(async () => {
   const tab = currentTab.value
   if (!tab) {
     currentTabFaviconRef.value = '/favicon.png'
+    return
+  }
+  const builtin = getBuiltinFavicon(tab.url)
+  if (builtin) {
+    currentTabFaviconRef.value = builtin
     return
   }
   if (tab.favIconUrl) {

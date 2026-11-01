@@ -13,7 +13,7 @@ import { version } from '@/package.json'
 
 import { useSettingsStore } from '@/shared/settings'
 
-import BiliBili from '@newtab/assets/bili.svg?component'
+import BiliBili from '@newtab/assets/bili_gray.svg?component'
 import BaseDialog from '@newtab/components/BaseDialog.vue'
 import { isProviderKey, yiyanProviders } from '@newtab/shared/yiyan'
 
