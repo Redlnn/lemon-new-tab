@@ -1,4 +1,4 @@
-[![lemon-new-tab](https://socialify.git.ci/redlnn/lemon-new-tab/image?custom_description=A+simple+local+new+tab+extension&description=1&font=Jost&language=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2FRedlnn%2Flemon-new-tab%2Frefs%2Fheads%2Fmaster%2Fassets%2Ficon.svg&owner=1&pattern=Circuit+Board&stargazers=1&theme=Auto)](https://lemon.redln.top)
+[![lemon-new-tab](https://socialify.git.ci/redlnn/lemon-new-tab/image?custom_description=A+simple+local+new+tab+extension&description=1&font=Jost&language=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2FRedlnn%2Flemon-new-tab%2Frefs%2Fheads%2Fmaster%2Fassets%2Ficon.svg&owner=1&pattern=Circuit+Board&stargazers=1&theme=Auto)](https://lemon.redlnn.top)
 
 <div align="center">
 

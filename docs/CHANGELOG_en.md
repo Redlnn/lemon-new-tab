@@ -6,7 +6,9 @@
 
 Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you need with smarter search. More to enjoy in a familiar place—let's turn a fresh page together.
 
-## 4.1.0
+## 4.2.0 (Unreleased)
+
+## 4.1.0 (Oct 17, 2026)
 
 ### New Features✨
 
@@ -15,21 +17,25 @@ Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you ne
 - **Dock:** When grouping is enabled, choose which group to display in Dock. The Default group is selected initially.
 - **Dock:** Other groups can be shown as folders. Click to expand their links in a scrollable panel showing up to three rows, with support for adding links and context menus.
 - **Settings:** Closing and reopening Settings within the same new tab now preserves the last open page and scroll positions by default. Enable “Don't save settings window scroll position” under Other → General to reset only the scroll positions.
+- **Quick Links/Dock:** Bilibili links added through the Add Link dialog, Top Sites, or extension popup now use a blue built-in icon by default while preserving user-selected icons.
 
 ### Improvements⚡️
 
 - Optimize performance and resource usage
 - **Dock:** Moved the “Open in New Tab” option to Dock's General settings.
+- **Icons:** Built-in search engine and Notes icons now load as local image resources when displayed, reducing JavaScript loading and parsing at startup.
+- **Quick Links:** Renamed “Unpin” to “Remove” in link context menus and updated the removal notification. Undo remains available.
 
 ### Bug Fixes🐛
 
+- **Quick Links:** Prevented blank names when adding or editing links.
 - **Settings:** Fixed the missing back-to-menu button on settings detail pages after switching from desktop to narrow-screen layout.
 - **Dock:** Fixed hover magnification failing for the pinned icon after pinning a website.
 - **Sync:** Fixed some issues in the sync module.
 - **Sync:** Fixed WebDAV connection checks failing because Nutstore does not allow deleting the top-level directory ([#123](https://github.com/Redlnn/lemon-new-tab/issues/123)).
   > Added an option to choose whether to delete the top-level directory when clearing WebDAV cloud data; deletion may fail.
 
-## 4.0.1
+## 4.0.1 (Oct 04, 2026)
 
 ### New Features✨
 
@@ -50,7 +56,7 @@ Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you ne
 - **Quick Links:** Fixed incorrect vertical alignment of group title text in paging mode.
 - **Settings:** Fixed switch shadows being clipped on the right in narrow-screen settings dialogs.
 
-## 4.0.0
+## 4.0.0 (Oct 03, 2026)
 
 ### Breaking Changes💥
 

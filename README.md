@@ -1,9 +1,10 @@
-[![lemon-new-tab](https://socialify.git.ci/redlnn/lemon-new-tab/image?custom_description=%E4%B8%80%E4%B8%AA%E7%AE%80%E7%BA%A6%E7%9A%84%E7%BA%AF%E6%9C%AC%E5%9C%B0%E6%96%B0%E6%A0%87%E7%AD%BE%E9%A1%B5%E6%89%A9%E5%B1%95&description=1&font=Jost&language=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2FRedlnn%2Flemon-new-tab%2Frefs%2Fheads%2Fmaster%2Fassets%2Ficon.svg&owner=1&pattern=Circuit+Board&stargazers=1&theme=Auto)](https://lemon.redln.top)
+[![lemon-new-tab](https://socialify.git.ci/redlnn/lemon-new-tab/image?custom_description=%E4%B8%80%E4%B8%AA%E7%AE%80%E7%BA%A6%E7%9A%84%E7%BA%AF%E6%9C%AC%E5%9C%B0%E6%96%B0%E6%A0%87%E7%AD%BE%E9%A1%B5%E6%89%A9%E5%B1%95&description=1&font=Jost&language=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2FRedlnn%2Flemon-new-tab%2Frefs%2Fheads%2Fmaster%2Fassets%2Ficon.svg&owner=1&pattern=Circuit+Board&stargazers=1&theme=Auto)](https://lemon.redlnn.top)
 
 <div align="center">
 
-[Enlgish](README_en.md) | 简体中文  
-[服务条款](docs/TERMS_OF_SERVICE.md) | [隐私政策](docs/PRIVACY_POLICY.md)
+[Enlgish](README_en.md) | 简体中文\
+[服务条款](docs/TERMS_OF_SERVICE.md) | [隐私政策](docs/PRIVACY_POLICY.md) |
+[BiliBili](https://www.bilibili.com/video/BV1iEx46KE8M)
 
 </div>
 
@@ -114,9 +115,6 @@
 5. 青柠起始页把快速导航放在了二级页面，而我更喜欢在新标签页中直接打开常用网站，虽然可以默认进入二级页面但是就看不到搜索栏了
 6. 青柠起始页不是个开源项目不好魔改，所以我决定根据自己需求模仿一个
 7. 怎么会有新标签页添加个快速导航或者搜索引擎都要注册账号的（继续不能理解）
-
-> ~~听闻青柠起始页准备重构并且添加新功能了，也许新版会满足我的需求，然后就停更了呢？~~  
-> 更新了，结果基本是 UI 调整，新功能不多（笑
 
 </details>
 
