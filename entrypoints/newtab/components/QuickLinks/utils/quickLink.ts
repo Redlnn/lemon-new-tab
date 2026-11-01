@@ -38,7 +38,7 @@ export async function removeQuickLink(
         i18next.t(
           resolveBuiltInAppId(quickLink)
             ? 'newtab:builtinApps.hidden'
-            : 'newtab:quickLinks.unpinMessage',
+            : 'newtab:quickLinks.removeMessage',
         ),
       ),
       h(

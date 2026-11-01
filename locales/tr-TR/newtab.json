@@ -265,8 +265,8 @@
     "moveLeft": "Sola taşı",
     "moveRight": "Sağa taşı",
     "pin": "Sabitle",
-    "unpin": "Sabitlemeyi kaldır",
-    "unpinMessage": "Bağlantının sabitlemesi kaldırıldı.",
+    "remove": "Kaldır",
+    "removeMessage": "Bağlantı kaldırıldı.",
     "fetchingFavicon": "Arka planda simge alınıyor..."
   },
   "search": {

@@ -265,8 +265,8 @@
     "moveLeft": "Move left",
     "moveRight": "Move right",
     "pin": "Pin",
-    "unpin": "Unpin",
-    "unpinMessage": "Link unpinned.",
+    "remove": "Remove",
+    "removeMessage": "Link removed.",
     "fetchingFavicon": "Fetching icon in background..."
   },
   "search": {

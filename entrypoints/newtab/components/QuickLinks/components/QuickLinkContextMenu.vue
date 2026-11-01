@@ -3,11 +3,11 @@ import type { DropdownInstance } from 'element-plus'
 import { useTranslation } from 'i18next-vue'
 import ChevronLeft20Filled from '~icons/fluent/chevron-left-20-filled'
 import ChevronRight20Filled from '~icons/fluent/chevron-right-20-filled'
+import Delete16Regular from '~icons/fluent/delete-16-regular'
 import Edit16Regular from '~icons/fluent/edit-16-regular'
 import FolderArrowRight16Regular from '~icons/fluent/folder-arrow-right-16-regular'
 import Incognito16Regular from '~icons/fluent/incognito-16-regular'
 import Pin12Regular from '~icons/fluent/pin-12-regular'
-import PinOff16Regular from '~icons/fluent/pin-off-16-regular'
 import Star12Regular from '~icons/fluent/star-12-regular'
 import BlockRound from '~icons/ic/round-block'
 import ContentCopyRound from '~icons/ic/round-content-copy'
@@ -173,11 +173,11 @@ defineExpose({ open, close })
             <span>{{ t('quickLinks.moveRight') }}</span>
           </el-dropdown-item>
           <el-dropdown-item
-            :icon="isBuiltInApp ? BlockRound : PinOff16Regular"
+            :icon="isBuiltInApp ? BlockRound : Delete16Regular"
             :divided="!showEdit"
             @click="ctxUnpin"
           >
-            <span>{{ t(isBuiltInApp ? 'quickLinks.hide' : 'quickLinks.unpin') }}</span>
+            <span>{{ t(isBuiltInApp ? 'quickLinks.hide' : 'quickLinks.remove') }}</span>
           </el-dropdown-item>
         </template>
         <template v-else>
