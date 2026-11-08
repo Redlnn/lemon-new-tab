@@ -10,12 +10,12 @@
 }
 
 html {
+  text-autospace: normal;
   background-color: var(--el-bg-color-page);
   text-rendering: geometricPrecision;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-autospace: normal;
 }
 
 :root {
