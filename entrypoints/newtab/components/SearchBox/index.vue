@@ -316,8 +316,9 @@ onMounted(() => {
         class="search-box__btn"
         tabindex="-1"
         :style="{ opacity: focusStore.isFocused || settings.search.showIconAlways ? 1 : 0 }"
+        @click="doSearch"
       >
-        <el-icon @click="doSearch"><search aria-hidden="true" /></el-icon>
+        <el-icon><search aria-hidden="true" /></el-icon>
       </div>
     </form>
     <search-suggestion-area
