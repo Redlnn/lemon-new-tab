@@ -1,4 +1,4 @@
-import MarkdownExit from 'markdown-exit'
+import type MarkdownExit from 'markdown-exit'
 
 export function removeH1Plugin(md: MarkdownExit) {
   md.core.ruler.push('remove_h1', (state) => {

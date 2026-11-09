@@ -25,7 +25,7 @@ overrides:
   '@milkdown/crepe>lodash-es': '-'
   '@milkdown/crepe>@types/lodash-es': '-'
   '@milkdown/crepe>remark-math': '-'
-  # glob: '^13.0.6' # 统一版本
+  unplugin-vue-markdown>markdown-exit: 'latest' # 统一版本
   sass: 'npm:sass-embedded@latest' # 替换为高性能实现
   markdown-it: 'npm:markdown-exit@latest' # 替换为高性能实现
   # -----

@@ -11,5 +11,3 @@ declare module '*.md' {
   const Component: ComponentOptions
   export default Component
 }
-
-type ClassValue = string | Record<string, boolean> | ClassValue[]

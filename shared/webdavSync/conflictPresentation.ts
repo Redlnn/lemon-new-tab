@@ -6,7 +6,10 @@ import type { SettingPath } from '../settings/paths.ts'
 
 import type { JsonObject, JsonValue, SyncConflict, SyncSnapshotV1 } from './types.ts'
 
-export type ConflictTranslator = (key: string, options?: Record<string, unknown>) => string
+export type ConflictTranslator = {
+  (key: string): string
+  (key: string, options: Record<string, unknown>): string
+}
 
 export interface SyncConflictDisplayContext {
   customSearchEngines: Record<string, { name: string; url: string }>

@@ -409,7 +409,7 @@ function openCtxMenu(event: MouseEvent | PointerEvent, item: DisplayItem): void 
 const { pinToGroup, moveToGroup, renameGroup, confirmDeleteGroup } = useQuickLinkGroupActions({
   groupSelectDialogRef,
   refresh: refreshDebounced,
-  t: (key, options) => t(`newtab:${key}`, options),
+  t: (key: string, options: Record<string, unknown> = {}) => t(`newtab:${key}`, options),
   afterDelete: () => selectGroup(quickLinksStore.groups[0]?.id ?? DEFAULT_QUICK_LINK_GROUP_ID),
 })
 

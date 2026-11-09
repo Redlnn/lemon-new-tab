@@ -29,9 +29,9 @@ const connecting = ref(false)
 const preview = shallowRef<BrowserWebDavSetupPreview>()
 const testError = ref('')
 const localHttpAccepted = ref(false)
-const wallpaperInfo = reactive({ count: 0, totalSize: 0, oversized: 0 })
-const scope = reactive({ ...DEFAULT_SYNC_SCOPE })
-const form = reactive({
+const wallpaperInfo = ref({ count: 0, totalSize: 0, oversized: 0 })
+const scope = ref({ ...DEFAULT_SYNC_SCOPE })
+const form = ref({
   url: '',
   username: '',
   password: '',
@@ -52,9 +52,9 @@ const steps = computed(() => [
 ])
 
 const addressAssessment = computed(() => {
-  if (!form.url) return undefined
+  if (!form.value.url) return undefined
   try {
-    return classifyWebDavAddress(form.url)
+    return classifyWebDavAddress(form.value.url)
   } catch {
     return undefined
   }
@@ -66,29 +66,35 @@ const httpApproved = computed(() => {
   return false
 })
 const publicHttpUnsupported = computed(
-  () => /^http:\/\//i.test(form.url.trim()) && !addressAssessment.value,
+  () => /^http:\/\//i.test(form.value.url.trim()) && !addressAssessment.value,
 )
 
 const effectiveEncryption = computed(() =>
-  preview.value?.state === 'empty' ? form.encrypted : (preview.value?.encrypted ?? form.encrypted),
+  preview.value?.state === 'empty'
+    ? form.value.encrypted
+    : (preview.value?.encrypted ?? form.value.encrypted),
 )
-const hasEnabledScope = computed(() => isSyncScope(scope))
+const hasEnabledScope = computed(() => isSyncScope(scope.value))
 
 const canContinue = computed(() => {
   if (step.value === 0) {
     return Boolean(
-      form.url && form.username && form.password && addressAssessment.value && httpApproved.value,
+      form.value.url &&
+      form.value.username &&
+      form.value.password &&
+      addressAssessment.value &&
+      httpApproved.value,
     )
   }
   if (step.value === 3) return hasEnabledScope.value
   if (step.value === 1) return Boolean(preview.value)
   if (step.value === 5 && effectiveEncryption.value) {
-    return form.encryptionPassword.length >= 8
+    return form.value.encryptionPassword.length >= 8
   }
   return true
 })
 
-const formattedWallpaperSize = computed(() => formatBytes(wallpaperInfo.totalSize))
+const formattedWallpaperSize = computed(() => formatBytes(wallpaperInfo.value.totalSize))
 const hasPreviewConflicts = computed(() => Boolean(preview.value?.conflicts.length))
 const comparisonTitle = computed(() =>
   preview.value?.state === 'empty'
@@ -108,18 +114,18 @@ function createInput(): BrowserWebDavSetupInput {
   const insecureHttpApproval = transport === 'local-http' ? ('local-warning' as const) : undefined
   return {
     connection: {
-      baseUrl: form.url.trim(),
-      username: form.username,
-      password: form.password,
+      baseUrl: form.value.url.trim(),
+      username: form.value.username,
+      password: form.value.password,
       insecureHttpApproval,
     },
-    directory: form.directory.trim() || 'LemonNewTab',
-    deviceName: form.deviceName.trim() || undefined,
+    directory: form.value.directory.trim() || 'LemonNewTab',
+    deviceName: form.value.deviceName.trim() || undefined,
     encryptionPassword: effectiveEncryption.value
-      ? form.encryptionPassword || undefined
+      ? form.value.encryptionPassword || undefined
       : undefined,
-    rememberPassword: form.rememberPassword,
-    scope: { ...scope },
+    rememberPassword: form.value.rememberPassword,
+    scope: { ...scope.value },
   }
 }
 
@@ -139,9 +145,9 @@ async function inspectWallpapers() {
       return blob instanceof Blob ? blob.size : 0
     }),
   )
-  wallpaperInfo.oversized = sizes.filter((size) => size > MAX_SYNC_WALLPAPER_BYTES).length
-  wallpaperInfo.count = sizes.filter(Boolean).length
-  wallpaperInfo.totalSize = sizes.reduce((sum, size) => sum + size, 0)
+  wallpaperInfo.value.oversized = sizes.filter((size) => size > MAX_SYNC_WALLPAPER_BYTES).length
+  wallpaperInfo.value.count = sizes.filter(Boolean).length
+  wallpaperInfo.value.totalSize = sizes.reduce((sum, size) => sum + size, 0)
 }
 
 async function testConnection() {
@@ -149,7 +155,7 @@ async function testConnection() {
   preview.value = undefined
   testing.value = true
   try {
-    if (!(await requestExactWebDavPermission(form.url.trim()))) {
+    if (!(await requestExactWebDavPermission(form.value.url.trim()))) {
       throw new WebDavError('forbidden', 'WebDAV permission is required')
     }
     preview.value = await previewSyncConnection(createInput())
@@ -197,15 +203,21 @@ function reset() {
   preview.value = undefined
   testError.value = ''
   localHttpAccepted.value = false
-  Object.assign(scope, DEFAULT_SYNC_SCOPE)
-  form.password = ''
-  form.encryptionPassword = ''
+  Object.assign(scope.value, DEFAULT_SYNC_SCOPE)
+  form.value.password = ''
+  form.value.encryptionPassword = ''
   void inspectWallpapers()
 }
 
 watch(model, (visible) => visible && reset(), { immediate: true })
 watch(
-  () => [form.url, form.username, form.password, form.directory, form.encryptionPassword],
+  () => [
+    form.value.url,
+    form.value.username,
+    form.value.password,
+    form.value.directory,
+    form.value.encryptionPassword,
+  ],
   () => {
     preview.value = undefined
     testError.value = ''

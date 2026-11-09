@@ -17,11 +17,11 @@ const modelForm = ref<FormInstance>()
 
 const showDialog = ref(false)
 const editingId = ref<string | null>(null)
-const data: {
+const data = ref<{
   name: string
   url: string
   icon?: string
-} = reactive({
+}>({
   name: '',
   url: '',
   icon: undefined,
@@ -37,7 +37,7 @@ const confirmLabel = computed(() => t(isEditing.value ? 'common.save' : 'common.
 
 function resetFields() {
   modelForm.value?.resetFields()
-  Object.assign(data, { name: '', url: '', icon: '' })
+  Object.assign(data.value, { name: '', url: '', icon: '' })
   editingId.value = null
 }
 
@@ -51,7 +51,7 @@ function openEditDialog(index: number) {
   if (!target) return
   modelForm.value?.resetFields()
   editingId.value = target.id
-  Object.assign(data, {
+  Object.assign(data.value, {
     name: target.name,
     url: target.url,
     icon: target.icon ?? '',
@@ -69,12 +69,12 @@ function validateUrl(url: string): boolean {
 }
 
 async function submit() {
-  if (!data.name.trim()) {
+  if (!data.value.name.trim()) {
     ElMessage.error(t('customSearchEngine.addDialog.nameRequiredError'))
     return
   }
 
-  if (!validateUrl(data.url)) {
+  if (!validateUrl(data.value.url)) {
     ElMessage.error(t('customSearchEngine.addDialog.invalidUrlError'))
     return
   }
@@ -86,9 +86,9 @@ async function submit() {
   }
   const engine = {
     id: editingId.value ?? crypto.randomUUID(),
-    name: data.name.trim(),
-    url: data.url.trim(),
-    icon: data.icon || undefined,
+    name: data.value.name.trim(),
+    url: data.value.url.trim(),
+    icon: data.value.icon || undefined,
   }
 
   if (isEditing.value) {

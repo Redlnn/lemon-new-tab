@@ -1,4 +1,4 @@
-import MarkdownExit from 'markdown-exit'
+import type MarkdownExit from 'markdown-exit'
 
 /**
  * 保留 Markdown 文档中前 5 个 H2 标签及其子内容

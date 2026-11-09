@@ -11,7 +11,10 @@ type GroupSelectDialog = {
   open: (options?: { title?: string; currentGroupId?: string }) => Promise<string | null>
 }
 
-type Translate = (key: string, options?: Record<string, unknown>) => string
+type Translate = {
+  (key: string): string
+  (key: string, options: Record<string, unknown>): string
+}
 
 export type QuickLinkGroupActionItem = {
   id?: string
