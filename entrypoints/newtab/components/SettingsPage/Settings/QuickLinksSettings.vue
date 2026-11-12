@@ -120,6 +120,10 @@ const alertType = computed(() => (settings.theme.colorfulMode ? 'primary' : 'inf
         <div class="settings__label">{{ t('common.openInNewTab') }}</div>
         <el-switch v-model="settings.quickLinks.openInNewTab" />
       </div>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('quickLinks.hideAddButton') }}</div>
+        <el-switch v-model="settings.quickLinks.hideAddButton" />
+      </div>
       <div v-if="!settings.quickLinks.useScroll" class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('quickLinks.pagingLoop') }}</div>
         <el-switch v-model="settings.quickLinks.pagingLoop" />

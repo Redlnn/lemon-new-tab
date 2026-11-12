@@ -405,6 +405,7 @@
     "maxRows": "最大行数",
     "navigationMode": "浏览模式",
     "pagingMode": "翻页模式",
+    "hideAddButton": "隐藏添加链接按钮",
     "pagingLoop": "翻页循环",
     "pinnedIcon": "显示置顶图标",
     "restoreDefault": "恢复隐藏的链接",

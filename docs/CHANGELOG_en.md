@@ -11,6 +11,7 @@ Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you ne
 ### New Features✨
 
 - **Quick Links/Dock:** When adding a Bilibili link, the blue built-in icon is now used by default instead of the Bilibili app-style icon.
+- **Quick Links:** You can hide "Add Link" button now.
 
 ### Improvements⚡️
 

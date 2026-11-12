@@ -132,6 +132,7 @@ const pages = computed<QuickLinkPage[]>(() => {
     legacyItems: legacyItems.value,
     topSiteItems: topSiteDisplayItems.value,
     slotsPerPage: slotsPerPage.value,
+    hideAddButton: settings.quickLinks.hideAddButton,
     defaultGroupId: DEFAULT_QUICK_LINK_GROUP_ID,
     flatGroupId: legacyDndGroupId,
     topSitesGroupId,
@@ -191,7 +192,7 @@ function getPage(pageIndex: number): QuickLinkPage | null {
 
 function showAddButtonForPage(pageIndex: number) {
   const page = getPage(pageIndex)
-  if (!page || page.isTopSites) return false
+  if (!page || page.isTopSites || settings.quickLinks.hideAddButton) return false
   return page.pageInGroup === page.totalPagesInGroup - 1
 }
 
@@ -961,7 +962,7 @@ defineExpose({ refresh, getActiveGroupId })
               </template>
               <template #add>
                 <add-quick-link
-                  v-if="!section.isTopSites"
+                  v-if="!section.isTopSites && !settings.quickLinks.hideAddButton"
                   :presentation="quickLinkItemPresentation"
                   :show-button="true"
                   :on-open="() => openAddQuickLinkForSection(section)"

@@ -4,7 +4,7 @@ import {
   buildQuickLinkGroupItems,
   type QuickLinkDisplayItem,
   withSortableIndexes,
-} from './quickLinkDisplayItems'
+} from './quickLinkDisplayItems.ts'
 
 export type QuickLinkViewItem = QuickLinkDisplayItem & { sortableIndex?: number }
 
@@ -32,14 +32,19 @@ export function splitQuickLinkPages(
   items: QuickLinkDisplayItem[],
   isTopSites: boolean,
   slotsPerPage: number,
+  hideAddButton = false,
 ): QuickLinkPage[] {
   const slots = Math.max(1, slotsPerPage)
-  const totalPagesInGroup = Math.max(1, Math.ceil((items.length + (isTopSites ? 0 : 1)) / slots))
+  const reserveAddButton = !isTopSites && !hideAddButton
+  const totalPagesInGroup = Math.max(
+    1,
+    Math.ceil((items.length + (reserveAddButton ? 1 : 0)) / slots),
+  )
 
   return Array.from({ length: totalPagesInGroup }, (_, pageInGroup) => {
     const isLastPage = pageInGroup === totalPagesInGroup - 1
     const start = pageInGroup * slots
-    const maxItems = isLastPage && !isTopSites ? slots - 1 : slots
+    const maxItems = isLastPage && reserveAddButton ? slots - 1 : slots
     const pageItems = withSortableIndexes(items.slice(start, start + maxItems))
     return {
       key: `${groupId}-${pageInGroup}`,
@@ -59,6 +64,7 @@ export function buildQuickLinkPages(options: {
   legacyItems: QuickLinkDisplayItem[]
   topSiteItems: QuickLinkDisplayItem[]
   slotsPerPage: number
+  hideAddButton: boolean
   defaultGroupId: string
   flatGroupId: string
   topSitesGroupId: string
@@ -69,16 +75,29 @@ export function buildQuickLinkPages(options: {
       options.legacyItems,
       false,
       options.slotsPerPage,
+      options.hideAddButton,
     )
   }
 
   const hasQuickLinkItems = options.groups.some((group) => group.items.length > 0)
   if (!hasQuickLinkItems && options.topSiteItems.length === 0) {
-    return splitQuickLinkPages(options.defaultGroupId, [], false, options.slotsPerPage)
+    return splitQuickLinkPages(
+      options.defaultGroupId,
+      [],
+      false,
+      options.slotsPerPage,
+      options.hideAddButton,
+    )
   }
 
   const result = options.groups.flatMap((group) =>
-    splitQuickLinkPages(group.id, buildQuickLinkGroupItems(group), false, options.slotsPerPage),
+    splitQuickLinkPages(
+      group.id,
+      buildQuickLinkGroupItems(group),
+      false,
+      options.slotsPerPage,
+      options.hideAddButton,
+    ),
   )
   if (options.topSiteItems.length > 0) {
     result.push(
@@ -92,7 +111,13 @@ export function buildQuickLinkPages(options: {
   }
   return result.length > 0
     ? result
-    : splitQuickLinkPages(options.defaultGroupId, [], false, options.slotsPerPage)
+    : splitQuickLinkPages(
+        options.defaultGroupId,
+        [],
+        false,
+        options.slotsPerPage,
+        options.hideAddButton,
+      )
 }
 
 export function buildQuickLinkScrollSections(options: {

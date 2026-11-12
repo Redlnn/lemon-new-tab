@@ -405,6 +405,7 @@
     "maxRows": "Maximum rows",
     "navigationMode": "Navigation mode",
     "pagingMode": "Paging mode",
+    "hideAddButton": "Hide add link button",
     "pagingLoop": "Loop pages",
     "pinnedIcon": "Show pinned icon",
     "restoreDefault": "Recover hidden links",

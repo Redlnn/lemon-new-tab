@@ -118,6 +118,7 @@ export const defaultSettings = {
     topSites: true,
     pinnedIcon: true,
     openInNewTab: false,
+    hideAddButton: false,
     paging: true,
     grouping: false,
     useScroll: false,

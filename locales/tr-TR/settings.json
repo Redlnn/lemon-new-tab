@@ -405,6 +405,7 @@
     "maxRows": "Maksimum satır",
     "navigationMode": "Gezinme modu",
     "pagingMode": "Sayfalama modu",
+    "hideAddButton": "Bağlantı ekleme düğmesini gizle",
     "pagingLoop": "Sayfalar arasında döngü",
     "pinnedIcon": "Sabitlenmiş simgeyi göster",
     "restoreDefault": "Gizli bağlantıları kurtar",

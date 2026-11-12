@@ -9,11 +9,14 @@ export type MainPositionType =
 
 export interface SettingsSchemaV12 extends Omit<
   SettingsSchemaV11,
-  'version' | 'background' | 'search' | 'perf' | 'clock' | 'layout' | 'dock'
+  'version' | 'background' | 'search' | 'perf' | 'clock' | 'layout' | 'dock' | 'quickLinks'
 > {
   version: 12
   greetingEnabled: boolean
   disableSettingsScrollRestore: boolean
+  quickLinks: SettingsSchemaV11['quickLinks'] & {
+    hideAddButton: boolean
+  }
   dock: SettingsSchemaV11['dock'] & {
     replaceQuickLinks: boolean
     groupId: string

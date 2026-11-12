@@ -405,6 +405,7 @@
     "maxRows": "最大列數",
     "navigationMode": "瀏覽模式",
     "pagingMode": "翻頁模式",
+    "hideAddButton": "隱藏新增連結按鈕",
     "pagingLoop": "翻頁循環",
     "pinnedIcon": "顯示釘選圖示",
     "restoreDefault": "還原隱藏的連結",
