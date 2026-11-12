@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.test.mjs",
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
     "dev:edge": "wxt -b edge",

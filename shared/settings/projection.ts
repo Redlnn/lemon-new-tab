@@ -42,6 +42,7 @@ const ENUMS: Record<string, readonly unknown[]> = {
   'background.bing.resolution': ['1080p', 'uhd'],
   'background.bing.cachedResolution': [null, '1080p', 'uhd'],
   'background.rotation.order': ['random', 'ordered'],
+  'background.meadow.fps': [25, 30, 45, 60, 120],
   'clock.weight.time': Object.values(ClockWeight),
   'clock.weight.date': Object.values(ClockWeight),
   'bookmark.direction': Object.values(DrawerDirection),
@@ -65,6 +66,7 @@ const INTEGER_RANGES: Record<string, readonly [number, number]> = {
   'dock.folderCount': [1, Number.MAX_SAFE_INTEGER],
   'dock.launchpad.iconSize': [40, 96],
   'bookmark.drawerWidth': [200, Number.MAX_SAFE_INTEGER],
+  'background.meadow.cloudSize': [40, 200],
 }
 for (const surface of EFFECT_SURFACES) {
   INTEGER_RANGES[`perf.${surface}.transparency`] = TRANSPARENCY_RANGE
@@ -100,6 +102,10 @@ function validLeaf(value: unknown, fallback: unknown, path: string): boolean {
 
 function normalizeLeaf(value: unknown, path: string): unknown {
   if (path === 'search.suggestionProviders') return normalizeSuggestionProviders(value as string[])
+  if (path === 'background.meadow.cloudCover' && typeof value === 'number')
+    return Math.min(1, Math.max(0, value))
+  if (path === 'background.meadow.flow' && typeof value === 'number')
+    return Math.min(3, Math.max(0, value))
   const range = INTEGER_RANGES[path]
   if (range && typeof value === 'number')
     return Math.min(range[1], Math.max(range[0], Math.round(value)))

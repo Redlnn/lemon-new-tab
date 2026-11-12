@@ -3,6 +3,17 @@
     "back": "Back to previous settings view"
   },
   "background": {
+    "meadow": {
+      "name": "Meadow",
+      "fps": "Frame rate limit",
+      "cloudSize": "Quick links cloud size",
+      "cloudCover": "Cloud coverage",
+      "flow": "Cloud speed",
+      "showBoy": "Show boy",
+      "clickToMove": "Click background to move boy",
+      "showCat": "Show cat",
+      "error": "The meadow background could not start. Switched to a solid background."
+    },
     "bingFrom": "Image source: Bing",
     "blur": "Blur intensity",
     "cache": {
@@ -58,7 +69,7 @@
       "c": "There will be a blank screen before the wallpaper finishes loading, and the duration depends on your internet speed."
     },
     "parallax": "Wallpaper parallax effect",
-    "pauseWhenBlur": "Pause video background when loses focus",
+    "pauseWhenBlur": "Pause animated backgrounds when unfocused",
     "permission": {
       "allowAll": "Allow all sites",
       "allowCurrent": "Only allow this API URL",

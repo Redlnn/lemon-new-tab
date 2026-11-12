@@ -3,6 +3,17 @@
     "back": "返回上一层设置"
   },
   "background": {
+    "meadow": {
+      "name": "草地",
+      "fps": "帧率上限",
+      "cloudSize": "快捷链接云团大小",
+      "cloudCover": "随机云数量",
+      "flow": "云流动速度",
+      "showBoy": "显示男孩",
+      "clickToMove": "点击背景让男孩跑动",
+      "showCat": "显示小猫",
+      "error": "草地背景无法启动，已切换至纯色背景。"
+    },
     "bingFrom": "图片来源：必应",
     "blur": "模糊强度",
     "cache": {
@@ -58,7 +69,7 @@
       "c": "壁纸加载完成前会白屏一段时间，时长取决于你的网速"
     },
     "parallax": "壁纸视差效果",
-    "pauseWhenBlur": "失去焦点时暂停视频背景",
+    "pauseWhenBlur": "失去焦点时暂停动态背景",
     "permission": {
       "allowAll": "允许所有网站",
       "allowCurrent": "仅允许该API网址",

@@ -96,8 +96,10 @@ function handleBackgroundContextMenu() {
 const focusStore = createFocusState()
 provide(FOCUS_STATE, focusStore)
 let backgroundPressDismissesUi = false
+let backgroundPointerType = ''
 
-function handleBackgroundPointerDown() {
+function handleBackgroundPointerDown(event: PointerEvent) {
+  backgroundPointerType = event.pointerType
   // 点击外部会清除焦点、悬停或关闭浮层，需在按下时判断是否用于取消激活。
   backgroundPressDismissesUi =
     isOnlyTouchDevice.value &&
@@ -107,9 +109,16 @@ function handleBackgroundPointerDown() {
       ))
 }
 
-function handleBackgroundClick() {
+function handleBackgroundClick(event: MouseEvent) {
   if (isOnlyTouchDevice.value && !backgroundPressDismissesUi && !focusStore.isFocused) {
     handleBackgroundContextMenu()
+  } else if (
+    !isOnlyTouchDevice.value &&
+    backgroundPointerType !== 'touch' &&
+    event.button === 0 &&
+    event.detail === 1
+  ) {
+    BackgroundRef.value?.moveMeadowBoy(event.clientX, event.clientY)
   }
 }
 provide(

@@ -3,6 +3,17 @@
     "back": "返回上一層設定"
   },
   "background": {
+    "meadow": {
+      "name": "草地",
+      "fps": "畫面更新率上限",
+      "cloudSize": "快速連結雲團大小",
+      "cloudCover": "隨機雲數量",
+      "flow": "雲流動速度",
+      "showBoy": "顯示男孩",
+      "clickToMove": "點擊背景讓男孩跑動",
+      "showCat": "顯示小貓",
+      "error": "草地背景無法啟動，已切換至純色背景。"
+    },
     "bingFrom": "圖片來源：Bing",
     "blur": "模糊程度",
     "cache": {
@@ -58,7 +69,7 @@
       "c": "背景圖片載入前會短暫白屏，時間長短視乎你的網速"
     },
     "parallax": "壁紙視差效果",
-    "pauseWhenBlur": "失去焦點時暫停影片背景",
+    "pauseWhenBlur": "失去焦點時暫停動態背景",
     "permission": {
       "allowAll": "允許所有網址",
       "allowCurrent": "僅允許這個API網址",

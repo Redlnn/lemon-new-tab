@@ -8,6 +8,8 @@ import {
 
 import { runAfterFirstPaint } from '@newtab/shared/schedule'
 import { disposeMonetWorker, extractMonetColors } from '@newtab/shared/theme'
+// 从无云、无角色的草地画面采样 #97bb67，预先生成明暗两套莫奈颜色。
+import meadowPalette from '@newtab/shared/wallpaper/meadowPalette.json'
 
 export function useBackgroundMonet(options: {
   backgroundUrl: Ref<string>
@@ -88,9 +90,29 @@ export function useBackgroundMonet(options: {
       invalidate()
       if (!enabled) disposeMonetWorker()
       document.documentElement.classList.toggle('monet', enabled)
-      if (!enabled || !options.backgroundUrl.value || options.isVideo.value) return
+      if (
+        !enabled ||
+        settings.background.bgType === BgType.Meadow ||
+        !options.backgroundUrl.value ||
+        options.isVideo.value
+      )
+        return
       if (settings.background.bgType === BgType.Online) await options.refreshOnline()
       await ensure({ force: true, immediate: true })
+    },
+    { immediate: true },
+  )
+
+  watch(
+    () => [settings.theme.monetColor, settings.background.bgType] as const,
+    ([enabled, type]) => {
+      if (!enabled || type !== BgType.Meadow) return
+      invalidate()
+      disposeMonetWorker()
+      applyStoredMonetColors({ ...meadowPalette, sourceKey: 'meadow', timestamp: Date.now() })
+      void saveMonetColors(meadowPalette.cssLight, meadowPalette.cssDark, 'meadow').catch(
+        console.error,
+      )
     },
     { immediate: true },
   )

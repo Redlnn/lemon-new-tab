@@ -7,6 +7,7 @@ import {
   useWindowFocus,
 } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
+import { defineAsyncComponent } from 'vue'
 
 import { useTranslation } from 'i18next-vue'
 
@@ -31,6 +32,7 @@ import {
 
 let animationDuration = 1250
 let hasShortenedFade = false
+const MeadowBackground = defineAsyncComponent(() => import('./MeadowBackground.vue'))
 
 const focusStore = useFocusState()
 const settings = useSettingsStore()
@@ -114,12 +116,18 @@ function updateVideoPlayback() {
 }
 
 const backgroundCss = computed(() => ({
-  'background-container--focused__blur': focusStore.isFocused && settings.perf.focus.blur,
+  'background-container--focused__blur':
+    settings.background.bgType !== BgType.Meadow &&
+    focusStore.isFocused &&
+    settings.perf.focus.blur,
 }))
 
 // 视差效果
 const backgroundParallaxEnabled = computed(
-  () => settings.background.parallax && !isOnlyTouchDevice.value,
+  () =>
+    settings.background.bgType !== BgType.Meadow &&
+    settings.background.parallax &&
+    !isOnlyTouchDevice.value,
 )
 const mouseX = ref(typeof window !== 'undefined' ? window.innerWidth / 2 : 960)
 const mouseY = ref(typeof window !== 'undefined' ? window.innerHeight / 2 : 540)
@@ -322,6 +330,7 @@ const bgTypeProviders: Record<BgType, () => Promise<BackgroundSource>> = {
     }
   },
   [BgType.None]: async () => ({ url: '', sourceKey: '', ownedObjectUrl: false }),
+  [BgType.Meadow]: async () => ({ url: '', sourceKey: 'meadow', ownedObjectUrl: false }),
 }
 
 function revokeDiscardedSource(source: BackgroundSource) {
@@ -469,6 +478,12 @@ const { invalidate: invalidateMonet, onImageLoaded: onImgLoaded } = useBackgroun
   refreshOnline: () => requestBackgroundUpdate(true),
 })
 
+function handleMeadowError() {
+  if (settings.background.bgType !== BgType.Meadow) return
+  ElMessage.error(t('settings:background.meadow.error'))
+  settings.background.bgType = BgType.None
+}
+
 watch(backgroundSource, () => void requestBackgroundUpdate())
 
 onMounted(async () => {
@@ -495,7 +510,12 @@ async function refreshBackground() {
     console.error('[background] Failed to refresh background:', error)
   }
 }
-defineExpose({ refreshBackground })
+const meadowRef =
+  useTemplateRef<InstanceType<typeof import('./MeadowBackground.vue').default>>('meadow')
+function moveMeadowBoy(x: number, y: number) {
+  meadowRef.value?.moveBoy(x, y)
+}
+defineExpose({ refreshBackground, moveMeadowBoy })
 
 useEventListener('pageshow', async (e) => {
   if (e.persisted) {
@@ -526,16 +546,25 @@ onUnmounted(() => {
       backgroundColor: solidColor,
       '--mask-color__light': settings.background.mask.light,
       '--mask-color__night': settings.background.mask.night,
-      '--blur-intensity': `${settings.background.blur}px`,
+      '--blur-intensity': `${settings.background.bgType === BgType.Meadow ? 0 : settings.background.blur}px`,
       '--bg-opacity-duration': bgOpacityDuration,
     }"
   >
     <div
-      v-if="bgURL && settings.background.bgType !== BgType.None && settings.background.mask.enabled"
+      v-if="
+        (bgURL || settings.background.bgType === BgType.Meadow) &&
+        settings.background.bgType !== BgType.None &&
+        settings.background.mask.enabled
+      "
       class="background-mask"
     ></div>
     <div
-      v-if="bgURL && settings.background.bgType !== BgType.None && settings.background.vignette"
+      v-if="
+        bgURL &&
+        settings.background.bgType !== BgType.None &&
+        settings.background.bgType !== BgType.Meadow &&
+        settings.background.vignette
+      "
       class="background__vignette"
     />
     <Transition
@@ -544,20 +573,25 @@ onUnmounted(() => {
       @before-leave="(element) => element.querySelector('video')?.pause()"
     >
       <div
-        :key="bgURL"
+        :key="settings.background.bgType === BgType.Meadow ? 'meadow' : bgURL"
         v-show="!isSwitching"
         ref="bgRef"
         class="background-container"
         :class="backgroundCss"
         :style="{
-          scale: backgroundScale,
+          scale: settings.background.bgType === BgType.Meadow ? 1 : backgroundScale,
           translate: backgroundTranslate,
           '--parallax-inset':
             backgroundParallaxEnabled && settings.background.blur < 10 ? '20px' : '0px',
         }"
       >
+        <MeadowBackground
+          v-if="settings.background.bgType === BgType.Meadow"
+          ref="meadow"
+          @error="handleMeadowError"
+        />
         <video
-          v-if="isVideoWallpaper"
+          v-else-if="isVideoWallpaper"
           class="background background--video"
           ref="videoRef"
           :src="bgURL || ''"

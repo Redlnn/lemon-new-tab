@@ -267,6 +267,24 @@
   }
 }
 
+.bg-switcher-meadow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px 24px;
+
+  label {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .el-slider,
+  .el-select {
+    width: 120px;
+  }
+}
+
 @media (width <= 500px) {
   .bg-switcher-today {
     gap: 12px;

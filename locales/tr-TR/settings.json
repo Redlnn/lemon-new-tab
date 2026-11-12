@@ -3,6 +3,17 @@
     "back": "Önceki ayarlar görünümüne dön"
   },
   "background": {
+    "meadow": {
+      "name": "Çayır",
+      "fps": "Kare hızı sınırı",
+      "cloudSize": "Hızlı bağlantı bulut boyutu",
+      "cloudCover": "Bulut yoğunluğu",
+      "flow": "Bulut hızı",
+      "showBoy": "Çocuğu göster",
+      "clickToMove": "Çocuğu hareket ettirmek için arka plana tıkla",
+      "showCat": "Kediyi göster",
+      "error": "Çayır arka planı başlatılamadı. Düz renge geçildi."
+    },
     "bingFrom": "Görsel kaynağı: Bing",
     "blur": "Bulanıklık yoğunluğu",
     "cache": {
@@ -58,7 +69,7 @@
       "c": "Duvar kağıdı yüklenene kadar boş bir ekran olacaktır ve bu süre internet hızınıza bağlıdır."
     },
     "parallax": "Duvar kağıdı paralaks efekti",
-    "pauseWhenBlur": "Arka plan penceresi odağı kaybettiğinde videoyu duraklat",
+    "pauseWhenBlur": "Odak kaybolduğunda hareketli arka planı duraklat",
     "permission": {
       "allowAll": "Tüm sitelere izin ver",
       "allowCurrent": "Yalnızca bu API URL'sine izin ver",

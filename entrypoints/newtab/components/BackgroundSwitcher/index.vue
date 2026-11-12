@@ -386,8 +386,63 @@ function open(url: string) {
         >
           {{ t('background.type.online') }}
         </el-button>
+        <el-button
+          text
+          bg
+          :class="{ active: settings.background.bgType === BgType.Meadow }"
+          @click="settings.background.bgType = BgType.Meadow"
+        >
+          {{ t('background.meadow.name') }}
+        </el-button>
       </el-space>
-      <div v-if="settings.background.bgType === BgType.None" class="bg-switcher-colors">
+      <div v-if="settings.background.bgType === BgType.Meadow" class="bg-switcher-meadow">
+        <label>
+          <span>{{ t('background.meadow.fps') }}</span>
+          <el-select
+            v-model="settings.background.meadow.fps"
+            :aria-label="t('background.meadow.fps')"
+          >
+            <el-option
+              v-for="fps in [25, 30, 45, 60, 120]"
+              :key="fps"
+              :label="`${fps} FPS`"
+              :value="fps"
+            />
+          </el-select>
+        </label>
+        <label>
+          <span>{{ t('background.meadow.cloudSize') }}</span>
+          <el-slider v-model="settings.background.meadow.cloudSize" :min="40" :max="200" />
+        </label>
+        <label>
+          <span>{{ t('background.meadow.cloudCover') }}</span>
+          <el-slider
+            v-model="settings.background.meadow.cloudCover"
+            :min="0"
+            :max="1"
+            :step="0.05"
+          />
+        </label>
+        <label>
+          <span>{{ t('background.meadow.flow') }}</span>
+          <el-slider v-model="settings.background.meadow.flow" :min="0" :max="3" :step="0.1" />
+        </label>
+        <label
+          ><span>{{ t('background.meadow.showBoy') }}</span
+          ><el-switch v-model="settings.background.meadow.showBoy"
+        /></label>
+        <label
+          ><span>{{ t('background.meadow.clickToMove') }}</span
+          ><el-switch
+            v-model="settings.background.meadow.clickToMove"
+            :disabled="!settings.background.meadow.showBoy"
+        /></label>
+        <label
+          ><span>{{ t('background.meadow.showCat') }}</span
+          ><el-switch v-model="settings.background.meadow.showCat"
+        /></label>
+      </div>
+      <div v-else-if="settings.background.bgType === BgType.None" class="bg-switcher-colors">
         <el-space direction="vertical">
           <div v-for="group in groups" :key="group" class="bg-switcher-color-control">
             <span>{{ label(group) }}:</span>

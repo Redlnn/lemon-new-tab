@@ -138,11 +138,17 @@ const beforeCacheChange = async () => {
       </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('background.vignette') }}</div>
-        <el-switch v-model="settings.background.vignette" />
+        <el-switch
+          v-model="settings.background.vignette"
+          :disabled="settings.background.bgType === BgType.Meadow"
+        />
       </div>
       <div class="settings__item settings__item--horizontal settings__item--with-note">
         <div class="settings__label">{{ t('background.parallax') }}</div>
-        <el-switch v-model="settings.background.parallax" :disabled="isOnlyTouchDevice" />
+        <el-switch
+          v-model="settings.background.parallax"
+          :disabled="isOnlyTouchDevice || settings.background.bgType === BgType.Meadow"
+        />
         <p v-if="isOnlyTouchDevice" class="settings__item-note">
           {{ t('common.touchDeviceDisabledNote') }}
         </p>
@@ -159,7 +165,11 @@ const beforeCacheChange = async () => {
         class="settings__item settings__item--vertical"
       >
         <div class="settings__label">{{ t('background.blur') }}</div>
-        <el-slider v-model="settings.background.blur" :show-tooltip="false" />
+        <el-slider
+          v-model="settings.background.blur"
+          :show-tooltip="false"
+          :disabled="settings.background.bgType === BgType.Meadow"
+        />
       </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">

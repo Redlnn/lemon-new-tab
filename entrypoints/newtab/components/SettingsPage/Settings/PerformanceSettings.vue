@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useTranslation } from 'i18next-vue'
 
+import { BgType } from '@/shared/enums'
 import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import { BLUR_RANGE, EFFECT_SURFACES, TRANSPARENCY_RANGE } from '@/shared/settings/constraints'
 
@@ -9,6 +10,8 @@ import { isOnlyTouchDevice } from '@newtab/shared/touch'
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
+const meadowActive = computed(() => settings.background.bgType === BgType.Meadow)
+const parallaxDisabled = computed(() => meadowActive.value || isOnlyTouchDevice.value)
 const MAX_TRANSPARENCY = TRANSPARENCY_RANGE[1]
 const MAX_BACKDROP_BLUR = BLUR_RANGE[1]
 const MAX_WALLPAPER_BLUR = 100
@@ -59,20 +62,22 @@ function toggleBlurSettings(enable: boolean) {
   for (const key of EFFECT_SETTING_KEYS) {
     settings.perf[key].blur = enable
   }
-  settings.perf.focus.blur = enable
+  if (!meadowActive.value) settings.perf.focus.blur = enable
 }
 
 function toggleAnimationSettings(enable: boolean) {
   settings.clock.style.blink = enable
   settings.perf.dialog.animation = enable
-  settings.perf.focus.scale = enable
-  settings.perf.focus.blur = enable
+  if (!meadowActive.value) {
+    settings.perf.focus.scale = enable
+    settings.perf.focus.blur = enable
+    settings.background.parallax = enable && !isOnlyTouchDevice.value
+  }
   settings.perf.searchBar.launchAnim = enable
   settings.perf.bgSwitchAnim = enable
   settings.perf.dockEnterAnim = enable
   settings.perf.dockScale = enable
   settings.perf.yiyan.ripple = enable
-  settings.background.parallax = enable && !isOnlyTouchDevice.value
 }
 
 function resetTransparencyAndBlur() {
@@ -82,7 +87,7 @@ function resetTransparencyAndBlur() {
   }
 
   settings.clock.style.transparency = defaultSettings.clock.style.transparency
-  settings.background.blur = defaultSettings.background.blur
+  if (!meadowActive.value) settings.background.blur = defaultSettings.background.blur
 }
 
 const effectItems = computed<EffectItem[]>(() =>
@@ -111,17 +116,19 @@ const wallpaperAnimationItems = computed<SwitchItem[]>(() => [
     key: 'focusScale',
     label: t('perf.focus.scale'),
     model: toRef(settings.perf.focus, 'scale'),
+    disabled: meadowActive,
   },
   {
     key: 'focusBlur',
     label: t('perf.focus.blur'),
     model: toRef(settings.perf.focus, 'blur'),
+    disabled: meadowActive,
   },
   {
     key: 'parallax',
     label: t('background.parallax'),
     model: toRef(settings.background, 'parallax'),
-    disabled: isOnlyTouchDevice,
+    disabled: parallaxDisabled,
   },
 ])
 
@@ -265,6 +272,7 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
             <span>{{ t('background.blur') }}</span>
             <el-slider
               v-model="settings.background.blur"
+              :disabled="meadowActive"
               :max="MAX_WALLPAPER_BLUR"
               :step="1"
               :format-tooltip="formatBackdropBlur"

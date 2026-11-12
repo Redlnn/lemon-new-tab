@@ -95,6 +95,15 @@ export const defaultSettings = {
 
     solid: { light: '', dark: '' },
     rotation: { enabled: false, order: 'random' },
+    meadow: {
+      fps: 25,
+      cloudSize: 72,
+      cloudCover: 0.3,
+      flow: 1,
+      showBoy: true,
+      showCat: true,
+      clickToMove: true,
+    },
     bing: {
       id: '',
       url: '',
