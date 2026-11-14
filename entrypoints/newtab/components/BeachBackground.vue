@@ -17,7 +17,7 @@ const { fail } = useDynamicWallpaper({
     if (!canvas.value || !treeCanvas.value) throw new Error('Missing canvas')
     return createBeachScene(canvas.value, treeCanvas.value, [palm1, palm2, palm3])
   },
-  draw: (renderer, time, bounds) => renderer.draw(time, bounds),
+  draw: (renderer, time, bounds) => renderer.draw(time, bounds, settings.background.beach),
   fps: () => settings.background.beach.fps,
   onError: () => emit('error'),
 })

@@ -1,3 +1,5 @@
+import type { CURRENT_CONFIG_SCHEMA } from '@/shared/settings/current'
+
 import { createFieldTextures } from '../dynamic/fieldTextures'
 import { snapshotField } from '../dynamic/fieldTransition'
 import { createTerrain } from '../dynamic/terrain'
@@ -11,19 +13,7 @@ import {
 import { beachVertexShader, beachFragmentShader } from './beachShaders'
 
 const STEP = 5
-const P = {
-  sigma: 85,
-  warp: 34,
-  shallow: 260,
-  shoal: 110,
-  speed: 22,
-  runup: 120,
-  wave: 1.6,
-  spacing: 70,
-  waves: 1,
-  grain: 1,
-  quality: 2,
-}
+type BeachOptions = CURRENT_CONFIG_SCHEMA['background']['beach']
 type Field = { s: Float32Array }
 type Bounds = { left: number; top: number; width: number; height: number }
 
@@ -32,6 +22,22 @@ export function createBeachScene(
   treesCanvas: HTMLCanvasElement,
   treeUrls: string[],
 ) {
+  const P = {
+    sigma: 85,
+    warp: 34,
+    shallow: 260,
+    shoal: 110,
+    speed: 22,
+    runup: 120,
+    wave: 1.6,
+    spacing: 70,
+    waves: 1,
+    grain: 1,
+    quality: 2,
+    palms: 4,
+    kayaks: 2,
+    birds: 3,
+  }
   const context = cv.getContext('webgl2', {
     antialias: false,
     alpha: false,
@@ -181,12 +187,12 @@ export function createBeachScene(
     img.src = url
     return img
   })
-  const agents = Array.from({ length: 5 }, (_, i) => ({
+  const agents = Array.from({ length: 12 }, (_, i) => ({
     x: Math.random() * W,
     y: Math.random() * H,
     angle: Math.random() * 6.28,
     phase: Math.random() * 6.28,
-    bird: i >= 2,
+    bird: i >= 4,
   }))
   const upload = (index: number, field: Field) => {
     fieldStorage.resize(Gw, Gh)
@@ -213,12 +219,16 @@ export function createBeachScene(
     if (!reset && key === layoutKey) return
     layoutKey = key
     const random = randomForLayout()
+    const gap = Math.max(300, (P.sigma * 300) / 85)
     const needsIslands =
       !islandViewport ||
       shouldRepositionBeachIslands(islandViewport, W, H) ||
-      (main && islands.some((island) => !beachRegionsSeparate(island, main)))
+      (main && islands.some((island) => !beachRegionsSeparate(island, main, gap))) ||
+      islands.some((island, i) =>
+        islands.slice(i + 1).some((other) => !beachRegionsSeparate(island, other, gap)),
+      )
     if (needsIslands) {
-      islands = createBeachIslands(W, H, main, random)
+      islands = createBeachIslands(W, H, main, random, gap)
       islandViewport = { width: W, height: H }
       // Nearby virtual icons create different, irregular coastlines.
       groups = islands.flatMap((island) => {
@@ -271,7 +281,7 @@ export function createBeachScene(
     }
     previousTrees = currentMix < 1 ? trees : []
     trees = []
-    for (let tries = 0; tries < 1800 && trees.length < 5; tries++) {
+    for (let tries = 0; tries < 1800 && trees.length < P.palms; tries++) {
       const x = 30 + random() * (W - 60),
         y = 55 + random() * (H - 90)
       if (sampleArr(next.s, x, y) > -20 || sampleArr(next.s, x, y) < -75) continue
@@ -346,8 +356,34 @@ export function createBeachScene(
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     }
   }
-  const draw = (time: number, bounds: Bounds | null) => {
+  let pendingField: { sigma: number; warp: number; palms: number; since: number } | undefined
+  const draw = (time: number, bounds: Bounds | null, options: BeachOptions) => {
     sceneTime = time * 1000
+    P.shoal = options.shoal
+    P.shallow = options.shallow
+    P.kayaks = options.kayaks
+    P.birds = options.birds
+    if (P.sigma !== options.sigma || P.warp !== options.warp || P.palms !== options.palms) {
+      if (
+        !pendingField ||
+        pendingField.sigma !== options.sigma ||
+        pendingField.warp !== options.warp ||
+        pendingField.palms !== options.palms
+      )
+        pendingField = {
+          sigma: options.sigma,
+          warp: options.warp,
+          palms: options.palms,
+          since: time,
+        }
+      else if (time - pendingField.since >= 0.18) {
+        P.sigma = pendingField.sigma
+        P.warp = pendingField.warp
+        P.palms = pendingField.palms
+        pendingField = undefined
+        setLayout(bounds, true)
+      }
+    } else pendingField = undefined
     const key = bounds ? `${bounds.left},${bounds.top},${bounds.width},${bounds.height}` : ''
     if (key !== lastBounds) {
       lastBounds = key
@@ -361,6 +397,7 @@ export function createBeachScene(
     kay.fill(0)
     birds.fill(0)
     agents.forEach((agent, i) => {
+      if (agent.bird ? i - 4 >= P.birds : i >= P.kayaks) return
       const margin = 70
       const aheadX = agent.x + Math.cos(agent.angle) * 100,
         aheadY = agent.y + Math.sin(agent.angle) * 100
@@ -391,7 +428,7 @@ export function createBeachScene(
       agent.x += Math.cos(agent.angle) * dt * (agent.bird ? 40 : 8)
       agent.y += Math.sin(agent.angle) * dt * (agent.bird ? 40 : 8)
       const data = agent.bird ? birds : kay
-      const offset = (agent.bird ? i - 2 : i) * 4
+      const offset = (agent.bird ? i - 4 : i) * 4
       data[offset] = agent.x
       data[offset + 1] = agent.y
       data[offset + 2] = agent.angle
@@ -440,11 +477,13 @@ export function createBeachScene(
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     // Only shade boats, birds and their shadows where they can affect the image.
     // Align to 2px so derivatives use the same pixel groups as the full-screen pass.
-    gl.uniform1f(u.uKayN!, 2)
-    gl.uniform1f(u.uBirdN!, 3)
+    gl.uniform1f(u.uKayN!, P.kayaks)
+    gl.uniform1f(u.uBirdN!, P.birds)
     gl.enable(gl.SCISSOR_TEST)
     try {
-      for (const agent of agents) {
+      for (let i = 0; i < agents.length; i++) {
+        const agent = agents[i]!
+        if (agent.bird ? i - 4 >= P.birds : i >= P.kayaks) continue
         if (agent.bird) {
           drawRegion(agent.x, agent.y, -22, -22, 22, 22)
           drawRegion(agent.x + 34, agent.y + 55, -22, -22, 22, 22)

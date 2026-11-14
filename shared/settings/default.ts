@@ -95,7 +95,16 @@ export const defaultSettings = {
 
     solid: { light: '', dark: '' },
     rotation: { enabled: false, order: 'random' },
-    beach: { fps: 25 },
+    beach: {
+      fps: 25,
+      sigma: 85,
+      warp: 34,
+      shoal: 110,
+      shallow: 260,
+      palms: 4,
+      kayaks: 2,
+      birds: 3,
+    },
     meadow: {
       fps: 25,
       cloudSize: 72,

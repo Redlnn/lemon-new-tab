@@ -3,7 +3,17 @@
     "back": "Önceki ayarlar görünümüne dön"
   },
   "background": {
-    "beach": { "name": "Sahil", "error": "Sahil arka planı başlatılamadı; düz renge geçildi" },
+    "beach": {
+      "sigma": "Kıyı uzaklığı",
+      "warp": "Kıyı girintileri",
+      "shoal": "Berrak sığlık",
+      "shallow": "Sığ deniz genişliği",
+      "palms": "Palmiye ağaçları",
+      "kayaks": "Kanolar",
+      "birds": "Martılar",
+      "name": "Sahil",
+      "error": "Sahil arka planı başlatılamadı; düz renge geçildi"
+    },
     "meadow": {
       "name": "Çayır",
       "fps": "Kare hızı sınırı",

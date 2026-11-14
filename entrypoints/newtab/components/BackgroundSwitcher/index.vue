@@ -61,6 +61,15 @@ const bingInfo = bingWallpaperURLGetter.getInfo()
 const resolutionBusy = ref(false)
 const groups = ['light', 'dark'] as const
 const label = (key: string) => t(`background.library.${key}`)
+const beachControls = [
+  { key: 'sigma', min: 40, max: 200 },
+  { key: 'warp', min: 0, max: 80 },
+  { key: 'shoal', min: 0, max: 300 },
+  { key: 'shallow', min: 120, max: 700 },
+  { key: 'palms', min: 0, max: 10 },
+  { key: 'kayaks', min: 0, max: 4 },
+  { key: 'birds', min: 0, max: 8 },
+] as const
 
 watch(
   opened,
@@ -414,6 +423,15 @@ function open(url: string) {
               :label="`${fps} FPS`"
               :value="fps" /></el-select
         ></label>
+        <label v-for="control in beachControls" :key="control.key">
+          <span>{{ t(`background.beach.${control.key}`) }}</span>
+          <el-slider
+            v-model="settings.background.beach[control.key]"
+            :min="control.min"
+            :max="control.max"
+            :aria-label="t(`background.beach.${control.key}`)"
+          />
+        </label>
       </div>
       <div v-else-if="settings.background.bgType === BgType.Meadow" class="bg-switcher-meadow">
         <label>

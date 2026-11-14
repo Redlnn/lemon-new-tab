@@ -4,10 +4,10 @@ export type BeachRect = { x: number; y: number; w: number; h: number }
 // three overlapping groups per island without joining the navigation island.
 const ISLAND_GAP = 300
 
-export function beachRegionsSeparate(a: BeachRect, b: BeachRect): boolean {
+export function beachRegionsSeparate(a: BeachRect, b: BeachRect, gap = ISLAND_GAP): boolean {
   const dx = Math.max(0, Math.abs(a.x + a.w / 2 - b.x - b.w / 2) - (a.w + b.w) / 4)
   const dy = Math.max(0, Math.abs(a.y + a.h / 2 - b.y - b.h / 2) - (a.h + b.h) / 4)
-  return Math.hypot(dx, dy) >= ISLAND_GAP
+  return Math.hypot(dx, dy) >= gap
 }
 
 export function shouldRepositionBeachIslands(
@@ -27,6 +27,7 @@ export function createBeachIslands(
   height: number,
   main: BeachRect | null,
   random: () => number = Math.random,
+  gap = ISLAND_GAP,
 ): BeachRect[] {
   const islands: BeachRect[] = []
   const count = Math.min(3, Math.max(1, Math.floor((width * height) / 1300000) + 1))
@@ -38,8 +39,8 @@ export function createBeachIslands(
     const h = shape < 0.35 ? short : shape < 0.7 ? long : 40 + random() * 260
     const island = { x: random() * width - w / 2, y: random() * height - h / 2, w, h }
     if (
-      (main && !beachRegionsSeparate(island, main)) ||
-      islands.some((other) => !beachRegionsSeparate(island, other))
+      (main && !beachRegionsSeparate(island, main, gap)) ||
+      islands.some((other) => !beachRegionsSeparate(island, other, gap))
     )
       continue
     islands.push(island)

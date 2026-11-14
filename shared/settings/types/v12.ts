@@ -39,7 +39,16 @@ export interface SettingsSchemaV12 extends Omit<
   background: Omit<SettingsSchemaV11['background'], 'local' | 'localDark'> & {
     solid: { light: string; dark: string }
     rotation: { enabled: boolean; order: 'random' | 'ordered' }
-    beach: { fps: 25 | 30 | 45 | 60 | 120 }
+    beach: {
+      fps: 25 | 30 | 45 | 60 | 120
+      sigma: number
+      warp: number
+      shoal: number
+      shallow: number
+      palms: number
+      kayaks: number
+      birds: number
+    }
     meadow: {
       fps: 25 | 30 | 45 | 60 | 120
       cloudSize: number

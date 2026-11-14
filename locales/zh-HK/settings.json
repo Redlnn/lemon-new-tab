@@ -3,7 +3,17 @@
     "back": "返回上一層設定"
   },
   "background": {
-    "beach": { "name": "沙灘", "error": "沙灘背景無法啟動，已切換至純色背景" },
+    "beach": {
+      "sigma": "離岸距離",
+      "warp": "海岸曲折",
+      "shoal": "透明淺灘",
+      "shallow": "淺海寬度",
+      "palms": "椰子樹數量",
+      "kayaks": "獨木舟",
+      "birds": "海鳥",
+      "name": "沙灘",
+      "error": "沙灘背景無法啟動，已切換至純色背景"
+    },
     "meadow": {
       "name": "草地",
       "fps": "畫面更新率上限",

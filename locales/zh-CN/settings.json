@@ -3,7 +3,17 @@
     "back": "返回上一层设置"
   },
   "background": {
-    "beach": { "name": "沙滩", "error": "沙滩背景无法启动，已切换到纯色背景" },
+    "beach": {
+      "sigma": "离岸距离",
+      "warp": "海岸曲折",
+      "shoal": "透明浅滩",
+      "shallow": "浅海宽度",
+      "palms": "椰子树数量",
+      "kayaks": "皮划艇",
+      "birds": "海鸟",
+      "name": "沙滩",
+      "error": "沙滩背景无法启动，已切换到纯色背景"
+    },
     "meadow": {
       "name": "草地",
       "fps": "帧率上限",

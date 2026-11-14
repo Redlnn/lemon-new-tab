@@ -68,6 +68,13 @@ const INTEGER_RANGES: Record<string, readonly [number, number]> = {
   'dock.launchpad.iconSize': [40, 96],
   'bookmark.drawerWidth': [200, Number.MAX_SAFE_INTEGER],
   'background.meadow.cloudSize': [40, 200],
+  'background.beach.sigma': [40, 200],
+  'background.beach.warp': [0, 80],
+  'background.beach.shoal': [0, 300],
+  'background.beach.shallow': [120, 700],
+  'background.beach.palms': [0, 10],
+  'background.beach.kayaks': [0, 4],
+  'background.beach.birds': [0, 8],
 }
 for (const surface of EFFECT_SURFACES) {
   INTEGER_RANGES[`perf.${surface}.transparency`] = TRANSPARENCY_RANGE

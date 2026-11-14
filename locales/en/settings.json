@@ -4,6 +4,13 @@
   },
   "background": {
     "beach": {
+      "sigma": "Coast distance",
+      "warp": "Coast irregularity",
+      "shoal": "Clear shallows",
+      "shallow": "Shallow water width",
+      "palms": "Palm trees",
+      "kayaks": "Kayaks",
+      "birds": "Seagulls",
       "name": "Beach",
       "error": "Beach wallpaper could not start; switched to solid color"
     },
