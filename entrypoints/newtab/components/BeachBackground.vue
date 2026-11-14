@@ -11,7 +11,7 @@ const emit = defineEmits<{ error: [] }>()
 const settings = useSettingsStore()
 const canvas = useTemplateRef('canvas')
 const treeCanvas = useTemplateRef('trees')
-const { fail } = useDynamicWallpaper({
+const { running, fail, getRenderer } = useDynamicWallpaper({
   name: 'beach',
   create: () => {
     if (!canvas.value || !treeCanvas.value) throw new Error('Missing canvas')
@@ -21,6 +21,10 @@ const { fail } = useDynamicWallpaper({
   fps: () => settings.background.beach.fps,
   onError: () => emit('error'),
 })
+function ripple(x: number, y: number) {
+  if (running.value) getRenderer()?.ripple(x, y)
+}
+defineExpose({ ripple })
 </script>
 
 <template>

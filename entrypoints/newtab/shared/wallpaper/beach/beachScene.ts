@@ -357,6 +357,7 @@ export function createBeachScene(
     }
   }
   let pendingField: { sigma: number; warp: number; palms: number; since: number } | undefined
+  const activeRipples: { x: number; y: number; start: number }[] = []
   const draw = (time: number, bounds: Bounds | null, options: BeachOptions) => {
     sceneTime = time * 1000
     P.shoal = options.shoal
@@ -434,6 +435,13 @@ export function createBeachScene(
       data[offset + 2] = agent.angle
       data[offset + 3] = agent.bird ? 0.68 + 0.32 * Math.cos(agent.phase) : agent.phase
     })
+    ripples.fill(0)
+    for (let i = activeRipples.length - 1; i >= 0; i--) {
+      const ripple = activeRipples[i]!
+      const age = time - ripple.start
+      if (age >= 4) activeRipples.splice(i, 1)
+      else ripples.set([ripple.x, ripple.y, age, 1], i * 4)
+    }
     gl.viewport(0, 0, cv.width, cv.height)
     gl.useProgram(program)
     gl.bindVertexArray(vao)
@@ -539,6 +547,14 @@ export function createBeachScene(
     resize,
     resizeViewport,
     draw,
+    ripple(x: number, y: number) {
+      if (!previous || !current || x < 0 || y < 0 || x >= W || y >= H) return
+      const distance =
+        sampleArr(previous.s, x, y) * (1 - currentMix) + sampleArr(current.s, x, y) * currentMix
+      if (distance <= 2) return
+      if (activeRipples.length === 6) activeRipples.shift()
+      activeRipples.push({ x, y, start: sceneTime / 1000 })
+    },
     dispose() {
       for (const img of images) {
         img.onload = null

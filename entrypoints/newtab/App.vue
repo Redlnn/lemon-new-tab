@@ -119,6 +119,7 @@ function handleBackgroundClick(event: MouseEvent) {
     event.detail === 1
   ) {
     BackgroundRef.value?.moveMeadowBoy(event.clientX, event.clientY)
+    BackgroundRef.value?.rippleBeach(event.clientX, event.clientY)
   }
 }
 provide(

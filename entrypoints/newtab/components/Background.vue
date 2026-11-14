@@ -525,10 +525,15 @@ async function refreshBackground() {
 }
 const meadowRef =
   useTemplateRef<InstanceType<typeof import('./MeadowBackground.vue').default>>('meadow')
+const beachRef =
+  useTemplateRef<InstanceType<typeof import('./BeachBackground.vue').default>>('beach')
 function moveMeadowBoy(x: number, y: number) {
   meadowRef.value?.moveBoy(x, y)
 }
-defineExpose({ refreshBackground, moveMeadowBoy })
+function rippleBeach(x: number, y: number) {
+  beachRef.value?.ripple(x, y)
+}
+defineExpose({ refreshBackground, moveMeadowBoy, rippleBeach })
 
 useEventListener('pageshow', async (e) => {
   if (e.persisted) {
@@ -617,6 +622,7 @@ onUnmounted(() => {
         />
         <BeachBackground
           v-else-if="settings.background.bgType === BgType.Beach"
+          ref="beach"
           @error="handleBeachError"
         />
         <video
