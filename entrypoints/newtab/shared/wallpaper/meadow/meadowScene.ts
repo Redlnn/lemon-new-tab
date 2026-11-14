@@ -310,9 +310,9 @@ void main() {
     const regionRects = () =>
       (P.showNavigationCloud ? regions : []).map((ic) => ({
         cx: ic.x + ic.w / 2,
-        cy: ic.y + ic.h / 2,
+        cy: ic.y + ic.h / 2 + Math.min(20, ic.h * 0.1) / 2,
         hw: ic.w * 0.6 - 4,
-        hh: ic.h / 2 - 2,
+        hh: (ic.h - Math.min(20, ic.h * 0.1)) / 2 - 2,
       }))
 
     const commit = (fromEmpty = false) => {

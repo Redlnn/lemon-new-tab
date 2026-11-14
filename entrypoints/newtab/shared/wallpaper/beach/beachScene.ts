@@ -210,9 +210,9 @@ export function createBeachScene(
     const main = bounds
       ? {
           x: bounds.left - bounds.width * 0.05,
-          y: bounds.top,
+          y: bounds.top + Math.min(20, bounds.height * 0.1),
           w: bounds.width * 1.1,
-          h: bounds.height,
+          h: bounds.height - Math.min(20, bounds.height * 0.1),
         }
       : null
     const key = `${W},${H},${main?.x},${main?.y},${main?.w},${main?.h}`
