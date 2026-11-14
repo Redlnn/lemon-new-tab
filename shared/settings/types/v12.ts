@@ -39,11 +39,13 @@ export interface SettingsSchemaV12 extends Omit<
   background: Omit<SettingsSchemaV11['background'], 'local' | 'localDark'> & {
     solid: { light: string; dark: string }
     rotation: { enabled: boolean; order: 'random' | 'ordered' }
+    beach: { fps: 25 | 30 | 45 | 60 | 120 }
     meadow: {
       fps: 25 | 30 | 45 | 60 | 120
       cloudSize: number
       cloudCover: number
       flow: number
+      showNavigationCloud: boolean
       showBoy: boolean
       showCat: boolean
       clickToMove: boolean

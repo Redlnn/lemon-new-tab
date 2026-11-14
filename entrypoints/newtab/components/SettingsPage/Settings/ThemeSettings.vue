@@ -74,7 +74,11 @@ const beforeMonetChange = async () => {
   // 无背景不允许开
   if (settings.background.bgType === BgType.None) return false
   // 必应随便开，本地壁纸必须是图片才能开
-  if (settings.background.bgType === BgType.Bing || settings.background.bgType === BgType.Meadow)
+  if (
+    settings.background.bgType === BgType.Bing ||
+    settings.background.bgType === BgType.Meadow ||
+    settings.background.bgType === BgType.Beach
+  )
     return true
   // 本地壁纸必须是图片才能开
   if (settings.background.bgType === BgType.Local) {

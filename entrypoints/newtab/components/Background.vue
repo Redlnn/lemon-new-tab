@@ -33,6 +33,7 @@ import {
 let animationDuration = 1250
 let hasShortenedFade = false
 const MeadowBackground = defineAsyncComponent(() => import('./MeadowBackground.vue'))
+const BeachBackground = defineAsyncComponent(() => import('./BeachBackground.vue'))
 
 const focusStore = useFocusState()
 const settings = useSettingsStore()
@@ -53,7 +54,10 @@ const renderedVideo = ref(false)
 const solidColor = computed(
   () => settings.background.solid[isDark.value ? 'dark' : 'light'] || 'var(--el-bg-color-page)',
 )
-const isSwitching = ref(true)
+// 动态壁纸的场景本身有入场动画，首屏无需先把整张画布从透明渐显。
+const isSwitching = ref(
+  settings.background.bgType !== BgType.Meadow && settings.background.bgType !== BgType.Beach,
+)
 
 const imageRef = useTemplateRef('imageRef')
 const videoRef = useTemplateRef('videoRef')
@@ -118,6 +122,7 @@ function updateVideoPlayback() {
 const backgroundCss = computed(() => ({
   'background-container--focused__blur':
     settings.background.bgType !== BgType.Meadow &&
+    settings.background.bgType !== BgType.Beach &&
     focusStore.isFocused &&
     settings.perf.focus.blur,
 }))
@@ -126,6 +131,7 @@ const backgroundCss = computed(() => ({
 const backgroundParallaxEnabled = computed(
   () =>
     settings.background.bgType !== BgType.Meadow &&
+    settings.background.bgType !== BgType.Beach &&
     settings.background.parallax &&
     !isOnlyTouchDevice.value,
 )
@@ -331,6 +337,7 @@ const bgTypeProviders: Record<BgType, () => Promise<BackgroundSource>> = {
   },
   [BgType.None]: async () => ({ url: '', sourceKey: '', ownedObjectUrl: false }),
   [BgType.Meadow]: async () => ({ url: '', sourceKey: 'meadow', ownedObjectUrl: false }),
+  [BgType.Beach]: async () => ({ url: '', sourceKey: 'beach', ownedObjectUrl: false }),
 }
 
 function revokeDiscardedSource(source: BackgroundSource) {
@@ -478,6 +485,12 @@ const { invalidate: invalidateMonet, onImageLoaded: onImgLoaded } = useBackgroun
   refreshOnline: () => requestBackgroundUpdate(true),
 })
 
+function handleBeachError() {
+  if (settings.background.bgType !== BgType.Beach) return
+  ElMessage.error(t('settings:background.beach.error'))
+  settings.background.bgType = BgType.None
+}
+
 function handleMeadowError() {
   if (settings.background.bgType !== BgType.Meadow) return
   ElMessage.error(t('settings:background.meadow.error'))
@@ -543,16 +556,18 @@ onUnmounted(() => {
     class="background-wrapper noselect"
     aria-hidden="true"
     :style="{
-      backgroundColor: solidColor,
+      backgroundColor: settings.background.bgType === BgType.Beach ? '#008fb9' : solidColor,
       '--mask-color__light': settings.background.mask.light,
       '--mask-color__night': settings.background.mask.night,
-      '--blur-intensity': `${settings.background.bgType === BgType.Meadow ? 0 : settings.background.blur}px`,
+      '--blur-intensity': `${settings.background.bgType === BgType.Meadow || settings.background.bgType === BgType.Beach ? 0 : settings.background.blur}px`,
       '--bg-opacity-duration': bgOpacityDuration,
     }"
   >
     <div
       v-if="
-        (bgURL || settings.background.bgType === BgType.Meadow) &&
+        (bgURL ||
+          settings.background.bgType === BgType.Meadow ||
+          settings.background.bgType === BgType.Beach) &&
         settings.background.bgType !== BgType.None &&
         settings.background.mask.enabled
       "
@@ -563,6 +578,7 @@ onUnmounted(() => {
         bgURL &&
         settings.background.bgType !== BgType.None &&
         settings.background.bgType !== BgType.Meadow &&
+        settings.background.bgType !== BgType.Beach &&
         settings.background.vignette
       "
       class="background__vignette"
@@ -573,13 +589,22 @@ onUnmounted(() => {
       @before-leave="(element) => element.querySelector('video')?.pause()"
     >
       <div
-        :key="settings.background.bgType === BgType.Meadow ? 'meadow' : bgURL"
+        :key="
+          settings.background.bgType === BgType.Meadow ||
+          settings.background.bgType === BgType.Beach
+            ? settings.background.bgType
+            : bgURL
+        "
         v-show="!isSwitching"
         ref="bgRef"
         class="background-container"
         :class="backgroundCss"
         :style="{
-          scale: settings.background.bgType === BgType.Meadow ? 1 : backgroundScale,
+          scale:
+            settings.background.bgType === BgType.Meadow ||
+            settings.background.bgType === BgType.Beach
+              ? 1
+              : backgroundScale,
           translate: backgroundTranslate,
           '--parallax-inset':
             backgroundParallaxEnabled && settings.background.blur < 10 ? '20px' : '0px',
@@ -589,6 +614,10 @@ onUnmounted(() => {
           v-if="settings.background.bgType === BgType.Meadow"
           ref="meadow"
           @error="handleMeadowError"
+        />
+        <BeachBackground
+          v-else-if="settings.background.bgType === BgType.Beach"
+          @error="handleBeachError"
         />
         <video
           v-else-if="isVideoWallpaper"

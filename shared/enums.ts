@@ -13,6 +13,7 @@ export const BgType = {
   Bing: 'bing',
   Online: 'online',
   Meadow: 'meadow',
+  Beach: 'beach',
 } as const
 export type BgType = (typeof BgType)[keyof typeof BgType]
 

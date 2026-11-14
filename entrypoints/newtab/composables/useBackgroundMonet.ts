@@ -8,6 +8,7 @@ import {
 
 import { runAfterFirstPaint } from '@newtab/shared/schedule'
 import { disposeMonetWorker, extractMonetColors } from '@newtab/shared/theme'
+import beachPalette from '@newtab/shared/wallpaper/beachPalette.json'
 // 从无云、无角色的草地画面采样 #97bb67，预先生成明暗两套莫奈颜色。
 import meadowPalette from '@newtab/shared/wallpaper/meadowPalette.json'
 
@@ -93,6 +94,7 @@ export function useBackgroundMonet(options: {
       if (
         !enabled ||
         settings.background.bgType === BgType.Meadow ||
+        settings.background.bgType === BgType.Beach ||
         !options.backgroundUrl.value ||
         options.isVideo.value
       )
@@ -106,13 +108,13 @@ export function useBackgroundMonet(options: {
   watch(
     () => [settings.theme.monetColor, settings.background.bgType] as const,
     ([enabled, type]) => {
-      if (!enabled || type !== BgType.Meadow) return
+      if (!enabled || (type !== BgType.Meadow && type !== BgType.Beach)) return
       invalidate()
       disposeMonetWorker()
-      applyStoredMonetColors({ ...meadowPalette, sourceKey: 'meadow', timestamp: Date.now() })
-      void saveMonetColors(meadowPalette.cssLight, meadowPalette.cssDark, 'meadow').catch(
-        console.error,
-      )
+      const palette = type === BgType.Beach ? beachPalette : meadowPalette
+      const sourceKey = type === BgType.Beach ? 'beach' : 'meadow'
+      applyStoredMonetColors({ ...palette, sourceKey, timestamp: Date.now() })
+      void saveMonetColors(palette.cssLight, palette.cssDark, sourceKey).catch(console.error)
     },
     { immediate: true },
   )

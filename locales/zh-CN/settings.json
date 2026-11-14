@@ -3,12 +3,14 @@
     "back": "返回上一层设置"
   },
   "background": {
+    "beach": { "name": "沙滩", "error": "沙滩背景无法启动，已切换到纯色背景" },
     "meadow": {
       "name": "草地",
       "fps": "帧率上限",
       "cloudSize": "快捷链接云团大小",
       "cloudCover": "随机云数量",
       "flow": "云流动速度",
+      "showNavigationCloud": "导航云团",
       "showBoy": "显示男孩",
       "clickToMove": "点击背景让男孩跑动",
       "showCat": "显示小猫",

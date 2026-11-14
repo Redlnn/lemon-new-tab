@@ -42,6 +42,7 @@ const ENUMS: Record<string, readonly unknown[]> = {
   'background.bing.resolution': ['1080p', 'uhd'],
   'background.bing.cachedResolution': [null, '1080p', 'uhd'],
   'background.rotation.order': ['random', 'ordered'],
+  'background.beach.fps': [25, 30, 45, 60, 120],
   'background.meadow.fps': [25, 30, 45, 60, 120],
   'clock.weight.time': Object.values(ClockWeight),
   'clock.weight.date': Object.values(ClockWeight),

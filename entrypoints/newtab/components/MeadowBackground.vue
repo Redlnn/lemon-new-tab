@@ -24,6 +24,7 @@ let resizeObserver: ResizeObserver | undefined
 let mutationObserver: MutationObserver | undefined
 let layoutTimer: ReturnType<typeof setTimeout> | undefined
 let resizeTimer: ReturnType<typeof setTimeout> | undefined
+let viewportDirty = false
 let disposed = false
 let failed = false
 
@@ -62,9 +63,11 @@ function frame(now: number) {
   if (lastTick) elapsed += Math.min((now - lastTick) / 1000, 0.1)
   lastTick = now
   const interval = 1000 / settings.background.meadow.fps
-  if (lastFrame && now - lastFrame < interval - 1) return
-  lastFrame = lastFrame ? Math.max(lastFrame + interval, now - interval) : now
   try {
+    const viewportChanged = viewportDirty && renderer.resizeViewport()
+    viewportDirty = false
+    if (!viewportChanged && lastFrame && now - lastFrame < interval - 1) return
+    lastFrame = lastFrame ? Math.max(lastFrame + interval, now - interval) : now
     renderer.draw(
       elapsed,
       bounds,
@@ -106,7 +109,10 @@ function resize() {
 }
 function scheduleResize() {
   clearTimeout(resizeTimer)
-  if (running.value && renderer) resizeTimer = setTimeout(resize, 150)
+  if (running.value && renderer) {
+    viewportDirty = true
+    resizeTimer = setTimeout(resize, 150)
+  }
 }
 function fail() {
   if (disposed || failed) return

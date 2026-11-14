@@ -446,8 +446,8 @@ vec4 characterColor(vec2 p) {
   vec4 shoulder=rigJoint(space,pivot,vec3(.90,.22,.16),5.0);
   vec4 front=over(over(person,shoulder),arm);
   vec2 runPoint=p-vec2(0.,uMotion.w-10.);
-  vec2 cell=vec2(mod(uMotion.x,2.),floor(uMotion.x*.5));
-  vec4 back=spriteColor(textureLod(uRunSprite,(spriteUV(runPoint)+cell)*.5,lod),runPoint);
+  vec2 cell=vec2(step(1.5,uMotion.x),0.);
+  vec4 back=spriteColor(textureLod(uRunSprite,(spriteUV(runPoint)+cell)*vec2(.5,1.),lod),runPoint);
   return uMotion.y>.5 ? back : front;
 }
 void main() {
@@ -531,6 +531,7 @@ void main() {
       onLoad = () => {
         ready++
       },
+      heightRatio = 1,
     ) => {
       const image = new Image()
       pendingImages.add(image)
@@ -538,8 +539,9 @@ void main() {
         pendingImages.delete(image)
         if (isDisposed()) return
         const sprite = document.createElement('canvas')
-        sprite.width = sprite.height = size
-        sprite.getContext('2d')!.drawImage(image, 0, 0, size, size)
+        sprite.width = size
+        sprite.height = size * heightRatio
+        sprite.getContext('2d')!.drawImage(image, 0, 0, sprite.width, sprite.height)
         gl.activeTexture(unit)
         gl.bindTexture(gl.TEXTURE_2D, targetTexture)
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sprite)
@@ -557,7 +559,7 @@ void main() {
       image.src = path
     }
     loadSprite(assets.boy, gl.TEXTURE4, texture)
-    loadSprite(assets.boyRun, gl.TEXTURE7, runTexture, 768)
+    loadSprite(assets.boyRun, gl.TEXTURE7, runTexture, 768, undefined, 0.5)
     loadSprite(assets.boyFrontFrames, gl.TEXTURE10, frontFramesTexture, 960, () => {
       frontReady = true
     })

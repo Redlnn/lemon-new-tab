@@ -3,12 +3,17 @@
     "back": "Back to previous settings view"
   },
   "background": {
+    "beach": {
+      "name": "Beach",
+      "error": "Beach wallpaper could not start; switched to solid color"
+    },
     "meadow": {
       "name": "Meadow",
       "fps": "Frame rate limit",
       "cloudSize": "Quick links cloud size",
       "cloudCover": "Cloud coverage",
       "flow": "Cloud speed",
+      "showNavigationCloud": "Navigation cloud",
       "showBoy": "Show boy",
       "clickToMove": "Click background to move boy",
       "showCat": "Show cat",

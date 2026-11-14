@@ -3,12 +3,14 @@
     "back": "返回上一層設定"
   },
   "background": {
+    "beach": { "name": "沙灘", "error": "沙灘背景無法啟動，已切換至純色背景" },
     "meadow": {
       "name": "草地",
       "fps": "畫面更新率上限",
       "cloudSize": "快速連結雲團大小",
       "cloudCover": "隨機雲數量",
       "flow": "雲流動速度",
+      "showNavigationCloud": "導航雲團",
       "showBoy": "顯示男孩",
       "clickToMove": "點擊背景讓男孩跑動",
       "showCat": "顯示小貓",

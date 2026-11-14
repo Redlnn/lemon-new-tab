@@ -10,7 +10,9 @@ import { isOnlyTouchDevice } from '@newtab/shared/touch'
 const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
-const meadowActive = computed(() => settings.background.bgType === BgType.Meadow)
+const meadowActive = computed(
+  () => settings.background.bgType === BgType.Meadow || settings.background.bgType === BgType.Beach,
+)
 const parallaxDisabled = computed(() => meadowActive.value || isOnlyTouchDevice.value)
 const MAX_TRANSPARENCY = TRANSPARENCY_RANGE[1]
 const MAX_BACKDROP_BLUR = BLUR_RANGE[1]

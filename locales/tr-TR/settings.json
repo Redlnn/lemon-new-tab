@@ -3,12 +3,14 @@
     "back": "Önceki ayarlar görünümüne dön"
   },
   "background": {
+    "beach": { "name": "Sahil", "error": "Sahil arka planı başlatılamadı; düz renge geçildi" },
     "meadow": {
       "name": "Çayır",
       "fps": "Kare hızı sınırı",
       "cloudSize": "Hızlı bağlantı bulut boyutu",
       "cloudCover": "Bulut yoğunluğu",
       "flow": "Bulut hızı",
+      "showNavigationCloud": "Gezinme bulutu",
       "showBoy": "Çocuğu göster",
       "clickToMove": "Çocuğu hareket ettirmek için arka plana tıkla",
       "showCat": "Kediyi göster",

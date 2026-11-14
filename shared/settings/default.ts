@@ -95,11 +95,13 @@ export const defaultSettings = {
 
     solid: { light: '', dark: '' },
     rotation: { enabled: false, order: 'random' },
+    beach: { fps: 25 },
     meadow: {
       fps: 25,
       cloudSize: 72,
       cloudCover: 0.3,
       flow: 1,
+      showNavigationCloud: true,
       showBoy: true,
       showCat: true,
       clickToMove: true,

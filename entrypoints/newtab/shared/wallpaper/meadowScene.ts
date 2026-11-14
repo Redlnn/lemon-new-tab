@@ -1,3 +1,4 @@
+import { snapshotField } from './fieldTransition'
 import { createMeadowCharacters } from './meadowCharacters'
 
 export type MeadowAssets = {
@@ -14,6 +15,7 @@ type MeadowOptions = {
   cloudSize: number
   cloudCover: number
   flow: number
+  showNavigationCloud: boolean
   showBoy: boolean
   showCat: boolean
 }
@@ -42,6 +44,7 @@ export function createMeadowScene(cv: HTMLCanvasElement, assets: MeadowAssets) {
     cover: 0.3,
     flow: 1,
     quality: 2,
+    showNavigationCloud: 1,
     showBoy: 1,
     showCat: 1,
     avoidCenter: false,
@@ -261,7 +264,10 @@ float hash2(vec2 p) {
 }
 float ss(float a, float b, float x) { float t = clamp((x - a) / (b - a), 0.0, 1.0); return t * t * (3.0 - 2.0 * t); }
 vec4 N(vec2 p, float scale) { return texture(uNoise, p / scale + uSeed * 0.013); }
-float fieldS(sampler2D t, vec2 p) { return texture(t, (p / uStep + 0.5) / uGrid).r; }
+float fieldS(sampler2D t, vec2 p) {
+  vec2 edge = clamp(p, vec2(0.0), (uGrid - 1.0) * uStep);
+  return texture(t, (edge / uStep + 0.5) / uGrid).r + length(p - edge);
+}
 float smin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
 
 // 到云的距离（<0 在云里）：图标周围云团的主体 + 自己格子里的圆（和天空主题同一套）
@@ -481,7 +487,7 @@ void main() {
 
     // 把容器作为一个图标生成云场，横向略微扩展以覆盖更多快捷链接。
     const regionRects = () =>
-      regions.map((ic) => ({
+      (P.showNavigationCloud ? regions : []).map((ic) => ({
         cx: ic.x + ic.w / 2,
         cy: ic.y + ic.h / 2,
         hw: ic.w * 0.6 - 4,
@@ -494,20 +500,17 @@ void main() {
       if (fromEmpty) {
         FA = computeField([])
         uploadField(toI, FA)
-      } else FA = FB
+      } else if (FA && FB) {
+        FA = { s: snapshotField(FA.s, FB.s, curMix, Gw, Gh, Gw, Gh, 0, STEP) }
+        uploadField(toI, FA)
+      }
       FB = nf
       uploadField(target, FB)
       fromI = toI
       toI = target
       morphT0 = sceneNow
       morphDur = fromEmpty ? 2600 : MORPH_MS
-    }
-
-    const refresh = () => {
-      FA = FB = computeField(regionRects())
-      uploadField(toI, FB)
-      fromI = toI
-      morphT0 = -1e9
+      curMix = 0
     }
 
     /* ======================================================================
@@ -917,33 +920,19 @@ void main() {
       }
     }
 
-    const resize = (bounds: MeadowBounds | null) => {
-      const width = window.innerWidth
-      const height = window.innerHeight
+    const resizeViewport = () => {
       const scale = Math.min(window.devicePixelRatio || 1, P.quality)
       const box = cv.getBoundingClientRect()
-      const pixelWidth = Math.max(1, Math.round((box.width || width) * scale))
-      const pixelHeight = Math.max(1, Math.round((box.height || height) * scale))
+      const pixelWidth = Math.max(1, Math.round((box.width || window.innerWidth) * scale))
+      const pixelHeight = Math.max(1, Math.round((box.height || window.innerHeight) * scale))
       if (
         initialized &&
-        W === width &&
-        H === height &&
         resolution.scale === scale &&
         cv.width === pixelWidth &&
         cv.height === pixelHeight
       )
-        return
-      W = width
-      H = height
-      lastBounds = bounds
-      regions = bounds ? [{ x: bounds.left, y: bounds.top, w: bounds.width, h: bounds.height }] : []
+        return false
       resolution.scale = scale
-      Gw = Math.ceil(W / STEP) + 2
-      Gh = Math.ceil(H / STEP) + 2
-      buildNoise()
-      allocField()
-      refresh()
-      massList = null
       gl.activeTexture(gl.TEXTURE9)
       gl.bindTexture(gl.TEXTURE_2D, groundTexture)
       gl.texImage2D(
@@ -977,6 +966,40 @@ void main() {
       if (cv.width !== pixelWidth) cv.width = pixelWidth
       if (cv.height !== pixelHeight) cv.height = pixelHeight
       initialized = true
+      return true
+    }
+
+    const resize = (bounds: MeadowBounds | null) => {
+      resizeViewport()
+      const width = window.innerWidth,
+        height = window.innerHeight
+      if (FA && FB && W === width && H === height) return
+      const oldGw = Gw,
+        oldGh = Gh,
+        oldFrom = FA,
+        oldTo = FB,
+        oldMix = curMix
+      W = width
+      H = height
+      lastBounds = bounds
+      regions = bounds ? [{ x: bounds.left, y: bounds.top, w: bounds.width, h: bounds.height }] : []
+      Gw = Math.ceil(W / STEP) + 2
+      Gh = Math.ceil(H / STEP) + 2
+      buildNoise()
+      allocField()
+      if (oldFrom && oldTo) {
+        const empty = P.sigma * (Math.sqrt(30) - Math.sqrt(-Math.log(0.35)))
+        FA = { s: snapshotField(oldFrom.s, oldTo.s, oldMix, oldGw, oldGh, Gw, Gh, empty, STEP) }
+        FB = computeField(regionRects())
+        fromI = 0
+        toI = 1
+        uploadField(fromI, FA)
+        uploadField(toI, FB)
+        morphT0 = sceneNow
+        morphDur = MORPH_MS
+        curMix = 0
+      } else commit(true)
+      massList = null
     }
 
     const draw = (
@@ -991,7 +1014,10 @@ void main() {
         bounds?.top !== lastBounds?.top ||
         bounds?.width !== lastBounds?.width ||
         bounds?.height !== lastBounds?.height
-      const sizeChanged = P.sigma !== options.cloudSize
+      const sizeChanged =
+        P.sigma !== options.cloudSize ||
+        P.showNavigationCloud !== (options.showNavigationCloud ? 1 : 0)
+      P.showNavigationCloud = options.showNavigationCloud ? 1 : 0
       P.sigma = options.cloudSize
       P.cover = options.cloudCover
       P.flow = options.flow
@@ -1017,6 +1043,7 @@ void main() {
     buildNoiseTex()
     return {
       resize,
+      resizeViewport,
       draw,
       moveBoy(x: number, y: number) {
         characters.moveBoy(x, y)

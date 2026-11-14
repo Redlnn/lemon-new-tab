@@ -394,8 +394,28 @@ function open(url: string) {
         >
           {{ t('background.meadow.name') }}
         </el-button>
+        <el-button
+          text
+          bg
+          :class="{ active: settings.background.bgType === BgType.Beach }"
+          @click="settings.background.bgType = BgType.Beach"
+          >{{ t('background.beach.name') }}</el-button
+        >
       </el-space>
-      <div v-if="settings.background.bgType === BgType.Meadow" class="bg-switcher-meadow">
+      <div v-if="settings.background.bgType === BgType.Beach" class="bg-switcher-meadow">
+        <label
+          ><span>{{ t('background.meadow.fps') }}</span
+          ><el-select
+            v-model="settings.background.beach.fps"
+            :aria-label="t('background.meadow.fps')"
+            ><el-option
+              v-for="fps in [25, 30, 45, 60, 120]"
+              :key="fps"
+              :label="`${fps} FPS`"
+              :value="fps" /></el-select
+        ></label>
+      </div>
+      <div v-else-if="settings.background.bgType === BgType.Meadow" class="bg-switcher-meadow">
         <label>
           <span>{{ t('background.meadow.fps') }}</span>
           <el-select
@@ -427,6 +447,10 @@ function open(url: string) {
           <span>{{ t('background.meadow.flow') }}</span>
           <el-slider v-model="settings.background.meadow.flow" :min="0" :max="3" :step="0.1" />
         </label>
+        <label
+          ><span>{{ t('background.meadow.showNavigationCloud') }}</span
+          ><el-switch v-model="settings.background.meadow.showNavigationCloud"
+        /></label>
         <label
           ><span>{{ t('background.meadow.showBoy') }}</span
           ><el-switch v-model="settings.background.meadow.showBoy"
