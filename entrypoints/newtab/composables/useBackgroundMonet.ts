@@ -8,9 +8,9 @@ import {
 
 import { runAfterFirstPaint } from '@newtab/shared/schedule'
 import { disposeMonetWorker, extractMonetColors } from '@newtab/shared/theme'
-import beachPalette from '@newtab/shared/wallpaper/beachPalette.json'
+import beachPalette from '@newtab/shared/wallpaper/beach/beachPalette.json'
 // 从无云、无角色的草地画面采样 #97bb67，预先生成明暗两套莫奈颜色。
-import meadowPalette from '@newtab/shared/wallpaper/meadowPalette.json'
+import meadowPalette from '@newtab/shared/wallpaper/meadow/meadowPalette.json'
 
 export function useBackgroundMonet(options: {
   backgroundUrl: Ref<string>

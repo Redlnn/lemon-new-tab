@@ -1,4 +1,7 @@
-import { snapshotField } from './fieldTransition'
+import { createFieldTextures } from '../dynamic/fieldTextures'
+import { snapshotField } from '../dynamic/fieldTransition'
+import { createTerrain } from '../dynamic/terrain'
+
 import { createMeadowCharacters } from './meadowCharacters'
 
 export type MeadowAssets = {
@@ -56,166 +59,18 @@ export function createMeadowScene(cv: HTMLCanvasElement, assets: MeadowAssets) {
   try {
     const seed = (Math.random() * 1e6) | 0
 
-    const hash2 = (x: number, y: number, k = 0) => {
-      let h =
-        Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(seed + k, 2246822519)
-      h = Math.imul(h ^ (h >>> 13), 1274126177)
-      return ((h ^ (h >>> 16)) >>> 0) / 4294967296
-    }
-
-    const vnoise = (x: number, y: number, k = 0) => {
-      const ix = Math.floor(x),
-        iy = Math.floor(y),
-        fx = x - ix,
-        fy = y - iy
-      const ux = fx * fx * (3 - 2 * fx),
-        uy = fy * fy * (3 - 2 * fy)
-      const a = hash2(ix, iy, k),
-        b = hash2(ix + 1, iy, k),
-        c = hash2(ix, iy + 1, k),
-        d = hash2(ix + 1, iy + 1, k)
-      return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy
-    }
-
-    const fbm = (x: number, y: number, k = 0) => {
-      let a = 0.5,
-        s = 0
-      for (let i = 0; i < 4; i++) {
-        s += a * vnoise(x, y, k + i * 7)
-        x = x * 2.03 + 17.1
-        y = y * 2.03 + 17.1
-        a *= 0.5
-      }
-      return s
-    }
-
-    const tileNoise = (x: number, y: number, px: number, py: number, k: number) => {
-      const ix = Math.floor(x),
-        iy = Math.floor(y),
-        fx = x - ix,
-        fy = y - iy
-      const ux = fx * fx * (3 - 2 * fx),
-        uy = fy * fy * (3 - 2 * fy)
-      const m = (v: number, p: number) => ((v % p) + p) % p
-      const x0 = m(ix, px),
-        x1 = m(ix + 1, px),
-        y0 = m(iy, py),
-        y1 = m(iy + 1, py)
-      const a = hash2(x0, y0, k),
-        b = hash2(x1, y0, k),
-        c = hash2(x0, y1, k),
-        d = hash2(x1, y1, k)
-      return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy
-    }
-
-    const tileFbm = (u: number, v: number, periods: number[], k: number) => {
-      let s = 0,
-        w = 0.5,
-        tw = 0
-      for (let i = 0; i < periods.length; i++) {
-        const period = periods[i]!
-        s += w * tileNoise(u * period, v * period, period, period, k + i * 13)
-        tw += w
-        w *= 0.5
-      }
-      return s / tw
-    }
-
-    const makeNoiseImage = () => {
-      const S = 256,
-        d = new Uint8Array(S * S * 4)
-      const chans = [
-        [8, 16, 32, 64],
-        [8, 16, 32, 64],
-        [8, 16, 32],
-        [16, 32, 64, 128],
-      ]
-      for (let y = 0; y < S; y++)
-        for (let x = 0; x < S; x++) {
-          const u = x / S,
-            v = y / S,
-            i = (y * S + x) * 4
-          for (let c = 0; c < 4; c++) {
-            const n = tileFbm(u, v, chans[c]!, 100 + c * 50)
-            d[i + c] = Math.min(Math.max((n - 0.5) * 1.9 + 0.5, 0), 1) * 255
-          }
-        }
-      return { S, d }
-    }
-
-    /* ======================================================================
-   陆地场（CPU）：s = 到海岸的有符号距离（<0 陆地）
-   ====================================================================== */
+    const terrain = createTerrain(
+      seed,
+      STEP,
+      () => P.sigma,
+      () => P.warp,
+    )
+    const { hash2, makeNoiseImage, computeField, sampleArr } = terrain
     let W = innerWidth,
       H = innerHeight,
       Gw = 1,
-      Gh = 1,
-      NZ: { wx: Float32Array; wy: Float32Array }
-
-    const buildNoise = () => {
-      const N = Gw * Gh
-      NZ = { wx: new Float32Array(N), wy: new Float32Array(N) }
-      for (let gy = 0; gy < Gh; gy++)
-        for (let gx = 0; gx < Gw; gx++) {
-          const i = gy * Gw + gx,
-            x = gx * STEP,
-            y = gy * STEP
-          NZ.wx[i] = fbm(x * 0.0028, y * 0.0028, 1) - 0.47
-          NZ.wy[i] = fbm(x * 0.0028, y * 0.0028, 2) - 0.47
-        }
-    }
-
-    const computeField = (rects: { cx: number; cy: number; hw: number; hh: number }[]) => {
-      const N = Gw * Gh,
-        f1 = new Float32Array(N)
-      const sig = P.sigma,
-        is1 = 1 / (sig * sig)
-      const wa = P.warp * 2.2,
-        wmax = wa * 0.5
-      for (const r of rects) {
-        const R = 5.5 * sig + Math.max(r.hw, r.hh) * 0.5 + wmax
-        const gx0 = Math.max(0, Math.floor((r.cx - R) / STEP)),
-          gx1 = Math.min(Gw - 1, Math.ceil((r.cx + R) / STEP))
-        const gy0 = Math.max(0, Math.floor((r.cy - R) / STEP)),
-          gy1 = Math.min(Gh - 1, Math.ceil((r.cy + R) / STEP))
-        const chw = r.hw * 0.5,
-          chh = r.hh * 0.5
-        for (let gy = gy0; gy <= gy1; gy++)
-          for (let gx = gx0; gx <= gx1; gx++) {
-            const i = gy * Gw + gx
-            const qx = gx * STEP + NZ.wx[i]! * wa,
-              qy = gy * STEP + NZ.wy[i]! * wa
-            let dx = Math.abs(qx - r.cx) - chw,
-              dy = Math.abs(qy - r.cy) - chh
-            if (dx < 0) dx = 0
-            if (dy < 0) dy = 0
-            f1[i]! += Math.exp(-(dx * dx + dy * dy) * is1)
-          }
-      }
-      // 下限 = 计算范围边缘处的贡献值：范围内外算出的"离岸距离"一致，深海不会出现方框状的接缝
-      const c0 = Math.sqrt(-Math.log(0.35)),
-        s = new Float32Array(N),
-        fMin = Math.exp(-30)
-      for (let i = 0; i < N; i++) {
-        const g = Math.log(Math.max(f1[i]!, fMin))
-        s[i] = sig * (Math.sqrt(Math.max(-g, 0)) - c0) - sig * 0.6 * Math.max(g, 0)
-      }
-      return { s }
-    }
-
-    const sampleArr = (a: Float32Array, x: number, y: number) => {
-      const fx = Math.min(Math.max(x / STEP, 0), Gw - 1.001),
-        fy = Math.min(Math.max(y / STEP, 0), Gh - 1.001)
-      const ix = Math.floor(fx),
-        iy = Math.floor(fy),
-        tx = fx - ix,
-        ty = fy - iy,
-        i = iy * Gw + ix
-      return (
-        (a[i]! * (1 - tx) + a[i + 1]! * tx) * (1 - ty) +
-        (a[i + Gw]! * (1 - tx) + a[i + Gw + 1]! * tx) * ty
-      )
-    }
+      Gh = 1
+    const buildNoise = () => terrain.resize(Gw, Gh)
 
     /* ======================================================================
    着色器
@@ -441,49 +296,15 @@ void main() {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
     }
 
-    const f32 = new Float32Array(1),
-      u32 = new Uint32Array(f32.buffer)
-
-    const toHalf = (v: number) => {
-      f32[0] = v
-      const x = u32[0]!
-      const sign = (x >>> 16) & 0x8000,
-        e = ((x >>> 23) & 0xff) - 112,
-        m = x & 0x7fffff
-      if (e <= 0) return sign
-      if (e >= 31) return sign | 0x7c00
-      return sign | (e << 10) | (m >>> 13)
-    }
-
-    // 两张陆地场纹理：from → to 之间插值
-    const ftex: [WebGLTexture | null, WebGLTexture | null] = [null, null]
+    const fieldTextures = createFieldTextures(gl)
+    const ftex = fieldTextures.textures
     let fromI = 0,
       toI = 0,
       morphT0 = -1e9,
       morphDur = MORPH_MS,
       FA: Field | null = null,
       FB: Field | null = null
-
-    const allocField = () => {
-      for (let i = 0; i < 2; i++) {
-        if (ftex[i]) gl.deleteTexture(ftex[i]!)
-        ftex[i] = gl.createTexture()
-        gl.bindTexture(gl.TEXTURE_2D, ftex[i]!)
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, Gw, Gh, 0, gl.RED, gl.HALF_FLOAT, null)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-      }
-    }
-
-    const uploadField = (i: number, Fd: Field) => {
-      const d = new Uint16Array(Gw * Gh)
-      for (let k = 0; k < d.length; k++) d[k] = toHalf(Fd.s[k]!)
-      gl.bindTexture(gl.TEXTURE_2D, ftex[i]!)
-      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1) // R16F 奇数宽度行也按紧凑数据上传
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, Gw, Gh, gl.RED, gl.HALF_FLOAT, d)
-    }
+    const uploadField = (i: number, field: Field) => fieldTextures.upload(i, field.s)
 
     // 把容器作为一个图标生成云场，横向略微扩展以覆盖更多快捷链接。
     const regionRects = () =>
@@ -532,6 +353,9 @@ void main() {
       circBuf = new Float32Array(0),
       cgW = 0,
       cgH = 0
+    let circleCounts = new Uint8Array(0)
+    const circleList: number[] = []
+    const circleOrder: number[] = []
     const rnd1 = (x: number, y: number, k: number) => hash2(x, y, k) // 固定的随机数（和换种子一起变）
     const skyClouds: (ReturnType<typeof makeSkyCloud> & { dying?: boolean })[] = []
     let flowT = 0
@@ -765,6 +589,7 @@ void main() {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
         circBuf = new Float32Array(gw * CIRC_K * gh * 4)
+        circleCounts = new Uint8Array(gw * gh)
       }
       // 图标周围云团的圆：只在图标挪动时（场在过渡）每帧重算，平时每 0.5 秒重算一次（呼吸很慢，看不出跳）
       const morphing = curMix < 1 || !massList || massList.W !== W || massList.H !== H
@@ -772,7 +597,9 @@ void main() {
         massList = { circles: buildMassCircles(), W, H }
         massT = t
       }
-      const list = massList!.circles.slice()
+      const list = circleList
+      list.length = 0
+      for (const value of massList!.circles) list.push(value)
       for (let i = 0; i < list.length; i += 4) {
         const x = list[i]!,
           y = list[i + 1]!,
@@ -792,8 +619,10 @@ void main() {
       }
       // 分到格子里（圆盖到的每个格子都放一份；一个格子放不下就留大的）
       circBuf.fill(0)
-      const cnt = new Uint8Array(gw * gh)
-      const order = []
+      const cnt = circleCounts
+      cnt.fill(0)
+      const order = circleOrder
+      order.length = 0
       for (let i = 0; i < list.length; i += 4) order.push(i)
       order.sort((a, b) => list[b + 2]! - list[a + 2]!)
       for (const i of order) {
@@ -986,7 +815,7 @@ void main() {
       Gw = Math.ceil(W / STEP) + 2
       Gh = Math.ceil(H / STEP) + 2
       buildNoise()
-      allocField()
+      fieldTextures.resize(Gw, Gh)
       if (oldFrom && oldTo) {
         const empty = P.sigma * (Math.sqrt(30) - Math.sqrt(-Math.log(0.35)))
         FA = { s: snapshotField(oldFrom.s, oldTo.s, oldMix, oldGw, oldGh, Gw, Gh, empty, STEP) }

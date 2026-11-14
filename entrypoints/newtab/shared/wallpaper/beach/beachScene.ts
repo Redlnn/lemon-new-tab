@@ -1,3 +1,7 @@
+import { createFieldTextures } from '../dynamic/fieldTextures'
+import { snapshotField } from '../dynamic/fieldTransition'
+import { createTerrain } from '../dynamic/terrain'
+
 import {
   beachRegionsSeparate,
   createBeachIslands,
@@ -5,7 +9,6 @@ import {
   type BeachRect,
 } from './beachIslands'
 import { beachVertexShader, beachFragmentShader } from './beachShaders'
-import { snapshotField } from './fieldTransition'
 
 const STEP = 5
 const P = {
@@ -39,166 +42,18 @@ export function createBeachScene(
   const treeContext = treesCanvas.getContext('2d')
   if (!treeContext) throw new Error('Canvas 2D unavailable')
   const seed = (Math.random() * 1e6) | 0
-  const hash2 = (x: number, y: number, k = 0) => {
-    let h =
-      Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(seed + k, 2246822519)
-    h = Math.imul(h ^ (h >>> 13), 1274126177)
-    return ((h ^ (h >>> 16)) >>> 0) / 4294967296
-  }
-
-  const vnoise = (x: number, y: number, k = 0) => {
-    const ix = Math.floor(x),
-      iy = Math.floor(y),
-      fx = x - ix,
-      fy = y - iy
-    const ux = fx * fx * (3 - 2 * fx),
-      uy = fy * fy * (3 - 2 * fy)
-    const a = hash2(ix, iy, k),
-      b = hash2(ix + 1, iy, k),
-      c = hash2(ix, iy + 1, k),
-      d = hash2(ix + 1, iy + 1, k)
-    return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy
-  }
-
-  const fbm = (x: number, y: number, k = 0) => {
-    let a = 0.5,
-      s = 0
-    for (let i = 0; i < 4; i++) {
-      s += a * vnoise(x, y, k + i * 7)
-      x = x * 2.03 + 17.1
-      y = y * 2.03 + 17.1
-      a *= 0.5
-    }
-    return s
-  }
-
-  const tileNoise = (x: number, y: number, px: number, py: number, k: number) => {
-    const ix = Math.floor(x),
-      iy = Math.floor(y),
-      fx = x - ix,
-      fy = y - iy
-    const ux = fx * fx * (3 - 2 * fx),
-      uy = fy * fy * (3 - 2 * fy)
-    const m = (v: number, p: number) => ((v % p) + p) % p
-    const x0 = m(ix, px),
-      x1 = m(ix + 1, px),
-      y0 = m(iy, py),
-      y1 = m(iy + 1, py)
-    const a = hash2(x0, y0, k),
-      b = hash2(x1, y0, k),
-      c = hash2(x0, y1, k),
-      d = hash2(x1, y1, k)
-    return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy
-  }
-
-  const tileFbm = (u: number, v: number, periods: number[], k: number) => {
-    let s = 0,
-      w = 0.5,
-      tw = 0
-    for (let i = 0; i < periods.length; i++) {
-      const period = periods[i]!
-      s += w * tileNoise(u * period, v * period, period, period, k + i * 13)
-      tw += w
-      w *= 0.5
-    }
-    return s / tw
-  }
-
-  const makeNoiseImage = () => {
-    const S = 256,
-      d = new Uint8Array(S * S * 4)
-    const chans = [
-      [8, 16, 32, 64],
-      [8, 16, 32, 64],
-      [8, 16, 32],
-      [16, 32, 64, 128],
-    ]
-    for (let y = 0; y < S; y++)
-      for (let x = 0; x < S; x++) {
-        const u = x / S,
-          v = y / S,
-          i = (y * S + x) * 4
-        for (let c = 0; c < 4; c++) {
-          const n = tileFbm(u, v, chans[c]!, 100 + c * 50)
-          d[i + c] = Math.min(Math.max((n - 0.5) * 1.9 + 0.5, 0), 1) * 255
-        }
-      }
-    return { S, d }
-  }
-
-  /* ======================================================================
-   陆地场（CPU）：s = 到海岸的有符号距离（<0 陆地）
-   ====================================================================== */
+  const terrain = createTerrain(
+    seed,
+    STEP,
+    () => P.sigma,
+    () => P.warp,
+  )
+  const { makeNoiseImage, computeField, sampleArr } = terrain
   let W = innerWidth,
     H = innerHeight,
     Gw = 1,
-    Gh = 1,
-    NZ: { wx: Float32Array; wy: Float32Array }
-
-  const buildNoise = () => {
-    const N = Gw * Gh
-    NZ = { wx: new Float32Array(N), wy: new Float32Array(N) }
-    for (let gy = 0; gy < Gh; gy++)
-      for (let gx = 0; gx < Gw; gx++) {
-        const i = gy * Gw + gx,
-          x = gx * STEP,
-          y = gy * STEP
-        NZ.wx[i] = fbm(x * 0.0028, y * 0.0028, 1) - 0.47
-        NZ.wy[i] = fbm(x * 0.0028, y * 0.0028, 2) - 0.47
-      }
-  }
-
-  const computeField = (rects: { cx: number; cy: number; hw: number; hh: number }[]) => {
-    const N = Gw * Gh,
-      f1 = new Float32Array(N)
-    const sig = P.sigma,
-      is1 = 1 / (sig * sig)
-    const wa = P.warp * 2.2,
-      wmax = wa * 0.5
-    for (const r of rects) {
-      const R = 5.5 * sig + Math.max(r.hw, r.hh) * 0.5 + wmax
-      const gx0 = Math.max(0, Math.floor((r.cx - R) / STEP)),
-        gx1 = Math.min(Gw - 1, Math.ceil((r.cx + R) / STEP))
-      const gy0 = Math.max(0, Math.floor((r.cy - R) / STEP)),
-        gy1 = Math.min(Gh - 1, Math.ceil((r.cy + R) / STEP))
-      const chw = r.hw * 0.5,
-        chh = r.hh * 0.5
-      for (let gy = gy0; gy <= gy1; gy++)
-        for (let gx = gx0; gx <= gx1; gx++) {
-          const i = gy * Gw + gx
-          const qx = gx * STEP + NZ.wx[i]! * wa,
-            qy = gy * STEP + NZ.wy[i]! * wa
-          let dx = Math.abs(qx - r.cx) - chw,
-            dy = Math.abs(qy - r.cy) - chh
-          if (dx < 0) dx = 0
-          if (dy < 0) dy = 0
-          f1[i]! += Math.exp(-(dx * dx + dy * dy) * is1)
-        }
-    }
-    // 下限 = 计算范围边缘处的贡献值：范围内外算出的"离岸距离"一致，深海不会出现方框状的接缝
-    const c0 = Math.sqrt(-Math.log(0.35)),
-      s = new Float32Array(N),
-      fMin = Math.exp(-30)
-    for (let i = 0; i < N; i++) {
-      const g = Math.log(Math.max(f1[i]!, fMin))
-      s[i] = sig * (Math.sqrt(Math.max(-g, 0)) - c0) - sig * 0.6 * Math.max(g, 0)
-    }
-    return { s }
-  }
-
-  const sampleArr = (a: Float32Array, x: number, y: number) => {
-    const fx = Math.min(Math.max(x / STEP, 0), Gw - 1.001),
-      fy = Math.min(Math.max(y / STEP, 0), Gh - 1.001)
-    const ix = Math.floor(fx),
-      iy = Math.floor(fy),
-      tx = fx - ix,
-      ty = fy - iy,
-      i = iy * Gw + ix
-    return (
-      (a[i]! * (1 - tx) + a[i + 1]! * tx) * (1 - ty) +
-      (a[i + Gw]! * (1 - tx) + a[i + Gw + 1]! * tx) * ty
-    )
-  }
+    Gh = 1
+  const buildNoise = () => terrain.resize(Gw, Gh)
 
   const compile = (type: number, source: string) => {
     const shader = gl.createShader(type)
@@ -236,20 +91,8 @@ export function createBeachScene(
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
-  const fieldTextures = [gl.createTexture(), gl.createTexture()]
-  const float = new Float32Array(1),
-    bits = new Uint32Array(float.buffer)
-  const half = (value: number) => {
-    float[0] = value
-    const x = bits[0]!,
-      sign = (x >>> 16) & 0x8000,
-      exponent = ((x >>> 23) & 255) - 112
-    return exponent <= 0
-      ? sign
-      : exponent >= 31
-        ? sign | 0x7c00
-        : sign | (exponent << 10) | ((x & 0x7fffff) >>> 13)
-  }
+  const fieldStorage = createFieldTextures(gl)
+  const fieldTextures = fieldStorage.textures
   let current: Field | null = null,
     previous: Field | null = null
   let fromIndex = 0,
@@ -346,15 +189,8 @@ export function createBeachScene(
     bird: i >= 2,
   }))
   const upload = (index: number, field: Field) => {
-    const data = new Uint16Array(field.s.length)
-    for (let i = 0; i < data.length; i++) data[i] = half(field.s[i]!)
-    gl.bindTexture(gl.TEXTURE_2D, fieldTextures[index]!)
-    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, Gw, Gh, 0, gl.RED, gl.HALF_FLOAT, data)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    fieldStorage.resize(Gw, Gh)
+    fieldStorage.upload(index, field.s)
   }
   const randomForLayout = () => {
     let n = seed
@@ -493,6 +329,23 @@ export function createBeachScene(
     setLayout(bounds, true, oldField)
     lastBounds = ''
   }
+  const drawRegion = (
+    x: number,
+    y: number,
+    left: number,
+    top: number,
+    right: number,
+    bottom: number,
+  ) => {
+    const l = Math.max(0, Math.floor(((x + left) * scale) / 2) * 2)
+    const r = Math.min(cv.width, Math.ceil(((x + right) * scale) / 2) * 2)
+    const b = Math.max(0, Math.floor((cv.height - (y + bottom) * scale) / 2) * 2)
+    const t = Math.min(cv.height, Math.ceil((cv.height - (y + top) * scale) / 2) * 2)
+    if (r > l && t > b) {
+      gl.scissor(l, b, r - l, t - b)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+    }
+  }
   const draw = (time: number, bounds: Bounds | null) => {
     sceneTime = time * 1000
     const key = bounds ? `${bounds.left},${bounds.top},${bounds.width},${bounds.height}` : ''
@@ -537,9 +390,12 @@ export function createBeachScene(
       agent.phase += dt * (agent.bird ? 4 : 2.4)
       agent.x += Math.cos(agent.angle) * dt * (agent.bird ? 40 : 8)
       agent.y += Math.sin(agent.angle) * dt * (agent.bird ? 40 : 8)
-      if (agent.bird)
-        birds.set([agent.x, agent.y, agent.angle, 0.68 + 0.32 * Math.cos(agent.phase)], (i - 2) * 4)
-      else kay.set([agent.x, agent.y, agent.angle, agent.phase], i * 4)
+      const data = agent.bird ? birds : kay
+      const offset = (agent.bird ? i - 2 : i) * 4
+      data[offset] = agent.x
+      data[offset + 1] = agent.y
+      data[offset + 2] = agent.angle
+      data[offset + 3] = agent.bird ? 0.68 + 0.32 * Math.cos(agent.phase) : agent.phase
     })
     gl.viewport(0, 0, cv.width, cv.height)
     gl.useProgram(program)
@@ -574,14 +430,29 @@ export function createBeachScene(
       uSpacing: P.spacing,
       uWaves: P.waves,
       uDebug: 0,
-      uKayN: 2,
-      uBirdN: 3,
+      uKayN: 0,
+      uBirdN: 0,
     }))
       gl.uniform1f(u[name]!, value)
     gl.uniform4fv(u.uKay!, kay)
     gl.uniform4fv(u.uBird!, birds)
     gl.uniform4fv(u.uRip!, ripples)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
+    // Only shade boats, birds and their shadows where they can affect the image.
+    // Align to 2px so derivatives use the same pixel groups as the full-screen pass.
+    gl.uniform1f(u.uKayN!, 2)
+    gl.uniform1f(u.uBirdN!, 3)
+    gl.enable(gl.SCISSOR_TEST)
+    try {
+      for (const agent of agents) {
+        if (agent.bird) {
+          drawRegion(agent.x, agent.y, -22, -22, 22, 22)
+          drawRegion(agent.x + 34, agent.y + 55, -22, -22, 22, 22)
+        } else drawRegion(agent.x, agent.y, -36, -36, 48, 52)
+      }
+    } finally {
+      gl.disable(gl.SCISSOR_TEST)
+    }
     if (!treesDirty && currentMix >= 1) return
     treesDirty = false
     treeContext.setTransform(scale, 0, 0, scale, 0, 0)
