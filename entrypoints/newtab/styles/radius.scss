@@ -6,7 +6,7 @@
   --le-radius-small: calc(var(--le-radius-base, 20px) * 0.4);
   --le-radius-tiny: calc(var(--le-radius-base, 20px) * 0.25);
   --le-radius-micro: calc(var(--le-radius-base, 20px) * 0.15);
-  --le-radius-popper: var(--le-radius-surface);
+  --le-radius-popper: var(--le-radius-medium);
   --le-menu-padding: 4px;
   --le-radius-menu-item: max(0px, calc(var(--le-radius-popper) - var(--le-menu-padding)));
   --el-border-radius-base: var(--le-radius-base);

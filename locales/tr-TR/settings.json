@@ -3,6 +3,13 @@
     "back": "Önceki ayarlar görünümüne dön"
   },
   "background": {
+    "dailyRecommendation": "Günlük öneri",
+    "localMedia": "Yerel medya",
+    "drawerSubtitle": "Alanınızın havasını değiştirin",
+    "changesApplyImmediately": "Değişiklikler hemen uygulanır",
+    "apply": "Uygula",
+    "source": "Duvar kağıdı kaynağı",
+    "dynamic": "Canlı duvar kağıtları",
     "beach": {
       "sigma": "Kıyı uzaklığı",
       "warp": "Kıyı girintileri",
@@ -26,7 +33,7 @@
       "showCat": "Kediyi göster",
       "error": "Çayır arka planı başlatılamadı. Düz renge geçildi."
     },
-    "bingFrom": "Görsel kaynağı: Bing",
+    "bingFrom": "Bing günlük görseli",
     "blur": "Bulanıklık yoğunluğu",
     "cache": {
       "askEnable": {
@@ -50,7 +57,7 @@
       "dark": "Koyu tema",
       "done": "Bitti",
       "download": "İndir",
-      "dragAddHint": "Eklemek için resimleri veya videoları buraya sürükleyin",
+      "dragAddHint": "Eklemek için resimleri ve videoları buraya sürükleyin. Koyu mod listesi boşsa açık mod listesi kullanılır.",
       "empty": "Resim veya video ekleyin. Birden fazla dosya seçin ya da buraya sürükleyin.",
       "expand": "Tümünü göster",
       "group": "Duvar kâğıdı grubu",
@@ -76,7 +83,7 @@
       "enable": "Maskeyi etkinleştir"
     },
     "onlineTips": {
-      "a": "Enter tuşuna basarak veya giriş alanı odağı kaybettiğinde gönderin.",
+      "a": "Adresi göndermek için Uygula’ya tıklayın veya Enter’a basın.",
       "b": "Duvar kağıdı önbellekleme stratejisi tarayıcıya bağlıdır ve duvar kağıtları çevrimdışı erişilebilir olmayabilir.",
       "c": "Duvar kağıdı yüklenene kadar boş bir ekran olacaktır ve bu süre internet hızınıza bağlıdır."
     },
@@ -107,7 +114,7 @@
     "showDownloadBtn": "İndirme düğmesini göster",
     "showDownloadBtnNote": "Görüntülenen Bing, çevrimiçi veya yerel duvar kağıdını indirin",
     "title": "Arka Plan",
-    "today": "Bugün",
+
     "type": {
       "local": "Yerel dosya",
       "online": "Çevrimiçi URL"

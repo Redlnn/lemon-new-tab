@@ -3,6 +3,13 @@
     "back": "返回上一層設定"
   },
   "background": {
+    "dailyRecommendation": "每日推薦",
+    "localMedia": "本機媒體",
+    "drawerSubtitle": "為你的空間換一種氛圍",
+    "changesApplyImmediately": "變更會立即生效",
+    "apply": "套用",
+    "source": "選擇桌布來源",
+    "dynamic": "動態桌布",
     "beach": {
       "sigma": "離岸距離",
       "warp": "海岸曲折",
@@ -26,7 +33,7 @@
       "showCat": "顯示小貓",
       "error": "草地背景無法啟動，已切換至純色背景。"
     },
-    "bingFrom": "影像來源：Bing",
+    "bingFrom": "Bing 每日圖片",
     "blur": "模糊強度",
     "cache": {
       "askEnable": {
@@ -50,7 +57,7 @@
       "dark": "深色模式",
       "done": "完成",
       "download": "下載",
-      "dragAddHint": "拖入圖片或影片以新增",
+      "dragAddHint": "拖入圖片和影片以新增，深色模式清單為空時使用淺色模式清單",
       "empty": "新增圖片或影片，支援一次選取多個檔案或拖入。",
       "expand": "展開全部",
       "group": "桌布分組",
@@ -76,7 +83,7 @@
       "enable": "啟用遮罩"
     },
     "onlineTips": {
-      "a": "按下 Enter 鍵或當輸入框失去焦點時會提交",
+      "a": "點擊套用或按 Enter 提交網址。",
       "b": "圖片的快取策略取決於瀏覽器，離線時可能無法載入圖片",
       "c": "載入圖片前可能會短暫出現白畫面，時間長短取決於你的網路速度"
     },
@@ -107,7 +114,7 @@
     "showDownloadBtn": "顯示下載按鈕",
     "showDownloadBtnNote": "可下載目前顯示的必應、線上或本機桌布",
     "title": "背景",
-    "today": "今日",
+
     "type": {
       "local": "本機圖片/影片",
       "online": "線上圖片"

@@ -15,27 +15,6 @@ export default function useBackgroundSwitcher() {
   // 在线壁纸相关
   const tempOnlineUrl = ref('') // 用于在线壁纸输入框的临时存储，避免频繁修改 settingsStore
 
-  const onlineImageWarn = async () => {
-    if (settings.background.online.url) {
-      settings.background.bgType = BgType.Online
-      return
-    }
-    ElMessageBox.confirm(
-      i18next.t('settings:background.warning.unknownSource'),
-      i18next.t('settings:background.warning.title'),
-      {
-        type: 'warning',
-      },
-    )
-      .then(() => {
-        settings.background.bgType = BgType.Online
-      })
-      .catch(() => {
-        settings.background.bgType = BgType.None
-        settings.background.online.url = ''
-      })
-  }
-
   const { checkAndRequestPermission } = usePermission()
 
   const offerEnableOnlineWallpaperCache = async (hostname: string) => {
@@ -95,9 +74,9 @@ export default function useBackgroundSwitcher() {
     return false
   }
 
-  const changeOnlineBg = async (e: Event) => {
+  const changeOnlineBg = async () => {
     if (isShowingPermissionDialog) return
-    const _url = (e.target as HTMLInputElement).value
+    const _url = tempOnlineUrl.value.trim()
     if (!_url) {
       settings.background.bgType = BgType.None
       settings.background.online.url = ''
@@ -110,29 +89,41 @@ export default function useBackgroundSwitcher() {
       if (url.protocol !== 'http:' && url.protocol !== 'https:')
         throw new TypeError('Unsupported URL')
     } catch {
-      tempOnlineUrl.value = settings.background.online.url
       ElMessage.error(i18next.t('settings:background.warning.invalidUrl'))
       return
     }
     const { hostname } = url
 
-    // MV2的Firefox不需要检查权限，直接设置在线壁纸URL即可。MV3才需要检查权限。
-    if (import.meta.env.MANIFEST_VERSION === 2 && !settings.theme.monetColor) {
-      await clearAllOnlineWallpaperCache()
-      settings.background.online.url = _url
-      await offerEnableOnlineWallpaperCache(hostname)
+    if (_url === settings.background.online.url) {
+      settings.background.bgType = BgType.Online
+      tempOnlineUrl.value = _url
       return
     }
 
     isShowingPermissionDialog = true
     try {
-      if (await handlePermissions(_url, hostname)) {
+      if (!settings.background.online.url) {
+        try {
+          await ElMessageBox.confirm(
+            i18next.t('settings:background.warning.unknownSource'),
+            i18next.t('settings:background.warning.title'),
+            { type: 'warning' },
+          )
+        } catch {
+          return
+        }
+      }
+
+      // MV2的Firefox不需要检查权限。MV3及莫奈取色需要检查权限。
+      if (
+        (import.meta.env.MANIFEST_VERSION === 2 && !settings.theme.monetColor) ||
+        (await handlePermissions(_url, hostname))
+      ) {
         await clearAllOnlineWallpaperCache()
         settings.background.online.url = _url
+        settings.background.bgType = BgType.Online
+        tempOnlineUrl.value = _url
         await offerEnableOnlineWallpaperCache(hostname)
-      } else {
-        settings.background.bgType = BgType.None
-        tempOnlineUrl.value = ''
       }
     } finally {
       isShowingPermissionDialog = false
@@ -140,5 +131,5 @@ export default function useBackgroundSwitcher() {
   }
 
   tempOnlineUrl.value = settings.background.online.url
-  return { tempOnlineUrl, changeOnlineBg, onlineImageWarn }
+  return { tempOnlineUrl, changeOnlineBg }
 }

@@ -3,6 +3,13 @@
     "back": "返回上一层设置"
   },
   "background": {
+    "dailyRecommendation": "每日推荐",
+    "localMedia": "本地媒体",
+    "drawerSubtitle": "为你的空间换一种氛围",
+    "changesApplyImmediately": "更改会立即生效",
+    "apply": "应用",
+    "source": "选择壁纸来源",
+    "dynamic": "动态壁纸",
     "beach": {
       "sigma": "离岸距离",
       "warp": "海岸曲折",
@@ -26,7 +33,7 @@
       "showCat": "显示小猫",
       "error": "草地背景无法启动，已切换至纯色背景。"
     },
-    "bingFrom": "图片来源：必应",
+    "bingFrom": "Bing 每日图片",
     "blur": "模糊强度",
     "cache": {
       "askEnable": {
@@ -50,7 +57,7 @@
       "dark": "深色模式",
       "done": "完成",
       "download": "下载",
-      "dragAddHint": "拖入图片或视频添加",
+      "dragAddHint": "拖入图片和视频以添加，深色模式列表为空时使用浅色模式列表",
       "empty": "添加图片或视频，支持一次选择多个文件或拖入。",
       "expand": "展开全部",
       "group": "壁纸分组",
@@ -76,7 +83,7 @@
       "enable": "启用遮罩"
     },
     "onlineTips": {
-      "a": "按下回车键或者输入框失去焦点后提交",
+      "a": "点击应用或按回车键提交地址。",
       "b": "壁纸缓存策略取决于浏览器，断网后会获取不到壁纸",
       "c": "壁纸加载完成前会白屏一段时间，时长取决于你的网速"
     },
@@ -107,7 +114,7 @@
     "showDownloadBtn": "显示下载按钮",
     "showDownloadBtnNote": "可下载当前显示的必应、在线或本地壁纸",
     "title": "背景",
-    "today": "今日",
+
     "type": {
       "local": "本地图片/视频",
       "online": "在线图片"

@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import './bg-switcher.scss'
-import { useElementSize } from '@vueuse/core'
+import { useElementSize, useWindowSize } from '@vueuse/core'
 
 import { DragDropProvider, type DragEndEvent } from '@dnd-kit/vue'
 import { useTranslation } from 'i18next-vue'
+import AddImageIcon from '~icons/ic/outline-add-photo-alternate'
+import PaletteIcon from '~icons/ic/outline-palette'
+import ImageIcon from '~icons/ic/outline-photo'
+import PublicIcon from '~icons/ic/outline-public'
+import AutoAwesome from '~icons/ic/round-auto-awesome'
 import DownloadRound from '~icons/ic/round-download'
 import LaunchRound from '~icons/ic/round-launch'
+import MotionIcon from '~icons/ic/round-motion-photos-on'
 
 import { BgType } from '@/shared/enums'
 import { sha256Hex } from '@/shared/json'
@@ -22,7 +28,7 @@ import {
   type WallpaperVariant,
 } from '@/shared/wallpaperLibrary'
 
-import BaseDialog from '@newtab/components/BaseDialog.vue'
+import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import { isDark } from '@newtab/shared/colorMode'
 import { bingWallpaperURLGetter, useLocalWallpaperStore } from '@newtab/shared/wallpaper'
 import { readWallpaperMetadata } from '@newtab/shared/wallpaper/thumbnail'
@@ -31,10 +37,57 @@ import useBackgroundSwitcher from './useBackgroundSwitcher'
 import WallpaperSortableItem from './WallpaperSortableItem.vue'
 
 const opened = defineModel<boolean>({ required: true })
+const { width: windowWidth } = useWindowSize({ type: 'visual' })
+const { isComposing } = useImeAwareDialog()
 const { t } = useTranslation('settings')
 const settings = useSettingsStore()
+const maskEnabled = computed({
+  get: () => settings.background.mask.enabled,
+  set: (value: boolean) => (settings.background.mask.enabled = value),
+})
+const maskColors = computed(() => ({
+  light: settings.background.mask.light,
+  dark: settings.background.mask.night,
+}))
+function setMaskColor(group: 'light' | 'dark', value: string | null) {
+  if (group === 'light') settings.background.mask.light = value ?? '#f2f3f5'
+  else settings.background.mask.night = value ?? '#000'
+}
+const wallpaperBlur = computed({
+  get: () => settings.background.blur,
+  set: (value: number) => (settings.background.blur = value),
+})
+const blurDisabled = computed(
+  () =>
+    settings.background.bgType === BgType.Meadow ||
+    settings.background.bgType === BgType.Beach ||
+    settings.background.bgType === BgType.None,
+)
 const local = useLocalWallpaperStore()
 const variant = ref<WallpaperVariant>(isDark.value ? 'dark' : 'light')
+type Source = 'bing' | 'local' | 'online' | 'solid' | 'dynamic'
+const source = ref<Source>('bing')
+const sources = [
+  { key: 'bing', icon: AutoAwesome, label: 'background.dailyRecommendation' },
+  { key: 'local', icon: AddImageIcon, label: 'background.localMedia' },
+  { key: 'online', icon: PublicIcon, label: 'background.type.online' },
+  { key: 'solid', icon: PaletteIcon, label: 'background.library.solid' },
+  { key: 'dynamic', icon: MotionIcon, label: 'background.dynamic' },
+] as const
+function selectSource(value: Source) {
+  source.value = value
+  if (value === 'bing') useBing()
+  else if (value === 'local') settings.background.bgType = BgType.Local
+  else if (value === 'solid') solid()
+}
+function currentSource(): Source {
+  const type = settings.background.bgType
+  if (type === BgType.Meadow || type === BgType.Beach) return 'dynamic'
+  if (type === BgType.Local) return 'local'
+  if (type === BgType.Online) return 'online'
+  if (type === BgType.None) return 'solid'
+  return 'bing'
+}
 const managing = ref(false)
 const expanded = ref(false)
 const selected = ref<string[]>([])
@@ -55,7 +108,7 @@ let thumbnailLane = 0
 let thumbnailVersion = 0
 let thumbnailLoads = 0
 let metadataRefreshNeeded = false
-const { tempOnlineUrl, changeOnlineBg, onlineImageWarn } = useBackgroundSwitcher()
+const { tempOnlineUrl, changeOnlineBg } = useBackgroundSwitcher()
 const bingSrc = bingWallpaperURLGetter.getBgUrl()
 const bingInfo = bingWallpaperURLGetter.getInfo()
 const resolutionBusy = ref(false)
@@ -78,6 +131,7 @@ watch(
       releaseThumbnails()
       return
     }
+    source.value = currentSource()
     await local.init()
     void bingWallpaperURLGetter.init().catch(console.error)
   },
@@ -304,7 +358,6 @@ async function resolution(value: BingWallpaperResolution) {
 }
 function useBing() {
   settings.background.bgType = BgType.Bing
-  void bingWallpaperURLGetter.refresh(true)
 }
 function open(url: string) {
   if (url) window.open(url, '_blank', 'noopener')
@@ -312,37 +365,58 @@ function open(url: string) {
 </script>
 
 <template>
-  <base-dialog
+  <el-drawer
     v-model="opened"
+    direction="rtl"
+    class="bg-switcher__drawer"
+    :size="windowWidth <= 500 ? '100%' : '430px'"
+    :close-on-press-escape="!isComposing"
     :title="t('background.preferenceTitle')"
-    container-class="bg-switcher__dialog"
-    :width="660"
-    :style="{
-      height: `min(${settings.background.bgType === BgType.Local ? (visibleItems.length < columns ? 600 : 700) : settings.background.bgType === BgType.Online ? 500 : 480}px, 85vh)`,
-      maxHeight: '85vh',
-    }"
+    append-to-body
   >
-    <section class="bg-switcher-section">
-      <h3>{{ t('background.today') }}</h3>
-      <div class="bg-switcher-today">
-        <button
-          class="bg-switcher-bing-preview"
-          :aria-label="t('background.today')"
-          @click="useBing"
-        >
-          <el-image :src="bingSrc" fit="cover" />
-        </button>
-        <div class="bg-switcher-bing-content">
-          <strong>{{ bingInfo.title }}</strong>
-          <p>{{ bingInfo.copyright }}</p>
-          <el-space class="bg-switcher-actions">
-            <el-button
-              text
-              bg
-              :icon="DownloadRound"
-              :aria-label="label('download')"
-              @click="open(bingWallpaperURLGetter.uhdUrl.value)"
-            />
+    <template #header>
+      <div class="bg-switcher-header">
+        <span class="bg-switcher-header-icon"><ImageIcon aria-hidden="true" /></span>
+        <div>
+          <h2>{{ t('background.preferenceTitle') }}</h2>
+          <p>{{ t('background.drawerSubtitle') }}</p>
+        </div>
+      </div>
+    </template>
+    <el-scrollbar>
+      <section class="bg-switcher-section">
+        <h3>{{ t('background.source') }}</h3>
+        <div class="bg-switcher-sources">
+          <button
+            v-for="item in sources"
+            :key="item.key"
+            type="button"
+            class="bg-switcher-source"
+            :class="{ active: source === item.key }"
+            :aria-pressed="source === item.key"
+            @click="selectSource(item.key)"
+          >
+            <component :is="item.icon" aria-hidden="true" />
+            <span>{{ t(item.label) }}</span>
+          </button>
+        </div>
+      </section>
+      <section class="bg-switcher-section">
+        <template v-if="source === 'bing'">
+          <div class="bg-switcher-today">
+            <button
+              class="bg-switcher-bing-preview"
+              :aria-label="t('background.bingFrom')"
+              @click="useBing"
+            >
+              <el-image :src="bingSrc" fit="cover" />
+            </button>
+            <div class="bg-switcher-bing-content">
+              <strong>{{ bingInfo.title }}</strong>
+              <p>{{ bingInfo.copyright }}</p>
+            </div>
+          </div>
+          <div class="bg-switcher-actions">
             <el-button
               text
               bg
@@ -350,302 +424,344 @@ function open(url: string) {
               :aria-label="t('background.bingFrom')"
               @click="open(bingInfo.copyrightlink)"
             />
-            <label class="bg-switcher-resolution">
-              {{ t('background.resolution') }}
-              <el-select
-                :model-value="settings.background.bing.resolution"
-                :aria-label="t('background.resolution')"
-                size="small"
-                :loading="resolutionBusy"
-                :disabled="resolutionBusy"
-                @change="resolution"
-              >
-                <el-option label="1080P" value="1080p" /><el-option label="4K (UHD)" value="uhd" />
-              </el-select>
-            </label>
-            <span class="bg-switcher-meta">{{ t('background.bingFrom') }}</span>
-          </el-space>
-        </div>
-      </div>
-    </section>
-    <section class="bg-switcher-section">
-      <h3>{{ t('background.custom') }}</h3>
-      <el-space class="bg-switcher-sources">
-        <el-button
-          text
-          bg
-          :class="{ active: settings.background.bgType === BgType.None }"
-          @click="solid"
-        >
-          {{ label('solid') }}
-        </el-button>
-        <el-button
-          text
-          bg
-          :class="{ active: settings.background.bgType === BgType.Local }"
-          @click="settings.background.bgType = BgType.Local"
-        >
-          {{ t('background.type.local') }}
-        </el-button>
-        <el-button
-          text
-          bg
-          :class="{ active: settings.background.bgType === BgType.Online }"
-          @click="onlineImageWarn"
-        >
-          {{ t('background.type.online') }}
-        </el-button>
-        <el-button
-          text
-          bg
-          :class="{ active: settings.background.bgType === BgType.Meadow }"
-          @click="settings.background.bgType = BgType.Meadow"
-        >
-          {{ t('background.meadow.name') }}
-        </el-button>
-        <el-button
-          text
-          bg
-          :class="{ active: settings.background.bgType === BgType.Beach }"
-          @click="settings.background.bgType = BgType.Beach"
-          >{{ t('background.beach.name') }}</el-button
-        >
-      </el-space>
-      <div v-if="settings.background.bgType === BgType.Beach" class="bg-switcher-meadow">
-        <label
-          ><span>{{ t('background.meadow.fps') }}</span
-          ><el-select
-            v-model="settings.background.beach.fps"
-            :aria-label="t('background.meadow.fps')"
-            ><el-option
-              v-for="fps in [25, 30, 45, 60, 120]"
-              :key="fps"
-              :label="`${fps} FPS`"
-              :value="fps" /></el-select
-        ></label>
-        <label v-for="control in beachControls" :key="control.key">
-          <span>{{ t(`background.beach.${control.key}`) }}</span>
-          <el-slider
-            v-model="settings.background.beach[control.key]"
-            :min="control.min"
-            :max="control.max"
-            :aria-label="t(`background.beach.${control.key}`)"
-          />
-        </label>
-      </div>
-      <div v-else-if="settings.background.bgType === BgType.Meadow" class="bg-switcher-meadow">
-        <label>
-          <span>{{ t('background.meadow.fps') }}</span>
-          <el-select
-            v-model="settings.background.meadow.fps"
-            :aria-label="t('background.meadow.fps')"
-          >
-            <el-option
-              v-for="fps in [25, 30, 45, 60, 120]"
-              :key="fps"
-              :label="`${fps} FPS`"
-              :value="fps"
-            />
-          </el-select>
-        </label>
-        <label>
-          <span>{{ t('background.meadow.cloudSize') }}</span>
-          <el-slider v-model="settings.background.meadow.cloudSize" :min="40" :max="200" />
-        </label>
-        <label>
-          <span>{{ t('background.meadow.cloudCover') }}</span>
-          <el-slider
-            v-model="settings.background.meadow.cloudCover"
-            :min="0"
-            :max="1"
-            :step="0.05"
-          />
-        </label>
-        <label>
-          <span>{{ t('background.meadow.flow') }}</span>
-          <el-slider v-model="settings.background.meadow.flow" :min="0" :max="3" :step="0.1" />
-        </label>
-        <label
-          ><span>{{ t('background.meadow.showNavigationCloud') }}</span
-          ><el-switch v-model="settings.background.meadow.showNavigationCloud"
-        /></label>
-        <label
-          ><span>{{ t('background.meadow.showBoy') }}</span
-          ><el-switch v-model="settings.background.meadow.showBoy"
-        /></label>
-        <label
-          ><span>{{ t('background.meadow.clickToMove') }}</span
-          ><el-switch
-            v-model="settings.background.meadow.clickToMove"
-            :disabled="!settings.background.meadow.showBoy"
-        /></label>
-        <label
-          ><span>{{ t('background.meadow.showCat') }}</span
-          ><el-switch v-model="settings.background.meadow.showCat"
-        /></label>
-      </div>
-      <div v-else-if="settings.background.bgType === BgType.None" class="bg-switcher-colors">
-        <el-space direction="vertical">
-          <div v-for="group in groups" :key="group" class="bg-switcher-color-control">
-            <span>{{ label(group) }}:</span>
-            <el-color-picker
-              :model-value="
-                settings.background.solid[group] || (group === 'light' ? '#f2f3f5' : '#0a0a0a')
-              "
-              color-format="hex"
-              :aria-label="label(group)"
-              @change="(value) => (settings.background.solid[group] = value || '')"
-            />
             <el-button
               text
-              size="small"
-              @click="settings.background.solid[group] = ''"
-              style="font-size: 0.85em"
+              bg
+              :icon="DownloadRound"
+              @click="open(bingWallpaperURLGetter.uhdUrl.value)"
+              >{{ label('download') }}</el-button
             >
-              {{ label('reset') }}
+            <el-select
+              :model-value="settings.background.bing.resolution"
+              :aria-label="t('background.resolution')"
+              :loading="resolutionBusy"
+              :disabled="resolutionBusy"
+              @change="resolution"
+              style="width: 110px"
+            >
+              <el-option label="1080P" value="1080p" />
+              <el-option label="4K (UHD)" value="uhd" />
+            </el-select>
+            <div
+              style="
+                display: flex;
+                flex: 0 0 auto;
+                align-items: center;
+                margin-left: auto;
+                font-size: 11px;
+                font-weight: normal;
+                color: var(--el-color-primary-dark-2);
+              "
+            >
+              <el-icon><AutoAwesome /></el-icon>
+              &nbsp;
+              <span>{{ t('background.bingFrom') }}</span>
+            </div>
+          </div>
+        </template>
+        <div
+          v-else-if="source === 'local'"
+          class="bg-switcher-local"
+          @dragover.prevent
+          @drop.prevent="dropFiles"
+        >
+          <input
+            ref="filesInput"
+            class="bg-switcher-file"
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            @change="onFiles"
+          />
+          <div class="bg-switcher-toolbar">
+            <el-radio-group v-model="variant" :aria-label="label('group')">
+              <el-radio-button v-for="group in groups" :key="group" :value="group">
+                {{ label(group) }} · {{ local.library[group].items.length }}
+              </el-radio-button>
+            </el-radio-group>
+            <el-button v-if="items.length" text @click="toggleManaging">
+              {{ label(managing ? 'done' : 'manage') }}
             </el-button>
           </div>
-        </el-space>
-      </div>
-      <div
-        v-else-if="settings.background.bgType === BgType.Local"
-        class="bg-switcher-local"
-        @dragover.prevent
-        @drop.prevent="dropFiles"
-      >
-        <input
-          ref="filesInput"
-          class="bg-switcher-file"
-          type="file"
-          accept="image/*,video/*"
-          multiple
-          @change="onFiles"
-        />
-        <div class="bg-switcher-toolbar">
-          <el-radio-group v-model="variant" :aria-label="label('group')">
-            <el-radio-button v-for="group in groups" :key="group" :value="group">
-              {{ label(group) }} · {{ local.library[group].items.length }}
-            </el-radio-button>
-          </el-radio-group>
-          <el-button v-if="items.length" text @click="toggleManaging">
-            {{ label(managing ? 'done' : 'manage') }}
-          </el-button>
-        </div>
-        <DragDropProvider @dragend="dragEnd">
-          <div ref="grid" class="bg-switcher-grid" :style="{ '--wallpaper-columns': columns }">
-            <WallpaperSortableItem
-              v-for="(item, index) in visibleItems"
-              :id="item.id"
-              :key="`${variant}:${item.id}`"
-              :index="index"
-              :disabled="!managing"
-              :label="label('sortHint')"
-            >
-              <button
-                class="bg-switcher-tile"
-                :class="{
-                  selected: managing
-                    ? selected.includes(item.id)
-                    : local.displayed?.item.id === item.id && local.displayed?.variant === variant,
-                }"
-                :aria-label="`${label(item.mediaType)} · ${metadata(item)}`"
-                :aria-pressed="
-                  managing
-                    ? selected.includes(item.id)
-                    : local.displayed?.item.id === item.id && local.displayed?.variant === variant
-                "
-                @click="clickItem(item)"
+          <DragDropProvider @dragend="dragEnd">
+            <div ref="grid" class="bg-switcher-grid" :style="{ '--wallpaper-columns': columns }">
+              <WallpaperSortableItem
+                v-for="(item, index) in visibleItems"
+                :id="item.id"
+                :key="`${variant}:${item.id}`"
+                :index="index"
+                :disabled="!managing"
+                :label="label('sortHint')"
               >
-                <img
-                  v-if="thumbnails[`${variant}:${item.id}`]"
-                  :src="thumbnails[`${variant}:${item.id}`]"
-                  alt=""
-                  loading="lazy"
-                  draggable="false"
-                />
-                <span v-else class="bg-switcher-placeholder">{{ label(item.mediaType) }}</span>
-                <span v-if="item.mediaType === 'video'" class="bg-switcher-video">▶</span>
-                <span
-                  v-if="
+                <button
+                  class="bg-switcher-tile"
+                  :class="{
+                    selected: managing
+                      ? selected.includes(item.id)
+                      : local.displayed?.item.id === item.id &&
+                        local.displayed?.variant === variant,
+                  }"
+                  :aria-label="`${label(item.mediaType)} · ${metadata(item)}`"
+                  :aria-pressed="
                     managing
                       ? selected.includes(item.id)
                       : local.displayed?.item.id === item.id && local.displayed?.variant === variant
                   "
-                  class="bg-switcher-check"
+                  @click="clickItem(item)"
                 >
-                  ✓
-                </span>
+                  <img
+                    v-if="thumbnails[`${variant}:${item.id}`]"
+                    :src="thumbnails[`${variant}:${item.id}`]"
+                    alt=""
+                    loading="lazy"
+                    draggable="false"
+                  />
+                  <span v-else class="bg-switcher-placeholder">{{ label(item.mediaType) }}</span>
+                  <span v-if="item.mediaType === 'video'" class="bg-switcher-video">▶</span>
+                  <span
+                    v-if="
+                      managing
+                        ? selected.includes(item.id)
+                        : local.displayed?.item.id === item.id &&
+                          local.displayed?.variant === variant
+                    "
+                    class="bg-switcher-check"
+                  >
+                    ✓
+                  </span>
+                </button>
+                <div class="bg-switcher-meta">{{ metadata(item) }}</div>
+              </WallpaperSortableItem>
+              <button class="bg-switcher-add" :disabled="busy" @click="filesInput?.click()">
+                <span>＋</span>{{ label('add') }}
               </button>
-              <div class="bg-switcher-meta">{{ metadata(item) }}</div>
-            </WallpaperSortableItem>
-            <button class="bg-switcher-add" :disabled="busy" @click="filesInput?.click()">
-              <span>＋</span>{{ label('add') }}
+            </div>
+          </DragDropProvider>
+          <div class="bg-switcher-toolbar">
+            <span class="bg-switcher-meta" style="margin-top: 0">
+              {{ label(managing ? 'sortHint' : 'dragAddHint') }}
+            </span>
+            <el-space>
+              <el-button
+                v-if="items.length > columns * 2 - 1 && !managing"
+                text
+                @click="expanded = !expanded"
+              >
+                {{ label(expanded ? 'collapse' : 'expand') }}
+              </el-button>
+              <template v-if="managing">
+                <el-button text @click="clearPreviews">{{ label('clearPreviews') }}</el-button>
+                <el-button type="danger" text :disabled="!selected.length" @click="removeSelected">
+                  {{ label('remove') }} ({{ selected.length }})
+                </el-button>
+              </template>
+            </el-space>
+          </div>
+          <div
+            v-if="Math.max(local.library.light.items.length, local.library.dark.items.length) > 1"
+            class="bg-switcher-rotation"
+          >
+            <div class="bg-switcher-rotation-control">
+              {{ label('rotation') }}
+              <el-switch
+                v-model="settings.background.rotation.enabled"
+                :aria-label="label('rotation')"
+                @change="settings.save"
+              />
+            </div>
+            <el-radio-group
+              v-if="settings.background.rotation.enabled"
+              v-model="settings.background.rotation.order"
+              @change="settings.save"
+              :aria-label="label('order')"
+            >
+              <el-radio value="random">{{ label('random') }}</el-radio>
+              <el-radio value="ordered">{{ label('ordered') }}</el-radio>
+            </el-radio-group>
+          </div>
+        </div>
+        <div v-else-if="source === 'solid'" class="bg-switcher-colors">
+          <div class="bg-switcher-color-grid">
+            <div v-for="group in groups" :key="group" class="bg-switcher-color-control">
+              <div class="bg-switcher-color-heading">
+                <strong>{{ label(group) }}</strong>
+                <el-button text size="small" @click="settings.background.solid[group] = ''">
+                  {{ label('reset') }}
+                </el-button>
+              </div>
+              <div class="bg-switcher-color-value">
+                <span class="bg-switcher-color-picker">
+                  <el-color-picker
+                    :model-value="
+                      settings.background.solid[group] ||
+                      (group === 'light' ? '#f2f3f5' : '#0a0a0a')
+                    "
+                    color-format="hex"
+                    :aria-label="label(group)"
+                    @change="(value) => (settings.background.solid[group] = value || '')"
+                  />
+                </span>
+                <span>{{
+                  (
+                    settings.background.solid[group] || (group === 'light' ? '#f2f3f5' : '#0a0a0a')
+                  ).toUpperCase()
+                }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <template v-if="source === 'dynamic'">
+          <div class="bg-switcher-dynamic">
+            <button
+              v-for="item in [
+                { type: BgType.Meadow, name: 'meadow' },
+                { type: BgType.Beach, name: 'beach' },
+              ]"
+              :key="item.name"
+              type="button"
+              class="bg-switcher-dynamic-card"
+              :class="[
+                `bg-switcher-dynamic-card--${item.name}`,
+                { active: settings.background.bgType === item.type },
+              ]"
+              :aria-pressed="settings.background.bgType === item.type"
+              @click="settings.background.bgType = item.type"
+            >
+              <span class="bg-switcher-dynamic-name">{{ t(`background.${item.name}.name`) }}</span>
+              <span class="bg-switcher-dynamic-art" aria-hidden="true"></span>
+              <span class="bg-switcher-dynamic-using" aria-hidden="true">使用中</span>
             </button>
           </div>
-        </DragDropProvider>
-        <p v-if="!items.length" class="bg-switcher-hint">
-          {{ label(variant === 'dark' ? 'inherit' : 'empty') }}
-        </p>
-        <div class="bg-switcher-toolbar">
-          <span class="bg-switcher-meta" style="margin-top: 0">
-            {{ label(managing ? 'sortHint' : 'dragAddHint') }}
-          </span>
-          <el-space>
-            <el-button
-              v-if="items.length > columns * 2 - 1 && !managing"
-              text
-              @click="expanded = !expanded"
-            >
-              {{ label(expanded ? 'collapse' : 'expand') }}
-            </el-button>
-            <template v-if="managing">
-              <el-button text @click="clearPreviews">{{ label('clearPreviews') }}</el-button>
-              <el-button type="danger" text :disabled="!selected.length" @click="removeSelected">
-                {{ label('remove') }} ({{ selected.length }})
-              </el-button>
-            </template>
-          </el-space>
-        </div>
-        <div
-          v-if="Math.max(local.library.light.items.length, local.library.dark.items.length) > 1"
-          class="bg-switcher-rotation"
-        >
-          <div class="bg-switcher-rotation-control">
-            {{ label('rotation') }}
-            <el-switch
-              v-model="settings.background.rotation.enabled"
-              :aria-label="label('rotation')"
-              @change="settings.save"
-            />
+          <div v-if="settings.background.bgType === BgType.Meadow" class="bg-switcher-meadow">
+            <label>
+              <span>{{ t('background.meadow.fps') }}</span>
+              <el-select
+                v-model="settings.background.meadow.fps"
+                :aria-label="t('background.meadow.fps')"
+              >
+                <el-option
+                  v-for="fps in [25, 30, 45, 60, 120]"
+                  :key="fps"
+                  :label="`${fps} FPS`"
+                  :value="fps"
+                />
+              </el-select>
+            </label>
+            <label>
+              <span>{{ t('background.meadow.cloudSize') }}</span>
+              <el-slider v-model="settings.background.meadow.cloudSize" :min="40" :max="200" />
+            </label>
+            <label>
+              <span>{{ t('background.meadow.cloudCover') }}</span>
+              <el-slider
+                v-model="settings.background.meadow.cloudCover"
+                :min="0"
+                :max="1"
+                :step="0.05"
+              />
+            </label>
+            <label>
+              <span>{{ t('background.meadow.flow') }}</span>
+              <el-slider v-model="settings.background.meadow.flow" :min="0" :max="3" :step="0.1" />
+            </label>
+            <label
+              ><span>{{ t('background.meadow.showNavigationCloud') }}</span
+              ><el-switch v-model="settings.background.meadow.showNavigationCloud"
+            /></label>
+            <label
+              ><span>{{ t('background.meadow.showBoy') }}</span
+              ><el-switch v-model="settings.background.meadow.showBoy"
+            /></label>
+            <label
+              ><span>{{ t('background.meadow.clickToMove') }}</span
+              ><el-switch
+                v-model="settings.background.meadow.clickToMove"
+                :disabled="!settings.background.meadow.showBoy"
+            /></label>
+            <label
+              ><span>{{ t('background.meadow.showCat') }}</span
+              ><el-switch v-model="settings.background.meadow.showCat"
+            /></label>
           </div>
-          <el-radio-group
-            v-if="settings.background.rotation.enabled"
-            v-model="settings.background.rotation.order"
-            @change="settings.save"
-            :aria-label="label('order')"
-          >
-            <el-radio value="random">{{ label('random') }}</el-radio>
-            <el-radio value="ordered">{{ label('ordered') }}</el-radio>
-          </el-radio-group>
+          <div v-if="settings.background.bgType === BgType.Beach" class="bg-switcher-meadow">
+            <label
+              ><span>{{ t('background.meadow.fps') }}</span
+              ><el-select
+                v-model="settings.background.beach.fps"
+                :aria-label="t('background.meadow.fps')"
+                ><el-option
+                  v-for="fps in [25, 30, 45, 60, 120]"
+                  :key="fps"
+                  :label="`${fps} FPS`"
+                  :value="fps" /></el-select
+            ></label>
+            <label v-for="control in beachControls" :key="control.key">
+              <span>{{ t(`background.beach.${control.key}`) }}</span>
+              <el-slider
+                v-model="settings.background.beach[control.key]"
+                :min="control.min"
+                :max="control.max"
+                :aria-label="t(`background.beach.${control.key}`)"
+              />
+            </label>
+          </div>
+        </template>
+        <div v-if="source === 'online'" class="bg-switcher-online">
+          <div class="bg-switcher-online-input">
+            <el-input
+              v-model="tempOnlineUrl"
+              placeholder="https://example.com/image.jpg"
+              @keydown.enter.prevent="changeOnlineBg"
+            >
+              <template #prepend>URL</template>
+            </el-input>
+            <el-button type="primary" @click="changeOnlineBg">{{
+              t('background.apply')
+            }}</el-button>
+          </div>
+          <ul class="bg-switcher-hint">
+            <li>{{ t('background.onlineTips.a') }}</li>
+            <li v-if="!settings.background.online.cache.enabled">
+              {{ t('background.onlineTips.b') }}
+            </li>
+            <li>{{ t('background.onlineTips.c') }}</li>
+          </ul>
         </div>
-      </div>
-      <div v-else-if="settings.background.bgType === BgType.Online" class="bg-switcher-online">
-        <el-input
-          v-model="tempOnlineUrl"
-          placeholder="https://example.com/image.jpg"
-          @blur="changeOnlineBg"
-          @keydown.enter="changeOnlineBg"
-        >
-          <template #prepend>URL</template>
-        </el-input>
-        <ul class="bg-switcher-hint">
-          <li>{{ t('background.onlineTips.a') }}</li>
-          <li v-if="!settings.background.online.cache.enabled">
-            {{ t('background.onlineTips.b') }}
-          </li>
-          <li>{{ t('background.onlineTips.c') }}</li>
-        </ul>
-      </div>
-    </section>
-  </base-dialog>
+      </section>
+      <section class="bg-switcher-section bg-switcher-display">
+        <h3>{{ t('common.sections.appearance') }}</h3>
+        <label class="bg-switcher-display-row">
+          <span>{{ t('background.blur') }}</span>
+          <el-slider
+            v-model="wallpaperBlur"
+            :aria-label="t('background.blur')"
+            :disabled="blurDisabled"
+          />
+        </label>
+        <label class="bg-switcher-display-row">
+          <span>{{ t('background.mask.enable') }}</span>
+          <el-switch v-model="maskEnabled" :aria-label="t('background.mask.enable')" />
+        </label>
+        <label class="bg-switcher-display-row bg-switcher-mask-colors">
+          <span>{{ t('background.mask.color') }}</span>
+          <div class="bg-switcher-mask-options">
+            <label v-for="group in groups" :key="group">
+              <span>{{ label(group) }}</span>
+              <el-color-picker
+                :model-value="maskColors[group]"
+                :predefine="['#f2f3f5', '#000']"
+                :aria-label="`${t('background.mask.color')} · ${label(group)}`"
+                show-alpha
+                @change="(value) => setMaskColor(group, value)"
+              />
+            </label>
+          </div>
+        </label>
+      </section>
+    </el-scrollbar>
+
+    <template #footer>
+      <el-button type="primary" @click="opened = false">{{ label('done') }}</el-button>
+    </template>
+  </el-drawer>
 </template>

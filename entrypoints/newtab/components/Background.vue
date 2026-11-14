@@ -51,6 +51,7 @@ const activeVariant = computed(() =>
   isDark.value && localLibrary.library.dark.items.length ? 'dark' : 'light',
 )
 const renderedVideo = ref(false)
+const renderedType = ref(settings.background.bgType)
 const solidColor = computed(
   () => settings.background.solid[isDark.value ? 'dark' : 'light'] || 'var(--el-bg-color-page)',
 )
@@ -121,8 +122,8 @@ function updateVideoPlayback() {
 
 const backgroundCss = computed(() => ({
   'background-container--focused__blur':
-    settings.background.bgType !== BgType.Meadow &&
-    settings.background.bgType !== BgType.Beach &&
+    renderedType.value !== BgType.Meadow &&
+    renderedType.value !== BgType.Beach &&
     focusStore.isFocused &&
     settings.perf.focus.blur,
 }))
@@ -130,8 +131,8 @@ const backgroundCss = computed(() => ({
 // 视差效果
 const backgroundParallaxEnabled = computed(
   () =>
-    settings.background.bgType !== BgType.Meadow &&
-    settings.background.bgType !== BgType.Beach &&
+    renderedType.value !== BgType.Meadow &&
+    renderedType.value !== BgType.Beach &&
     settings.background.parallax &&
     !isOnlyTouchDevice.value,
 )
@@ -379,6 +380,7 @@ let backgroundRequestVersion = 0
 let onlineFetchController: AbortController | null = null
 
 let backgroundLoads = 0
+let hasDisplayedBackground = false
 async function updateBackgroundURL(type: BgType): Promise<void> {
   backgroundLoads++
   try {
@@ -411,24 +413,37 @@ async function updateBackgroundURL(type: BgType): Promise<void> {
       return
     }
 
-    trackBackgroundBlobUrl(source)
-    activeMonetSourceKey.value = source.sourceKey
-
-    // 只在URL真正变化时才执行切换动画
-    if (source.url === bgURL.value) {
+    if (source.url === bgURL.value && type === renderedType.value) {
       // 新请求可能在旧请求的切换动画期间切回当前壁纸；此时要主动结束旧切换状态。
       isSwitching.value = false
+      hasDisplayedBackground = true
+      activeMonetSourceKey.value = source.sourceKey
+      if (source.url !== lastBlobUrl.value) revokeDiscardedSource(source)
       return
     }
 
-    // 新媒体已经解码就绪，同一渲染批次替换类型和 URL，不先清空旧画面。
-    if (requestVersion !== backgroundRequestVersion) return
+    const animate = settings.perf.bgSwitchAnim && type !== BgType.Meadow && type !== BgType.Beach
+    // 动态壁纸由场景自身入场，其他壁纸先让旧画面渐隐。
+    if (hasDisplayedBackground && animate) {
+      isSwitching.value = true
+      await promiseTimeout(animationDuration)
+      if (requestVersion !== backgroundRequestVersion) {
+        revokeDiscardedSource(source)
+        return
+      }
+    }
+    if (!animate) isSwitching.value = false
+    trackBackgroundBlobUrl(source)
+    activeMonetSourceKey.value = source.sourceKey
+    renderedType.value = type
     renderedVideo.value = source.local?.item.mediaType === 'video'
     localLibrary.displayed = source.local ?? null
     bgURL.value = source.url
-
+    hasDisplayedBackground = true
+    if (isSwitching.value) await nextTick()
+    if (requestVersion !== backgroundRequestVersion) return
     isSwitching.value = false
-    if (settings.perf.bgSwitchAnim) {
+    if (animate) {
       await promiseTimeout(animationDuration)
       if (requestVersion !== backgroundRequestVersion) return
     }
@@ -561,19 +576,19 @@ onUnmounted(() => {
     class="background-wrapper noselect"
     aria-hidden="true"
     :style="{
-      backgroundColor: settings.background.bgType === BgType.Beach ? '#008fb9' : solidColor,
+      backgroundColor: renderedType === BgType.Beach ? '#008fb9' : solidColor,
       '--mask-color__light': settings.background.mask.light,
       '--mask-color__night': settings.background.mask.night,
-      '--blur-intensity': `${settings.background.bgType === BgType.Meadow || settings.background.bgType === BgType.Beach ? 0 : settings.background.blur}px`,
+      '--blur-intensity': `${renderedType === BgType.Meadow || renderedType === BgType.Beach ? 0 : settings.background.blur}px`,
       '--bg-opacity-duration': bgOpacityDuration,
     }"
   >
     <div
       v-if="
         (bgURL ||
-          settings.background.bgType === BgType.Meadow ||
-          settings.background.bgType === BgType.Beach) &&
-        settings.background.bgType !== BgType.None &&
+          renderedType === BgType.Meadow ||
+          renderedType === BgType.Beach) &&
+        renderedType !== BgType.None &&
         settings.background.mask.enabled
       "
       class="background-mask"
@@ -581,23 +596,27 @@ onUnmounted(() => {
     <div
       v-if="
         bgURL &&
-        settings.background.bgType !== BgType.None &&
-        settings.background.bgType !== BgType.Meadow &&
-        settings.background.bgType !== BgType.Beach &&
+        renderedType !== BgType.None &&
+        renderedType !== BgType.Meadow &&
+        renderedType !== BgType.Beach &&
         settings.background.vignette
       "
       class="background__vignette"
     />
     <Transition
       name="bg-fade"
-      :css="settings.perf.bgSwitchAnim"
+      :css="
+        settings.perf.bgSwitchAnim &&
+        settings.background.bgType !== BgType.Meadow &&
+        settings.background.bgType !== BgType.Beach
+      "
       @before-leave="(element) => element.querySelector('video')?.pause()"
     >
       <div
         :key="
-          settings.background.bgType === BgType.Meadow ||
-          settings.background.bgType === BgType.Beach
-            ? settings.background.bgType
+          renderedType === BgType.Meadow ||
+          renderedType === BgType.Beach
+            ? renderedType
             : bgURL
         "
         v-show="!isSwitching"
@@ -606,8 +625,8 @@ onUnmounted(() => {
         :class="backgroundCss"
         :style="{
           scale:
-            settings.background.bgType === BgType.Meadow ||
-            settings.background.bgType === BgType.Beach
+            renderedType === BgType.Meadow ||
+            renderedType === BgType.Beach
               ? 1
               : backgroundScale,
           translate: backgroundTranslate,
@@ -616,12 +635,12 @@ onUnmounted(() => {
         }"
       >
         <MeadowBackground
-          v-if="settings.background.bgType === BgType.Meadow"
+          v-if="renderedType === BgType.Meadow"
           ref="meadow"
           @error="handleMeadowError"
         />
         <BeachBackground
-          v-else-if="settings.background.bgType === BgType.Beach"
+          v-else-if="renderedType === BgType.Beach"
           ref="beach"
           @error="handleBeachError"
         />

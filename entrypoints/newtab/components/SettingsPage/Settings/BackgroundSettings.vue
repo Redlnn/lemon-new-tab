@@ -136,16 +136,6 @@ const beforeCacheChange = async () => {
         <div class="settings__label">{{ t('background.fasterBgAnim') }}</div>
         <el-switch v-model="settings.background.fastAnimation" />
       </div>
-      <div class="settings__item settings__item--horizontal">
-        <div class="settings__label">{{ t('background.vignette') }}</div>
-        <el-switch
-          v-model="settings.background.vignette"
-          :disabled="
-            settings.background.bgType === BgType.Meadow ||
-            settings.background.bgType === BgType.Beach
-          "
-        />
-      </div>
       <div class="settings__item settings__item--horizontal settings__item--with-note">
         <div class="settings__label">{{ t('background.parallax') }}</div>
         <el-switch
@@ -182,6 +172,16 @@ const beforeCacheChange = async () => {
         />
       </div>
       <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('background.vignette') }}</div>
+        <el-switch
+          v-model="settings.background.vignette"
+          :disabled="
+            settings.background.bgType === BgType.Meadow ||
+            settings.background.bgType === BgType.Beach
+          "
+        />
+      </div>
+      <div class="settings__item settings__item--horizontal settings-control-wide">
         <div class="settings__label">
           {{ t('background.mask.enable') }}
         </div>

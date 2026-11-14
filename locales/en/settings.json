@@ -3,6 +3,13 @@
     "back": "Back to previous settings view"
   },
   "background": {
+    "dailyRecommendation": "Daily picks",
+    "localMedia": "Local media",
+    "drawerSubtitle": "Change the mood of your space",
+    "changesApplyImmediately": "Changes apply immediately",
+    "apply": "Apply",
+    "source": "Wallpaper source",
+    "dynamic": "Live wallpapers",
     "beach": {
       "sigma": "Coast distance",
       "warp": "Coast irregularity",
@@ -26,7 +33,7 @@
       "showCat": "Show cat",
       "error": "The meadow background could not start. Switched to a solid background."
     },
-    "bingFrom": "Image source: Bing",
+    "bingFrom": "Bing daily image",
     "blur": "Blur intensity",
     "cache": {
       "askEnable": {
@@ -50,7 +57,7 @@
       "dark": "Dark mode",
       "done": "Done",
       "download": "Download",
-      "dragAddHint": "Drag images or videos here to add them",
+      "dragAddHint": "Drag images and videos here to add them. When the dark mode list is empty, the light mode list is used.",
       "empty": "Add images or videos. Select multiple files or drop them here.",
       "expand": "Show all",
       "group": "Wallpaper group",
@@ -76,7 +83,7 @@
       "enable": "Enable mask"
     },
     "onlineTips": {
-      "a": "Submit after pressing the Enter key or when the input field loses focus.",
+      "a": "Click Apply or press Enter to submit the URL.",
       "b": "The wallpaper caching strategy depends on the browser, and wallpapers may not be accessible offline.",
       "c": "There will be a blank screen before the wallpaper finishes loading, and the duration depends on your internet speed."
     },
@@ -107,7 +114,7 @@
     "showDownloadBtn": "Show download button",
     "showDownloadBtnNote": "Download the displayed Bing, online, or local wallpaper",
     "title": "Background",
-    "today": "Today",
+
     "type": {
       "local": "Local file",
       "online": "Online URL"
