@@ -676,8 +676,7 @@ watch(
   }
 
   .setup-result-card,
-  .comparison-summary,
-  .wallpaper-choice {
+  .comparison-summary {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 14px;
@@ -767,8 +766,7 @@ watch(
     }
 
     .setup-result-card,
-    .comparison-summary,
-    .wallpaper-choice {
+    .comparison-summary {
       grid-template-columns: auto minmax(0, 1fr);
 
       > .el-button,

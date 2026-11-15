@@ -485,14 +485,6 @@ onMounted(() => void refresh())
   overflow-wrap: anywhere;
 }
 
-.sync-inclusion-list p {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin: 8px 0;
-  color: var(--el-text-color-regular);
-}
-
 .sync-compact-collapse {
   --el-collapse-header-height: initial;
   --el-collapse-header-bg-color: transparent;
@@ -513,28 +505,6 @@ onMounted(() => void refresh())
 
   .el-button {
     margin-top: 1em;
-  }
-}
-
-.sync-advanced-grid {
-  display: grid;
-  gap: 10px;
-}
-
-.sync-advanced-grid label {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 0;
-
-  span {
-    display: grid;
-    gap: 3px;
-  }
-
-  small {
-    color: var(--el-text-color-secondary);
   }
 }
 

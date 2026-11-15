@@ -386,10 +386,6 @@ const interfaceAnimationItems = computed<SwitchItem[]>(() => [
   line-height: 1.4;
 }
 
-.perf-panel-note {
-  margin-bottom: 12px;
-}
-
 .perf-effect-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

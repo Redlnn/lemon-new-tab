@@ -1041,21 +1041,6 @@ watch(
   }
 }
 
-.compact-danger {
-  --el-collapse-header-height: 42px;
-  padding: 0 12px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: var(--le-radius-inner, 10px);
-
-  p {
-    color: var(--el-text-color-secondary);
-  }
-
-  .el-button {
-    margin: 10px 0;
-  }
-}
-
 @media (width <= 599px) {
   .history-list article,
   .device-list article {

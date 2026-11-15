@@ -294,8 +294,7 @@ html.colorful.dialog-transparent .settings__dialog {
   padding: 14px 15px;
 }
 
-.settings-section,
-.settings-section-card {
+.settings-section {
   display: grid;
   align-content: start;
   min-width: 0;
@@ -401,7 +400,6 @@ html.colorful.dialog-transparent .settings__dialog {
     }
   }
 
-  > .settings__group,
   > .settings-control-wide,
   > .el-alert {
     grid-column: 1 / -1;
@@ -416,7 +414,6 @@ html.colorful.dialog-transparent .settings__dialog {
   .settings-control-grid {
     grid-template-columns: 1fr;
 
-    > .settings__group,
     > .settings-control-wide {
       grid-column: auto;
     }
@@ -581,24 +578,6 @@ html.colorful.dialog-transparent .settings__dialog {
 
 .settings__item--horizontal .settings__item-note {
   align-self: baseline;
-}
-
-.settings__group {
-  transition: var(--el-transition-duration-fast) ease;
-
-  &.active {
-    padding: 10px 20px;
-    background-color: var(--settings-group-active-background);
-    border-radius: var(--le-radius-inner, 10px);
-
-    &.settings__item:first-of-type {
-      margin-top: 10px;
-    }
-
-    &.settings__item:last-of-type {
-      margin-bottom: 10px;
-    }
-  }
 }
 
 .settings__label {
