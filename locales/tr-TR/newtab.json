@@ -20,9 +20,6 @@
     "searchInput": "Anahtar kelimeleri ara",
     "searchSuggestions": "Arama önerileri"
   },
-  "about": {
-    "yiyanProvider": "Çin şiiri API'si {api} tarafından sağlanmaktadır"
-  },
   "bookmark": {
     "404": "Hiçbir şey bulunamadı",
     "addToQuickLinks": "Hızlı Bağlantılara Ekle",

@@ -20,9 +20,6 @@
     "searchInput": "Search keywords",
     "searchSuggestions": "Search suggestions"
   },
-  "about": {
-    "yiyanProvider": "Chinese poetry API provided by {api}"
-  },
   "bookmark": {
     "404": "Nothing found",
     "addToQuickLinks": "Add to Quick Links",

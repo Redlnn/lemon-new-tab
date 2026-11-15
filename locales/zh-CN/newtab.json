@@ -20,9 +20,6 @@
     "searchInput": "搜索关键词",
     "searchSuggestions": "搜索建议"
   },
-  "about": {
-    "yiyanProvider": "一言API由 {api} 提供"
-  },
   "bookmark": {
     "404": "什么都没找到",
     "addToQuickLinks": "添加到快速导航",

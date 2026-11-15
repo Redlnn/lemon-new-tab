@@ -20,9 +20,6 @@
     "searchInput": "搜尋關鍵字",
     "searchSuggestions": "搜尋建議"
   },
-  "about": {
-    "yiyanProvider": "一言API由 {api} 提供"
-  },
   "bookmark": {
     "404": "乜都搵唔到",
     "addToQuickLinks": "新增至快速連結",

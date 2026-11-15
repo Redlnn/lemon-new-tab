@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useDateFormat, useNow } from '@vueuse/core'
 
-import { useTranslation } from 'i18next-vue'
 import Chrome from '~icons/fa7-brands/chrome'
 import Edge from '~icons/fa7-brands/edge'
 import Firefox from '~icons/fa7-brands/firefox-browser'
@@ -11,27 +10,12 @@ import { browser } from 'wxt/browser'
 
 import { version } from '@/package.json'
 
-import { useSettingsStore } from '@/shared/settings'
-
 import BiliBili from '@newtab/assets/bili_gray.svg?component'
 import BaseDialog from '@newtab/components/BaseDialog.vue'
-import { isProviderKey, yiyanProviders } from '@newtab/shared/yiyan'
-
-const { t } = useTranslation()
 
 const year = useDateFormat(useNow(), 'YYYY')
 
 const opened = defineModel<boolean>({ required: true })
-
-const settings = useSettingsStore()
-
-const currentYiyanProvider = computed(() => {
-  if (isProviderKey(settings.yiyan.provider)) {
-    return yiyanProviders[settings.yiyan.provider]
-  } else {
-    return null
-  }
-})
 </script>
 
 <template>
@@ -44,20 +28,6 @@ const currentYiyanProvider = computed(() => {
       </div>
       <h1 class="ext-name">{{ browser.i18n.getMessage('extension_name') }}</h1>
       <div class="ext-version">{{ version }}</div>
-      <div v-if="currentYiyanProvider" class="yiyan-links">
-        <i18next :translation="t('newtab:about.yiyanProvider')">
-          <template #api>
-            <el-link
-              underline="never"
-              target="_blank"
-              type="primary"
-              :href="currentYiyanProvider.website"
-            >
-              {{ t(currentYiyanProvider.nameKey) }}
-            </el-link>
-          </template>
-        </i18next>
-      </div>
       <div class="copyright">
         ©&nbsp;{{ year }}&nbsp;
         <el-link underline="never" href="https://redlnn.top"> Red_lnn </el-link>
@@ -136,19 +106,6 @@ const currentYiyanProvider = computed(() => {
     display: flex;
     justify-content: center;
     margin: 18px 0;
-  }
-
-  .yiyan-links {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 5px 0;
-    font-size: var(--el-font-size-extra-small);
-    color: var(--el-text-color-primary);
-
-    .el-link {
-      font-size: var(--el-font-size-extra-small);
-    }
   }
 
   .copyright {
