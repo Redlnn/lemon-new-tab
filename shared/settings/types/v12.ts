@@ -40,6 +40,7 @@ export interface SettingsSchemaV12 extends Omit<
     pauseWhenHidden: boolean
     solid: { light: string; dark: string }
     rotation: { enabled: boolean; order: 'random' | 'ordered' }
+    map: { fps: 25 | 30 | 45 | 60 | 120; trains: number; ships: number; islands: number }
     ocean: {
       fps: 25 | 30 | 45 | 60 | 120
       cloudSize: number

@@ -12,6 +12,13 @@
     "dynamic": "Canlı duvar kağıtları",
     "dynamicDisabledNote": "Dinamik arka plan kullanılırken bazı özellikler devre dışı bırakılır",
     "waterCaustics": "Su ışık yansımaları",
+    "map": {
+      "name": "Fantastik harita",
+      "trains": "Tren sayısı",
+      "ships": "Gemi sayısı",
+      "islands": "Ada sayısı",
+      "error": "Fantastik harita başlatılamadı. Düz renk arka plana geçildi."
+    },
     "ocean": {
       "sailboats": "Yelkenliler sayısı",
       "yachts": "Yatlar sayısı",

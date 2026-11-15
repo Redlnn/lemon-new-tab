@@ -96,6 +96,7 @@ export const defaultSettings = {
 
     solid: { light: '', dark: '' },
     rotation: { enabled: false, order: 'random' },
+    map: { fps: 25, trains: 5, ships: 4, islands: 3 },
     ocean: {
       fps: 25,
       cloudSize: 72,

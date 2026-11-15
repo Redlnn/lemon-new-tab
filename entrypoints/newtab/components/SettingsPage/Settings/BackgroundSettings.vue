@@ -116,7 +116,8 @@ const beforeCacheChange = async () => {
           v-if="
             settings.background.bgType === BgType.Meadow ||
             settings.background.bgType === BgType.Beach ||
-            settings.background.bgType === BgType.Ocean
+            settings.background.bgType === BgType.Ocean ||
+            settings.background.bgType === BgType.Map
           "
           class="settings__item-note"
         >
@@ -154,7 +155,8 @@ const beforeCacheChange = async () => {
           :disabled="
             settings.background.bgType === BgType.Meadow ||
             settings.background.bgType === BgType.Beach ||
-            settings.background.bgType === BgType.Ocean
+            settings.background.bgType === BgType.Ocean ||
+            settings.background.bgType === BgType.Map
           "
         />
       </div>
@@ -166,7 +168,8 @@ const beforeCacheChange = async () => {
             isOnlyTouchDevice ||
             settings.background.bgType === BgType.Meadow ||
             settings.background.bgType === BgType.Beach ||
-            settings.background.bgType === BgType.Ocean
+            settings.background.bgType === BgType.Ocean ||
+            settings.background.bgType === BgType.Map
           "
         />
         <p v-if="isOnlyTouchDevice" class="settings__item-note">
@@ -191,7 +194,8 @@ const beforeCacheChange = async () => {
           :disabled="
             settings.background.bgType === BgType.Meadow ||
             settings.background.bgType === BgType.Beach ||
-            settings.background.bgType === BgType.Ocean
+            settings.background.bgType === BgType.Ocean ||
+            settings.background.bgType === BgType.Map
           "
         />
       </div>

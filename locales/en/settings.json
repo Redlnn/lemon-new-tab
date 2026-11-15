@@ -12,6 +12,13 @@
     "dynamic": "Live wallpapers",
     "dynamicDisabledNote": "Some features will be disabled when using a dynamic background",
     "waterCaustics": "Water caustics",
+    "map": {
+      "name": "Fantasy map",
+      "trains": "Trains",
+      "ships": "Ships",
+      "islands": "Islands",
+      "error": "The fantasy map could not start. Switched to a solid background."
+    },
     "ocean": {
       "sailboats": "Sailboats count",
       "yachts": "Yachts count",

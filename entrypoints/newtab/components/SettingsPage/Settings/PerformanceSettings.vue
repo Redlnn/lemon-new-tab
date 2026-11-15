@@ -14,7 +14,8 @@ const meadowActive = computed(
   () =>
     settings.background.bgType === BgType.Meadow ||
     settings.background.bgType === BgType.Beach ||
-    settings.background.bgType === BgType.Ocean,
+    settings.background.bgType === BgType.Ocean ||
+    settings.background.bgType === BgType.Map,
 )
 const parallaxDisabled = computed(() => meadowActive.value || isOnlyTouchDevice.value)
 const MAX_TRANSPARENCY = TRANSPARENCY_RANGE[1]

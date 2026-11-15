@@ -12,6 +12,13 @@
     "dynamic": "动态壁纸",
     "dynamicDisabledNote": "使用动态背景时部分功能将被禁用",
     "waterCaustics": "水面波光",
+    "map": {
+      "name": "奇幻地图",
+      "trains": "火车数量",
+      "ships": "船数量",
+      "islands": "岛屿数量",
+      "error": "奇幻地图背景无法启动，已切换至纯色背景。"
+    },
     "ocean": {
       "sailboats": "帆船数量",
       "yachts": "游艇数量",

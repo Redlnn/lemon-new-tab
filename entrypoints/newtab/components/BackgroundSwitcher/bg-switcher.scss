@@ -324,6 +324,10 @@ html.dialog-acrylic .bg-switcher__drawer.el-drawer.rtl {
   background-image: url('@newtab/assets/ocean/thumb.webp');
 }
 
+.bg-switcher-dynamic-card--map .bg-switcher-dynamic-art {
+  background-image: url('@newtab/assets/map/thumb.webp');
+}
+
 .bg-switcher-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -579,6 +583,26 @@ html.dialog-acrylic .bg-switcher__drawer.el-drawer.rtl {
   .el-slider,
   .el-select {
     width: 150px;
+  }
+
+  .bg-switcher-settings-count {
+    display: flex;
+    flex: 0 1 180px;
+    gap: 10px;
+    align-items: center;
+    min-width: 0;
+
+    .el-slider {
+      flex: 1;
+      width: auto;
+      min-width: 0;
+    }
+
+    output {
+      min-width: 2ch;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
   }
 }
 

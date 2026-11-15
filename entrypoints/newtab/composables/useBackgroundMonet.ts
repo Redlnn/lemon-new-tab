@@ -9,6 +9,7 @@ import {
 import { runAfterFirstPaint } from '@newtab/shared/schedule'
 import { disposeMonetWorker, extractMonetColors } from '@newtab/shared/theme'
 import beachPalette from '@newtab/shared/wallpaper/beach/beachPalette.json'
+import mapPalette from '@newtab/shared/wallpaper/map/mapPalette.json'
 // 从无云、无角色的草地画面采样 #97bb67，预先生成明暗两套莫奈颜色。
 import meadowPalette from '@newtab/shared/wallpaper/meadow/meadowPalette.json'
 
@@ -96,6 +97,7 @@ export function useBackgroundMonet(options: {
         settings.background.bgType === BgType.Meadow ||
         settings.background.bgType === BgType.Beach ||
         settings.background.bgType === BgType.Ocean ||
+        settings.background.bgType === BgType.Map ||
         !options.backgroundUrl.value ||
         options.isVideo.value
       )
@@ -109,11 +111,18 @@ export function useBackgroundMonet(options: {
   watch(
     () => [settings.theme.monetColor, settings.background.bgType] as const,
     ([enabled, type]) => {
-      if (!enabled || (type !== BgType.Meadow && type !== BgType.Beach && type !== BgType.Ocean))
+      if (
+        !enabled ||
+        (type !== BgType.Meadow &&
+          type !== BgType.Beach &&
+          type !== BgType.Ocean &&
+          type !== BgType.Map)
+      )
         return
       invalidate()
       disposeMonetWorker()
-      const palette = type === BgType.Meadow ? meadowPalette : beachPalette
+      const palette =
+        type === BgType.Meadow ? meadowPalette : type === BgType.Map ? mapPalette : beachPalette
       const sourceKey = type
       applyStoredMonetColors({ ...palette, sourceKey, timestamp: Date.now() })
       void saveMonetColors(palette.cssLight, palette.cssDark, sourceKey).catch(console.error)

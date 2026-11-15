@@ -12,6 +12,13 @@
     "dynamic": "動態桌布",
     "dynamicDisabledNote": "使用動態背景時部分功能將被停用",
     "waterCaustics": "水面波光",
+    "map": {
+      "name": "奇幻地圖",
+      "trains": "火車數量",
+      "ships": "船數量",
+      "islands": "島嶼數量",
+      "error": "奇幻地圖背景無法啟動，已切換至純色背景。"
+    },
     "ocean": {
       "sailboats": "帆船數量",
       "yachts": "遊艇數量",

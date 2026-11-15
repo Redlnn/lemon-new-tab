@@ -1,4 +1,5 @@
 import type { SettingsSchemaV11, SettingsSchemaV12 } from '../types'
+import { defaultSettings } from '../default.ts'
 
 import type { PartialSettings } from './partial.ts'
 
@@ -19,6 +20,7 @@ export function migrateFromVer11To12(
       ...background,
       solid: { light: '', dark: '' },
       rotation: { enabled: false, order: 'random' },
+      map: { ...defaultSettings.background.map },
     },
   }
 }

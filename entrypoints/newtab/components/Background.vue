@@ -35,6 +35,7 @@ let hasShortenedFade = false
 const MeadowBackground = defineAsyncComponent(() => import('./MeadowBackground.vue'))
 const BeachBackground = defineAsyncComponent(() => import('./BeachBackground.vue'))
 const OceanBackground = defineAsyncComponent(() => import('./OceanBackground.vue'))
+const MapBackground = defineAsyncComponent(() => import('./MapBackground.vue'))
 
 const focusStore = useFocusState()
 const settings = useSettingsStore()
@@ -60,7 +61,8 @@ const solidColor = computed(
 const isSwitching = ref(
   settings.background.bgType !== BgType.Meadow &&
     settings.background.bgType !== BgType.Beach &&
-    settings.background.bgType !== BgType.Ocean,
+    settings.background.bgType !== BgType.Ocean &&
+    settings.background.bgType !== BgType.Map,
 )
 
 const imageRef = useTemplateRef('imageRef')
@@ -124,6 +126,7 @@ const backgroundCss = computed(() => ({
     renderedType.value !== BgType.Meadow &&
     renderedType.value !== BgType.Beach &&
     renderedType.value !== BgType.Ocean &&
+    renderedType.value !== BgType.Map &&
     focusStore.isFocused &&
     settings.perf.focus.blur,
 }))
@@ -134,6 +137,7 @@ const backgroundParallaxEnabled = computed(
     renderedType.value !== BgType.Meadow &&
     renderedType.value !== BgType.Beach &&
     renderedType.value !== BgType.Ocean &&
+    renderedType.value !== BgType.Map &&
     settings.background.parallax &&
     !isOnlyTouchDevice.value,
 )
@@ -341,6 +345,7 @@ const bgTypeProviders: Record<BgType, () => Promise<BackgroundSource>> = {
   [BgType.Meadow]: async () => ({ url: '', sourceKey: 'meadow', ownedObjectUrl: false }),
   [BgType.Beach]: async () => ({ url: '', sourceKey: 'beach', ownedObjectUrl: false }),
   [BgType.Ocean]: async () => ({ url: '', sourceKey: 'ocean', ownedObjectUrl: false }),
+  [BgType.Map]: async () => ({ url: '', sourceKey: 'map', ownedObjectUrl: false }),
 }
 
 function revokeDiscardedSource(source: BackgroundSource) {
@@ -428,7 +433,8 @@ async function updateBackgroundURL(type: BgType): Promise<void> {
       settings.perf.bgSwitchAnim &&
       type !== BgType.Meadow &&
       type !== BgType.Beach &&
-      type !== BgType.Ocean
+      type !== BgType.Ocean &&
+      type !== BgType.Map
     // 动态壁纸由场景自身入场，其他壁纸先让旧画面渐隐。
     if (hasDisplayedBackground && animate) {
       isSwitching.value = true
@@ -518,6 +524,12 @@ function handleOceanError() {
   settings.background.bgType = BgType.None
 }
 
+function handleMapError() {
+  if (settings.background.bgType !== BgType.Map) return
+  ElMessage.error(t('settings:background.map.error'))
+  settings.background.bgType = BgType.None
+}
+
 function handleMeadowError() {
   if (settings.background.bgType !== BgType.Meadow) return
   ElMessage.error(t('settings:background.meadow.error'))
@@ -598,10 +610,12 @@ onUnmounted(() => {
             ? '#008fb9'
             : renderedType === BgType.Ocean
               ? '#315fb2'
-              : solidColor,
+              : renderedType === BgType.Map
+                ? '#efdcae'
+                : solidColor,
       '--mask-color__light': settings.background.mask.light,
       '--mask-color__night': settings.background.mask.night,
-      '--blur-intensity': `${renderedType === BgType.Meadow || renderedType === BgType.Beach || renderedType === BgType.Ocean ? 0 : settings.background.blur}px`,
+      '--blur-intensity': `${renderedType === BgType.Meadow || renderedType === BgType.Beach || renderedType === BgType.Ocean || renderedType === BgType.Map ? 0 : settings.background.blur}px`,
       '--bg-opacity-duration': bgOpacityDuration,
     }"
   >
@@ -610,7 +624,8 @@ onUnmounted(() => {
         (bgURL ||
           renderedType === BgType.Meadow ||
           renderedType === BgType.Beach ||
-          renderedType === BgType.Ocean) &&
+          renderedType === BgType.Ocean ||
+          renderedType === BgType.Map) &&
         renderedType !== BgType.None &&
         settings.background.mask.enabled
       "
@@ -621,7 +636,8 @@ onUnmounted(() => {
         (bgURL ||
           renderedType === BgType.Meadow ||
           renderedType === BgType.Beach ||
-          renderedType === BgType.Ocean) &&
+          renderedType === BgType.Ocean ||
+          renderedType === BgType.Map) &&
         renderedType !== BgType.None &&
         settings.background.vignette
       "
@@ -633,7 +649,8 @@ onUnmounted(() => {
         settings.perf.bgSwitchAnim &&
         settings.background.bgType !== BgType.Meadow &&
         settings.background.bgType !== BgType.Beach &&
-        settings.background.bgType !== BgType.Ocean
+        settings.background.bgType !== BgType.Ocean &&
+        settings.background.bgType !== BgType.Map
       "
       @before-leave="(element) => element.querySelector('video')?.pause()"
     >
@@ -641,7 +658,8 @@ onUnmounted(() => {
         :key="
           renderedType === BgType.Meadow ||
           renderedType === BgType.Beach ||
-          renderedType === BgType.Ocean
+          renderedType === BgType.Ocean ||
+          renderedType === BgType.Map
             ? renderedType
             : bgURL
         "
@@ -653,7 +671,8 @@ onUnmounted(() => {
           scale:
             renderedType === BgType.Meadow ||
             renderedType === BgType.Beach ||
-            renderedType === BgType.Ocean
+            renderedType === BgType.Ocean ||
+            renderedType === BgType.Map
               ? 1
               : backgroundScale,
           translate: backgroundTranslate,
@@ -676,6 +695,7 @@ onUnmounted(() => {
           ref="ocean"
           @error="handleOceanError"
         />
+        <MapBackground v-else-if="renderedType === BgType.Map" @error="handleMapError" />
         <video
           v-else-if="isVideoWallpaper"
           class="background background--video"
