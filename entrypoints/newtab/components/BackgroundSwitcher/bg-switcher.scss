@@ -464,16 +464,18 @@ html.dialog-acrylic .bg-switcher__drawer.el-drawer.rtl {
 }
 
 .bg-switcher-hint {
-  padding-inline-start: 20px;
-  margin: 10px 0 0;
   font-size: var(--el-font-size-extra-small);
   color: var(--el-text-color-secondary);
-}
 
-h3 + .bg-switcher-hint {
-  padding-inline-start: 0;
-  margin: -12px 0 16px;
-  line-height: initial;
+  h3 + & {
+    margin: -12px 0 16px;
+  }
+
+  @at-root ul#{&} {
+    padding-inline-start: 20px;
+    margin: 10px 0 0;
+    line-height: 1.5;
+  }
 }
 
 .bg-switcher-rotation {
