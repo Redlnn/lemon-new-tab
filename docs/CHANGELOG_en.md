@@ -10,14 +10,18 @@ Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you ne
 
 ### New Features✨
 
-- **Quick Links/Dock:** When adding a Bilibili link, the blue built-in icon is now used by default instead of the Bilibili app-style icon.
+- **Wallpaper:** Redesigned the wallpaper picker and added three new animated wallpapers.
 - **Quick Links:** You can hide "Add Link" button now.
 
 ### Improvements⚡️
 
-- **Icons:** Built-in search engine and Notes icons now load as local image resources when displayed, reducing JavaScript loading and parsing at startup.
-- **Quick Links:** Renamed “Unpin” to “Remove” in link context menus and updated the removal notification. Undo remains available.
-- **Search** Improved the clickable area of the search button in the search bar.
+- **Icons:** Some icons now load on demand, reducing startup time.
+- **Icons:** When adding a Bilibili link, the blue built-in icon is now used by default instead of the fetched app-style icon.
+- **Icons:** Updated the built-in Google icon.
+- **Quick Links:** Renamed “Unpin” to “Remove” in link context menus.
+- **Search:** Improved the clickable area of the search button in the search bar.
+- Removed the acknowledgment of the quote provider from the About page.
+- Improved popup opening performance.
 
 ### Bug Fixes🐛
 
