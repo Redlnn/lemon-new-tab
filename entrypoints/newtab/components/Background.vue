@@ -4,7 +4,6 @@ import {
   useDocumentVisibility,
   useEventListener,
   useThrottleFn,
-  useWindowFocus,
 } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { defineAsyncComponent } from 'vue'
@@ -18,6 +17,7 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { useBackgroundMonet } from '@newtab/composables/useBackgroundMonet'
 import { useFocusState } from '@newtab/composables/useFocus'
+import { useWallpaperActivity } from '@newtab/composables/useWallpaperActivity'
 import { isDark } from '@newtab/shared/colorMode'
 import { isOnlyTouchDevice } from '@newtab/shared/touch'
 import {
@@ -34,6 +34,7 @@ let animationDuration = 1250
 let hasShortenedFade = false
 const MeadowBackground = defineAsyncComponent(() => import('./MeadowBackground.vue'))
 const BeachBackground = defineAsyncComponent(() => import('./BeachBackground.vue'))
+const OceanBackground = defineAsyncComponent(() => import('./OceanBackground.vue'))
 
 const focusStore = useFocusState()
 const settings = useSettingsStore()
@@ -57,7 +58,9 @@ const solidColor = computed(
 )
 // 动态壁纸的场景本身有入场动画，首屏无需先把整张画布从透明渐显。
 const isSwitching = ref(
-  settings.background.bgType !== BgType.Meadow && settings.background.bgType !== BgType.Beach,
+  settings.background.bgType !== BgType.Meadow &&
+    settings.background.bgType !== BgType.Beach &&
+    settings.background.bgType !== BgType.Ocean,
 )
 
 const imageRef = useTemplateRef('imageRef')
@@ -86,7 +89,7 @@ const bgURLreg = new RegExp('url\\((["\']?)(.*?)\\1\\)', 'i')
 
 // 视频壁纸相关逻辑
 
-const isWindowFocused = useWindowFocus()
+const wallpaperActive = useWallpaperActivity()
 const documentVisibility = useDocumentVisibility()
 
 function reportVideoPlaybackError(action: 'pause' | 'play', error: unknown) {
@@ -96,11 +99,7 @@ function reportVideoPlaybackError(action: 'pause' | 'play', error: unknown) {
 function updateVideoPlayback() {
   const vid = videoRef.value
   if (!vid) return
-  // 如果页面不可见，或者窗口失去焦点且设置了失去焦点时暂停视频，则暂停视频
-  if (
-    document.visibilityState === 'hidden' ||
-    (settings.background.pauseOnBlur && !isWindowFocused.value)
-  ) {
+  if (!wallpaperActive.value) {
     try {
       vid.pause()
     } catch (error) {
@@ -124,6 +123,7 @@ const backgroundCss = computed(() => ({
   'background-container--focused__blur':
     renderedType.value !== BgType.Meadow &&
     renderedType.value !== BgType.Beach &&
+    renderedType.value !== BgType.Ocean &&
     focusStore.isFocused &&
     settings.perf.focus.blur,
 }))
@@ -133,6 +133,7 @@ const backgroundParallaxEnabled = computed(
   () =>
     renderedType.value !== BgType.Meadow &&
     renderedType.value !== BgType.Beach &&
+    renderedType.value !== BgType.Ocean &&
     settings.background.parallax &&
     !isOnlyTouchDevice.value,
 )
@@ -339,6 +340,7 @@ const bgTypeProviders: Record<BgType, () => Promise<BackgroundSource>> = {
   [BgType.None]: async () => ({ url: '', sourceKey: '', ownedObjectUrl: false }),
   [BgType.Meadow]: async () => ({ url: '', sourceKey: 'meadow', ownedObjectUrl: false }),
   [BgType.Beach]: async () => ({ url: '', sourceKey: 'beach', ownedObjectUrl: false }),
+  [BgType.Ocean]: async () => ({ url: '', sourceKey: 'ocean', ownedObjectUrl: false }),
 }
 
 function revokeDiscardedSource(source: BackgroundSource) {
@@ -356,7 +358,7 @@ function trackBackgroundBlobUrl(source: BackgroundSource) {
 }
 
 watch(
-  [isVideoWallpaper, documentVisibility, isWindowFocused, () => settings.background.pauseOnBlur],
+  [isVideoWallpaper, wallpaperActive],
   ([isVideo]) => {
     if (!isVideo) {
       // 非视频壁纸，确保视频被暂停
@@ -422,7 +424,11 @@ async function updateBackgroundURL(type: BgType): Promise<void> {
       return
     }
 
-    const animate = settings.perf.bgSwitchAnim && type !== BgType.Meadow && type !== BgType.Beach
+    const animate =
+      settings.perf.bgSwitchAnim &&
+      type !== BgType.Meadow &&
+      type !== BgType.Beach &&
+      type !== BgType.Ocean
     // 动态壁纸由场景自身入场，其他壁纸先让旧画面渐隐。
     if (hasDisplayedBackground && animate) {
       isSwitching.value = true
@@ -506,6 +512,12 @@ function handleBeachError() {
   settings.background.bgType = BgType.None
 }
 
+function handleOceanError() {
+  if (settings.background.bgType !== BgType.Ocean) return
+  ElMessage.error(t('settings:background.ocean.error'))
+  settings.background.bgType = BgType.None
+}
+
 function handleMeadowError() {
   if (settings.background.bgType !== BgType.Meadow) return
   ElMessage.error(t('settings:background.meadow.error'))
@@ -542,11 +554,14 @@ const meadowRef =
   useTemplateRef<InstanceType<typeof import('./MeadowBackground.vue').default>>('meadow')
 const beachRef =
   useTemplateRef<InstanceType<typeof import('./BeachBackground.vue').default>>('beach')
+const oceanRef =
+  useTemplateRef<InstanceType<typeof import('./OceanBackground.vue').default>>('ocean')
 function moveMeadowBoy(x: number, y: number) {
   meadowRef.value?.moveBoy(x, y)
 }
 function rippleBeach(x: number, y: number) {
   beachRef.value?.ripple(x, y)
+  oceanRef.value?.ripple(x, y)
 }
 defineExpose({ refreshBackground, moveMeadowBoy, rippleBeach })
 
@@ -576,10 +591,17 @@ onUnmounted(() => {
     class="background-wrapper noselect"
     aria-hidden="true"
     :style="{
-      backgroundColor: renderedType === BgType.Beach ? '#008fb9' : solidColor,
+      backgroundColor:
+        renderedType === BgType.Meadow
+          ? '#a3bf70'
+          : renderedType === BgType.Beach
+            ? '#008fb9'
+            : renderedType === BgType.Ocean
+              ? '#315fb2'
+              : solidColor,
       '--mask-color__light': settings.background.mask.light,
       '--mask-color__night': settings.background.mask.night,
-      '--blur-intensity': `${renderedType === BgType.Meadow || renderedType === BgType.Beach ? 0 : settings.background.blur}px`,
+      '--blur-intensity': `${renderedType === BgType.Meadow || renderedType === BgType.Beach || renderedType === BgType.Ocean ? 0 : settings.background.blur}px`,
       '--bg-opacity-duration': bgOpacityDuration,
     }"
   >
@@ -587,7 +609,8 @@ onUnmounted(() => {
       v-if="
         (bgURL ||
           renderedType === BgType.Meadow ||
-          renderedType === BgType.Beach) &&
+          renderedType === BgType.Beach ||
+          renderedType === BgType.Ocean) &&
         renderedType !== BgType.None &&
         settings.background.mask.enabled
       "
@@ -595,10 +618,11 @@ onUnmounted(() => {
     ></div>
     <div
       v-if="
-        bgURL &&
+        (bgURL ||
+          renderedType === BgType.Meadow ||
+          renderedType === BgType.Beach ||
+          renderedType === BgType.Ocean) &&
         renderedType !== BgType.None &&
-        renderedType !== BgType.Meadow &&
-        renderedType !== BgType.Beach &&
         settings.background.vignette
       "
       class="background__vignette"
@@ -608,14 +632,16 @@ onUnmounted(() => {
       :css="
         settings.perf.bgSwitchAnim &&
         settings.background.bgType !== BgType.Meadow &&
-        settings.background.bgType !== BgType.Beach
+        settings.background.bgType !== BgType.Beach &&
+        settings.background.bgType !== BgType.Ocean
       "
       @before-leave="(element) => element.querySelector('video')?.pause()"
     >
       <div
         :key="
           renderedType === BgType.Meadow ||
-          renderedType === BgType.Beach
+          renderedType === BgType.Beach ||
+          renderedType === BgType.Ocean
             ? renderedType
             : bgURL
         "
@@ -626,7 +652,8 @@ onUnmounted(() => {
         :style="{
           scale:
             renderedType === BgType.Meadow ||
-            renderedType === BgType.Beach
+            renderedType === BgType.Beach ||
+            renderedType === BgType.Ocean
               ? 1
               : backgroundScale,
           translate: backgroundTranslate,
@@ -643,6 +670,11 @@ onUnmounted(() => {
           v-else-if="renderedType === BgType.Beach"
           ref="beach"
           @error="handleBeachError"
+        />
+        <OceanBackground
+          v-else-if="renderedType === BgType.Ocean"
+          ref="ocean"
+          @error="handleOceanError"
         />
         <video
           v-else-if="isVideoWallpaper"

@@ -7,14 +7,20 @@ import catRagdoll from '@newtab/assets/meadow/cat-ragdoll.webp'
 import catWhite from '@newtab/assets/meadow/cat-white.webp'
 import cat from '@newtab/assets/meadow/cat.webp'
 
+import { createMeadowCharacters } from './meadowCharacters'
 import { createMeadowScene } from './meadowScene'
 
 export function createMeadowRenderer(canvas: HTMLCanvasElement) {
   return createMeadowScene(canvas, {
-    boy,
-    boyRun,
-    boyFrontFrames,
-    boyBackFrames,
-    cats: [cat, catWhite, catCalico, catRagdoll],
+    meadow: {
+      createCharacters: createMeadowCharacters,
+      assets: {
+        boy,
+        boyRun,
+        boyFrontFrames,
+        boyBackFrames,
+        cats: [cat, catWhite, catCalico, catRagdoll],
+      },
+    },
   })
 }

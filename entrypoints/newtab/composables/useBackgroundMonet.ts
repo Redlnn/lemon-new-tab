@@ -95,6 +95,7 @@ export function useBackgroundMonet(options: {
         !enabled ||
         settings.background.bgType === BgType.Meadow ||
         settings.background.bgType === BgType.Beach ||
+        settings.background.bgType === BgType.Ocean ||
         !options.backgroundUrl.value ||
         options.isVideo.value
       )
@@ -108,11 +109,12 @@ export function useBackgroundMonet(options: {
   watch(
     () => [settings.theme.monetColor, settings.background.bgType] as const,
     ([enabled, type]) => {
-      if (!enabled || (type !== BgType.Meadow && type !== BgType.Beach)) return
+      if (!enabled || (type !== BgType.Meadow && type !== BgType.Beach && type !== BgType.Ocean))
+        return
       invalidate()
       disposeMonetWorker()
-      const palette = type === BgType.Beach ? beachPalette : meadowPalette
-      const sourceKey = type === BgType.Beach ? 'beach' : 'meadow'
+      const palette = type === BgType.Meadow ? meadowPalette : beachPalette
+      const sourceKey = type
       applyStoredMonetColors({ ...palette, sourceKey, timestamp: Date.now() })
       void saveMonetColors(palette.cssLight, palette.cssDark, sourceKey).catch(console.error)
     },

@@ -10,14 +10,24 @@
     "apply": "Apply",
     "source": "Wallpaper source",
     "dynamic": "Live wallpapers",
+    "dynamicDisabledNote": "Some features are disabled when using a dynamic background",
+    "waterCaustics": "Water caustics",
+    "ocean": {
+      "sailboats": "Sailboats count",
+      "yachts": "Yachts count",
+      "whales": "Whales count",
+      "birds": "Seabirds count",
+      "name": "Ocean",
+      "error": "The ocean wallpaper could not start. Switched to a solid background."
+    },
     "beach": {
       "sigma": "Coast distance",
       "warp": "Coast irregularity",
       "shoal": "Clear shallows",
       "shallow": "Shallow water width",
       "palms": "Palm trees",
-      "kayaks": "Kayaks",
-      "birds": "Seagulls",
+      "kayaks": "Kayaks count",
+      "birds": "Seagulls count",
       "name": "Beach",
       "error": "Beach wallpaper could not start; switched to solid color"
     },
@@ -88,7 +98,8 @@
       "c": "There will be a blank screen before the wallpaper finishes loading, and the duration depends on your internet speed."
     },
     "parallax": "Wallpaper parallax effect",
-    "pauseWhenBlur": "Pause animated backgrounds when unfocused",
+    "pauseWhenBlur": "Pause background when page is unfocused",
+    "pauseWhenHidden": "Pause background when page is hidden",
     "permission": {
       "allowAll": "Allow all sites",
       "allowCurrent": "Only allow this API URL",

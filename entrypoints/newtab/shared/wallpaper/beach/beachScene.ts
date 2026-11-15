@@ -3,6 +3,8 @@ import type { CURRENT_CONFIG_SCHEMA } from '@/shared/settings/current'
 import { createFieldTextures } from '../dynamic/fieldTextures'
 import { snapshotField } from '../dynamic/fieldTransition'
 import { createTerrain } from '../dynamic/terrain'
+import { canvasViewportSize, setCanvasViewportStyle } from '../dynamic/viewport'
+import { createWaterCaustics } from '../dynamic/waterCaustics'
 
 import {
   beachRegionsSeparate,
@@ -98,6 +100,7 @@ export function createBeachScene(
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
   const fieldStorage = createFieldTextures(gl)
+  let causticsTexture: WebGLTexture | null = null
   const fieldTextures = fieldStorage.textures
   let current: Field | null = null,
     previous: Field | null = null
@@ -303,21 +306,23 @@ export function createBeachScene(
       })
     }
   }
-  const resizeViewport = () => {
-    const box = cv.getBoundingClientRect()
-    scale = Math.min(window.devicePixelRatio || 1, P.quality)
-    const width = Math.max(1, Math.round((box.width || window.innerWidth) * scale)),
-      height = Math.max(1, Math.round((box.height || window.innerHeight) * scale))
-    if (cv.width === width && cv.height === height) return false
+  const resizeViewport = (trim = false) => {
+    const nextScale = Math.min(window.devicePixelRatio || 1, P.quality)
+    const { width, height } = canvasViewportSize(cv, nextScale, scale, trim)
+    if (cv.style.width && scale === nextScale && cv.width === width && cv.height === height)
+      return false
+    scale = nextScale
     if (cv.width !== width) cv.width = width
     if (cv.height !== height) cv.height = height
     treesCanvas.width = width
     treesCanvas.height = height
+    setCanvasViewportStyle(cv, scale)
+    setCanvasViewportStyle(treesCanvas, scale)
     treesDirty = true
     return true
   }
   const resize = (bounds: Bounds | null) => {
-    resizeViewport()
+    resizeViewport(true)
     const widthCss = window.innerWidth,
       heightCss = window.innerHeight
     if (current && W === widthCss && H === heightCss) return
@@ -442,6 +447,7 @@ export function createBeachScene(
       if (age >= 4) activeRipples.splice(i, 1)
       else ripples.set([ripple.x, ripple.y, age, 1], i * 4)
     }
+    if (options.waterCaustics && !causticsTexture) causticsTexture = createWaterCaustics(gl)
     gl.viewport(0, 0, cv.width, cv.height)
     gl.useProgram(program)
     gl.bindVertexArray(vao)
@@ -459,6 +465,10 @@ export function createBeachScene(
     gl.uniform1i(u.uFB!, 2)
     gl.uniform2f(u.uRes!, cv.width / scale, cv.height / scale)
     gl.uniform2f(u.uGrid!, Gw, Gh)
+    gl.activeTexture(gl.TEXTURE7)
+    gl.bindTexture(gl.TEXTURE_2D, causticsTexture ?? noise)
+    gl.uniform1i(u.uWaterCaustics!, 7)
+    gl.uniform1f(u.uWaterCausticsEnabled!, options.waterCaustics ? 1 : 0)
     for (const [name, value] of Object.entries({
       uScale: scale,
       uSeed: (seed % 997) * 0.37,

@@ -14,6 +14,7 @@ export const BgType = {
   Online: 'online',
   Meadow: 'meadow',
   Beach: 'beach',
+  Ocean: 'ocean',
 } as const
 export type BgType = (typeof BgType)[keyof typeof BgType]
 

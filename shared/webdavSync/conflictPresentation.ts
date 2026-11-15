@@ -56,6 +56,7 @@ const SETTING_TITLE_ALIASES: Partial<Record<SettingPath, string>> = {
   'background.mask.light': 'background.mask.color',
   'background.mask.night': 'background.mask.color',
   'background.pauseOnBlur': 'background.pauseWhenBlur',
+  'background.pauseWhenHidden': 'background.pauseWhenHidden',
   'background.fastAnimation': 'background.fasterBgAnim',
   'background.bing.resolution': 'background.resolution',
   'background.online.cache.enabled': 'background.cache.label',

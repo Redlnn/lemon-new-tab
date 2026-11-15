@@ -1,15 +1,25 @@
 import { createFieldTextures } from '../dynamic/fieldTextures'
 import { snapshotField } from '../dynamic/fieldTransition'
 import { createTerrain } from '../dynamic/terrain'
-
-import { createMeadowCharacters } from './meadowCharacters'
-
+import { canvasViewportSize, setCanvasViewportStyle } from '../dynamic/viewport'
+import { createWaterCaustics, waterCausticsShader } from '../dynamic/waterCaustics'
 export type MeadowAssets = {
   boy: string
   boyRun: string
   boyFrontFrames: string
   boyBackFrames: string
   cats: [string, string, string, string]
+}
+type OceanDependencies = {
+  shader: string
+  whale: string
+  createMotion: typeof import('../ocean/oceanMotion').createOceanMotion
+  createWake: typeof import('../ocean/oceanWake').createOceanWake
+  createWhaleTexture: typeof import('../ocean/oceanWhale').createOceanWhaleTexture
+}
+type MeadowDependencies = {
+  assets: MeadowAssets
+  createCharacters: typeof import('./meadowCharacters').createMeadowCharacters
 }
 export type MeadowRegion = { x: number; y: number; w: number; h: number }
 export type MeadowProgram = { p: WebGLProgram; U: Record<string, WebGLUniformLocation> }
@@ -21,11 +31,20 @@ type MeadowOptions = {
   showNavigationCloud: boolean
   showBoy: boolean
   showCat: boolean
+  sailboats?: number
+  yachts?: number
+  whales?: number
+  birds?: number
+  waterCaustics?: boolean
 }
 type Circle = [number, number, number, number]
 type Field = { s: Float32Array }
 
-export function createMeadowScene(cv: HTMLCanvasElement, assets: MeadowAssets) {
+export function createMeadowScene(
+  cv: HTMLCanvasElement,
+  scene: { meadow: MeadowDependencies; ocean?: never } | { meadow?: never; ocean: OceanDependencies },
+) {
+  const ocean = !!scene.ocean
   const context = cv.getContext('webgl2', {
     antialias: false,
     alpha: false,
@@ -50,12 +69,21 @@ export function createMeadowScene(cv: HTMLCanvasElement, assets: MeadowAssets) {
     showNavigationCloud: 1,
     showBoy: 1,
     showCat: 1,
+    sailboats: 1,
+    yachts: 1,
+    whales: 1,
+    birds: 3,
+    waterCaustics: false,
     avoidCenter: false,
   }
   let sceneNow = 0,
     lastSceneNow: number | null = null,
     regions: MeadowRegion[] = [],
     lastBounds: MeadowBounds | null = null
+  const ripples: { x: number; y: number; start: number }[] = []
+  const oceanMotion = scene.ocean?.createMotion() ?? null
+  const oceanActors = new Float32Array(22 * 4)
+  const oceanExtras = new Float32Array(22 * 2)
   try {
     const seed = (Math.random() * 1e6) | 0
 
@@ -86,6 +114,9 @@ precision highp float;
 uniform sampler2D uNoise, uFA, uFB, uMeadowGround;
 uniform vec2 uRes, uGrid;
 uniform float uScale, uSeed, uStep, uMix, uEdge;
+#ifdef OCEAN
+${waterCausticsShader}
+#endif
 #ifdef MEADOW_ACTOR
 uniform sampler2D uActor, uActorShadow;
 uniform vec4 uActorRect;
@@ -145,6 +176,7 @@ float cloudDist(vec2 q) { vec4 fc = vec4(0.0, -1e9, 0.0, 0.0); return cloudDist(
 
 // 到一段线的距离
 float segD(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0)); }
+${scene.ocean?.shader ?? ''}
 
 // 画草的短线：每个 12×6 的格子里最多一笔，方向跟着大片区域走（一片片平行的排线），疏密也跟着区域变（有的地方密、有的地方空）
 // 只看自己的格子和上下两格（一笔不会伸出左右的格子）
@@ -189,6 +221,12 @@ void main() {
   vec2 p = vec2(gl_FragCoord.x, uRes.y * uScale - gl_FragCoord.y) / uScale;
 
 #ifdef MEADOW_GROUND
+#ifdef OCEAN
+  vec3 col = mix(vec3(.14,.30,.63), vec3(.19,.37,.72), clamp(p.y / uRes.y, 0., 1.));
+  float depth = N(p + 137., 1600.).b * .7 + N(p + 311., 750.).g * .3;
+  col = mix(col, col * vec3(1.09,1.08,1.04), ss(.30,.72,depth) * .72);
+  col *= 1.0 + (hash2(floor(p * (0.8 * max(uScale, 1.0)))) - .5) * .035;
+#else
   // ---------- 草地：黄绿和绿的大块水彩晕染，几片颜色深一点，左上（向阳）稍亮；纸的颗粒 ----------
   float w1 = N(p, 1900.0).b, w2 = N(p + 311.0, 650.0).g;
   vec3 col = mix(G_MID, G_LIGHT, ss(0.3, 0.75, w1 * 0.7 + w2 * 0.3));
@@ -197,9 +235,38 @@ void main() {
   col *= 1.0 + (hash2(floor(p * (0.8 * max(uScale, 1.0)))) - 0.5) * 0.035;   // 颗粒按屏幕的实际像素取
   // 画草的墨绿短线
   col = mix(col, INK, grassInk(p) * 0.75);
+#endif
   o = vec4(col, 1.0);
 #else
   vec3 col = texelFetch(uMeadowGround, ivec2(gl_FragCoord.xy), 0).rgb;
+
+#ifdef OCEAN
+  // Same slow water drift and two irregular reflection grids as the beach sea.
+  vec2 drift = vec2(uOceanTime * 2.2, uOceanTime * .9);
+  col *= 1. + (N(p + drift * 4., 1600.).r - .5) * .02;
+  float glitter = ss(.32, .72, N(p + drift * 3., 520.).g);
+  float sparkle = 0.;
+  for (int L = 0; L < 2; L++) {
+    float fl = float(L), size = L == 0 ? 23. : 37.;
+    vec2 q = oceanRot(L == 0 ? .62 : -1.13) * p / size + fl * 17.3;
+    vec2 cell = floor(q), f = fract(q), seedc = cell + fl * 51.7 + uSeed * .1;
+    if (hash2(seedc) > (L == 0 ? .11 : .16) * glitter) continue;
+    vec2 center = .15 + .7 * vec2(hash2(seedc + 1.3), hash2(seedc + 2.9));
+    float life = fract(uOceanTime * (.3 + .35 * hash2(seedc + 8.1)) + hash2(seedc + 5.7));
+    float twinkle = ss(0., .1, life) * (1. - ss(.2, .45, life));
+    float radius = .7 + .9 * hash2(seedc + 3.3);
+    sparkle = max(sparkle, (1. - ss(radius * .5, radius * 1.5, length((f - center) * size))) * twinkle);
+  }
+  col = mix(col, vec3(.95, 1., 1.), sparkle * .85);
+  col = mix(col, vec3(.60, .90, 1.), waterCaustics(p, uOceanTime) * .15);
+  vec4 wake = vec4(0.);
+  if (p.x >= 0. && p.y >= 0. && p.x < uOceanWakeSize.x && p.y < uOceanWakeSize.y)
+    wake = texture(uOceanWake, vec2(p.x / uOceanWakeSize.x, 1. - p.y / uOceanWakeSize.y));
+  col = col * (1. - wake.a) + wake.rgb;
+#ifdef OCEAN_DETAIL
+  col = oceanDetail(col, p);
+#endif
+#endif
 
 #ifdef MEADOW_ACTOR
   // 人物、风筝和完整投影都先落在草地上，随后由同一层云影和白云覆盖。
@@ -226,7 +293,7 @@ void main() {
 
   // ---------- 云投在草地上的影子（右下方）：一整块深绿 ----------
   float sd = cloudDist(p - SHADOW_OFF);
-  col = mix(col, col * SHADOW, ss(3.0, -3.0, sd) * 0.85);
+  col = mix(col, col * ${ocean ? 'vec3(.60, .68, .86)' : 'SHADOW'}, ss(3.0, -3.0, sd) * 0.85);
 
   // ---------- 云：卡通画法（和大海主题一样）——一个个圆合起来，每个圆色调略有不同，
   //            只有朝光（左上）的外轮廓一道亮白，里面没有亮面；边缘干净 ----------
@@ -270,10 +337,14 @@ void main() {
       }
       return { p, U }
     }
-    const PR = program(FS)
+    const source = ocean ? FS.replace('#version 300 es', '#version 300 es\n#define OCEAN') : FS
+    const PR = program(source)
     const groundPR = program(
-      FS.replace('#version 300 es', '#version 300 es\n#define MEADOW_GROUND'),
+      source.replace('#version 300 es', '#version 300 es\n#define MEADOW_GROUND'),
     )
+    const oceanPR = ocean
+      ? program(source.replace('#version 300 es', '#version 300 es\n#define OCEAN_DETAIL'))
+      : null
     const groundTexture = gl.createTexture()
     const groundFramebuffer = gl.createFramebuffer()
     if (!groundTexture || !groundFramebuffer) throw new Error('Could not create meadow cache')
@@ -281,6 +352,11 @@ void main() {
       catPR: MeadowProgram | null = null,
       catActorPR: MeadowProgram | null = null
     gl.bindVertexArray(gl.createVertexArray())
+    const oceanWake = scene.ocean?.createWake(gl) ?? null
+    const whaleTexture = scene.ocean
+      ? scene.ocean.createWhaleTexture(gl, scene.ocean.whale, pendingImages, () => disposed)
+      : null
+    let causticsTexture: WebGLTexture | null = null
 
     let noiseTex: WebGLTexture | null = null
 
@@ -652,26 +728,77 @@ void main() {
     }
 
     // 人物和投影使用局部纹理，合成到云层之下。
-    const characters = createMeadowCharacters({
+    const characters = scene.meadow?.createCharacters({
       gl,
       cv,
       resolution,
       program,
-      assets,
+      assets: scene.meadow.assets,
       pendingImages,
       isDisposed: () => disposed,
       getScene: () => ({ width: W, height: H, seed, regions, options: P }),
     })
 
-    const drawScene = (now: number) => {
+    const cloudClearance = (x: number, y: number) => {
+      let distance =
+        FA && FB
+          ? sampleArr(FA.s, x, y) * (1 - curMix) + sampleArr(FB.s, x, y) * curMix - P.edge + 57
+          : 1000
+      const gx = Math.floor(x / CELL_G) + 4,
+        gy = Math.floor(y / CELL_G) + 4
+      if (gx < 0 || gy < 0 || gx >= cgW || gy >= cgH) return distance
+      const start = (gy * cgW + gx) * CIRC_K * 4
+      for (let i = 0; i < CIRC_K; i++) {
+        const offset = start + i * 4,
+          radius = circBuf[offset + 2]!
+        if (radius <= 0) break
+        distance = Math.min(
+          distance,
+          Math.hypot(x - circBuf[offset]!, y - circBuf[offset + 1]!) - radius,
+        )
+      }
+      return distance
+    }
+    const drawScene = (now: number, dt: number) => {
+      if (ocean && P.waterCaustics && !causticsTexture) causticsTexture = createWaterCaustics(gl)
       // 隐藏男孩时只保留路线状态，小猫仍能独立显示并避开男孩再次出现的路线。
-      const boy = P.showBoy || P.showCat ? characters.prepareBoy(now, P.showBoy === 1) : null
+      const boy = P.showBoy || P.showCat ? characters?.prepareBoy(now, P.showBoy === 1) : null
       const actor = P.showBoy === 1 && boy?.rect ? boy : null
-      const cats = P.showCat === 1 ? characters.prepareCat(boy, now) : []
+      const cats = P.showCat === 1 ? (characters?.prepareCat(boy ?? null, now) ?? []) : []
       if (actor && !actorPR)
         actorPR = program(FS.replace('#version 300 es', '#version 300 es\n#define MEADOW_ACTOR'))
       // 小猫的局部绘制共享本帧云数据，不额外重算、上传云团。
       uploadCircles(now / 1000)
+      const t = now / 1000
+      const subjects =
+        oceanMotion?.step(
+          t,
+          dt,
+          W,
+          H,
+          [P.sailboats, P.yachts, P.whales, P.birds],
+          cloudClearance,
+        ) ?? []
+      const wakeTexture = oceanWake?.draw(subjects, t, W, H)
+      let actorCount = 0
+      for (const kind of [2, 0, 1, 3]) {
+        for (const subject of subjects) {
+          if (subject.kind !== kind) continue
+          oceanActors.set([subject.x, subject.y, subject.heading, subject.kind], actorCount * 4)
+          oceanExtras.set([subject.kind === 2 ? subject.bend : subject.boom, 0], actorCount * 2)
+          actorCount++
+        }
+      }
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const ripple = ripples[i]!
+        const age = t - ripple.start
+        if (age >= 4) ripples.splice(i, 1)
+        else {
+          oceanActors.set([ripple.x, ripple.y, 0, 4], actorCount * 4)
+          oceanExtras.set([age, 0], actorCount * 2)
+          actorCount++
+        }
+      }
       const render = (renderer: MeadowProgram, cat: (typeof cats)[number] | null) => {
         const { p, U } = renderer
         gl.useProgram(p)
@@ -696,6 +823,29 @@ void main() {
         gl.uniform2f(U.uCGrid!, cgW, cgH)
         gl.uniform1f(U.uCellG!, CELL_G)
         gl.uniform1f(U.uEdge!, P.edge)
+        if (ocean) {
+          gl.activeTexture(gl.TEXTURE0)
+          gl.bindTexture(gl.TEXTURE_2D, noiseTex)
+          gl.uniform1i(U.uNoise!, 0)
+          gl.uniform1f(U.uSeed!, (seed % 997) * 0.37)
+          gl.uniform1f(U.uOceanTime!, now / 1000)
+          gl.activeTexture(gl.TEXTURE7)
+          gl.bindTexture(gl.TEXTURE_2D, causticsTexture ?? noiseTex)
+          gl.uniform1i(U.uWaterCaustics!, 7)
+          gl.uniform1f(U.uWaterCausticsEnabled!, P.waterCaustics ? 1 : 0)
+          gl.activeTexture(gl.TEXTURE4)
+          gl.bindTexture(gl.TEXTURE_2D, wakeTexture ?? null)
+          gl.uniform1i(U.uOceanWake!, 4)
+          gl.uniform2f(U.uOceanWakeSize!, W, H)
+          if (renderer === oceanPR) {
+            gl.activeTexture(gl.TEXTURE6)
+            gl.bindTexture(gl.TEXTURE_2D, whaleTexture)
+            gl.uniform1i(U.uOceanWhale!, 6)
+            gl.uniform4fv(U.uOceanActors!, oceanActors)
+            gl.uniform2fv(U.uOceanExtras!, oceanExtras)
+            gl.uniform1i(U.uOceanCount!, actorCount)
+          }
+        }
         if (actor?.rect) {
           gl.activeTexture(gl.TEXTURE5)
           gl.bindTexture(gl.TEXTURE_2D, actor.actor ?? null)
@@ -716,6 +866,26 @@ void main() {
         gl.drawArrays(gl.TRIANGLES, 0, 3)
       }
       render(actor ? actorPR! : PR, null)
+      if (oceanPR) {
+        gl.enable(gl.SCISSOR_TEST)
+        try {
+          const paint = (x: number, y: number, size: number) => {
+            const k = resolution.scale
+            const left = Math.max(0, Math.floor((x - size) * k))
+            const top = Math.max(0, Math.floor((y - size) * k))
+            const right = Math.min(cv.width, Math.ceil((x + size) * k))
+            const bottom = Math.min(cv.height, Math.ceil((y + size) * k))
+            if (right <= left || bottom <= top) return
+            gl.scissor(left, cv.height - bottom, right - left, bottom - top)
+            render(oceanPR, null)
+          }
+          for (const subject of subjects)
+            paint(subject.x, subject.y, subject.kind === 2 ? 220 : 110)
+          for (const ripple of ripples) paint(ripple.x, ripple.y, (t - ripple.start) * 40 + 4)
+        } finally {
+          gl.disable(gl.SCISSOR_TEST)
+        }
+      }
       if (cats.length) {
         if (actor && !catActorPR)
           catActorPR = program(
@@ -749,11 +919,14 @@ void main() {
       }
     }
 
-    const resizeViewport = () => {
+    const resizeViewport = (trim = false) => {
       const scale = Math.min(window.devicePixelRatio || 1, P.quality)
-      const box = cv.getBoundingClientRect()
-      const pixelWidth = Math.max(1, Math.round((box.width || window.innerWidth) * scale))
-      const pixelHeight = Math.max(1, Math.round((box.height || window.innerHeight) * scale))
+      const { width: pixelWidth, height: pixelHeight } = canvasViewportSize(
+        cv,
+        scale,
+        resolution.scale,
+        trim,
+      )
       if (
         initialized &&
         resolution.scale === scale &&
@@ -794,12 +967,13 @@ void main() {
       // 保留旧画面直到新缓存准备好；修改画布尺寸后由调用方同一任务内立即重绘。
       if (cv.width !== pixelWidth) cv.width = pixelWidth
       if (cv.height !== pixelHeight) cv.height = pixelHeight
+      setCanvasViewportStyle(cv, scale)
       initialized = true
       return true
     }
 
     const resize = (bounds: MeadowBounds | null) => {
-      resizeViewport()
+      resizeViewport(true)
       const width = window.innerWidth,
         height = window.innerHeight
       if (FA && FB && W === width && H === height) return
@@ -850,8 +1024,15 @@ void main() {
       P.sigma = options.cloudSize
       P.cover = options.cloudCover
       P.flow = options.flow
-      P.showBoy = options.showBoy ? 1 : 0
-      P.showCat = options.showCat ? 1 : 0
+      P.showBoy = !ocean && options.showBoy ? 1 : 0
+      P.showCat = !ocean && options.showCat ? 1 : 0
+      if (ocean) {
+        P.sailboats = options.sailboats ?? 1
+        P.yachts = options.yachts ?? 1
+        P.whales = options.whales ?? 1
+        P.birds = options.birds ?? 3
+        P.waterCaustics = options.waterCaustics ?? true
+      }
       P.avoidCenter = avoidCenter
       if (changed || sizeChanged) {
         lastBounds = bounds
@@ -867,7 +1048,7 @@ void main() {
       const e = Math.min(Math.max((sceneNow - morphT0) / morphDur, 0), 1)
       curMix = e < 0.5 ? 2 * e * e : 1 - Math.pow(-2 * e + 2, 2) / 2
       stepSkyClouds(dt)
-      drawScene(sceneNow)
+      drawScene(sceneNow, dt)
     }
     buildNoiseTex()
     return {
@@ -875,7 +1056,12 @@ void main() {
       resizeViewport,
       draw,
       moveBoy(x: number, y: number) {
-        characters.moveBoy(x, y)
+        characters?.moveBoy(x, y)
+      },
+      ripple(x: number, y: number) {
+        if (!ocean || x < 0 || y < 0 || x >= W || y >= H || cloudClearance(x, y) < 0) return
+        if (ripples.length === 6) ripples.shift()
+        ripples.push({ x, y, start: sceneNow / 1000 })
       },
       dispose() {
         disposed = true

@@ -1,6 +1,8 @@
-import { useDocumentVisibility, useEventListener, useWindowFocus } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 
 import { useSettingsStore } from '@/shared/settings'
+
+import { useWallpaperActivity } from '@newtab/composables/useWallpaperActivity'
 
 type DynamicRenderer = {
   resizeViewport: () => boolean
@@ -16,11 +18,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   onError: () => void
 }) {
   const settings = useSettingsStore()
-  const visibility = useDocumentVisibility()
-  const focused = useWindowFocus()
-  const running = computed(
-    () => visibility.value === 'visible' && (!settings.background.pauseOnBlur || focused.value),
-  )
+  const running = useWallpaperActivity()
   let renderer: T | undefined
   let raf = 0
   let frameTimer: ReturnType<typeof setTimeout> | undefined
@@ -82,7 +80,8 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
       const viewportChanged = viewportDirty && renderer.resizeViewport()
       viewportDirty = false
       if (viewportChanged || !lastFrame || now - lastFrame >= interval - 1) {
-        lastFrame = lastFrame ? Math.max(lastFrame + interval, now - interval) : now
+        lastFrame =
+          viewportChanged || !lastFrame ? now : Math.max(lastFrame + interval, now - interval)
         options.draw(renderer, elapsed, bounds)
       }
       scheduleFrame()
@@ -95,6 +94,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
     clearTimeout(resizeTimer)
     if (!running.value || !renderer || failed) return
     try {
+      viewportDirty = false
       locate()
       renderer.resize(bounds)
       scheduleLayout()
@@ -116,10 +116,12 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   function scheduleResize() {
     clearTimeout(resizeTimer)
     if (running.value && renderer && !failed) {
+      // Resize the backing canvas before the next paint so the browser never
+      // displays a stretched frame. Scene layout remains debounced separately.
       viewportDirty = true
       cancelFrame()
       scheduleFrame(true)
-      resizeTimer = setTimeout(resize, 150)
+      resizeTimer = setTimeout(resize, 180)
     }
   }
   useEventListener(window, 'resize', scheduleResize)

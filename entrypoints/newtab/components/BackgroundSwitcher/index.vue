@@ -41,6 +41,13 @@ const { width: windowWidth } = useWindowSize({ type: 'visual' })
 const { isComposing } = useImeAwareDialog()
 const { t } = useTranslation('settings')
 const settings = useSettingsStore()
+const dynamicActive = computed(() =>
+  [BgType.Meadow, BgType.Beach, BgType.Ocean].some((type) => settings.background.bgType === type),
+)
+const vignetteEnabled = computed({
+  get: () => settings.background.vignette,
+  set: (value: boolean) => (settings.background.vignette = value),
+})
 const maskEnabled = computed({
   get: () => settings.background.mask.enabled,
   set: (value: boolean) => (settings.background.mask.enabled = value),
@@ -61,6 +68,7 @@ const blurDisabled = computed(
   () =>
     settings.background.bgType === BgType.Meadow ||
     settings.background.bgType === BgType.Beach ||
+    settings.background.bgType === BgType.Ocean ||
     settings.background.bgType === BgType.None,
 )
 const local = useLocalWallpaperStore()
@@ -82,7 +90,7 @@ function selectSource(value: Source) {
 }
 function currentSource(): Source {
   const type = settings.background.bgType
-  if (type === BgType.Meadow || type === BgType.Beach) return 'dynamic'
+  if (type === BgType.Meadow || type === BgType.Beach || type === BgType.Ocean) return 'dynamic'
   if (type === BgType.Local) return 'local'
   if (type === BgType.Online) return 'online'
   if (type === BgType.None) return 'solid'
@@ -122,6 +130,12 @@ const beachControls = [
   { key: 'palms', min: 0, max: 10 },
   { key: 'kayaks', min: 0, max: 4 },
   { key: 'birds', min: 0, max: 8 },
+] as const
+const oceanControls = [
+  { key: 'sailboats', max: 3 },
+  { key: 'yachts', max: 3 },
+  { key: 'whales', max: 2 },
+  { key: 'birds', max: 8 },
 ] as const
 
 watch(
@@ -616,6 +630,7 @@ function open(url: string) {
               v-for="item in [
                 { type: BgType.Meadow, name: 'meadow' },
                 { type: BgType.Beach, name: 'beach' },
+                { type: BgType.Ocean, name: 'ocean' },
               ]"
               :key="item.name"
               type="button"
@@ -631,6 +646,59 @@ function open(url: string) {
               <span class="bg-switcher-dynamic-art" aria-hidden="true"></span>
               <span class="bg-switcher-dynamic-using" aria-hidden="true">使用中</span>
             </button>
+          </div>
+          <div v-if="settings.background.bgType === BgType.Ocean" class="bg-switcher-meadow">
+            <label>
+              <span>{{ t('background.meadow.fps') }}</span>
+              <el-select
+                v-model="settings.background.ocean.fps"
+                :aria-label="t('background.meadow.fps')"
+              >
+                <el-option
+                  v-for="fps in [25, 30, 45, 60, 120]"
+                  :key="fps"
+                  :label="`${fps} FPS`"
+                  :value="fps"
+                />
+              </el-select>
+            </label>
+            <label>
+              <span>{{ t('background.meadow.cloudSize') }}</span>
+              <el-slider v-model="settings.background.ocean.cloudSize" :min="40" :max="200" />
+            </label>
+            <label>
+              <span>{{ t('background.meadow.cloudCover') }}</span>
+              <el-slider
+                v-model="settings.background.ocean.cloudCover"
+                :min="0"
+                :max="1"
+                :step="0.05"
+              />
+            </label>
+            <label>
+              <span>{{ t('background.meadow.flow') }}</span>
+              <el-slider v-model="settings.background.ocean.flow" :min="0" :max="3" :step="0.1" />
+            </label>
+            <label
+              ><span>{{ t('background.meadow.showNavigationCloud') }}</span
+              ><el-switch v-model="settings.background.ocean.showNavigationCloud"
+            /></label>
+            <label>
+              <span>{{ t('background.waterCaustics') }}</span>
+              <el-switch
+                v-model="settings.background.ocean.waterCaustics"
+                :aria-label="t('background.waterCaustics')"
+              />
+            </label>
+            <label v-for="control in oceanControls" :key="control.key">
+              <span>{{ t(`background.ocean.${control.key}`) }}</span>
+              <el-slider
+                v-model="settings.background.ocean[control.key]"
+                :min="0"
+                :max="control.max"
+                :aria-label="t(`background.ocean.${control.key}`)"
+              />
+            </label>
           </div>
           <div v-if="settings.background.bgType === BgType.Meadow" class="bg-switcher-meadow">
             <label>
@@ -695,6 +763,13 @@ function open(url: string) {
                   :label="`${fps} FPS`"
                   :value="fps" /></el-select
             ></label>
+            <label>
+              <span>{{ t('background.waterCaustics') }}</span>
+              <el-switch
+                v-model="settings.background.beach.waterCaustics"
+                :aria-label="t('background.waterCaustics')"
+              />
+            </label>
             <label v-for="control in beachControls" :key="control.key">
               <span>{{ t(`background.beach.${control.key}`) }}</span>
               <el-slider
@@ -730,6 +805,9 @@ function open(url: string) {
       </section>
       <section class="bg-switcher-section bg-switcher-display">
         <h3>{{ t('common.sections.appearance') }}</h3>
+        <p v-if="dynamicActive" class="bg-switcher-hint">
+          {{ t('background.dynamicDisabledNote') }}
+        </p>
         <label class="bg-switcher-display-row">
           <span>{{ t('background.blur') }}</span>
           <el-slider
@@ -737,6 +815,10 @@ function open(url: string) {
             :aria-label="t('background.blur')"
             :disabled="blurDisabled"
           />
+        </label>
+        <label class="bg-switcher-display-row">
+          <span>{{ t('background.vignette') }}</span>
+          <el-switch v-model="vignetteEnabled" :aria-label="t('background.vignette')" />
         </label>
         <label class="bg-switcher-display-row">
           <span>{{ t('background.mask.enable') }}</span>

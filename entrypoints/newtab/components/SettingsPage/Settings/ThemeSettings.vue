@@ -77,7 +77,8 @@ const beforeMonetChange = async () => {
   if (
     settings.background.bgType === BgType.Bing ||
     settings.background.bgType === BgType.Meadow ||
-    settings.background.bgType === BgType.Beach
+    settings.background.bgType === BgType.Beach ||
+    settings.background.bgType === BgType.Ocean
   )
     return true
   // 本地壁纸必须是图片才能开

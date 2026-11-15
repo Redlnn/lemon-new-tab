@@ -37,8 +37,21 @@ export interface SettingsSchemaV12 extends Omit<
     browserHistoryLimit: number
   }
   background: Omit<SettingsSchemaV11['background'], 'local' | 'localDark'> & {
+    pauseWhenHidden: boolean
     solid: { light: string; dark: string }
     rotation: { enabled: boolean; order: 'random' | 'ordered' }
+    ocean: {
+      fps: 25 | 30 | 45 | 60 | 120
+      cloudSize: number
+      cloudCover: number
+      flow: number
+      showNavigationCloud: boolean
+      sailboats: number
+      yachts: number
+      whales: number
+      birds: number
+      waterCaustics: boolean
+    }
     beach: {
       fps: 25 | 30 | 45 | 60 | 120
       sigma: number
@@ -48,6 +61,7 @@ export interface SettingsSchemaV12 extends Omit<
       palms: number
       kayaks: number
       birds: number
+      waterCaustics: boolean
     }
     meadow: {
       fps: 25 | 30 | 45 | 60 | 120

@@ -10,14 +10,24 @@
     "apply": "套用",
     "source": "選擇桌布來源",
     "dynamic": "動態桌布",
+    "dynamicDisabledNote": "選擇動態背景時停用部分功能",
+    "waterCaustics": "水面波光",
+    "ocean": {
+      "sailboats": "帆船數量",
+      "yachts": "遊艇數量",
+      "whales": "鯨魚數量",
+      "birds": "海鳥數量",
+      "name": "海洋",
+      "error": "海洋背景無法啟動，已切換至純色背景。"
+    },
     "beach": {
       "sigma": "離岸距離",
       "warp": "海岸曲折",
       "shoal": "透明淺灘",
       "shallow": "淺海寬度",
       "palms": "椰子樹數量",
-      "kayaks": "獨木舟",
-      "birds": "海鳥",
+      "kayaks": "獨木舟數量",
+      "birds": "海鳥數量",
       "name": "沙灘",
       "error": "沙灘背景無法啟動，已切換至純色背景"
     },
@@ -88,7 +98,8 @@
       "c": "載入圖片前可能會短暫出現白畫面，時間長短取決於你的網路速度"
     },
     "parallax": "壁紙視差效果",
-    "pauseWhenBlur": "失去焦點時暫停動態背景",
+    "pauseWhenBlur": "頁面失焦時暫停背景",
+    "pauseWhenHidden": "頁面不可見時暫停背景",
     "permission": {
       "allowAll": "允許所有網址",
       "allowCurrent": "僅允許這個API網址",

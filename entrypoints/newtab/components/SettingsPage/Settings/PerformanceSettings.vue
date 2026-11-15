@@ -11,7 +11,10 @@ const { t } = useTranslation('settings')
 
 const settings = useSettingsStore()
 const meadowActive = computed(
-  () => settings.background.bgType === BgType.Meadow || settings.background.bgType === BgType.Beach,
+  () =>
+    settings.background.bgType === BgType.Meadow ||
+    settings.background.bgType === BgType.Beach ||
+    settings.background.bgType === BgType.Ocean,
 )
 const parallaxDisabled = computed(() => meadowActive.value || isOnlyTouchDevice.value)
 const MAX_TRANSPARENCY = TRANSPARENCY_RANGE[1]
@@ -105,9 +108,15 @@ const effectItems = computed<EffectItem[]>(() =>
 
 const wallpaperAnimationItems = computed<SwitchItem[]>(() => [
   {
+    key: 'pauseWhenHidden',
+    label: t('background.pauseWhenHidden'),
+    model: toRef(settings.background, 'pauseWhenHidden'),
+  },
+  {
     key: 'pauseOnBlur',
     label: t('background.pauseWhenBlur'),
     model: toRef(settings.background, 'pauseOnBlur'),
+    disabled: computed(() => !settings.background.pauseWhenHidden),
   },
   {
     key: 'bgSwitchAnim',

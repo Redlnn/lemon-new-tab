@@ -1,3 +1,6 @@
+import { waterCausticsShader } from '../dynamic/waterCaustics'
+import { beachGullShader } from '../dynamic/gullShader'
+
 export const beachVertexShader = `#version 300 es
 void main() {
   vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
@@ -14,6 +17,7 @@ uniform vec4 uKay[4];          // x, y, 朝向, 划桨相位
 uniform vec4 uRip[6];
 uniform float uBirdN;
 uniform vec4 uBird[8];         // x, y, 朝向, 翅膀展开程度
+${waterCausticsShader}
 out vec4 o;
 
 // ---- 调色板（sRGB）----
@@ -86,16 +90,7 @@ vec2 paddleSD(vec2 q, float ph) {
   return vec2(shaft, blade);
 }
 // 海鸥（俯视，x 朝前）：返回 (身子, 翅膀, 翅膀上的位置 0 根 → 1 尖)；span = 翅膀展开程度，扇动时变短
-vec3 gullSD(vec2 q, float span) {
-  float body = (length((q - vec2(0.8, 0.0)) / vec2(6.2, 1.9)) - 1.0) * 1.9;
-  float tail = max(abs(q.y) - 1.4 - (-q.x - 4.0) * 0.25, max(-q.x - 8.5, q.x + 4.0));
-  float y = abs(q.y), reach = 15.0 * span;
-  float u = clamp((y - 1.0) / reach, 0.0, 1.0);
-  float lead = 1.0 + 1.3 * sin(u * 3.14159) - 4.0 * u * u;     // 前缘：中段微微前凸，翅尖向后掠
-  float chord = mix(4.4, 1.3, u);
-  float wing = max(max(q.x - lead, lead - chord - q.x), y - reach - 1.0);
-  return vec3(min(body, tail), wing, u);
-}
+${beachGullShader}
 
 void main() {
   vec2 p = vec2(gl_FragCoord.x, uRes.y * uScale - gl_FragCoord.y) / uScale;
@@ -172,6 +167,7 @@ void main() {
       spark = max(spark, (1.0 - ss(r * 0.5, r * 1.5, length((f - c) * cs))) * tw);
     }
     col = mix(col, vec3(0.95, 1.0, 1.0), spark * 0.85);
+    col = mix(col, vec3(.72, .97, 1.), waterCaustics(p, t) * ss(10., 80., s) * .15);
 
     // 透明浅滩：水浅到能看见沙底，越往外越被青绿色盖住（过渡同样用颗粒喷出来）
     float shoal = uShoal;
@@ -201,7 +197,7 @@ void main() {
     for (int i = 0; i < 6; i++) {
       vec4 r = uRip[i];
       if (r.w <= 0.0) continue;
-      float dist = length(p - r.xy), rad = r.z * 80.0;
+      float dist = length(p - r.xy), rad = r.z * 40.0;
       rip = max(rip, (1.0 - ss(0.8, 2.0, abs(dist - rad))) * exp(-r.z * 1.4) * r.w);
       rip = max(rip, (1.0 - ss(0.6, 1.6, abs(dist - rad * 0.6))) * exp(-r.z * 1.8) * r.w * 0.6);
     }

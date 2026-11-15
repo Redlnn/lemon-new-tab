@@ -10,14 +10,24 @@
     "apply": "Uygula",
     "source": "Duvar kağıdı kaynağı",
     "dynamic": "Canlı duvar kağıtları",
+    "dynamicDisabledNote": "Dinamik arka plan seçildiğinde bazı özellikler devre dışı bırakılır",
+    "waterCaustics": "Su ışık yansımaları",
+    "ocean": {
+      "sailboats": "Yelkenliler sayısı",
+      "yachts": "Yatlar sayısı",
+      "whales": "Balinalar sayısı",
+      "birds": "Deniz kuşları sayısı",
+      "name": "Okyanus",
+      "error": "Okyanus duvar kağıdı başlatılamadı; düz renge geçildi."
+    },
     "beach": {
       "sigma": "Kıyı uzaklığı",
       "warp": "Kıyı girintileri",
       "shoal": "Berrak sığlık",
       "shallow": "Sığ deniz genişliği",
       "palms": "Palmiye ağaçları",
-      "kayaks": "Kanolar",
-      "birds": "Martılar",
+      "kayaks": "Kanolar sayısı",
+      "birds": "Martılar sayısı",
       "name": "Sahil",
       "error": "Sahil arka planı başlatılamadı; düz renge geçildi"
     },
@@ -88,7 +98,8 @@
       "c": "Duvar kağıdı yüklenene kadar boş bir ekran olacaktır ve bu süre internet hızınıza bağlıdır."
     },
     "parallax": "Duvar kağıdı paralaks efekti",
-    "pauseWhenBlur": "Odak kaybolduğunda hareketli arka planı duraklat",
+    "pauseWhenBlur": "Sayfa odağı kaybettiğinde arka planı duraklat",
+    "pauseWhenHidden": "Sayfa görünmediğinde arka planı duraklat",
     "permission": {
       "allowAll": "Tüm sitelere izin ver",
       "allowCurrent": "Yalnızca bu API URL'sine izin ver",

@@ -10,14 +10,24 @@
     "apply": "应用",
     "source": "选择壁纸来源",
     "dynamic": "动态壁纸",
+    "dynamicDisabledNote": "选择动态背景时禁用部分功能",
+    "waterCaustics": "水面波光",
+    "ocean": {
+      "sailboats": "帆船数量",
+      "yachts": "游艇数量",
+      "whales": "鲸鱼数量",
+      "birds": "海鸟数量",
+      "name": "海洋",
+      "error": "海洋背景无法启动，已切换至纯色背景。"
+    },
     "beach": {
       "sigma": "离岸距离",
       "warp": "海岸曲折",
       "shoal": "透明浅滩",
       "shallow": "浅海宽度",
       "palms": "椰子树数量",
-      "kayaks": "皮划艇",
-      "birds": "海鸟",
+      "kayaks": "皮划艇数量",
+      "birds": "海鸟数量",
       "name": "沙滩",
       "error": "沙滩背景无法启动，已切换到纯色背景"
     },
@@ -88,7 +98,8 @@
       "c": "壁纸加载完成前会白屏一段时间，时长取决于你的网速"
     },
     "parallax": "壁纸视差效果",
-    "pauseWhenBlur": "失去焦点时暂停动态背景",
+    "pauseWhenBlur": "页面失焦时暂停背景",
+    "pauseWhenHidden": "页面不可见时暂停背景",
     "permission": {
       "allowAll": "允许所有网站",
       "allowCurrent": "仅允许该API网址",

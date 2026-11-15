@@ -43,6 +43,7 @@ const ENUMS: Record<string, readonly unknown[]> = {
   'background.bing.cachedResolution': [null, '1080p', 'uhd'],
   'background.rotation.order': ['random', 'ordered'],
   'background.beach.fps': [25, 30, 45, 60, 120],
+  'background.ocean.fps': [25, 30, 45, 60, 120],
   'background.meadow.fps': [25, 30, 45, 60, 120],
   'clock.weight.time': Object.values(ClockWeight),
   'clock.weight.date': Object.values(ClockWeight),
@@ -68,6 +69,11 @@ const INTEGER_RANGES: Record<string, readonly [number, number]> = {
   'dock.launchpad.iconSize': [40, 96],
   'bookmark.drawerWidth': [200, Number.MAX_SAFE_INTEGER],
   'background.meadow.cloudSize': [40, 200],
+  'background.ocean.cloudSize': [40, 200],
+  'background.ocean.sailboats': [0, 3],
+  'background.ocean.yachts': [0, 3],
+  'background.ocean.whales': [0, 2],
+  'background.ocean.birds': [0, 8],
   'background.beach.sigma': [40, 200],
   'background.beach.warp': [0, 80],
   'background.beach.shoal': [0, 300],
@@ -110,9 +116,15 @@ function validLeaf(value: unknown, fallback: unknown, path: string): boolean {
 
 function normalizeLeaf(value: unknown, path: string): unknown {
   if (path === 'search.suggestionProviders') return normalizeSuggestionProviders(value as string[])
-  if (path === 'background.meadow.cloudCover' && typeof value === 'number')
+  if (
+    (path === 'background.meadow.cloudCover' || path === 'background.ocean.cloudCover') &&
+    typeof value === 'number'
+  )
     return Math.min(1, Math.max(0, value))
-  if (path === 'background.meadow.flow' && typeof value === 'number')
+  if (
+    (path === 'background.meadow.flow' || path === 'background.ocean.flow') &&
+    typeof value === 'number'
+  )
     return Math.min(3, Math.max(0, value))
   const range = INTEGER_RANGES[path]
   if (range && typeof value === 'number')

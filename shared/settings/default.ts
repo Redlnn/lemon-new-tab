@@ -90,11 +90,24 @@ export const defaultSettings = {
       night: 'rgba(0, 0, 0, 0.15)',
     },
 
-    pauseOnBlur: false,
+    pauseOnBlur: true,
+    pauseWhenHidden: true,
     fastAnimation: false,
 
     solid: { light: '', dark: '' },
     rotation: { enabled: false, order: 'random' },
+    ocean: {
+      fps: 25,
+      cloudSize: 72,
+      cloudCover: 0.3,
+      flow: 1,
+      showNavigationCloud: true,
+      sailboats: 1,
+      yachts: 1,
+      whales: 1,
+      birds: 3,
+      waterCaustics: true,
+    },
     beach: {
       fps: 25,
       sigma: 85,
@@ -104,6 +117,7 @@ export const defaultSettings = {
       palms: 4,
       kayaks: 2,
       birds: 3,
+      waterCaustics: true,
     },
     meadow: {
       fps: 25,

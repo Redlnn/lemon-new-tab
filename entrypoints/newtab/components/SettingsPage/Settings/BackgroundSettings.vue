@@ -90,7 +90,7 @@ const beforeCacheChange = async () => {
       :summary="t('common.sections.summary.source')"
       mobile-open
     >
-      <div class="settings__item settings__item--horizontal">
+      <div class="settings__item settings__item--horizontal settings__item--with-note">
         <div class="settings__label">
           {{ t('background.change') }}
           <SyncAvailabilityIcon
@@ -112,6 +112,16 @@ const beforeCacheChange = async () => {
         <el-button :icon="BubbleChartRound" @click="dialogs.open('background')">
           {{ t('search.clickToChange') }}
         </el-button>
+        <p
+          v-if="
+            settings.background.bgType === BgType.Meadow ||
+            settings.background.bgType === BgType.Beach ||
+            settings.background.bgType === BgType.Ocean
+          "
+          class="settings__item-note"
+        >
+          {{ t('background.dynamicDisabledNote') }}
+        </p>
       </div>
       <div class="settings__item settings__item--horizontal settings__item--with-note">
         <div class="settings__label">{{ t('background.showDownloadBtn') }}</div>
@@ -125,16 +135,28 @@ const beforeCacheChange = async () => {
       :summary="t('common.sections.summary.behavior')"
       content-class="settings-control-grid"
     >
-      <div
-        class="settings__item settings__item--horizontal settings__item--with-note settings-control-wide"
-      >
-        <div class="settings__label">{{ t('background.pauseWhenBlur') }}</div>
-        <el-switch v-model="settings.background.pauseOnBlur" />
-        <p class="settings__item-note">{{ t('background.video.blurTip') }}</p>
+      <div class="settings__item settings__item--horizontal">
+        <div class="settings__label">{{ t('background.pauseWhenHidden') }}</div>
+        <el-switch v-model="settings.background.pauseWhenHidden" />
       </div>
+      <div class="settings__item settings__item--horizontal settings__item--with-note">
+        <div class="settings__label">{{ t('background.pauseWhenBlur') }}</div>
+        <el-switch
+          v-model="settings.background.pauseOnBlur"
+          :disabled="!settings.background.pauseWhenHidden"
+        />
+      </div>
+      <p class="settings__item-note">{{ t('background.video.blurTip') }}</p>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('background.fasterBgAnim') }}</div>
-        <el-switch v-model="settings.background.fastAnimation" />
+        <el-switch
+          v-model="settings.background.fastAnimation"
+          :disabled="
+            settings.background.bgType === BgType.Meadow ||
+            settings.background.bgType === BgType.Beach ||
+            settings.background.bgType === BgType.Ocean
+          "
+        />
       </div>
       <div class="settings__item settings__item--horizontal settings__item--with-note">
         <div class="settings__label">{{ t('background.parallax') }}</div>
@@ -143,7 +165,8 @@ const beforeCacheChange = async () => {
           :disabled="
             isOnlyTouchDevice ||
             settings.background.bgType === BgType.Meadow ||
-            settings.background.bgType === BgType.Beach
+            settings.background.bgType === BgType.Beach ||
+            settings.background.bgType === BgType.Ocean
           "
         />
         <p v-if="isOnlyTouchDevice" class="settings__item-note">
@@ -167,19 +190,14 @@ const beforeCacheChange = async () => {
           :show-tooltip="false"
           :disabled="
             settings.background.bgType === BgType.Meadow ||
-            settings.background.bgType === BgType.Beach
+            settings.background.bgType === BgType.Beach ||
+            settings.background.bgType === BgType.Ocean
           "
         />
       </div>
       <div class="settings__item settings__item--horizontal">
         <div class="settings__label">{{ t('background.vignette') }}</div>
-        <el-switch
-          v-model="settings.background.vignette"
-          :disabled="
-            settings.background.bgType === BgType.Meadow ||
-            settings.background.bgType === BgType.Beach
-          "
-        />
+        <el-switch v-model="settings.background.vignette" />
       </div>
       <div class="settings__item settings__item--horizontal settings-control-wide">
         <div class="settings__label">
