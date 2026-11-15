@@ -458,6 +458,13 @@ void main() {
   vec2 projected=vec2(p.x+.46*sy,uGround.x*(p.x+.46*sy)+uGround.y+sy);
   vec2 personPoint=mix(p,projected,uShadow);
   vec4 person=characterColor(personPoint);
+  if (uShadow < .5) {
+    // Keep the silhouette legible in screen pixels when the character is small.
+    float r=.55/max(uPlace.z,.01);
+    float edge=max(max(characterColor(personPoint+vec2(r,0.)).a,characterColor(personPoint-vec2(r,0.)).a),
+                   max(characterColor(personPoint+vec2(0.,r)).a,characterColor(personPoint-vec2(0.,r)).a));
+    person=over(vec4(.20,.15,.12,edge*.85),person);
+  }
   // 风筝较高：整只风筝与三条尾带一起投影，方向和云影一致。
   vec4 kite=kiteColor(p-uShadow*vec2(98.,134.),screen);
   vec2 hand=uHand,attach=uKite+turn(vec2(-41.,-16.),kiteAngle());
@@ -538,10 +545,14 @@ void main() {
       image.onload = () => {
         pendingImages.delete(image)
         if (isDisposed()) return
-        const sprite = document.createElement('canvas')
-        sprite.width = size
-        sprite.height = size * heightRatio
-        sprite.getContext('2d')!.drawImage(image, 0, 0, sprite.width, sprite.height)
+        let sprite: TexImageSource = image
+        if (image.naturalWidth !== size || image.naturalHeight !== size * heightRatio) {
+          const canvas = document.createElement('canvas')
+          canvas.width = size
+          canvas.height = size * heightRatio
+          canvas.getContext('2d')!.drawImage(image, 0, 0, canvas.width, canvas.height)
+          sprite = canvas
+        }
         gl.activeTexture(unit)
         gl.bindTexture(gl.TEXTURE_2D, targetTexture)
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sprite)
@@ -614,7 +625,7 @@ void main() {
           previousTime === null ? 0 : Math.min(0.05, Math.max(0, (now - previousTime) / 1000))
         previousTime = now
         time += dt
-        const s = Math.max(0.24, Math.min(1.25, W / 1379, (H - TASKBAR) / 1141)) * 0.35
+        const s = Math.max(0.24, Math.min(1.25, W / 1379, (H - TASKBAR) / 1141)) * 0.28
         // 只在画面尺寸变化时重新定位，不跟踪图标。
         const next = [W, H, TASKBAR].join(',')
         if (signature !== next) {
@@ -943,7 +954,7 @@ void main() {
   }
 
   const meadowCatRunLanes = (state: BoyState, width: number, height: number, taskbar: number) => {
-    const scale = Math.max(0.24, Math.min(1.25, width / 1379, (height - taskbar) / 1141)) * 0.35
+    const scale = Math.max(0.24, Math.min(1.25, width / 1379, (height - taskbar) / 1141)) * 0.28
     const lanes: [Point, Point][] = []
     const add = (a: Point, b: Point) => {
       lanes.push([{ ...a }, { ...b }])
