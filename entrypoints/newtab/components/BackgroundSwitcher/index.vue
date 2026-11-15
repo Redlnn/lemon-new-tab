@@ -615,11 +615,14 @@ function open(url: string) {
                     @change="(value) => (settings.background.solid[group] = value || '')"
                   />
                 </span>
-                <span>{{
-                  (
-                    settings.background.solid[group] || (group === 'light' ? '#f2f3f5' : '#0a0a0a')
-                  ).toUpperCase()
-                }}</span>
+                <span>
+                  {{
+                    (
+                      settings.background.solid[group] ||
+                      (group === 'light' ? '#f2f3f5' : '#0a0a0a')
+                    ).toUpperCase()
+                  }}
+                </span>
               </div>
             </div>
           </div>
@@ -647,7 +650,7 @@ function open(url: string) {
               <span class="bg-switcher-dynamic-using" aria-hidden="true">使用中</span>
             </button>
           </div>
-          <div v-if="settings.background.bgType === BgType.Ocean" class="bg-switcher-meadow">
+          <div v-if="settings.background.bgType === BgType.Ocean" class="bg-switcher-settings">
             <label>
               <span>{{ t('background.meadow.fps') }}</span>
               <el-select
@@ -679,10 +682,10 @@ function open(url: string) {
               <span>{{ t('background.meadow.flow') }}</span>
               <el-slider v-model="settings.background.ocean.flow" :min="0" :max="3" :step="0.1" />
             </label>
-            <label
-              ><span>{{ t('background.meadow.showNavigationCloud') }}</span
-              ><el-switch v-model="settings.background.ocean.showNavigationCloud"
-            /></label>
+            <label>
+              <span>{{ t('background.meadow.showNavigationCloud') }}</span>
+              <el-switch v-model="settings.background.ocean.showNavigationCloud" />
+            </label>
             <label>
               <span>{{ t('background.waterCaustics') }}</span>
               <el-switch
@@ -700,7 +703,7 @@ function open(url: string) {
               />
             </label>
           </div>
-          <div v-if="settings.background.bgType === BgType.Meadow" class="bg-switcher-meadow">
+          <div v-if="settings.background.bgType === BgType.Meadow" class="bg-switcher-settings">
             <label>
               <span>{{ t('background.meadow.fps') }}</span>
               <el-select
@@ -732,37 +735,40 @@ function open(url: string) {
               <span>{{ t('background.meadow.flow') }}</span>
               <el-slider v-model="settings.background.meadow.flow" :min="0" :max="3" :step="0.1" />
             </label>
-            <label
-              ><span>{{ t('background.meadow.showNavigationCloud') }}</span
-              ><el-switch v-model="settings.background.meadow.showNavigationCloud"
-            /></label>
-            <label
-              ><span>{{ t('background.meadow.showBoy') }}</span
-              ><el-switch v-model="settings.background.meadow.showBoy"
-            /></label>
-            <label
-              ><span>{{ t('background.meadow.clickToMove') }}</span
-              ><el-switch
+            <label>
+              <span>{{ t('background.meadow.showNavigationCloud') }}</span>
+              <el-switch v-model="settings.background.meadow.showNavigationCloud" />
+            </label>
+            <label>
+              <span>{{ t('background.meadow.showBoy') }}</span>
+              <el-switch v-model="settings.background.meadow.showBoy" />
+            </label>
+            <label>
+              <span>{{ t('background.meadow.clickToMove') }}</span>
+              <el-switch
                 v-model="settings.background.meadow.clickToMove"
                 :disabled="!settings.background.meadow.showBoy"
-            /></label>
-            <label
-              ><span>{{ t('background.meadow.showCat') }}</span
-              ><el-switch v-model="settings.background.meadow.showCat"
-            /></label>
+              />
+            </label>
+            <label>
+              <span>{{ t('background.meadow.showCat') }}</span>
+              <el-switch v-model="settings.background.meadow.showCat" />
+            </label>
           </div>
-          <div v-if="settings.background.bgType === BgType.Beach" class="bg-switcher-meadow">
-            <label
-              ><span>{{ t('background.meadow.fps') }}</span
-              ><el-select
+          <div v-if="settings.background.bgType === BgType.Beach" class="bg-switcher-settings">
+            <label>
+              <span>{{ t('background.meadow.fps') }}</span>
+              <el-select
                 v-model="settings.background.beach.fps"
                 :aria-label="t('background.meadow.fps')"
-                ><el-option
+              >
+                <el-option
                   v-for="fps in [25, 30, 45, 60, 120]"
                   :key="fps"
                   :label="`${fps} FPS`"
-                  :value="fps" /></el-select
-            ></label>
+                  :value="fps"
+              /></el-select>
+            </label>
             <label>
               <span>{{ t('background.waterCaustics') }}</span>
               <el-switch
@@ -808,37 +814,39 @@ function open(url: string) {
         <p v-if="dynamicActive" class="bg-switcher-hint">
           {{ t('background.dynamicDisabledNote') }}
         </p>
-        <label class="bg-switcher-display-row">
-          <span>{{ t('background.blur') }}</span>
-          <el-slider
-            v-model="wallpaperBlur"
-            :aria-label="t('background.blur')"
-            :disabled="blurDisabled"
-          />
-        </label>
-        <label class="bg-switcher-display-row">
-          <span>{{ t('background.vignette') }}</span>
-          <el-switch v-model="vignetteEnabled" :aria-label="t('background.vignette')" />
-        </label>
-        <label class="bg-switcher-display-row">
-          <span>{{ t('background.mask.enable') }}</span>
-          <el-switch v-model="maskEnabled" :aria-label="t('background.mask.enable')" />
-        </label>
-        <label class="bg-switcher-display-row bg-switcher-mask-colors">
-          <span>{{ t('background.mask.color') }}</span>
-          <div class="bg-switcher-mask-options">
-            <label v-for="group in groups" :key="group">
-              <span>{{ label(group) }}</span>
-              <el-color-picker
-                :model-value="maskColors[group]"
-                :predefine="['#f2f3f5', '#000']"
-                :aria-label="`${t('background.mask.color')} · ${label(group)}`"
-                show-alpha
-                @change="(value) => setMaskColor(group, value)"
-              />
-            </label>
-          </div>
-        </label>
+        <div class="bg-switcher-settings">
+          <label>
+            <span>{{ t('background.blur') }}</span>
+            <el-slider
+              v-model="wallpaperBlur"
+              :aria-label="t('background.blur')"
+              :disabled="blurDisabled"
+            />
+          </label>
+          <label>
+            <span>{{ t('background.vignette') }}</span>
+            <el-switch v-model="vignetteEnabled" :aria-label="t('background.vignette')" />
+          </label>
+          <label>
+            <span>{{ t('background.mask.enable') }}</span>
+            <el-switch v-model="maskEnabled" :aria-label="t('background.mask.enable')" />
+          </label>
+          <label class="bg-switcher-mask-colors">
+            <span>{{ t('background.mask.color') }}</span>
+            <div class="bg-switcher-mask-options">
+              <label v-for="group in groups" :key="group">
+                <span>{{ label(group) }}</span>
+                <el-color-picker
+                  :model-value="maskColors[group]"
+                  :predefine="['#f2f3f5', '#000']"
+                  :aria-label="`${t('background.mask.color')} · ${label(group)}`"
+                  show-alpha
+                  @change="(value) => setMaskColor(group, value)"
+                />
+              </label>
+            </div>
+          </label>
+        </div>
       </section>
     </el-scrollbar>
 

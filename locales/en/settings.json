@@ -10,7 +10,7 @@
     "apply": "Apply",
     "source": "Wallpaper source",
     "dynamic": "Live wallpapers",
-    "dynamicDisabledNote": "Some features are disabled when using a dynamic background",
+    "dynamicDisabledNote": "Some features will be disabled when using a dynamic background",
     "waterCaustics": "Water caustics",
     "ocean": {
       "sailboats": "Sailboats count",
@@ -131,7 +131,7 @@
       "online": "Online URL"
     },
     "video": {
-      "blurTip": "Turn on to reduce performance usage when multiple new tabs or windows are open on the screen simultaneously."
+      "blurTip": "Pausing the background can reduce resource usage"
     },
     "vignette": "Enable vignetting",
     "warning": {

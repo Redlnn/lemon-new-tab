@@ -10,7 +10,7 @@
     "apply": "套用",
     "source": "選擇桌布來源",
     "dynamic": "動態桌布",
-    "dynamicDisabledNote": "選擇動態背景時停用部分功能",
+    "dynamicDisabledNote": "使用動態背景時部分功能將被停用",
     "waterCaustics": "水面波光",
     "ocean": {
       "sailboats": "帆船數量",
@@ -131,7 +131,7 @@
       "online": "線上圖片"
     },
     "video": {
-      "blurTip": "開啟此開關可緩解同時開啟多個新分頁或多個視窗同時顯示時的效能佔用"
+      "blurTip": "開啟暫停背景後可減輕效能負擔"
     },
     "vignette": "暗角效果",
     "warning": {

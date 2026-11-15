@@ -10,7 +10,7 @@
     "apply": "应用",
     "source": "选择壁纸来源",
     "dynamic": "动态壁纸",
-    "dynamicDisabledNote": "选择动态背景时禁用部分功能",
+    "dynamicDisabledNote": "使用动态背景时部分功能将被禁用",
     "waterCaustics": "水面波光",
     "ocean": {
       "sailboats": "帆船数量",
@@ -131,7 +131,7 @@
       "online": "在线图片"
     },
     "video": {
-      "blurTip": "打开此开关以缓解多开新标签页或多个窗口同屏时的性能占用"
+      "blurTip": "打开暂停背景后可缓解性能占用"
     },
     "vignette": "暗角效果",
     "warning": {

@@ -36,7 +36,7 @@
   }
 
   .bg-switcher-section + .bg-switcher-section {
-    margin-top: 14px;
+    margin-top: 16px;
   }
 
   h3 {
@@ -114,19 +114,6 @@ html.dialog-acrylic .bg-switcher__drawer.el-drawer.rtl {
 .bg-switcher-display {
   padding-top: 26px;
   border-top: 1px solid var(--el-border-color-darker);
-}
-
-.bg-switcher-display-row {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 40px;
-  color: var(--el-text-color-regular);
-
-  .el-slider {
-    width: min(240px, 55%);
-  }
 }
 
 .bg-switcher-mask-options {
@@ -479,9 +466,14 @@ html.dialog-acrylic .bg-switcher__drawer.el-drawer.rtl {
 .bg-switcher-hint {
   padding-inline-start: 20px;
   margin: 10px 0 0;
-  font-size: var(--el-font-size-small);
-  line-height: 1.7;
+  font-size: var(--el-font-size-extra-small);
   color: var(--el-text-color-secondary);
+}
+
+h3 + .bg-switcher-hint {
+  padding-inline-start: 0;
+  margin: -12px 0 16px;
+  line-height: initial;
 }
 
 .bg-switcher-rotation {
@@ -506,13 +498,6 @@ html.dialog-acrylic .bg-switcher__drawer.el-drawer.rtl {
 }
 
 .bg-switcher-colors {
-  .bg-switcher-colors-hint {
-    margin: -6px 0 16px;
-    font-size: var(--el-font-size-small);
-    line-height: 1.5;
-    color: var(--el-text-color-secondary);
-  }
-
   .bg-switcher-color-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -577,10 +562,10 @@ html.dialog-acrylic .bg-switcher__drawer.el-drawer.rtl {
   }
 }
 
-.bg-switcher-meadow {
+.bg-switcher-settings {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px 24px;
+  gap: 10px 24px;
 
   label {
     display: flex;
@@ -591,7 +576,7 @@ html.dialog-acrylic .bg-switcher__drawer.el-drawer.rtl {
 
   .el-slider,
   .el-select {
-    width: 120px;
+    width: 150px;
   }
 }
 

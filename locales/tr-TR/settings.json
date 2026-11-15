@@ -10,7 +10,7 @@
     "apply": "Uygula",
     "source": "Duvar kağıdı kaynağı",
     "dynamic": "Canlı duvar kağıtları",
-    "dynamicDisabledNote": "Dinamik arka plan seçildiğinde bazı özellikler devre dışı bırakılır",
+    "dynamicDisabledNote": "Dinamik arka plan kullanılırken bazı özellikler devre dışı bırakılır",
     "waterCaustics": "Su ışık yansımaları",
     "ocean": {
       "sailboats": "Yelkenliler sayısı",
@@ -131,7 +131,7 @@
       "online": "Çevrimiçi URL"
     },
     "video": {
-      "blurTip": "Ekranda aynı anda birden fazla yeni sekme veya pencere açıkken performans kullanımını azaltmak için açın."
+      "blurTip": "Arka planı duraklatmak kaynak kullanımını azaltabilir"
     },
     "vignette": "Vinyet efektini etkinleştir",
     "warning": {
