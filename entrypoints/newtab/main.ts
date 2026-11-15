@@ -15,7 +15,7 @@ import App from './App.vue'
 import { setupAutoSaveSettings } from './shared/autoSaveSettings'
 import { changeTheme } from './shared/theme'
 
-export const main = async () => {
+export const main = async (hasSettings: boolean) => {
   const banner = `\n%c Lemon New Tab %c ${version}%c\n\n`
 
   console.log(
@@ -32,7 +32,7 @@ export const main = async () => {
   app.use(pinia)
 
   // 必须先加载设置：组件渲染依赖设置（主题、v-if 控制等）
-  await useSettingsStore().init()
+  await useSettingsStore().init(hasSettings)
   const settings = useSettingsStore()
 
   // 缓存预热不阻塞应用外壳；图标消费者会复用同一个预热任务。

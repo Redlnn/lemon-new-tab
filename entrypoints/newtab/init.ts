@@ -21,19 +21,19 @@ async function bootstrapNewtab() {
     import('./shared/colorMode'),
     syncStartupTask,
   ])
-  const [, canStartApp] = await Promise.all([
+  const [, startup] = await Promise.all([
     initI18n(),
     shouldStartApp(),
     initColorModePreference(),
   ])
-  if (!canStartApp) {
+  if (!startup.canStart) {
     return
   }
 
   const dayjsTask = import('./shared/dayjs').then(({ initDayjs }) => initDayjs())
   const mainModuleTask = import('./main')
   const [, { main }] = await Promise.all([dayjsTask, mainModuleTask])
-  await main()
+  await main(startup.hasSettings)
 }
 
 void (async () => {

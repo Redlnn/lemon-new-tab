@@ -106,7 +106,6 @@ onMounted(async () => {
   if (props.hasInvalidSettings) return
 
   try {
-    await settings.init()
     const [tabs] = await Promise.all([
       browser.tabs.query({ active: true, currentWindow: true }),
       quickLinksStore.init(),

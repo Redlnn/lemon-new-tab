@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 
+import { isChinese } from '@/shared/i18n'
 import { jsonEquals } from '@/shared/json'
 import { createDraftWriter, withSyncWriteLock } from '@/shared/storage/syncWrite'
 
@@ -28,11 +29,13 @@ export const useSettingsStore = defineStore('option', () => {
     toRaw(state),
   )
 
-  const init = async () => {
+  const init = async (hasSettings: boolean) => {
     const settings = await withSyncWriteLock(async () => {
       const stored = await settingsStorage.raw.getValue()
       const current = normalizeCurrentSettings(stored)
-      if (!jsonEquals(stored, current)) await settingsStorage.raw.setValue(current)
+      const firstRun = !hasSettings
+      if (firstRun && !isChinese.value) current.yiyan.enabled = false
+      if (firstRun || !jsonEquals(stored, current)) await settingsStorage.raw.setValue(current)
       return current
     })
     if (disposed) return

@@ -1,19 +1,19 @@
 import { browser } from '#imports'
 
-export async function isSettingsCompatible(): Promise<boolean> {
+export async function inspectSettings() {
   const storedSettings: {
     settings$: { v?: number } | null
-    settings: { version: string | number | null; [key: string]: unknown }
+    settings: { version: string | number | null; [key: string]: unknown } | null
   } = await browser.storage.local.get({
     settings$: null,
-    settings: { version: null },
+    settings: null,
   })
 
   if (storedSettings['settings$']?.v && storedSettings['settings$'].v <= 6) {
-    return false
+    return { compatible: false, hasSettings: storedSettings.settings !== null }
   }
 
-  if (storedSettings.settings.version) {
+  if (storedSettings.settings?.version) {
     let isInvaildSettings: boolean = false
 
     if (typeof storedSettings.settings.version === 'string') {
@@ -28,17 +28,22 @@ export async function isSettingsCompatible(): Promise<boolean> {
     }
 
     if (isInvaildSettings) {
-      return false
+      return { compatible: false, hasSettings: true }
     }
   }
 
-  return true
+  return { compatible: true, hasSettings: storedSettings.settings !== null }
 }
 
-export async function shouldStartApp(): Promise<boolean> {
-  if (await isSettingsCompatible()) return true
+export async function isSettingsCompatible(): Promise<boolean> {
+  return (await inspectSettings()).compatible
+}
+
+export async function shouldStartApp() {
+  const result = await inspectSettings()
+  if (result.compatible) return { canStart: true, hasSettings: result.hasSettings }
 
   const { handleInvaildSettings } = await import('./handleInvaild')
   await handleInvaildSettings()
-  return false
+  return { canStart: false, hasSettings: result.hasSettings }
 }
