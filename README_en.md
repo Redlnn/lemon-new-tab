@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[Simplified Chinese](README.md) | English  
+[Simplified Chinese](README.md) | English\
 [Terms of Service](docs/TERMS_OF_SERVICE_en.md) | [Privacy Policy](docs/PRIVACY_POLICY_en.md)
 
 </div>
@@ -22,34 +22,34 @@ Make every new tab feel fast, effortless, and enjoyable.
 
 Lemon New Tab is a local-first, open-source browser extension with no additional account required. Your core settings and personalized content stay in your browser, giving you fast loading, a clean interface, and no distracting news feed or ads.
 
-**🔍 Flexible Search**  
+**🔍 Flexible Search**\
 &emsp;&ensp;Use Bing, Google, Baidu, DuckDuckGo, Yandex, and other search engines. Search suggestions, search history, and custom search engines help you quickly find what you need using a familiar workflow.
 
-**🧭 Quick Links**  
+**🧭 Quick Links**\
 &emsp;&ensp;Automatically display your most-visited sites, or add, pin, and rearrange your own links. Organize them into groups, browse with pages or scrolling, and switch to Dock or Launchpad layouts to keep favorite sites within easy reach.
 
-**🔖 Browser Bookmarks**  
+**🔖 Browser Bookmarks**\
 &emsp;&ensp;Search, open, edit, delete, and rearrange your browser bookmarks without leaving the new tab page.
 
-**🖼️ Rich Wallpaper Options**  
+**🖼️ Rich Wallpaper Options**\
 &emsp;&ensp;Use Bing's daily image, an online image API, or local images and videos as your wallpaper. Extensive customization options help bring your background to life.
 
-**🎨 Highly Customizable**  
+**🎨 Highly Customizable**\
 &emsp;&ensp;A wide range of options lets you customize the layout, theme colors, and the position and appearance of individual components. Dynamic theme colors can even be extracted from your wallpaper to create a naturally coordinated page.
 
-**🕒 Useful Without Distractions**  
+**🕒 Useful Without Distractions**\
 &emsp;&ensp;Display the time, date, seconds, and lunar calendar. Enjoy a daily poem, motivational quote, or your own custom text, with one-click copying whenever you want to save it.
 
-**⚡ Fast and Easy to Use**  
+**⚡ Fast and Easy to Use**\
 &emsp;&ensp;Continuously optimized for faster loading and lower resource usage, with responsive layouts and independent controls for performance and visual effects.
 
-**🔄 Easy Backup**  
+**🔄 Easy Backup**\
 &emsp;&ensp;Import or export extension settings to back up your current data or move it to another device.
 
-**⚛️ Built for Trust**  
-&emsp;&ensp;Lemon New Tab makes all of its source code available under the AGPL-3.0 license and does not actively collect or send private data. It supports Chrome, Edge, and Firefox, providing a consistent experience across browsers.
+**⚛️ Built for Trust**\
+&emsp;&ensp;Lemon New Tab is [open-sourced](#license) under the AGPL-3.0 license and does not actively collect or send private data. It supports Chrome, Edge, and Firefox, providing a consistent experience across browsers.
 
-> [!NOTE]  
+> [!NOTE]\
 > Contributions via PRs are welcome. Issues may not always be implemented.
 
 ## Changelog
@@ -75,11 +75,11 @@ Lemon New Tab is a local-first, open-source browser extension with no additional
 <details>
 <summary>Click to expand screenshots</summary>
 
-![Standard homepage](./preview/1.webp)  
-![Solid-color background homepage](./preview/2.webp)  
-![Homepage with Dock and large clock](./preview/3.webp)  
-![Launchpad](./preview/4.webp)  
-![Search page](./preview/5.webp)  
+![Standard homepage](./preview/1.webp)\
+![Solid-color background homepage](./preview/2.webp)\
+![Homepage with Dock and large clock](./preview/3.webp)\
+![Launchpad](./preview/4.webp)\
+![Search page](./preview/5.webp)\
 ![Settings page](./preview/6.webp)
 
 </details>
@@ -128,7 +128,7 @@ pnpm zip:firefox    # Package Firefox extension
 ## Known Issues
 
 1. Some Chromium-based browsers on Windows may freeze at startup.
-   Disabling **GPU hardware acceleration** or switching  
+   Disabling **GPU hardware acceleration** or switching
    **Choose ANGLE graphics backend** to `OpenGL` in
    [Experiments](chrome://flags/#use-angle) can help.
    > - Likely caused by GPU driver or system issues.
@@ -140,9 +140,11 @@ pnpm zip:firefox    # Package Firefox extension
   Layout, animations, and some CSS were referenced.
 - [Light Tab Page](https://github.com/Devifish/light-tab-page):
   Source of custom wallpaper storage implementation.
+- [Jinrishici](https://www.jinrishici.com/) and [Hitokoto](https://hitokoto.cn/): Quote providers.
+- [Deskland](https://github.com/BLEZZ0102/Deskland): Source and inspiration for dynamic wallpapers.
 
 ## License
 
-This project is open-sourced under the AGPL-3.0 License, except for trademark-related images in `entrypoints/newtab/assets`.
+This project's code is open-sourced under the AGPL-3.0 License. Third-party code, assets, and brand identifiers may be subject to their own licenses or rights; see [third-party notices](THIRD_PARTY_NOTICES.md) for details.
 
 > This project has been open-sourced under the AGPL-3.0 License since version v3.2.3 (commit 65a894c0d8009d274618c5004a634d7359b2b0a6). Previous versions were open-sourced under the MIT License.

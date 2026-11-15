@@ -75,9 +75,11 @@ Except as otherwise provided by the applicable open-source license, all rights i
 
 These Terms do not transfer to you any trademark rights, trade names, domain names, interface design rights, or any other rights not expressly granted.
 
+Some third-party code, assets, and brand identifiers in the repository are subject to their own licenses or rights notices. See [third-party notices](../THIRD_PARTY_NOTICES.md) for details. Those notices do not replace applicable original license, copyright, or trademark notices.
+
 ## 9. Open-Source License
 
-The repository currently includes the **MIT License**. Use, copying, modification, and redistribution of source code, documentation, and other covered materials must comply with the applicable license text.
+The repository currently includes the **AGPL-3.0 License**. Use, copying, modification, and redistribution of source code, documentation, and other covered materials must comply with the applicable license text.
 
 For clarity:
 

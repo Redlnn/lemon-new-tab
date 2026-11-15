@@ -23,32 +23,32 @@
 
 柠檬起始页是一款本地优先的开源浏览器扩展，无需额外注册账号。核心设置和个性化内容保存在浏览器中，页面加载迅速、界面简洁，也没有资讯流和广告干扰。
 
-**🔍 灵活搜索**  
+**🔍 灵活搜索**\
 &emsp;&ensp;支持 Bing、Google、百度、DuckDuckGo、Yandex 等搜索引擎，提供搜索联想、搜索历史和自定义搜索引擎，让你用熟悉的方式快速找到内容。
 
-**🧭 快速导航**  
+**🧭 快速导航**\
 &emsp;&ensp;自动展示最常访问的网站，也可以添加、置顶和拖动整理自己的链接。支持分组、分页、滚动浏览，也可切换为 Dock 和 Launchpad 样式，常用网站一目了然。
 
-**🔖 浏览器书签**  
+**🔖 浏览器书签**\
 &emsp;&ensp;直接搜索、打开、编辑、删除和拖动整理浏览器书签，不必离开新标签页四处查找。
 
-**🖼️ 丰富壁纸**  
+**🖼️ 丰富壁纸**\
 &emsp;&ensp;支持 Bing 每日一图、在线图片 API、本地图片和视频壁纸，丰富的自定义选项让你的壁纸灵动起来。
 
-**🎨 高度个性化**  
+**🎨 高度个性化**\
 &emsp;&ensp;丰富的选项让布局、主题色、各种组件的布局与样式随你而变。更有能从壁纸提取的动态主题色，让整个页面自然协调。
 
-**🕒 实用但不打扰**  
+**🕒 实用但不打扰**\
 &emsp;&ensp;可显示时钟、日期、秒数和农历；每天展示古诗词、励志语录或你的自定义文字，也可一键复制。
 
-**⚡ 快速且易用**  
+**⚡ 快速且易用**\
 &emsp;&ensp;针对加载和占用持续优化，支持响应式布局以及各种性能效果的独立开关。
 
-**🔄 方便备份**  
+**🔄 方便备份**\
 &emsp;&ensp;支持导入、导出扩展设置，方便备份当前内容或迁移到其他设备
 
-**⚛️ 使用更放心**  
-&emsp;&ensp;柠檬起始页以 AGPL-3.0 许可证完整开源所有代码，不会主动收集、发送任何隐私。支持 Chrome、Edge、Firefox，无论用什么浏览器都能获得一致的体验
+**⚛️ 使用更放心**\
+&emsp;&ensp;柠檬起始页以 AGPL-3.0 许可证[开源](#license)，不会主动收集、发送任何隐私。支持 Chrome、Edge、Firefox，无论用什么浏览器都能获得一致的体验
 
 ## 更新日志（Changelog）
 
@@ -72,18 +72,18 @@
 <details>
 <summary>点击展开图片</summary>
 
-![普通主页](./preview/1.webp)  
-![纯色背景主页](./preview/2.webp)  
-![带Dock和大时钟的主页](./preview/3.webp)  
-![Launchpad](./preview/4.webp)  
-![搜索页面](./preview/5.webp)  
+![普通主页](./preview/1.webp)\
+![纯色背景主页](./preview/2.webp)\
+![带Dock和大时钟的主页](./preview/3.webp)\
+![Launchpad](./preview/4.webp)\
+![搜索页面](./preview/5.webp)\
 ![设置页面](./preview/6.webp)
 
 </details>
 
 ### 与青柠起始页对比
 
-> [!NOTE]  
+> [!NOTE]\
 > 本扩展模仿了青柠起始页的部分样式，根据个人需求开发，
 > 很多功能都没有，但欢迎 PR，提 Issue 不一定会实现噢
 
@@ -167,9 +167,11 @@ pnpm zip:firefox  # 打包 Firefox 扩展
 
 - [青柠起始页](https://limestart.cn/)：柠檬起始页的模仿对象，模仿了布局和动画，参考了部分 CSS
 - [Light Tab Page 轻标签页](https://github.com/Devifish/light-tab-page)：自定义壁纸储存的实现来源
+- [今日诗词](https://www.jinrishici.com/) 和 [一言](https://hitokoto.cn/)：提供一言内容
+- [Deskland](https://github.com/BLEZZ0102/Deskland)：动态壁纸的来源与灵感
 
 ## License
 
-本项目以 AGPL-3.0 许可证开源，`entrypoints/newtab/assets` 中的涉及到商标的图片除外
+本项目的代码以 AGPL-3.0 许可证开源。第三方代码、素材及品牌标识可能适用各自的许可或权利声明，具体事项见 [第三方声明](THIRD_PARTY_NOTICES.md)。
 
 > 本项目自 v3.2.3 版本（commit 65a894c0d8009d274618c5004a634d7359b2b0a6）起采用 AGPL-3.0 许可证开源，之前版本采用 MIT 许可证开源
