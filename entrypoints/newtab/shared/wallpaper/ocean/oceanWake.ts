@@ -1,5 +1,10 @@
 import type { OceanWakeSubject } from './oceanMotion'
 
+function wakeRandom(seed: number, n: number) {
+  const value = Math.sin(seed + n * 19.3) * 43758.5453
+  return value - Math.floor(value)
+}
+
 // Foam particles use recorded world-space stern positions. The trail remains
 // behind when a boat turns or the viewport changes.
 export function createOceanWake(gl: WebGL2RenderingContext) {
@@ -15,7 +20,7 @@ out vec4 color;
 void main() {
   float distance = length(gl_PointCoord - vec2(.5)) * 2.;
   float soft = 1. - smoothstep(.15, 1., distance);
-  color = vec4(.88, .95, 1., opacity * soft);
+  color = vec4(1., 0., 0., opacity * soft);
 }`
   const compile = (kind: number, source: string) => {
     const shader = gl.createShader(kind)
@@ -33,9 +38,15 @@ void main() {
   const buffer = gl.createBuffer()
   if (!program || !texture || !framebuffer || !vao || !buffer)
     throw new Error('Could not create wake renderer')
-  gl.attachShader(program, compile(gl.VERTEX_SHADER, vertex))
-  gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragment))
+  const vertexShader = compile(gl.VERTEX_SHADER, vertex),
+    fragmentShader = compile(gl.FRAGMENT_SHADER, fragment)
+  gl.attachShader(program, vertexShader)
+  gl.attachShader(program, fragmentShader)
   gl.linkProgram(program)
+  gl.detachShader(program, vertexShader)
+  gl.detachShader(program, fragmentShader)
+  gl.deleteShader(vertexShader)
+  gl.deleteShader(fragmentShader)
   if (!gl.getProgramParameter(program, gl.LINK_STATUS))
     throw new Error(gl.getProgramInfoLog(program) || 'Wake program failed')
   const sceneVao = gl.getParameter(gl.VERTEX_ARRAY_BINDING) as WebGLVertexArrayObject | null
@@ -53,10 +64,26 @@ void main() {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 1, 1, 0, gl.RED, gl.UNSIGNED_BYTE, null)
   let previousWidth = 0,
     previousHeight = 0
 
   function draw(subjects: OceanWakeSubject[], now: number, width: number, height: number) {
+    let hasTrail = false
+    for (const subject of subjects) {
+      if (subject.kind < 2 && subject.trail.length > 0) {
+        hasTrail = true
+        break
+      }
+    }
+    if (!hasTrail) {
+      if (previousWidth || previousHeight) {
+        gl.bindTexture(gl.TEXTURE_2D, texture)
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 1, 1, 0, gl.RED, gl.UNSIGNED_BYTE, null)
+        previousWidth = previousHeight = 0
+      }
+      return texture
+    }
     const textureWidth = Math.max(1, Math.ceil(width)),
       textureHeight = Math.max(1, Math.ceil(height))
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
@@ -65,11 +92,11 @@ void main() {
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,
-        gl.RGBA8,
+        gl.R8,
         textureWidth,
         textureHeight,
         0,
-        gl.RGBA,
+        gl.RED,
         gl.UNSIGNED_BYTE,
         null,
       )
@@ -91,31 +118,27 @@ void main() {
         const spread = (subject.kind === 0 ? 3 : 5) + age * 2.4
         const normalX = -Math.sin(point.heading),
           normalY = Math.cos(point.heading)
-        const emit = (offset: number, alpha: number, size: number) => {
-          vertices[used++] = point.x + normalX * offset
-          vertices[used++] = point.y + normalY * offset
-          vertices[used++] = alpha * fade
-          vertices[used++] = size
-        }
         // Stable jitter is tied to each recorded position, rather than changing
         // randomly every frame. The specks drift apart as the foam ages.
         const seed = point.time * 31.7 + subject.phase * 13.1
-        const random = (n: number) => {
-          const value = Math.sin(seed + n * 19.3) * 43758.5453
-          return value - Math.floor(value)
-        }
-        for (const side of [-1, 1]) {
-          for (let i = 0; i < 3; i++)
-            emit(
-              side * spread + (random(i + side * 5) - 0.5) * (3 + age * 0.5),
-              0.22,
-              2.5 + random(i + 4) * 2.5,
-            )
+        for (let side = -1; side <= 1; side += 2) {
+          for (let i = 0; i < 3; i++) {
+            const offset = side * spread + (wakeRandom(seed, i + side * 5) - 0.5) * (3 + age * 0.5)
+            vertices[used++] = point.x + normalX * offset
+            vertices[used++] = point.y + normalY * offset
+            vertices[used++] = 0.22 * fade
+            vertices[used++] = 2.5 + wakeRandom(seed, i + 4) * 2.5
+          }
         }
         // A motor yacht also leaves a lighter stream of propeller bubbles.
         if (subject.kind === 1)
-          for (let i = 0; i < 2; i++)
-            emit((random(i + 17) - 0.5) * (4 + age * 1.2), 0.14, 2 + random(i + 21) * 2)
+          for (let i = 0; i < 2; i++) {
+            const offset = (wakeRandom(seed, i + 17) - 0.5) * (4 + age * 1.2)
+            vertices[used++] = point.x + normalX * offset
+            vertices[used++] = point.y + normalY * offset
+            vertices[used++] = 0.14 * fade
+            vertices[used++] = 2 + wakeRandom(seed, i + 21) * 2
+          }
       }
     }
     if (used) {
@@ -123,7 +146,7 @@ void main() {
       gl.uniform2f(sizeLocation, width, height)
       gl.bindVertexArray(vao)
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-      gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices.subarray(0, used))
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices, 0, used)
       gl.enable(gl.BLEND)
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
       gl.drawArrays(gl.POINTS, 0, used / 4)

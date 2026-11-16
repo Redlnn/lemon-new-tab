@@ -20,6 +20,7 @@ const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle)
 
 export function createOceanMotion() {
   const subjects: OceanSubject[] = []
+  const activeSubjects: OceanSubject[] = []
   const counts = [3, 3, 2, 8]
   for (let kind = 0; kind < counts.length; kind++)
     for (let index = 0; index < counts[kind]!; index++)
@@ -46,6 +47,7 @@ export function createOceanMotion() {
     active: number[],
     clearance: (x: number, y: number) => number,
   ) {
+    activeSubjects.length = 0
     for (const subject of subjects) {
       if (subject.index >= active[subject.kind]!) {
         subject.initialized = false
@@ -125,25 +127,25 @@ export function createOceanMotion() {
         subject.boom += Math.max(-dt * 0.5, Math.min(dt * 0.5, target - subject.boom))
       }
       if (subject.kind < 2) {
-        const stern = subject.kind === 0 ? 23 : 29
-        const point = {
-          x: subject.x - Math.cos(subject.heading) * stern,
-          y: subject.y - Math.sin(subject.heading) * stern,
-          heading: subject.heading,
-          time,
-        }
         const last = subject.trail.at(-1)
-        if (!last || time - last.time >= 0.16) subject.trail.push(point)
+        if (!last || time - last.time >= 0.16) {
+          const stern = subject.kind === 0 ? 23 : 29
+          subject.trail.push({
+            x: subject.x - Math.cos(subject.heading) * stern,
+            y: subject.y - Math.sin(subject.heading) * stern,
+            heading: subject.heading,
+            time,
+          })
+        }
         while (
           subject.trail.length &&
           (subject.trail.length > 60 || time - subject.trail[0]!.time > 8)
         )
           subject.trail.shift()
       }
+      activeSubjects.push(subject)
     }
-    return subjects.filter(
-      (subject) => subject.index < active[subject.kind]! && subject.initialized,
-    )
+    return activeSubjects
   }
   return { step }
 }

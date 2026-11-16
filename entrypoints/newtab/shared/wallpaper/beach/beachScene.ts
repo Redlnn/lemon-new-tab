@@ -456,20 +456,24 @@ export function createBeachScene(
       const ripple = activeRipples[i]!
       const age = time - ripple.start
       if (age >= 4) activeRipples.splice(i, 1)
-      else ripples.set([ripple.x, ripple.y, age, 1], i * 4)
+      else {
+        const offset = i * 4
+        ripples[offset] = ripple.x
+        ripples[offset + 1] = ripple.y
+        ripples[offset + 2] = age
+        ripples[offset + 3] = 1
+      }
     }
     if (options.waterCaustics && !causticsTexture) causticsTexture = createWaterCaustics(gl)
     gl.viewport(0, 0, cv.width, cv.height)
     gl.useProgram(program)
     gl.bindVertexArray(vao)
-    for (const [unit, texture] of [
-      noise,
-      fieldTextures[fromIndex],
-      fieldTextures[toIndex],
-    ].entries()) {
-      gl.activeTexture(gl.TEXTURE0 + unit)
-      gl.bindTexture(gl.TEXTURE_2D, texture!)
-    }
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, noise)
+    gl.activeTexture(gl.TEXTURE1)
+    gl.bindTexture(gl.TEXTURE_2D, fieldTextures[fromIndex]!)
+    gl.activeTexture(gl.TEXTURE2)
+    gl.bindTexture(gl.TEXTURE_2D, fieldTextures[toIndex]!)
     const u = uniforms
     gl.uniform1i(u.uNoise!, 0)
     gl.uniform1i(u.uFA!, 1)
@@ -480,27 +484,24 @@ export function createBeachScene(
     gl.bindTexture(gl.TEXTURE_2D, causticsTexture ?? noise)
     gl.uniform1i(u.uWaterCaustics!, 7)
     gl.uniform1f(u.uWaterCausticsEnabled!, options.waterCaustics ? 1 : 0)
-    for (const [name, value] of Object.entries({
-      uScale: scale,
-      uSeed: (seed % 997) * 0.37,
-      uStep: STEP,
-      uMix: currentMix,
-      uTime: time,
-      uSpeed: P.speed,
-      uRunup: P.runup,
-      uShallow: P.shallow,
-      uShoal: P.shoal,
-      uGrain: P.grain,
-      uWave: P.wave,
-      uSigma: P.sigma,
-      uSpacing: P.spacing,
-      uWaves: P.waves,
-      uNight: options.night ? 1 : 0,
-      uDebug: 0,
-      uKayN: 0,
-      uBirdN: 0,
-    }))
-      gl.uniform1f(u[name]!, value)
+    gl.uniform1f(u.uScale!, scale)
+    gl.uniform1f(u.uSeed!, (seed % 997) * 0.37)
+    gl.uniform1f(u.uStep!, STEP)
+    gl.uniform1f(u.uMix!, currentMix)
+    gl.uniform1f(u.uTime!, time)
+    gl.uniform1f(u.uSpeed!, P.speed)
+    gl.uniform1f(u.uRunup!, P.runup)
+    gl.uniform1f(u.uShallow!, P.shallow)
+    gl.uniform1f(u.uShoal!, P.shoal)
+    gl.uniform1f(u.uGrain!, P.grain)
+    gl.uniform1f(u.uWave!, P.wave)
+    gl.uniform1f(u.uSigma!, P.sigma)
+    gl.uniform1f(u.uSpacing!, P.spacing)
+    gl.uniform1f(u.uWaves!, P.waves)
+    gl.uniform1f(u.uNight!, options.night ? 1 : 0)
+    gl.uniform1f(u.uDebug!, 0)
+    gl.uniform1f(u.uKayN!, 0)
+    gl.uniform1f(u.uBirdN!, 0)
     gl.uniform4fv(u.uKay!, kay)
     gl.uniform4fv(u.uBird!, birds)
     gl.uniform4fv(u.uRip!, ripples)
@@ -526,10 +527,10 @@ export function createBeachScene(
     treesDirty = false
     treeContext.setTransform(scale, 0, 0, scale, 0, 0)
     treeContext.clearRect(0, 0, W, H)
-    for (const { tree, opacity } of [
-      ...previousTrees.map((tree) => ({ tree, opacity: 1 - currentMix })),
-      ...trees.map((tree) => ({ tree, opacity: currentMix })),
-    ]) {
+    for (let i = 0; i < previousTrees.length + trees.length; i++) {
+      const old = i < previousTrees.length
+      const tree = old ? previousTrees[i]! : trees[i - previousTrees.length]!
+      const opacity = old ? 1 - currentMix : currentMix
       const fieldAtFoot =
         sampleArr(previous.s, tree.x, tree.y) * (1 - currentMix) +
         sampleArr(current.s, tree.x, tree.y) * currentMix

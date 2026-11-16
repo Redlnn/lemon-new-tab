@@ -213,10 +213,12 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     gl!.viewport(0, 0, canvas.width, canvas.height)
     gl!.useProgram(program)
     gl!.bindVertexArray(vao)
-    ;[fields!.textures[0]!, fields!.textures[1]!, paper].forEach((texture, i) => {
-      gl!.activeTexture(gl!.TEXTURE0 + i)
-      gl!.bindTexture(gl!.TEXTURE_2D, texture)
-    })
+    gl!.activeTexture(gl!.TEXTURE0)
+    gl!.bindTexture(gl!.TEXTURE_2D, fields!.textures[0]!)
+    gl!.activeTexture(gl!.TEXTURE1)
+    gl!.bindTexture(gl!.TEXTURE_2D, fields!.textures[1]!)
+    gl!.activeTexture(gl!.TEXTURE2)
+    gl!.bindTexture(gl!.TEXTURE_2D, paper)
     gl!.uniform1i(uniforms.uFrom!, 0)
     gl!.uniform1i(uniforms.uTo!, 1)
     gl!.uniform1i(uniforms.uPaper!, 2)
@@ -229,6 +231,13 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     gl!.uniform1f(uniforms.uFirst!, firstTransition ? 1 : 0)
     gl!.uniform1f(uniforms.uFinal!, final ? 1 : 0)
     gl!.drawArrays(gl!.TRIANGLES, 0, 3)
+    if (final) releaseImages()
+  }
+  function sample(values: Float32Array, i: number, tx: number, ty: number) {
+    return (
+      (values[i]! * (1 - tx) + values[i + 1]! * tx) * (1 - ty) +
+      (values[i + cols]! * (1 - tx) + values[i + cols + 1]! * tx) * ty
+    )
   }
   function value(p: Point) {
     if (!to.length) return 34
@@ -237,15 +246,9 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
       ix = Math.floor(x),
       iy = Math.floor(y),
       tx = x - ix,
-      ty = y - iy
-    const sample = (values: Float32Array) => {
-      const i = iy * cols + ix
-      return (
-        (values[i]! * (1 - tx) + values[i + 1]! * tx) * (1 - ty) +
-        (values[i + cols]! * (1 - tx) + values[i + cols + 1]! * tx) * ty
-      )
-    }
-    return sample(from) * (1 - currentMix) + sample(to) * currentMix
+      ty = y - iy,
+      i = iy * cols + ix
+    return sample(from, i, tx, ty) * (1 - currentMix) + sample(to, i, tx, ty) * currentMix
   }
   return {
     available: () => !disabled,

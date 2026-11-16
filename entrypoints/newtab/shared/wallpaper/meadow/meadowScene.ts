@@ -17,6 +17,8 @@ type OceanDependencies = {
   createWake: typeof import('../ocean/oceanWake').createOceanWake
   createWhaleTexture: typeof import('../ocean/oceanWhale').createOceanWhaleTexture
 }
+const oceanDrawOrder = [2, 0, 1, 3] as const
+const emptyOceanSubjects: ReturnType<ReturnType<OceanDependencies['createMotion']>['step']> = []
 type MeadowDependencies = {
   assets: MeadowAssets
   createCharacters: typeof import('./meadowCharacters').createMeadowCharacters
@@ -90,6 +92,7 @@ export function createDynamicScene(
   const oceanMotion = scene.ocean?.createMotion() ?? null
   const oceanActors = new Float32Array(22 * 4)
   const oceanExtras = new Float32Array(22 * 2)
+  const oceanCounts = [0, 0, 0, 0]
   try {
     const seed = (Math.random() * 1e6) | 0
 
@@ -278,10 +281,10 @@ void main() {
   }
   col = mix(col, mix(vec3(.95, 1., 1.), vec3(.55, .70, .95), uNight), sparkle * .85);
   col = mix(col, mix(vec3(.60, .90, 1.), vec3(.22, .42, .72), uNight), waterCaustics(p, uOceanTime) * .15);
-  vec4 wake = vec4(0.);
+  float wake = 0.;
   if (p.x >= 0. && p.y >= 0. && p.x < uOceanWakeSize.x && p.y < uOceanWakeSize.y)
-    wake = texture(uOceanWake, vec2(p.x / uOceanWakeSize.x, 1. - p.y / uOceanWakeSize.y));
-  col = col * (1. - wake.a) + wake.rgb;
+    wake = texture(uOceanWake, vec2(p.x / uOceanWakeSize.x, 1. - p.y / uOceanWakeSize.y)).r;
+  col = mix(col, vec3(.88, .95, 1.), wake);
 #ifdef OCEAN_DETAIL
   col = oceanDetail(col, p);
 #endif
@@ -795,22 +798,32 @@ void main() {
       // 小猫的局部绘制共享本帧云数据，不额外重算、上传云团。
       uploadCircles(now / 1000)
       const t = now / 1000
+      oceanCounts[0] = P.sailboats
+      oceanCounts[1] = P.yachts
+      oceanCounts[2] = P.whales
+      oceanCounts[3] = P.birds
       const subjects =
         oceanMotion?.step(
           t,
           dt,
           W,
           H,
-          [P.sailboats, P.yachts, P.whales, P.birds],
+          oceanCounts,
           cloudClearance,
-        ) ?? []
+        ) ?? emptyOceanSubjects
       const wakeTexture = oceanWake?.draw(subjects, t, W, H)
       let actorCount = 0
-      for (const kind of [2, 0, 1, 3]) {
+      for (const kind of oceanDrawOrder) {
         for (const subject of subjects) {
           if (subject.kind !== kind) continue
-          oceanActors.set([subject.x, subject.y, subject.heading, subject.kind], actorCount * 4)
-          oceanExtras.set([subject.kind === 2 ? subject.bend : subject.boom, 0], actorCount * 2)
+          const offset = actorCount * 4,
+            extra = actorCount * 2
+          oceanActors[offset] = subject.x
+          oceanActors[offset + 1] = subject.y
+          oceanActors[offset + 2] = subject.heading
+          oceanActors[offset + 3] = subject.kind
+          oceanExtras[extra] = subject.kind === 2 ? subject.bend : subject.boom
+          oceanExtras[extra + 1] = 0
           actorCount++
         }
       }
@@ -819,8 +832,14 @@ void main() {
         const age = t - ripple.start
         if (age >= 4) ripples.splice(i, 1)
         else {
-          oceanActors.set([ripple.x, ripple.y, 0, 4], actorCount * 4)
-          oceanExtras.set([age, 0], actorCount * 2)
+          const offset = actorCount * 4,
+            extra = actorCount * 2
+          oceanActors[offset] = ripple.x
+          oceanActors[offset + 1] = ripple.y
+          oceanActors[offset + 2] = 0
+          oceanActors[offset + 3] = 4
+          oceanExtras[extra] = age
+          oceanExtras[extra + 1] = 0
           actorCount++
         }
       }

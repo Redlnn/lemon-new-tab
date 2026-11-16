@@ -9,7 +9,6 @@ export type MapFrame = {
   id: number
   scale: number
   bitmap: ImageBitmap
-  base?: ImageBitmap
   details?: ImageBitmap
   paper: ImageBitmap
   field: MapField
@@ -90,12 +89,6 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
     const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) throw new Error('Map canvas unavailable')
     paintTerrain(ctx, map, request.scale, request.shoreline)
-    let base: ImageBitmap | undefined
-    if (request.first) {
-      base = canvas.transferToImageBitmap()
-      ctx.setTransform(1, 0, 0, 1, 0, 0)
-      ctx.drawImage(base, 0, 0)
-    }
     const detailCanvas = new OffscreenCanvas(canvas.width, canvas.height),
       detailCtx = detailCanvas.getContext('2d')!
     paintMapDetails(detailCtx, map, request)
@@ -111,7 +104,6 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
       id: request.id,
       scale: request.scale,
       bitmap,
-      base,
       details,
       paper,
       field,
@@ -144,7 +136,6 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
       transfer: [
         bitmap,
         paper,
-        ...(base ? [base] : []),
         ...(details ? [details] : []),
         field.values.buffer as ArrayBuffer,
       ],

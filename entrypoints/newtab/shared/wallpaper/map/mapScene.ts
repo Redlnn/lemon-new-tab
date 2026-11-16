@@ -43,8 +43,7 @@ export function createMapScene(
   let pending: MapRequest | null = null,
     timer: ReturnType<typeof setTimeout> | undefined
   let motion: ReturnType<typeof createMapMotion> | null = null
-  let baseBitmap: ImageBitmap | null = null,
-    detailsBitmap: ImageBitmap | null = null,
+  let detailsBitmap: ImageBitmap | null = null,
     introActive = false
   let lastTime = 0
   let lastAnimate = true
@@ -67,14 +66,13 @@ export function createMapScene(
         (previewBitmap.width / previewScale) * scale,
         (previewBitmap.height / previewScale) * scale,
       )
-    const visibleBitmap = introActive && baseBitmap ? baseBitmap : bitmap
-    if (visibleBitmap)
+    if (bitmap)
       ground.drawImage(
-        visibleBitmap,
+        bitmap,
         0,
         0,
-        (visibleBitmap.width / bitmapScale) * scale,
-        (visibleBitmap.height / bitmapScale) * scale,
+        (bitmap.width / bitmapScale) * scale,
+        (bitmap.height / bitmapScale) * scale,
       )
   }
   function paintDetails() {
@@ -148,8 +146,6 @@ export function createMapScene(
       detailCtx.clearRect(0, 0, detailsCanvas.width, detailsCanvas.height)
       paintDetails()
     }
-    baseBitmap?.close()
-    baseBitmap = null
     maskPixels = null
     maskNoise = new Float32Array()
     previewBitmap?.close()
@@ -183,7 +179,6 @@ export function createMapScene(
       if ('bitmap' in frame) {
         frame.bitmap.close()
         frame.paper.close()
-        frame.base?.close()
         frame.details?.close()
       }
     } else if ('error' in frame) {
@@ -201,12 +196,10 @@ export function createMapScene(
       detailsBitmap = frame.details ?? null
       coast.begin(bitmap, frame.paper, frame.field, frame.scale, lastTime, lastAnimate && !expanded)
       frame.paper.close()
-      introActive = firstFrame && !!frame.base && !!frame.details && coast.isActive()
+      introActive = firstFrame && !!frame.details && coast.isActive()
       if (introActive) {
-        baseBitmap = frame.base!
         startReveal(lastTime)
       } else {
-        frame.base?.close()
         detailsCanvas.width = background.width
         detailsCanvas.height = background.height
         detailsCanvas.style.width = background.style.width
@@ -419,7 +412,6 @@ export function createMapScene(
       worker.terminate()
       bitmap?.close()
       previewBitmap?.close()
-      baseBitmap?.close()
       detailsBitmap?.close()
       coast.dispose()
       background.width =
