@@ -19,6 +19,13 @@ export const BgType = {
 } as const
 export type BgType = (typeof BgType)[keyof typeof BgType]
 
+export const DYNAMIC_BG_TYPES = [BgType.Meadow, BgType.Beach, BgType.Ocean, BgType.Map] as const
+export type DynamicBgType = (typeof DYNAMIC_BG_TYPES)[number]
+
+export function isDynamicBgType(type: BgType): type is DynamicBgType {
+  return (DYNAMIC_BG_TYPES as readonly BgType[]).includes(type)
+}
+
 /**
  * - Normal: 400
  * - Medium: 500

@@ -40,9 +40,9 @@ type MeadowOptions = {
 type Circle = [number, number, number, number]
 type Field = { s: Float32Array }
 
-export function createMeadowScene(
+export function createDynamicScene(
   cv: HTMLCanvasElement,
-  scene: { meadow: MeadowDependencies; ocean?: never } | { meadow?: never; ocean: OceanDependencies },
+  scene: { characters: MeadowDependencies; ocean?: never } | { characters?: never; ocean: OceanDependencies },
 ) {
   const ocean = !!scene.ocean
   const context = cv.getContext('webgl2', {
@@ -728,12 +728,12 @@ void main() {
     }
 
     // 人物和投影使用局部纹理，合成到云层之下。
-    const characters = scene.meadow?.createCharacters({
+    const characters = scene.characters?.createCharacters({
       gl,
       cv,
       resolution,
       program,
-      assets: scene.meadow.assets,
+      assets: scene.characters.assets,
       pendingImages,
       isDisposed: () => disposed,
       getScene: () => ({ width: W, height: H, seed, regions, options: P }),

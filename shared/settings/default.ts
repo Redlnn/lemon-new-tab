@@ -96,9 +96,9 @@ export const defaultSettings = {
 
     solid: { light: '', dark: '' },
     rotation: { enabled: false, order: 'random' },
-    map: { fps: 25, trains: 5, ships: 4, islands: 3 },
+    dynamic: { fps: 25 },
+    map: { trains: 5, ships: 4, islands: 3 },
     ocean: {
-      fps: 25,
       cloudSize: 72,
       cloudCover: 0.3,
       flow: 1,
@@ -110,7 +110,6 @@ export const defaultSettings = {
       waterCaustics: true,
     },
     beach: {
-      fps: 25,
       sigma: 85,
       warp: 34,
       shoal: 110,
@@ -121,7 +120,6 @@ export const defaultSettings = {
       waterCaustics: true,
     },
     meadow: {
-      fps: 25,
       cloudSize: 72,
       cloudCover: 0.3,
       flow: 1,

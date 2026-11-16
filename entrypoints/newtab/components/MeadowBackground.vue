@@ -20,7 +20,7 @@ const { running, fail, getRenderer } = useDynamicWallpaper({
       settings.background.meadow,
       settings.quickLinks.enabled && !settings.quickLinks.useScroll,
     ),
-  fps: () => settings.background.meadow.fps,
+  fps: () => settings.background.dynamic.fps,
   onError: () => emit('error'),
 })
 function moveBoy(x: number, y: number) {

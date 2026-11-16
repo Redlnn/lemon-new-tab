@@ -1,4 +1,4 @@
-import { BgType } from '@/shared/enums'
+import { BgType, isDynamicBgType } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 import {
   applyStoredMonetColors,
@@ -94,10 +94,7 @@ export function useBackgroundMonet(options: {
       document.documentElement.classList.toggle('monet', enabled)
       if (
         !enabled ||
-        settings.background.bgType === BgType.Meadow ||
-        settings.background.bgType === BgType.Beach ||
-        settings.background.bgType === BgType.Ocean ||
-        settings.background.bgType === BgType.Map ||
+        isDynamicBgType(settings.background.bgType) ||
         !options.backgroundUrl.value ||
         options.isVideo.value
       )
@@ -113,16 +110,12 @@ export function useBackgroundMonet(options: {
     ([enabled, type]) => {
       if (
         !enabled ||
-        (type !== BgType.Meadow &&
-          type !== BgType.Beach &&
-          type !== BgType.Ocean &&
-          type !== BgType.Map)
+        !isDynamicBgType(type)
       )
         return
       invalidate()
       disposeMonetWorker()
-      const palette =
-        type === BgType.Meadow ? meadowPalette : type === BgType.Map ? mapPalette : beachPalette
+      const palette = type === BgType.Meadow ? meadowPalette : type === BgType.Map ? mapPalette : beachPalette
       const sourceKey = type
       applyStoredMonetColors({ ...palette, sourceKey, timestamp: Date.now() })
       void saveMonetColors(palette.cssLight, palette.cssDark, sourceKey).catch(console.error)

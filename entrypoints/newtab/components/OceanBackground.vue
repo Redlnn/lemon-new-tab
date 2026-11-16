@@ -20,7 +20,7 @@ const { running, fail, getRenderer } = useDynamicWallpaper({
       { ...settings.background.ocean, showBoy: false, showCat: false },
       settings.quickLinks.enabled && !settings.quickLinks.useScroll,
     ),
-  fps: () => settings.background.ocean.fps,
+  fps: () => settings.background.dynamic.fps,
   onError: () => emit('error'),
 })
 function ripple(x: number, y: number) {

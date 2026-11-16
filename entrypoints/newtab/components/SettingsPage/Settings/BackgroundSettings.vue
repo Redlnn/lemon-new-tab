@@ -4,7 +4,7 @@ import BubbleChartRound from '~icons/ic/round-bubble-chart'
 
 import { browser } from 'wxt/browser'
 
-import { BgType } from '@/shared/enums'
+import { BgType, isDynamicBgType } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 
 import { useAppDialogs } from '@newtab/composables/appDialogs'
@@ -114,10 +114,7 @@ const beforeCacheChange = async () => {
         </el-button>
         <p
           v-if="
-            settings.background.bgType === BgType.Meadow ||
-            settings.background.bgType === BgType.Beach ||
-            settings.background.bgType === BgType.Ocean ||
-            settings.background.bgType === BgType.Map
+            isDynamicBgType(settings.background.bgType)
           "
           class="settings__item-note"
         >
@@ -153,10 +150,7 @@ const beforeCacheChange = async () => {
         <el-switch
           v-model="settings.background.fastAnimation"
           :disabled="
-            settings.background.bgType === BgType.Meadow ||
-            settings.background.bgType === BgType.Beach ||
-            settings.background.bgType === BgType.Ocean ||
-            settings.background.bgType === BgType.Map
+            isDynamicBgType(settings.background.bgType)
           "
         />
       </div>
@@ -166,10 +160,7 @@ const beforeCacheChange = async () => {
           v-model="settings.background.parallax"
           :disabled="
             isOnlyTouchDevice ||
-            settings.background.bgType === BgType.Meadow ||
-            settings.background.bgType === BgType.Beach ||
-            settings.background.bgType === BgType.Ocean ||
-            settings.background.bgType === BgType.Map
+            isDynamicBgType(settings.background.bgType)
           "
         />
         <p v-if="isOnlyTouchDevice" class="settings__item-note">
@@ -192,10 +183,7 @@ const beforeCacheChange = async () => {
           v-model="settings.background.blur"
           :show-tooltip="false"
           :disabled="
-            settings.background.bgType === BgType.Meadow ||
-            settings.background.bgType === BgType.Beach ||
-            settings.background.bgType === BgType.Ocean ||
-            settings.background.bgType === BgType.Map
+            isDynamicBgType(settings.background.bgType)
           "
         />
       </div>

@@ -21,6 +21,7 @@ export function migrateFromVer11To12(
       solid: { light: '', dark: '' },
       rotation: { enabled: false, order: 'random' },
       map: { ...defaultSettings.background.map },
+      dynamic: { ...defaultSettings.background.dynamic },
     },
   }
 }

@@ -25,7 +25,7 @@ const { running, getRenderer, fail } = useDynamicWallpaper({
     )
   },
   draw: (renderer, time, bounds) => renderer.draw(time, bounds),
-  fps: () => settings.background.map.fps,
+  fps: () => settings.background.dynamic.fps,
   onError: () => emit('error'),
 })
 watch(

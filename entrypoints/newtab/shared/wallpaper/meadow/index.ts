@@ -8,11 +8,11 @@ import catWhite from '@newtab/assets/meadow/cat-white.webp'
 import cat from '@newtab/assets/meadow/cat.webp'
 
 import { createMeadowCharacters } from './meadowCharacters'
-import { createMeadowScene } from './meadowScene'
+import { createDynamicScene } from './meadowScene'
 
 export function createMeadowRenderer(canvas: HTMLCanvasElement) {
-  return createMeadowScene(canvas, {
-    meadow: {
+  return createDynamicScene(canvas, {
+    characters: {
       createCharacters: createMeadowCharacters,
       assets: {
         boy,

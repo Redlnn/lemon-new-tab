@@ -12,7 +12,7 @@ import { useTranslation } from 'i18next-vue'
 
 import { browser } from '#imports'
 
-import { BgType } from '@/shared/enums'
+import { BgType, isDynamicBgType } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 
 import { useBackgroundMonet } from '@newtab/composables/useBackgroundMonet'
@@ -59,10 +59,7 @@ const solidColor = computed(
 )
 // 动态壁纸的场景本身有入场动画，首屏无需先把整张画布从透明渐显。
 const isSwitching = ref(
-  settings.background.bgType !== BgType.Meadow &&
-    settings.background.bgType !== BgType.Beach &&
-    settings.background.bgType !== BgType.Ocean &&
-    settings.background.bgType !== BgType.Map,
+  !isDynamicBgType(settings.background.bgType),
 )
 
 const imageRef = useTemplateRef('imageRef')
@@ -123,10 +120,7 @@ function updateVideoPlayback() {
 
 const backgroundCss = computed(() => ({
   'background-container--focused__blur':
-    renderedType.value !== BgType.Meadow &&
-    renderedType.value !== BgType.Beach &&
-    renderedType.value !== BgType.Ocean &&
-    renderedType.value !== BgType.Map &&
+    !isDynamicBgType(renderedType.value) &&
     focusStore.isFocused &&
     settings.perf.focus.blur,
 }))
@@ -134,10 +128,7 @@ const backgroundCss = computed(() => ({
 // 视差效果
 const backgroundParallaxEnabled = computed(
   () =>
-    renderedType.value !== BgType.Meadow &&
-    renderedType.value !== BgType.Beach &&
-    renderedType.value !== BgType.Ocean &&
-    renderedType.value !== BgType.Map &&
+    !isDynamicBgType(renderedType.value) &&
     settings.background.parallax &&
     !isOnlyTouchDevice.value,
 )
@@ -431,10 +422,7 @@ async function updateBackgroundURL(type: BgType): Promise<void> {
 
     const animate =
       settings.perf.bgSwitchAnim &&
-      type !== BgType.Meadow &&
-      type !== BgType.Beach &&
-      type !== BgType.Ocean &&
-      type !== BgType.Map
+      !isDynamicBgType(type)
     // 动态壁纸由场景自身入场，其他壁纸先让旧画面渐隐。
     if (hasDisplayedBackground && animate) {
       isSwitching.value = true
@@ -615,17 +603,13 @@ onUnmounted(() => {
                 : solidColor,
       '--mask-color__light': settings.background.mask.light,
       '--mask-color__night': settings.background.mask.night,
-      '--blur-intensity': `${renderedType === BgType.Meadow || renderedType === BgType.Beach || renderedType === BgType.Ocean || renderedType === BgType.Map ? 0 : settings.background.blur}px`,
+      '--blur-intensity': `${isDynamicBgType(renderedType) ? 0 : settings.background.blur}px`,
       '--bg-opacity-duration': bgOpacityDuration,
     }"
   >
     <div
       v-if="
-        (bgURL ||
-          renderedType === BgType.Meadow ||
-          renderedType === BgType.Beach ||
-          renderedType === BgType.Ocean ||
-          renderedType === BgType.Map) &&
+        (bgURL || isDynamicBgType(renderedType)) &&
         renderedType !== BgType.None &&
         settings.background.mask.enabled
       "
@@ -633,11 +617,7 @@ onUnmounted(() => {
     ></div>
     <div
       v-if="
-        (bgURL ||
-          renderedType === BgType.Meadow ||
-          renderedType === BgType.Beach ||
-          renderedType === BgType.Ocean ||
-          renderedType === BgType.Map) &&
+        (bgURL || isDynamicBgType(renderedType)) &&
         renderedType !== BgType.None &&
         settings.background.vignette
       "
@@ -646,20 +626,13 @@ onUnmounted(() => {
     <Transition
       name="bg-fade"
       :css="
-        settings.perf.bgSwitchAnim &&
-        settings.background.bgType !== BgType.Meadow &&
-        settings.background.bgType !== BgType.Beach &&
-        settings.background.bgType !== BgType.Ocean &&
-        settings.background.bgType !== BgType.Map
+        settings.perf.bgSwitchAnim && !isDynamicBgType(settings.background.bgType)
       "
       @before-leave="(element) => element.querySelector('video')?.pause()"
     >
       <div
         :key="
-          renderedType === BgType.Meadow ||
-          renderedType === BgType.Beach ||
-          renderedType === BgType.Ocean ||
-          renderedType === BgType.Map
+          isDynamicBgType(renderedType)
             ? renderedType
             : bgURL
         "
@@ -669,10 +642,7 @@ onUnmounted(() => {
         :class="backgroundCss"
         :style="{
           scale:
-            renderedType === BgType.Meadow ||
-            renderedType === BgType.Beach ||
-            renderedType === BgType.Ocean ||
-            renderedType === BgType.Map
+            isDynamicBgType(renderedType)
               ? 1
               : backgroundScale,
           translate: backgroundTranslate,

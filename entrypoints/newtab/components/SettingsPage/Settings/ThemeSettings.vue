@@ -6,7 +6,7 @@ import LightModeRound from '~icons/ic/round-light-mode'
 
 import { browser } from 'wxt/browser'
 
-import { BgType } from '@/shared/enums'
+import { BgType, isDynamicBgType } from '@/shared/enums'
 import { defaultSettings, useSettingsStore } from '@/shared/settings'
 
 import {
@@ -76,10 +76,7 @@ const beforeMonetChange = async () => {
   // 必应随便开，本地壁纸必须是图片才能开
   if (
     settings.background.bgType === BgType.Bing ||
-    settings.background.bgType === BgType.Meadow ||
-    settings.background.bgType === BgType.Beach ||
-    settings.background.bgType === BgType.Ocean ||
-    settings.background.bgType === BgType.Map
+  isDynamicBgType(settings.background.bgType)
   )
     return true
   // 本地壁纸必须是图片才能开

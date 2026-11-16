@@ -13,7 +13,7 @@ import DownloadRound from '~icons/ic/round-download'
 import LaunchRound from '~icons/ic/round-launch'
 import MotionIcon from '~icons/ic/round-motion-photos-on'
 
-import { BgType } from '@/shared/enums'
+import { BgType, isDynamicBgType } from '@/shared/enums'
 import { sha256Hex } from '@/shared/json'
 import { useSettingsStore, type BingWallpaperResolution } from '@/shared/settings'
 import { idbGet } from '@/shared/storage/idb'
@@ -42,9 +42,7 @@ const { isComposing } = useImeAwareDialog()
 const { t } = useTranslation('settings')
 const settings = useSettingsStore()
 const dynamicActive = computed(() =>
-  [BgType.Meadow, BgType.Beach, BgType.Ocean, BgType.Map].some(
-    (type) => settings.background.bgType === type,
-  ),
+  isDynamicBgType(settings.background.bgType),
 )
 const vignetteEnabled = computed({
   get: () => settings.background.vignette,
@@ -67,12 +65,7 @@ const wallpaperBlur = computed({
   set: (value: number) => (settings.background.blur = value),
 })
 const blurDisabled = computed(
-  () =>
-    settings.background.bgType === BgType.Meadow ||
-    settings.background.bgType === BgType.Beach ||
-    settings.background.bgType === BgType.Ocean ||
-    settings.background.bgType === BgType.Map ||
-    settings.background.bgType === BgType.None,
+  () => isDynamicBgType(settings.background.bgType) || settings.background.bgType === BgType.None,
 )
 const local = useLocalWallpaperStore()
 const variant = ref<WallpaperVariant>(isDark.value ? 'dark' : 'light')
@@ -93,13 +86,7 @@ function selectSource(value: Source) {
 }
 function currentSource(): Source {
   const type = settings.background.bgType
-  if (
-    type === BgType.Meadow ||
-    type === BgType.Beach ||
-    type === BgType.Ocean ||
-    type === BgType.Map
-  )
-    return 'dynamic'
+  if (isDynamicBgType(type)) return 'dynamic'
   if (type === BgType.Local) return 'local'
   if (type === BgType.Online) return 'online'
   if (type === BgType.None) return 'solid'
@@ -661,13 +648,10 @@ function open(url: string) {
               <span class="bg-switcher-dynamic-using" aria-hidden="true">使用中</span>
             </button>
           </div>
-          <div v-if="settings.background.bgType === BgType.Map" class="bg-switcher-settings">
+          <div v-if="dynamicActive" class="bg-switcher-settings">
             <label>
               <span>{{ t('background.meadow.fps') }}</span>
-              <el-select
-                v-model="settings.background.map.fps"
-                :aria-label="t('background.meadow.fps')"
-              >
+              <el-select v-model="settings.background.dynamic.fps" :aria-label="t('background.meadow.fps')">
                 <el-option
                   v-for="fps in [25, 30, 45, 60, 120]"
                   :key="fps"
@@ -690,20 +674,6 @@ function open(url: string) {
             </label>
           </div>
           <div v-if="settings.background.bgType === BgType.Ocean" class="bg-switcher-settings">
-            <label>
-              <span>{{ t('background.meadow.fps') }}</span>
-              <el-select
-                v-model="settings.background.ocean.fps"
-                :aria-label="t('background.meadow.fps')"
-              >
-                <el-option
-                  v-for="fps in [25, 30, 45, 60, 120]"
-                  :key="fps"
-                  :label="`${fps} FPS`"
-                  :value="fps"
-                />
-              </el-select>
-            </label>
             <label>
               <span>{{ t('background.meadow.cloudSize') }}</span>
               <el-slider v-model="settings.background.ocean.cloudSize" :min="40" :max="200" />
@@ -744,20 +714,6 @@ function open(url: string) {
           </div>
           <div v-if="settings.background.bgType === BgType.Meadow" class="bg-switcher-settings">
             <label>
-              <span>{{ t('background.meadow.fps') }}</span>
-              <el-select
-                v-model="settings.background.meadow.fps"
-                :aria-label="t('background.meadow.fps')"
-              >
-                <el-option
-                  v-for="fps in [25, 30, 45, 60, 120]"
-                  :key="fps"
-                  :label="`${fps} FPS`"
-                  :value="fps"
-                />
-              </el-select>
-            </label>
-            <label>
               <span>{{ t('background.meadow.cloudSize') }}</span>
               <el-slider v-model="settings.background.meadow.cloudSize" :min="40" :max="200" />
             </label>
@@ -795,19 +751,6 @@ function open(url: string) {
             </label>
           </div>
           <div v-if="settings.background.bgType === BgType.Beach" class="bg-switcher-settings">
-            <label>
-              <span>{{ t('background.meadow.fps') }}</span>
-              <el-select
-                v-model="settings.background.beach.fps"
-                :aria-label="t('background.meadow.fps')"
-              >
-                <el-option
-                  v-for="fps in [25, 30, 45, 60, 120]"
-                  :key="fps"
-                  :label="`${fps} FPS`"
-                  :value="fps"
-              /></el-select>
-            </label>
             <label>
               <span>{{ t('background.waterCaustics') }}</span>
               <el-switch

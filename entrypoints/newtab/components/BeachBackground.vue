@@ -18,7 +18,7 @@ const { running, fail, getRenderer } = useDynamicWallpaper({
     return createBeachScene(canvas.value, treeCanvas.value, [palm1, palm2, palm3])
   },
   draw: (renderer, time, bounds) => renderer.draw(time, bounds, settings.background.beach),
-  fps: () => settings.background.beach.fps,
+  fps: () => settings.background.dynamic.fps,
   onError: () => emit('error'),
 })
 function ripple(x: number, y: number) {

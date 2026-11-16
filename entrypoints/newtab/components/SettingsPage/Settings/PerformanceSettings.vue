@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTranslation } from 'i18next-vue'
 
-import { BgType } from '@/shared/enums'
+import { isDynamicBgType } from '@/shared/enums'
 import { defaultSettings, useSettingsStore } from '@/shared/settings'
 import { BLUR_RANGE, EFFECT_SURFACES, TRANSPARENCY_RANGE } from '@/shared/settings/constraints'
 
@@ -12,10 +12,7 @@ const { t } = useTranslation('settings')
 const settings = useSettingsStore()
 const meadowActive = computed(
   () =>
-    settings.background.bgType === BgType.Meadow ||
-    settings.background.bgType === BgType.Beach ||
-    settings.background.bgType === BgType.Ocean ||
-    settings.background.bgType === BgType.Map,
+    isDynamicBgType(settings.background.bgType),
 )
 const parallaxDisabled = computed(() => meadowActive.value || isOnlyTouchDevice.value)
 const MAX_TRANSPARENCY = TRANSPARENCY_RANGE[1]
