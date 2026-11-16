@@ -719,6 +719,11 @@ html.colorful.dialog-transparent .settings__dialog {
   .menu-title {
     flex: 1;
   }
+
+  .el-scrollbar {
+    padding-right: 8px;
+    margin-right: -8px;
+  }
 }
 
 html.colorful .settings__dialog {
