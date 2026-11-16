@@ -113,7 +113,20 @@ export default defineConfig({
         relativeDest: 'dev-worker-bootstrap.js',
         contents: `const workerUrl = new URL(import.meta.url).searchParams.get('url')
 if (!workerUrl?.startsWith(${JSON.stringify(devOrigin)})) throw new Error('Invalid dev worker URL')
-await import(workerUrl)`,
+const queuedMessages = []
+let ready = false
+const queueMessage = (event) => {
+  if (ready) return
+  event.stopImmediatePropagation()
+  queuedMessages.push(event)
+}
+self.addEventListener('message', queueMessage)
+await import(workerUrl)
+ready = true
+self.removeEventListener('message', queueMessage)
+const onmessage = self.onmessage
+if (!onmessage) throw new Error('Dev worker did not register a message handler')
+for (const event of queuedMessages) onmessage.call(self, event)`,
       })
     },
   },
