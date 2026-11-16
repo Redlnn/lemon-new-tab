@@ -893,7 +893,11 @@ function open(url: string) {
 
     <template #footer>
       <el-space>
-        <el-tooltip effect="dark" :content="t('background.resetCurrentDynamicHint')" placement="top-end">
+        <el-tooltip
+          effect="dark"
+          :content="t('background.resetCurrentDynamicHint')"
+          placement="top-end"
+        >
           <el-button v-if="dynamicActive" text @click="resetDynamicSettings">
             {{ t('background.resetDefaults') }}
           </el-button>

@@ -393,8 +393,7 @@ export function createMapMotion(map: MotionData, getCounts: () => MapCounts) {
       box.y = y
       box.width = width
       box.height = height
-    }
-    else dirty.push({ x, y, width, height })
+    } else dirty.push({ x, y, width, height })
     dirtyCount++
   }
   return (
