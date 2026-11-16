@@ -12,6 +12,7 @@ import beachPalette from '@newtab/shared/wallpaper/beach/beachPalette.json'
 import mapPalette from '@newtab/shared/wallpaper/map/mapPalette.json'
 // 从无云、无角色的草地画面采样 #97bb67，预先生成明暗两套莫奈颜色。
 import meadowPalette from '@newtab/shared/wallpaper/meadow/meadowPalette.json'
+import oceanPalette from '@newtab/shared/wallpaper/ocean/oceanPalette.json'
 
 export function useBackgroundMonet(options: {
   backgroundUrl: Ref<string>
@@ -111,8 +112,13 @@ export function useBackgroundMonet(options: {
       if (!enabled || !isDynamicBgType(type)) return
       invalidate()
       disposeMonetWorker()
-      const palette =
-        type === BgType.Meadow ? meadowPalette : type === BgType.Map ? mapPalette : beachPalette
+
+      const paletteMap: Partial<Record<BgType, typeof meadowPalette>> = {
+        [BgType.Meadow]: meadowPalette,
+        [BgType.Map]: mapPalette,
+        [BgType.Ocean]: oceanPalette,
+      }
+      const palette = paletteMap[type] ?? beachPalette
       const sourceKey = type
       applyStoredMonetColors({ ...palette, sourceKey, timestamp: Date.now() })
       void saveMonetColors(palette.cssLight, palette.cssDark, sourceKey).catch(console.error)
