@@ -482,6 +482,10 @@ html.dialog-acrylic .bg-switcher__drawer.el-drawer.rtl {
   }
 }
 
+.bg-switcher-dynamic + .bg-switcher-settings .bg-switcher-hint {
+  margin-top: 0;
+}
+
 .bg-switcher-rotation {
   display: flex;
   flex-wrap: wrap;

@@ -10,6 +10,7 @@
     "apply": "Uygula",
     "source": "Duvar kağıdı kaynağı",
     "dynamic": "Canlı duvar kağıtları",
+    "dynamicPerformanceHint": "Canlı duvar kağıdı kullanırken kaynak tüketimini azaltmak için Ayarlar > Performans ve Efektler bölümündeki bulanıklık efektlerini kapatın.",
     "dynamicDisabledNote": "Dinamik arka plan kullanılırken bazı özellikler devre dışı bırakılır",
     "waterCaustics": "Su ışık yansımaları",
     "map": {
@@ -156,7 +157,8 @@
       "title": "Uyarı",
       "unknownSource": "Bilinmeyen kaynaklardan alınan görselleri arka plan olarak kullanmak cihazınızı saldırılara maruz bırakabilir. Devam etmek istiyor musunuz?"
     },
-    "resetDefaults": "Varsayılanları geri yükle"
+    "resetDefaults": "Varsayılanları geri yükle",
+    "resetCurrentDynamicHint": "Yalnızca mevcut canlı duvar kağıdının ayarlarını geri yükle"
   },
   "bookmark": {
     "defaultSort": "Varsayılan sıralama",

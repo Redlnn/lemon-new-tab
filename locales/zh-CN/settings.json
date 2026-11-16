@@ -10,6 +10,7 @@
     "apply": "应用",
     "source": "选择壁纸来源",
     "dynamic": "动态壁纸",
+    "dynamicPerformanceHint": "使用动态壁纸时建议在“设置-性能与效果”中禁用所有模糊效果以减少性能消耗。",
     "dynamicDisabledNote": "使用动态背景时部分功能将被禁用",
     "waterCaustics": "水面波光",
     "map": {
@@ -156,7 +157,8 @@
       "title": "警告",
       "unknownSource": "使用未知来源的图片作为背景可能会使你的设备遭到攻击，是否继续？"
     },
-    "resetDefaults": "恢复默认"
+    "resetDefaults": "恢复默认",
+    "resetCurrentDynamicHint": "仅恢复当前动态壁纸设置"
   },
   "bookmark": {
     "defaultSort": "默认排序方式",

@@ -10,6 +10,7 @@
     "apply": "Apply",
     "source": "Wallpaper source",
     "dynamic": "Live wallpapers",
+    "dynamicPerformanceHint": "When using a live wallpaper, disable blur effects in Settings > Performance & Effects to reduce resource usage.",
     "dynamicDisabledNote": "Some features will be disabled when using a dynamic background",
     "waterCaustics": "Water caustics",
     "map": {
@@ -156,7 +157,8 @@
       "title": "Warning",
       "unknownSource": "Using images from unknown sources as backgrounds may expose your device to attacks. Do you want to continue?"
     },
-    "resetDefaults": "Restore defaults"
+    "resetDefaults": "Restore defaults",
+    "resetCurrentDynamicHint": "Only restore settings for the current live wallpaper"
   },
   "bookmark": {
     "defaultSort": "Default sorting",

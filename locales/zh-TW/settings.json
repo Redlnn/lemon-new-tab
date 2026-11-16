@@ -10,6 +10,7 @@
     "apply": "套用",
     "source": "選擇桌布來源",
     "dynamic": "動態桌布",
+    "dynamicPerformanceHint": "使用動態桌布時，建議在「設定－效能與效果」中停用所有模糊效果，以降低效能消耗。",
     "dynamicDisabledNote": "使用動態背景時部分功能將被停用",
     "waterCaustics": "水面波光",
     "map": {
@@ -156,7 +157,8 @@
       "title": "警告",
       "unknownSource": "使用來源不明的圖片作為背景可能會使裝置遭到攻擊，是否繼續？"
     },
-    "resetDefaults": "還原預設值"
+    "resetDefaults": "還原預設值",
+    "resetCurrentDynamicHint": "僅還原目前的動態桌布設定"
   },
   "bookmark": {
     "defaultSort": "預設排序方式",

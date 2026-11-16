@@ -659,6 +659,9 @@ function open(url: string) {
             </button>
           </div>
           <div v-if="dynamicActive" class="bg-switcher-settings">
+            <p class="bg-switcher-hint">
+              {{ t('background.dynamicPerformanceHint') }}
+            </p>
             <label>
               <span>{{ t('background.meadow.fps') }}</span>
               <el-select
@@ -823,9 +826,6 @@ function open(url: string) {
                 />
               </label>
             </template>
-            <el-button text @click="resetDynamicSettings">{{
-              t('background.resetDefaults')
-            }}</el-button>
           </div>
         </template>
         <div v-if="source === 'online'" class="bg-switcher-online">
@@ -892,7 +892,14 @@ function open(url: string) {
     </el-scrollbar>
 
     <template #footer>
-      <el-button type="primary" @click="opened = false">{{ label('done') }}</el-button>
+      <el-space>
+        <el-tooltip effect="dark" :content="t('background.resetCurrentDynamicHint')" placement="top-end">
+          <el-button v-if="dynamicActive" text @click="resetDynamicSettings">
+            {{ t('background.resetDefaults') }}
+          </el-button>
+        </el-tooltip>
+        <el-button type="primary" @click="opened = false">{{ label('done') }}</el-button>
+      </el-space>
     </template>
   </el-drawer>
 </template>
