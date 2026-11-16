@@ -17,7 +17,11 @@ const { running, fail, getRenderer } = useDynamicWallpaper({
     renderer.draw(
       time,
       bounds,
-      settings.background.meadow,
+      {
+        ...settings.background.meadow,
+        navigationCloudSize: settings.background.dynamic.navigationCloudSize,
+        catCount: settings.background.meadow.catCount,
+      },
       settings.quickLinks.enabled && !settings.quickLinks.useScroll,
     ),
   fps: () => settings.background.dynamic.fps,

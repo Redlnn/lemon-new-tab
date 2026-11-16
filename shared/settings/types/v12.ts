@@ -36,12 +36,21 @@ export interface SettingsSchemaV12 extends Omit<
     suggestionProviders: SearchSuggestionProviderId[]
     browserHistoryLimit: number
   }
-  background: Omit<SettingsSchemaV11['background'], 'local' | 'localDark' | 'map' | 'ocean' | 'beach' | 'meadow'> & {
+  background: Omit<
+    SettingsSchemaV11['background'],
+    'local' | 'localDark' | 'map' | 'ocean' | 'beach' | 'meadow'
+  > & {
     pauseWhenHidden: boolean
     solid: { light: string; dark: string }
     rotation: { enabled: boolean; order: 'random' | 'ordered' }
-    dynamic: { fps: 25 | 30 | 45 | 60 | 120 }
-    map: { trains: number; ships: number; islands: number }
+    dynamic: { fps: 25 | 30 | 45 | 60 | 120; navigationCloudSize: number }
+    map: {
+      trains: number
+      ships: number
+      islands: number
+      showNavigationLake: boolean
+      navigationLakeSize: number
+    }
     ocean: {
       cloudSize: number
       cloudCover: number
@@ -61,6 +70,7 @@ export interface SettingsSchemaV12 extends Omit<
       palms: number
       kayaks: number
       birds: number
+      showMainIsland: boolean
       waterCaustics: boolean
     }
     meadow: {
@@ -70,6 +80,7 @@ export interface SettingsSchemaV12 extends Omit<
       showNavigationCloud: boolean
       showBoy: boolean
       showCat: boolean
+      catCount: number
       clickToMove: boolean
     }
   }

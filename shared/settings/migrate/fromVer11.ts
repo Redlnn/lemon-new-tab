@@ -1,5 +1,5 @@
-import type { SettingsSchemaV11, SettingsSchemaV12 } from '../types'
 import { defaultSettings } from '../default.ts'
+import type { SettingsSchemaV11, SettingsSchemaV12 } from '../types'
 
 import type { PartialSettings } from './partial.ts'
 

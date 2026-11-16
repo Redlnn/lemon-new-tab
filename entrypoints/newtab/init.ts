@@ -21,11 +21,7 @@ async function bootstrapNewtab() {
     import('./shared/colorMode'),
     syncStartupTask,
   ])
-  const [, startup] = await Promise.all([
-    initI18n(),
-    shouldStartApp(),
-    initColorModePreference(),
-  ])
+  const [, startup] = await Promise.all([initI18n(), shouldStartApp(), initColorModePreference()])
   if (!startup.canStart) {
     return
   }

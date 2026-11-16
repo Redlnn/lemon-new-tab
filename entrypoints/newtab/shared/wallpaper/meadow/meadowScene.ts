@@ -29,8 +29,10 @@ type MeadowOptions = {
   cloudCover: number
   flow: number
   showNavigationCloud: boolean
+  navigationCloudSize?: number
   showBoy: boolean
   showCat: boolean
+  catCount?: number
   sailboats?: number
   yachts?: number
   whales?: number
@@ -42,7 +44,9 @@ type Field = { s: Float32Array }
 
 export function createDynamicScene(
   cv: HTMLCanvasElement,
-  scene: { characters: MeadowDependencies; ocean?: never } | { characters?: never; ocean: OceanDependencies },
+  scene:
+    | { characters: MeadowDependencies; ocean?: never }
+    | { characters?: never; ocean: OceanDependencies },
 ) {
   const ocean = !!scene.ocean
   const context = cv.getContext('webgl2', {
@@ -1018,14 +1022,15 @@ void main() {
         bounds?.width !== lastBounds?.width ||
         bounds?.height !== lastBounds?.height
       const sizeChanged =
-        P.sigma !== options.cloudSize ||
+        P.sigma !== (options.navigationCloudSize ?? options.cloudSize) ||
         P.showNavigationCloud !== (options.showNavigationCloud ? 1 : 0)
       P.showNavigationCloud = options.showNavigationCloud ? 1 : 0
-      P.sigma = options.cloudSize
+      P.sigma = options.navigationCloudSize ?? options.cloudSize
       P.cover = options.cloudCover
       P.flow = options.flow
       P.showBoy = !ocean && options.showBoy ? 1 : 0
       P.showCat = !ocean && options.showCat ? 1 : 0
+      if (characters) characters.setCatCount(options.catCount ?? 2)
       if (ocean) {
         P.sailboats = options.sailboats ?? 1
         P.yachts = options.yachts ?? 1

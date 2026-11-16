@@ -1,5 +1,5 @@
-import { waterCausticsShader } from '../dynamic/waterCaustics'
 import { beachGullShader } from '../dynamic/gullShader'
+import { waterCausticsShader } from '../dynamic/waterCaustics'
 
 export const beachVertexShader = `#version 300 es
 void main() {

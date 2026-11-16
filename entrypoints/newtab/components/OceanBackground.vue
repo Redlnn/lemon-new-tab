@@ -17,7 +17,12 @@ const { running, fail, getRenderer } = useDynamicWallpaper({
     renderer.draw(
       time,
       bounds,
-      { ...settings.background.ocean, showBoy: false, showCat: false },
+      {
+        ...settings.background.ocean,
+        navigationCloudSize: settings.background.dynamic.navigationCloudSize,
+        showBoy: false,
+        showCat: false,
+      },
       settings.quickLinks.enabled && !settings.quickLinks.useScroll,
     ),
   fps: () => settings.background.dynamic.fps,

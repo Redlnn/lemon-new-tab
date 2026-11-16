@@ -943,6 +943,7 @@ void main() {
 
   // 每次打开场景随机选择两只猫，贴图只上传一次，并优先避开男孩的路线。
   let meadowCatScene: ReturnType<typeof createMeadowCatScene> | null = null
+  let catCount = 2
   const meadowCatSegmentDistance = (p: Point, a: Point, b: Point) => {
     const dx = b.x - a.x,
       dy = b.y - a.y
@@ -1119,7 +1120,7 @@ void main() {
           )
           places = [first, second]
         }
-        return cats.flatMap((cat, index) => {
+        return cats.slice(0, catCount).flatMap((cat, index) => {
           const place = places[index]
           if (!cat.ready || !place) return []
           const size = place.size,
@@ -1145,6 +1146,9 @@ void main() {
   }
 
   return {
+    setCatCount(count: number) {
+      catCount = Math.max(0, Math.min(3, Math.round(count)))
+    },
     moveBoy(x: number, y: number) {
       syncScene()
       if (!meadowBoyScene) meadowBoyScene = createMeadowBoyScene()

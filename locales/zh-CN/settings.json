@@ -13,11 +13,13 @@
     "dynamicDisabledNote": "使用动态背景时部分功能将被禁用",
     "waterCaustics": "水面波光",
     "map": {
-      "name": "奇幻地图",
+      "name": "地图",
+      "showNavigationLake": "导航大湖",
+      "navigationLakeSize": "导航大湖大小",
       "trains": "火车数量",
       "ships": "船数量",
       "islands": "岛屿数量",
-      "error": "奇幻地图背景无法启动，已切换至纯色背景。"
+      "error": "地图背景无法启动，已切换至纯色背景。"
     },
     "ocean": {
       "sailboats": "帆船数量",
@@ -25,10 +27,11 @@
       "whales": "鲸鱼数量",
       "birds": "海鸟数量",
       "name": "海洋",
-      "error": "海洋背景无法启动，已切换至纯色背景。"
+      "error": "海洋背景无法启动，已切换至纯色背景。",
+      "showNavigationCloud": "导航云团"
     },
     "beach": {
-      "sigma": "离岸距离",
+      "sigma": "海岛大小",
       "warp": "海岸曲折",
       "shoal": "透明浅滩",
       "shallow": "浅海宽度",
@@ -36,19 +39,22 @@
       "kayaks": "皮划艇数量",
       "birds": "海鸟数量",
       "name": "沙滩",
+      "showMainIsland": "导航主岛",
       "error": "沙滩背景无法启动，已切换到纯色背景"
     },
     "meadow": {
       "name": "草地",
       "fps": "帧率上限",
-      "cloudSize": "快捷链接云团大小",
+      "navigationCloudSize": "导航云团大小",
       "cloudCover": "随机云数量",
       "flow": "云流动速度",
       "showNavigationCloud": "导航云团",
       "showBoy": "显示男孩",
       "clickToMove": "点击背景让男孩跑动",
+      "catCount": "小猫数量",
       "showCat": "显示小猫",
-      "error": "草地背景无法启动，已切换至纯色背景。"
+      "error": "草地背景无法启动，已切换至纯色背景。",
+      "cloudSize": "随机云团大小"
     },
     "bingFrom": "Bing 每日图片",
     "blur": "模糊强度",
@@ -132,7 +138,6 @@
     "showDownloadBtn": "显示下载按钮",
     "showDownloadBtnNote": "可下载当前显示的必应、在线或本地壁纸",
     "title": "背景",
-
     "type": {
       "local": "本地图片/视频",
       "online": "在线图片"
@@ -150,7 +155,8 @@
       "notGranted": "未授予权限，无法访问该地址",
       "title": "警告",
       "unknownSource": "使用未知来源的图片作为背景可能会使你的设备遭到攻击，是否继续？"
-    }
+    },
+    "resetDefaults": "恢复默认"
   },
   "bookmark": {
     "defaultSort": "默认排序方式",

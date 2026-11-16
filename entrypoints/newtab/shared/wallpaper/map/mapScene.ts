@@ -143,6 +143,7 @@ export function createMapScene(
     previewBitmap?.close()
     previewBitmap = null
     paintBackground()
+    sendPending()
   }
   worker.onmessage = (
     event: MessageEvent<MapFrame | MapPreview | MapError | MapPreviewComplete>,
@@ -177,17 +178,16 @@ export function createMapScene(
       console.error('[map]', frame.error)
       onError()
     } else {
+      const firstFrame = !bitmap
       const expanded =
         !!bitmap &&
-        (width > bitmap.width / bitmapScale + 80 ||
-          height > bitmap.height / bitmapScale + 80)
-      finishReveal()
+        (width > bitmap.width / bitmapScale + 80 || height > bitmap.height / bitmapScale + 80)
       bitmap?.close()
       bitmap = frame.bitmap
       bitmapScale = frame.scale
       coast.begin(bitmap, frame.paper, frame.field, frame.scale, lastTime, lastAnimate && !expanded)
       frame.paper.close()
-      introActive = !!frame.base && !!frame.details && coast.isActive() && !background.dataset.ready
+      introActive = firstFrame && !!frame.base && !!frame.details && coast.isActive()
       if (introActive) {
         baseBitmap = frame.base!
         detailsBitmap = frame.details!
@@ -217,12 +217,30 @@ export function createMapScene(
     sendPending()
   }
   worker.onerror = () => {
-    if (!disposed) onError()
+    if (!disposed) {
+      console.error('[map] Worker failed to load or execute')
+      onError()
+    }
+  }
+  worker.onmessageerror = (event) => {
+    if (!disposed) {
+      console.error('[map] Worker returned an unreadable message:', event)
+      onError()
+    }
   }
   function sendPending() {
-    if (!pending || busy || disposed) return
+    if (!pending || busy || disposed || introActive) return
     busy = true
-    worker.postMessage(pending)
+    try {
+      // A queued request can wait until the initial transition completes.
+      // Determine this at dispatch time, not when the layout was measured.
+      pending.first = !bitmap
+      worker.postMessage(pending)
+    } catch (error) {
+      busy = false
+      console.error('[map] Could not send map request to worker:', error)
+      onError()
+    }
     pending = null
   }
   function requestMap(immediate = false, previewOnly = false) {
@@ -231,7 +249,8 @@ export function createMapScene(
       const viewWidth = window.innerWidth,
         viewHeight = window.innerHeight
       const islandLimit = getCounts().islands
-      const nextKey = `${previewOnly},${width},${height},${scale},${viewWidth},${viewHeight},${key},${islandLimit}`
+      const counts = getCounts()
+      const nextKey = `${previewOnly},${width},${height},${scale},${viewWidth},${viewHeight},${key},${islandLimit},${counts.showNavigationLake},${counts.navigationLakeSize}`
       if (nextKey === requestedKey) return
       requestedKey = nextKey
       const quiet = [
@@ -283,7 +302,9 @@ export function createMapScene(
         quiet,
         previewOnly,
         islandLimit,
-        first: !bitmap && !background.dataset.ready,
+        showNavigationLake: counts.showNavigationLake,
+        navigationLakeSize: counts.navigationLakeSize,
+        first: !bitmap,
         preview: previewOnly || (fillNeeded && !hasPreview),
         compassCandidates: compassCandidates.length
           ? compassCandidates
@@ -296,15 +317,15 @@ export function createMapScene(
     else timer = setTimeout(send, 80)
   }
   function resizeViewport(trim = false) {
-    if (introActive) {
-      coast.draw(lastTime, false)
-      finishReveal()
-    }
     const nextScale = Math.round(Math.min(devicePixelRatio || 1, 1.5) * 100) / 100
     const reuse = !trim && nextScale === scale
     const nextWidth = Math.max(reuse ? width : 0, Math.ceil(window.innerWidth / 256) * 256 + 128)
     const nextHeight = Math.max(reuse ? height : 0, Math.ceil(window.innerHeight / 256) * 256 + 128)
     if (nextWidth === width && nextHeight === height && scale === nextScale) return false
+    if (introActive) {
+      coast.draw(lastTime, false)
+      finishReveal()
+    }
     width = nextWidth
     height = nextHeight
     scale = nextScale
@@ -375,7 +396,13 @@ export function createMapScene(
       baseBitmap?.close()
       detailsBitmap?.close()
       coast.dispose()
-      background.width = background.height = canvas.width = canvas.height = detailsCanvas.width = detailsCanvas.height = 0
+      background.width =
+        background.height =
+        canvas.width =
+        canvas.height =
+        detailsCanvas.width =
+        detailsCanvas.height =
+          0
     },
   }
 }

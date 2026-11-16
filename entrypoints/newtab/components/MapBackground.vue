@@ -34,7 +34,11 @@ watch(
   { deep: true, flush: 'post' },
 )
 watch(
-  () => settings.background.map.islands,
+  () => [
+    settings.background.map.islands,
+    settings.background.map.showNavigationLake,
+    settings.background.map.navigationLakeSize,
+  ],
   () => getRenderer()?.invalidateLayout(running.value),
 )
 </script>

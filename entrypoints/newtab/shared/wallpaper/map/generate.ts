@@ -102,6 +102,10 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
     width,
     height,
     navigation,
+    navigationLakeCenter:
+      navigation && request.showNavigationLake !== false
+        ? { x: navigation.x + navigation.width * 0.51, y: navigation.y + navigation.height * 0.55 }
+        : null,
     compass,
     ...coastContours(width, height, water),
     rivers: [],
@@ -664,14 +668,13 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
         forest = noise(seed + 108, x / 160, y / 160),
         chance = random(seed + 16, gx, gy),
         onIsland = terrain.isIsland(x, y)
-      const kind =
-        onIsland
-          ? chance < 0.16
-            ? 'grass'
-            : chance > 0.89
-              ? 'tree'
-              : null
-          : r > 0.55 && d > 50
+      const kind = onIsland
+        ? chance < 0.16
+          ? 'grass'
+          : chance > 0.89
+            ? 'tree'
+            : null
+        : r > 0.55 && d > 50
           ? 'mountain'
           : r > 0.36
             ? 'hill'

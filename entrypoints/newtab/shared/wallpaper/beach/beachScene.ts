@@ -209,15 +209,21 @@ export function createBeachScene(
       return ((n ^= n >>> 16) >>> 0) / 4294967296
     }
   }
-  const setLayout = (bounds: Bounds | null, reset = false, startField?: Field) => {
-    const main = bounds
-      ? {
-          x: bounds.left - bounds.width * 0.05,
-          y: bounds.top + Math.min(20, bounds.height * 0.1),
-          w: bounds.width * 1.1,
-          h: bounds.height - Math.min(20, bounds.height * 0.1),
-        }
-      : null
+  const setLayout = (
+    bounds: Bounds | null,
+    reset = false,
+    startField?: Field,
+    showMainIsland = true,
+  ) => {
+    const main =
+      showMainIsland && bounds
+        ? {
+            x: bounds.left - bounds.width * 0.05,
+            y: bounds.top + Math.min(20, bounds.height * 0.1),
+            w: bounds.width * 1.1,
+            h: bounds.height - Math.min(20, bounds.height * 0.1),
+          }
+        : null
     const key = `${W},${H},${main?.x},${main?.y},${main?.w},${main?.h}`
     if (!reset && key === layoutKey) return
     layoutKey = key
@@ -387,13 +393,13 @@ export function createBeachScene(
         P.warp = pendingField.warp
         P.palms = pendingField.palms
         pendingField = undefined
-        setLayout(bounds, true)
+        setLayout(bounds, true, undefined, options.showMainIsland)
       }
     } else pendingField = undefined
     const key = bounds ? `${bounds.left},${bounds.top},${bounds.width},${bounds.height}` : ''
     if (key !== lastBounds) {
       lastBounds = key
-      setLayout(bounds)
+      setLayout(bounds, false, undefined, options.showMainIsland)
     }
     if (!current || !previous) return
     const progress = Math.min(Math.max((sceneTime - transitionStart) / transitionDuration, 0), 1)

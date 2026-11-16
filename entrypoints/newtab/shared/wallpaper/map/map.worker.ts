@@ -28,6 +28,7 @@ export type MapError = { id: number; error: string }
 export type MapPreviewComplete = { id: number; previewComplete: true }
 let previous: MapData | undefined
 let previousIslandLimit: number | undefined
+let previousLakeKey = ''
 self.onmessage = (event: MessageEvent<MapRequest>) => {
   const request = event.data
   try {
@@ -75,7 +76,10 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
     const generationStart = performance.now(),
       map = generateMap(
         request,
-        previousIslandLimit === request.islandLimit ? previous : undefined,
+        previousIslandLimit === request.islandLimit &&
+          previousLakeKey === `${request.showNavigationLake},${request.navigationLakeSize}`
+          ? previous
+          : undefined,
       )
     const generationMs = performance.now() - generationStart
     const canvas = new OffscreenCanvas(
@@ -84,8 +88,7 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
     )
     const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) throw new Error('Map canvas unavailable')
-    let base: ImageBitmap | undefined,
-      details: ImageBitmap | undefined
+    let base: ImageBitmap | undefined, details: ImageBitmap | undefined
     if (request.first) {
       paintTerrain(ctx, map, request.scale)
       base = canvas.transferToImageBitmap()
@@ -112,7 +115,15 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
       details,
       paper,
       field,
-      motion: { navigation, compass, places, rails, waves, ships },
+      motion: {
+        navigation,
+        navigationLakeCenter: map.navigationLakeCenter,
+        compass,
+        places,
+        rails,
+        waves,
+        ships,
+      },
       milliseconds: performance.now() - start,
       counts: {
         generationMs: Math.round(generationMs),
@@ -130,10 +141,17 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
       },
     }
     self.postMessage(frame, {
-      transfer: [bitmap, paper, ...(base ? [base] : []), ...(details ? [details] : []), field.values.buffer as ArrayBuffer],
+      transfer: [
+        bitmap,
+        paper,
+        ...(base ? [base] : []),
+        ...(details ? [details] : []),
+        field.values.buffer as ArrayBuffer,
+      ],
     })
     previous = map
     previousIslandLimit = request.islandLimit
+    previousLakeKey = `${request.showNavigationLake},${request.navigationLakeSize}`
   } catch (error) {
     self.postMessage({ id: request.id, error: String(error) })
   }

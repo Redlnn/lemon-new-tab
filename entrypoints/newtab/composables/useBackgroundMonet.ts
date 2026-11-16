@@ -108,14 +108,11 @@ export function useBackgroundMonet(options: {
   watch(
     () => [settings.theme.monetColor, settings.background.bgType] as const,
     ([enabled, type]) => {
-      if (
-        !enabled ||
-        !isDynamicBgType(type)
-      )
-        return
+      if (!enabled || !isDynamicBgType(type)) return
       invalidate()
       disposeMonetWorker()
-      const palette = type === BgType.Meadow ? meadowPalette : type === BgType.Map ? mapPalette : beachPalette
+      const palette =
+        type === BgType.Meadow ? meadowPalette : type === BgType.Map ? mapPalette : beachPalette
       const sourceKey = type
       applyStoredMonetColors({ ...palette, sourceKey, timestamp: Date.now() })
       void saveMonetColors(palette.cssLight, palette.cssDark, sourceKey).catch(console.error)

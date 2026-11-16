@@ -31,8 +31,10 @@ export function createTerrain(request: MapRequest) {
     if (!navigation) return Infinity
     // Organic inland water occupies most of the navigation backdrop. Unlike a
     // UI panel its contour may retreat under the outer icons and group tabs.
-    const rx = navigation.width * 0.44 + 8,
-      ry = Math.max(navigation.height * 0.5 + 8, Math.min(112, Math.max(62, rx * 0.38)))
+    if (request.showNavigationLake === false) return Infinity
+    const size = Math.max(40, Math.min(200, request.navigationLakeSize ?? 100)) / 100
+    const rx = (navigation.width * 0.44 + 8) * size,
+      ry = Math.max(navigation.height * 0.5 + 8, Math.min(112, Math.max(62, rx * 0.38))) * size
     const dx = (x - navigation.x - navigation.width * 0.51) / rx
     const dy = (y - navigation.y - navigation.height * 0.55) / ry
     const angle = Math.atan2(dy, dx)

@@ -58,9 +58,7 @@ const solidColor = computed(
   () => settings.background.solid[isDark.value ? 'dark' : 'light'] || 'var(--el-bg-color-page)',
 )
 // 动态壁纸的场景本身有入场动画，首屏无需先把整张画布从透明渐显。
-const isSwitching = ref(
-  !isDynamicBgType(settings.background.bgType),
-)
+const isSwitching = ref(!isDynamicBgType(settings.background.bgType))
 
 const imageRef = useTemplateRef('imageRef')
 const videoRef = useTemplateRef('videoRef')
@@ -120,9 +118,7 @@ function updateVideoPlayback() {
 
 const backgroundCss = computed(() => ({
   'background-container--focused__blur':
-    !isDynamicBgType(renderedType.value) &&
-    focusStore.isFocused &&
-    settings.perf.focus.blur,
+    !isDynamicBgType(renderedType.value) && focusStore.isFocused && settings.perf.focus.blur,
 }))
 
 // 视差效果
@@ -420,9 +416,7 @@ async function updateBackgroundURL(type: BgType): Promise<void> {
       return
     }
 
-    const animate =
-      settings.perf.bgSwitchAnim &&
-      !isDynamicBgType(type)
+    const animate = settings.perf.bgSwitchAnim && !isDynamicBgType(type)
     // 动态壁纸由场景自身入场，其他壁纸先让旧画面渐隐。
     if (hasDisplayedBackground && animate) {
       isSwitching.value = true
@@ -625,26 +619,17 @@ onUnmounted(() => {
     />
     <Transition
       name="bg-fade"
-      :css="
-        settings.perf.bgSwitchAnim && !isDynamicBgType(settings.background.bgType)
-      "
+      :css="settings.perf.bgSwitchAnim && !isDynamicBgType(settings.background.bgType)"
       @before-leave="(element) => element.querySelector('video')?.pause()"
     >
       <div
-        :key="
-          isDynamicBgType(renderedType)
-            ? renderedType
-            : bgURL
-        "
+        :key="isDynamicBgType(renderedType) ? renderedType : bgURL"
         v-show="!isSwitching"
         ref="bgRef"
         class="background-container"
         :class="backgroundCss"
         :style="{
-          scale:
-            isDynamicBgType(renderedType)
-              ? 1
-              : backgroundScale,
+          scale: isDynamicBgType(renderedType) ? 1 : backgroundScale,
           translate: backgroundTranslate,
           '--parallax-inset':
             backgroundParallaxEnabled && settings.background.blur < 10 ? '20px' : '0px',

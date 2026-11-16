@@ -13,11 +13,13 @@
     "dynamicDisabledNote": "使用動態背景時部分功能將被停用",
     "waterCaustics": "水面波光",
     "map": {
-      "name": "奇幻地圖",
+      "name": "地圖",
+      "showNavigationLake": "導航大湖",
+      "navigationLakeSize": "導航大湖大小",
       "trains": "火車數量",
       "ships": "船數量",
       "islands": "島嶼數量",
-      "error": "奇幻地圖背景無法啟動，已切換至純色背景。"
+      "error": "地圖背景無法啟動，已切換至純色背景。"
     },
     "ocean": {
       "sailboats": "帆船數量",
@@ -25,10 +27,11 @@
       "whales": "鯨魚數量",
       "birds": "海鳥數量",
       "name": "海洋",
-      "error": "海洋背景無法啟動，已切換至純色背景。"
+      "error": "海洋背景無法啟動，已切換至純色背景。",
+      "showNavigationCloud": "導航雲團"
     },
     "beach": {
-      "sigma": "離岸距離",
+      "sigma": "海島大小",
       "warp": "海岸曲折",
       "shoal": "透明淺灘",
       "shallow": "淺海寬度",
@@ -36,19 +39,22 @@
       "kayaks": "獨木舟數量",
       "birds": "海鳥數量",
       "name": "沙灘",
+      "showMainIsland": "導航主島",
       "error": "沙灘背景無法啟動，已切換至純色背景"
     },
     "meadow": {
       "name": "草地",
       "fps": "畫面更新率上限",
-      "cloudSize": "快速連結雲團大小",
+      "navigationCloudSize": "導航雲團大小",
       "cloudCover": "隨機雲數量",
       "flow": "雲流動速度",
       "showNavigationCloud": "導航雲團",
       "showBoy": "顯示男孩",
       "clickToMove": "點擊背景讓男孩跑動",
+      "catCount": "小貓數量",
       "showCat": "顯示小貓",
-      "error": "草地背景無法啟動，已切換至純色背景。"
+      "error": "草地背景無法啟動，已切換至純色背景。",
+      "cloudSize": "隨機雲團大小"
     },
     "bingFrom": "Bing 每日圖片",
     "blur": "模糊強度",
@@ -132,7 +138,6 @@
     "showDownloadBtn": "顯示下載按鈕",
     "showDownloadBtnNote": "可下載目前顯示的必應、線上或本機桌布",
     "title": "背景",
-
     "type": {
       "local": "本機圖片/影片",
       "online": "線上圖片"
@@ -150,7 +155,8 @@
       "notGranted": "未授權，無法載入背景圖片",
       "title": "警告",
       "unknownSource": "使用來源不明的圖片作為背景可能會使裝置遭到攻擊，是否繼續？"
-    }
+    },
+    "resetDefaults": "還原預設值"
   },
   "bookmark": {
     "defaultSort": "預設排序方式",

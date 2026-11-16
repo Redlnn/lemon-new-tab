@@ -585,24 +585,8 @@ html.dialog-acrylic .bg-switcher__drawer.el-drawer.rtl {
     width: 150px;
   }
 
-  .bg-switcher-settings-count {
-    display: flex;
-    flex: 0 1 180px;
-    gap: 10px;
-    align-items: center;
-    min-width: 0;
-
-    .el-slider {
-      flex: 1;
-      width: auto;
-      min-width: 0;
-    }
-
-    output {
-      min-width: 2ch;
-      font-variant-numeric: tabular-nums;
-      text-align: right;
-    }
+  & > .el-button {
+    justify-self: end;
   }
 }
 

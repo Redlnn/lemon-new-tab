@@ -367,7 +367,7 @@ export function paintMapDetails(ctx: Context, map: MapData, request: MapRequest)
 
 export type MotionData = Pick<
   MapData,
-  'navigation' | 'compass' | 'places' | 'rails' | 'waves' | 'ships'
+  'navigation' | 'navigationLakeCenter' | 'compass' | 'places' | 'rails' | 'waves' | 'ships'
 >
 export function createMapMotion(map: MotionData, getCounts: () => MapCounts) {
   const rails = map.rails
@@ -399,8 +399,29 @@ export function createMapMotion(map: MotionData, getCounts: () => MapCounts) {
     const viewportWidth = window.innerWidth,
       viewportHeight = window.innerHeight
     const visible = (p: Point, margin: number) =>
-      p.x >= -margin && p.x <= viewportWidth + margin &&
-      p.y >= -margin && p.y <= viewportHeight + margin
+      p.x >= -margin &&
+      p.x <= viewportWidth + margin &&
+      p.y >= -margin &&
+      p.y <= viewportHeight + margin
+    const lake = map.navigationLakeCenter
+    if (lake && getCounts().showNavigationLake) {
+      const radius = getCounts().navigationLakeSize
+      const lakeRx = radius * 0.44
+      const lakeRy = radius * 0.44
+      for (let i = 0; i < 5; i++) {
+        const p = {
+          x: lake.x + Math.sin(i * 2.1) * lakeRx * 0.55,
+          y: lake.y + Math.cos(i * 1.7) * lakeRy * 0.55,
+        }
+        if (!visible(p, radius)) continue
+        mark(p.x - 18, p.y - 8, 36, 16)
+        ctx.globalAlpha = (0.3 + 0.18 * Math.sin(time * 0.65 + i * 2.4)) * revealVisibility(p)
+        ctx.beginPath()
+        ctx.ellipse(p.x, p.y + Math.sin(time + i) * 1.2, 7 + (i % 2) * 3, 2.5, 0, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+      ctx.globalAlpha = 1
+    }
     ctx.strokeStyle = ink
     ctx.lineWidth = 0.8 * 1.25
     ctx.lineCap = 'round'

@@ -18,8 +18,16 @@ export type MapRequest = {
   previewOnly?: boolean
   first?: boolean
   islandLimit?: number
+  showNavigationLake?: boolean
+  navigationLakeSize?: number
 }
-export type MapCounts = { trains: number; ships: number; islands: number }
+export type MapCounts = {
+  trains: number
+  ships: number
+  islands: number
+  showNavigationLake: boolean
+  navigationLakeSize: number
+}
 export type Place = Point & {
   id: number
   kind: 'town' | 'castle' | 'port'
@@ -38,6 +46,7 @@ export type MapData = {
   width: number
   height: number
   navigation: Bounds
+  navigationLakeCenter: Point | null
   compass: Point
   coast: Point[][][]
   waterPolygons: Point[][]

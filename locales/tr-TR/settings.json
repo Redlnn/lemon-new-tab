@@ -13,11 +13,13 @@
     "dynamicDisabledNote": "Dinamik arka plan kullanılırken bazı özellikler devre dışı bırakılır",
     "waterCaustics": "Su ışık yansımaları",
     "map": {
-      "name": "Fantastik harita",
+      "name": "Harita",
+      "showNavigationLake": "Gezinme gölü",
+      "navigationLakeSize": "Gezinme gölü boyutu",
       "trains": "Tren sayısı",
       "ships": "Gemi sayısı",
       "islands": "Ada sayısı",
-      "error": "Fantastik harita başlatılamadı. Düz renk arka plana geçildi."
+      "error": "Harita arka planı başlatılamadı. Düz renge geçildi."
     },
     "ocean": {
       "sailboats": "Yelkenliler sayısı",
@@ -25,10 +27,11 @@
       "whales": "Balinalar sayısı",
       "birds": "Deniz kuşları sayısı",
       "name": "Okyanus",
-      "error": "Okyanus duvar kağıdı başlatılamadı; düz renge geçildi."
+      "error": "Okyanus duvar kağıdı başlatılamadı; düz renge geçildi.",
+      "showNavigationCloud": "Gezinme bulutu"
     },
     "beach": {
-      "sigma": "Kıyı uzaklığı",
+      "sigma": "Ada boyutu",
       "warp": "Kıyı girintileri",
       "shoal": "Berrak sığlık",
       "shallow": "Sığ deniz genişliği",
@@ -36,19 +39,22 @@
       "kayaks": "Kanolar sayısı",
       "birds": "Martılar sayısı",
       "name": "Sahil",
-      "error": "Sahil arka planı başlatılamadı; düz renge geçildi"
+      "error": "Sahil arka planı başlatılamadı; düz renge geçildi",
+      "showMainIsland": "Ana ada"
     },
     "meadow": {
       "name": "Çayır",
       "fps": "Kare hızı sınırı",
-      "cloudSize": "Hızlı bağlantı bulut boyutu",
+      "navigationCloudSize": "Gezinme bulutu boyutu",
       "cloudCover": "Bulut yoğunluğu",
       "flow": "Bulut hızı",
       "showNavigationCloud": "Gezinme bulutu",
       "showBoy": "Çocuğu göster",
       "clickToMove": "Çocuğu hareket ettirmek için arka plana tıkla",
+      "catCount": "Kedi sayısı",
       "showCat": "Kediyi göster",
-      "error": "Çayır arka planı başlatılamadı. Düz renge geçildi."
+      "error": "Çayır arka planı başlatılamadı. Düz renge geçildi.",
+      "cloudSize": "Rastgele bulut boyutu"
     },
     "bingFrom": "Bing günlük görseli",
     "blur": "Bulanıklık yoğunluğu",
@@ -132,7 +138,6 @@
     "showDownloadBtn": "İndirme düğmesini göster",
     "showDownloadBtnNote": "Görüntülenen Bing, çevrimiçi veya yerel duvar kağıdını indirin",
     "title": "Arka Plan",
-
     "type": {
       "local": "Yerel dosya",
       "online": "Çevrimiçi URL"
@@ -150,7 +155,8 @@
       "notGranted": "İzin verilmedi, bu ana bilgisayara erişilemiyor.",
       "title": "Uyarı",
       "unknownSource": "Bilinmeyen kaynaklardan alınan görselleri arka plan olarak kullanmak cihazınızı saldırılara maruz bırakabilir. Devam etmek istiyor musunuz?"
-    }
+    },
+    "resetDefaults": "Varsayılanları geri yükle"
   },
   "bookmark": {
     "defaultSort": "Varsayılan sıralama",

@@ -96,8 +96,8 @@ export const defaultSettings = {
 
     solid: { light: '', dark: '' },
     rotation: { enabled: false, order: 'random' },
-    dynamic: { fps: 25 },
-    map: { trains: 5, ships: 4, islands: 3 },
+    dynamic: { fps: 25, navigationCloudSize: 72 },
+    map: { trains: 5, ships: 4, islands: 3, showNavigationLake: true, navigationLakeSize: 100 },
     ocean: {
       cloudSize: 72,
       cloudCover: 0.3,
@@ -117,6 +117,7 @@ export const defaultSettings = {
       palms: 4,
       kayaks: 2,
       birds: 3,
+      showMainIsland: true,
       waterCaustics: true,
     },
     meadow: {
@@ -126,6 +127,7 @@ export const defaultSettings = {
       showNavigationCloud: true,
       showBoy: true,
       showCat: true,
+      catCount: 2,
       clickToMove: true,
     },
     bing: {

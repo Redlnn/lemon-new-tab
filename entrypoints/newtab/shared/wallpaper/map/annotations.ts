@@ -60,4 +60,3 @@ export function paintLabel(ctx: Context, label: MapData['labels'][number]) {
   ctx.strokeText(label.text, label.x, label.y)
   ctx.fillText(label.text, label.x, label.y)
 }
-

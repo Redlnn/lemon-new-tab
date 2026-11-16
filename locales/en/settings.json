@@ -13,11 +13,13 @@
     "dynamicDisabledNote": "Some features will be disabled when using a dynamic background",
     "waterCaustics": "Water caustics",
     "map": {
-      "name": "Fantasy map",
+      "name": "Map",
+      "showNavigationLake": "Navigation lake",
+      "navigationLakeSize": "Navigation lake size",
       "trains": "Trains",
       "ships": "Ships",
       "islands": "Islands",
-      "error": "The fantasy map could not start. Switched to a solid background."
+      "error": "The map could not start. Switched to a solid background."
     },
     "ocean": {
       "sailboats": "Sailboats count",
@@ -25,10 +27,11 @@
       "whales": "Whales count",
       "birds": "Seabirds count",
       "name": "Ocean",
-      "error": "The ocean wallpaper could not start. Switched to a solid background."
+      "error": "The ocean wallpaper could not start. Switched to a solid background.",
+      "showNavigationCloud": "Navigation cloud"
     },
     "beach": {
-      "sigma": "Coast distance",
+      "sigma": "Island size",
       "warp": "Coast irregularity",
       "shoal": "Clear shallows",
       "shallow": "Shallow water width",
@@ -36,19 +39,22 @@
       "kayaks": "Kayaks count",
       "birds": "Seagulls count",
       "name": "Beach",
+      "showMainIsland": "Main island",
       "error": "Beach wallpaper could not start; switched to solid color"
     },
     "meadow": {
       "name": "Meadow",
       "fps": "Frame rate limit",
-      "cloudSize": "Quick links cloud size",
+      "navigationCloudSize": "Navigation cloud size",
       "cloudCover": "Cloud coverage",
       "flow": "Cloud speed",
       "showNavigationCloud": "Navigation cloud",
       "showBoy": "Show boy",
       "clickToMove": "Click background to move boy",
+      "catCount": "Cat count",
       "showCat": "Show cat",
-      "error": "The meadow background could not start. Switched to a solid background."
+      "error": "The meadow background could not start. Switched to a solid background.",
+      "cloudSize": "Random cloud size"
     },
     "bingFrom": "Bing daily image",
     "blur": "Blur intensity",
@@ -132,7 +138,6 @@
     "showDownloadBtn": "Show download button",
     "showDownloadBtnNote": "Download the displayed Bing, online, or local wallpaper",
     "title": "Background",
-
     "type": {
       "local": "Local file",
       "online": "Online URL"
@@ -150,7 +155,8 @@
       "notGranted": "Permission not granted, cannot access this host.",
       "title": "Warning",
       "unknownSource": "Using images from unknown sources as backgrounds may expose your device to attacks. Do you want to continue?"
-    }
+    },
+    "resetDefaults": "Restore defaults"
   },
   "bookmark": {
     "defaultSort": "Default sorting",

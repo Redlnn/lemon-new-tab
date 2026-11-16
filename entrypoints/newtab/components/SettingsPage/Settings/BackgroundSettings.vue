@@ -112,12 +112,7 @@ const beforeCacheChange = async () => {
         <el-button :icon="BubbleChartRound" @click="dialogs.open('background')">
           {{ t('search.clickToChange') }}
         </el-button>
-        <p
-          v-if="
-            isDynamicBgType(settings.background.bgType)
-          "
-          class="settings__item-note"
-        >
+        <p v-if="isDynamicBgType(settings.background.bgType)" class="settings__item-note">
           {{ t('background.dynamicDisabledNote') }}
         </p>
       </div>
@@ -149,19 +144,14 @@ const beforeCacheChange = async () => {
         <div class="settings__label">{{ t('background.fasterBgAnim') }}</div>
         <el-switch
           v-model="settings.background.fastAnimation"
-          :disabled="
-            isDynamicBgType(settings.background.bgType)
-          "
+          :disabled="isDynamicBgType(settings.background.bgType)"
         />
       </div>
       <div class="settings__item settings__item--horizontal settings__item--with-note">
         <div class="settings__label">{{ t('background.parallax') }}</div>
         <el-switch
           v-model="settings.background.parallax"
-          :disabled="
-            isOnlyTouchDevice ||
-            isDynamicBgType(settings.background.bgType)
-          "
+          :disabled="isOnlyTouchDevice || isDynamicBgType(settings.background.bgType)"
         />
         <p v-if="isOnlyTouchDevice" class="settings__item-note">
           {{ t('common.touchDeviceDisabledNote') }}
@@ -182,9 +172,7 @@ const beforeCacheChange = async () => {
         <el-slider
           v-model="settings.background.blur"
           :show-tooltip="false"
-          :disabled="
-            isDynamicBgType(settings.background.bgType)
-          "
+          :disabled="isDynamicBgType(settings.background.bgType)"
         />
       </div>
       <div class="settings__item settings__item--horizontal">
