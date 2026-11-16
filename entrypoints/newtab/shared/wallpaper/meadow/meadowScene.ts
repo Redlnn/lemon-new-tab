@@ -531,9 +531,12 @@ void main() {
       flowT += dt * P.flow // 云自己的时钟：流动速度越快，鼓包呼吸得也越快
       const want = Math.round(P.cover * 10)
       // 数量变少：多出来的慢慢缩小消失；变多：直接在画面里淡入（找一块别的小云不太挤的地方）
-      const alive = skyClouds.filter((c) => !c.dying)
-      for (let i = want; i < alive.length; i++) alive[i]!.dying = true
-      for (let n = alive.length; n < want; n++) {
+      let alive = 0
+      for (const cloud of skyClouds) {
+        if (cloud.dying) continue
+        if (alive++ >= want) cloud.dying = true
+      }
+      for (let n = alive; n < want; n++) {
         let best = null,
           bestD = -1
         for (let k = 0; k < 20; k++) {

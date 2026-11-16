@@ -384,17 +384,30 @@ export function createMapMotion(map: MotionData, getCounts: () => MapCounts) {
     lengths: pathLengths(points),
     phase: random(515, Math.round(points[0]!.x), Math.round(points[0]!.y)),
   }))
-  let dirty: { x: number; y: number; width: number; height: number }[] = []
-  const mark = (x: number, y: number, width: number, height: number) =>
-    dirty.push({ x, y, width, height })
+  const dirty: { x: number; y: number; width: number; height: number }[] = []
+  let dirtyCount = 0
+  const mark = (x: number, y: number, width: number, height: number) => {
+    const box = dirty[dirtyCount]
+    if (box) {
+      box.x = x
+      box.y = y
+      box.width = width
+      box.height = height
+    }
+    else dirty.push({ x, y, width, height })
+    dirtyCount++
+  }
   return (
     ctx: CanvasRenderingContext2D,
     time: number,
     visibility: (p: Point, water: boolean) => number = () => 1,
     revealVisibility: (p: Point) => number = () => 1,
   ) => {
-    for (const box of dirty) ctx.clearRect(box.x, box.y, box.width, box.height)
-    dirty = []
+    for (let i = 0; i < dirtyCount; i++) {
+      const box = dirty[i]!
+      ctx.clearRect(box.x, box.y, box.width, box.height)
+    }
+    dirtyCount = 0
     const { trains, ships: shipLimit } = getCounts()
     const viewportWidth = window.innerWidth,
       viewportHeight = window.innerHeight
