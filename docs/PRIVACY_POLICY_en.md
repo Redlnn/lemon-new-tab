@@ -253,7 +253,7 @@ Depending on applicable law, including the GDPR, China's PIPL, and the CCPA/CPRA
 
 For processing actually within the developer's control, you may exercise your rights by:
 
-1. sending a request to **lemon@redlnn.top**;
+1. sending a request to **<lemon@redlnn.top>**;
 2. using the subject line **Privacy Request**;
 3. stating the type of request involved, such as access, correction, deletion, withdrawal of consent, restriction, objection, or complaint, and identifying the relevant browser, extension version, and feature module if known;
 4. providing only the minimum information needed to locate the issue, and not sending unnecessary sensitive information;
