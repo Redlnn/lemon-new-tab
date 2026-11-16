@@ -38,16 +38,9 @@ const resources = import.meta.glob<Record<string, unknown>>('/locales/*/*.json',
 const resourceBackend: BackendModule = {
   type: 'backend',
   init() {},
-  read(language, namespace, callback) {
+  read(language, namespace) {
     const load = resources[`/locales/${language}/${namespace}.json`]
-    if (!load) {
-      callback(null, {})
-      return
-    }
-    void load().then(
-      (resource) => callback(null, resource),
-      (error: Error) => callback(error, false),
-    )
+    return load ? load() : Promise.resolve({})
   },
 }
 
