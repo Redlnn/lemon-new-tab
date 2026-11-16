@@ -11,7 +11,7 @@ const fragment = `#version 300 es
 precision highp float;
 uniform sampler2D uFrom,uTo,uPaper;
 uniform vec2 uGrid,uWorld,uCanvas;
-uniform float uStep,uMix,uScale,uFirst;
+uniform float uStep,uMix,uScale,uFirst,uFinal;
 out vec4 color;
 float stroke(float d,float width){float aa=max(.01,fwidth(d)*.65);return 1.-smoothstep(max(0.,width*.5-aa),width*.5+aa,abs(d));}
 void main(){
@@ -21,14 +21,13 @@ void main(){
  float to=texture(uTo,fieldUV).r,raw=mix(texture(uFrom,fieldUV).r,to,uMix);
  float d=raw;
  float wet=1.-smoothstep(-.65,.65,d);
- float cover=uFirst>0.5?1.:(abs(to)<4. || (raw<0.)!=(to<0.))?1.:0.;
+ float cover=uFinal>0.5?0.:uFirst>0.5?1.:(abs(to)<4. || (raw<0.)!=(to<0.))?1.:0.;
  vec3 base=mix(paper,sea,wet);
  float pixel=max(length(vec2(dFdx(d),dFdy(d))),.1/uScale);
- float ink=max(stroke(d,pixel*1.7),max(stroke(d-5.,pixel*.85)*.6,stroke(d-10.,pixel*.7)*.42));
+ float ink=max(stroke(d,pixel*1.7),max(stroke(d+5.,pixel*.85)*.6,stroke(d+10.,pixel*.7)*.42));
  float inkAlpha=ink*.93,alpha=cover+(1.-cover)*inkAlpha;
  vec3 premult=base*cover*(1.-inkAlpha)+vec3(101.,67.,35.)/255.*inkAlpha;
- float visible=1.-smoothstep(.74,1.,uMix);
- color=vec4(premult*visible,alpha*visible);
+ color=vec4(premult,alpha);
 }`
 
 export function createCoastAnimation(canvas: HTMLCanvasElement) {
@@ -36,6 +35,7 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     alpha: true,
     premultipliedAlpha: true,
     antialias: false,
+    preserveDrawingBuffer: true,
     powerPreference: 'low-power',
   })
   let from: Float32Array = new Float32Array(),
@@ -92,6 +92,7 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
       'uMix',
       'uScale',
       'uFirst',
+      'uFinal',
     ])
       uniforms[name] = gl.getUniformLocation(program, name)
   }
@@ -114,7 +115,7 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     releaseImages()
   }
   function resize() {
-    if (!active) return
+    if (disabled || !to.length) return
     renderScale = Math.min(1, devicePixelRatio || 1)
     // Keep this layer in the same buffered world coordinates as the 2D map.
     // Window dragging only clips it; it must not reallocate a GL framebuffer
@@ -153,7 +154,7 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
       rows === field.rows &&
       to.every((value, i) => Math.abs(value - field.values[i]!) < 0.01)
     if (sameTarget) {
-      if (!animate || disabled) finish()
+      if (!animate && active) draw(time, false)
       return
     }
     const mix = active ? ease((time - started) / duration) : 1
@@ -171,7 +172,7 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     step = field.step
     worldWidth = bitmap.width / scale
     worldHeight = bitmap.height / scale
-    if (!animate || disabled || !changed) {
+    if (disabled) {
       finish()
       return
     }
@@ -184,21 +185,30 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     firstTransition = first
     duration = first ? 2.6 : 1.8
     currentMix = 0
-    active = true
+    active = animate && changed
     canvas.hidden = false
     resize()
+    if (!active) render(true)
   }
   function draw(time: number, animate = true) {
     if (!active) return false
     if (!animate || disabled) {
-      finish()
+      active = false
+      currentMix = 1
+      if (!disabled) render(true)
       return false
     }
-    currentMix = ease((time - started) / duration)
+    const elapsed = time - started
+    currentMix = ease(elapsed / duration)
     if (currentMix >= 1) {
-      finish()
+      active = false
+      render(true)
       return false
     }
+    render(false)
+    return true
+  }
+  function render(final: boolean) {
     resize()
     gl!.viewport(0, 0, canvas.width, canvas.height)
     gl!.useProgram(program)
@@ -217,8 +227,8 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     gl!.uniform1f(uniforms.uMix!, currentMix)
     gl!.uniform1f(uniforms.uScale!, renderScale)
     gl!.uniform1f(uniforms.uFirst!, firstTransition ? 1 : 0)
+    gl!.uniform1f(uniforms.uFinal!, final ? 1 : 0)
     gl!.drawArrays(gl!.TRIANGLES, 0, 3)
-    return true
   }
   function value(p: Point) {
     if (!to.length) return 34
@@ -238,6 +248,7 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     return sample(from) * (1 - currentMix) + sample(to) * currentMix
   }
   return {
+    available: () => !disabled,
     isActive: () => active,
     begin,
     draw,

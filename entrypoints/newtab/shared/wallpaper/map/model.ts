@@ -17,6 +17,7 @@ export type MapRequest = {
   preview?: boolean
   previewOnly?: boolean
   first?: boolean
+  shoreline?: boolean
   islandLimit?: number
   showNavigationLake?: boolean
   navigationLakeSize?: number

@@ -29,7 +29,7 @@ export function coastContours(
         field[(y + 1) * cw + x]!,
       ]
       for (let levelIndex = 0; levelIndex < 3; levelIndex++) {
-        const level = levelIndex * 5,
+        const level = -levelIndex * 5,
           hits: Point[] = []
         for (let i = 0; i < 4; i++) {
           const j = (i + 1) % 4,

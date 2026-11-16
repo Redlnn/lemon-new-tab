@@ -1,7 +1,7 @@
 import { coastContours } from './coast'
 import { generateMap } from './generate'
 import type { MapData, MapRequest, MapField } from './model'
-import { paintMap, paintMapDetails, paintTerrain, type MotionData } from './paint'
+import { paintMapDetails, paintTerrain, type MotionData } from './paint'
 import { paperTexture } from './paper'
 import { createTerrain, sampleMapField } from './terrain'
 
@@ -55,6 +55,7 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
             height: request.height,
           },
           scale,
+          request.shoreline,
         )
       }
       const bitmap = canvas.transferToImageBitmap()
@@ -88,18 +89,17 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
     )
     const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) throw new Error('Map canvas unavailable')
-    let base: ImageBitmap | undefined, details: ImageBitmap | undefined
+    paintTerrain(ctx, map, request.scale, request.shoreline)
+    let base: ImageBitmap | undefined
     if (request.first) {
-      paintTerrain(ctx, map, request.scale)
       base = canvas.transferToImageBitmap()
-      const detailCanvas = new OffscreenCanvas(canvas.width, canvas.height),
-        detailCtx = detailCanvas.getContext('2d')!
-      paintMapDetails(detailCtx, map, request)
-      details = detailCanvas.transferToImageBitmap()
       ctx.setTransform(1, 0, 0, 1, 0, 0)
       ctx.drawImage(base, 0, 0)
-      ctx.drawImage(details, 0, 0)
-    } else paintMap(ctx, map, request)
+    }
+    const detailCanvas = new OffscreenCanvas(canvas.width, canvas.height),
+      detailCtx = detailCanvas.getContext('2d')!
+    paintMapDetails(detailCtx, map, request)
+    const details = detailCanvas.transferToImageBitmap()
     const bitmap = canvas.transferToImageBitmap(),
       { navigation, compass, places, rails, waves, ships } = map
     const texture = paperTexture(request.seed, request.width, request.height)

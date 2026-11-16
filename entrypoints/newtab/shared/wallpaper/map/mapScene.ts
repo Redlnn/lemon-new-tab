@@ -133,11 +133,13 @@ export function createMapScene(
   function finishReveal() {
     if (!introActive) return
     introActive = false
-    detailsCanvas.hidden = true
-    detailsCanvas.width = detailsCanvas.height = 1
+    if (detailsBitmap) {
+      detailCtx.setTransform(1, 0, 0, 1, 0, 0)
+      detailCtx.clearRect(0, 0, detailsCanvas.width, detailsCanvas.height)
+      detailCtx.drawImage(detailsBitmap, 0, 0, detailsCanvas.width, detailsCanvas.height)
+    }
     baseBitmap?.close()
-    detailsBitmap?.close()
-    baseBitmap = detailsBitmap = null
+    baseBitmap = null
     maskPixels = null
     maskNoise = new Float32Array()
     previewBitmap?.close()
@@ -185,16 +187,22 @@ export function createMapScene(
       bitmap?.close()
       bitmap = frame.bitmap
       bitmapScale = frame.scale
+      detailsBitmap?.close()
+      detailsBitmap = frame.details ?? null
       coast.begin(bitmap, frame.paper, frame.field, frame.scale, lastTime, lastAnimate && !expanded)
       frame.paper.close()
       introActive = firstFrame && !!frame.base && !!frame.details && coast.isActive()
       if (introActive) {
         baseBitmap = frame.base!
-        detailsBitmap = frame.details!
         startReveal(lastTime)
       } else {
         frame.base?.close()
-        frame.details?.close()
+        detailsCanvas.width = background.width
+        detailsCanvas.height = background.height
+        detailsCanvas.style.width = background.style.width
+        detailsCanvas.style.height = background.style.height
+        detailsCanvas.hidden = false
+        if (detailsBitmap) detailCtx.drawImage(detailsBitmap, 0, 0, detailsCanvas.width, detailsCanvas.height)
         previewBitmap?.close()
         previewBitmap = null
       }
@@ -235,6 +243,7 @@ export function createMapScene(
       // A queued request can wait until the initial transition completes.
       // Determine this at dispatch time, not when the layout was measured.
       pending.first = !bitmap
+      pending.shoreline = !coast.available()
       worker.postMessage(pending)
     } catch (error) {
       busy = false
@@ -335,6 +344,11 @@ export function createMapScene(
       target.style.width = `${width}px`
       target.style.height = `${height}px`
     }
+    detailsCanvas.width = background.width
+    detailsCanvas.height = background.height
+    detailsCanvas.style.width = background.style.width
+    detailsCanvas.style.height = background.style.height
+    if (detailsBitmap) detailCtx.drawImage(detailsBitmap, 0, 0, detailsCanvas.width, detailsCanvas.height)
     paintBackground()
     staticPainted = false
     coast.resize()
@@ -382,6 +396,8 @@ export function createMapScene(
       coast.loseContext()
       finishReveal()
       paintBackground()
+      requestedKey = ''
+      requestMap(true)
     },
     invalidateLayout(rebuild = true) {
       requestedKey = ''
