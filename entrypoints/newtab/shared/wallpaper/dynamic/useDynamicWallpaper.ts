@@ -4,6 +4,8 @@ import { useSettingsStore } from '@/shared/settings'
 
 import { useWallpaperActivity } from '@newtab/composables/useWallpaperActivity'
 
+import { useDynamicWallpaperNightTheme } from './useDynamicWallpaperTheme'
+
 type DynamicRenderer = {
   resizeViewport: () => boolean
   resize: (bounds: DOMRect | null) => void
@@ -19,6 +21,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
 }) {
   const settings = useSettingsStore()
   const running = useWallpaperActivity()
+  const night = useDynamicWallpaperNightTheme()
   let renderer: T | undefined
   let raf = 0
   let frameTimer: ReturnType<typeof setTimeout> | undefined
@@ -35,17 +38,17 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   let disposed = false
   let failed = false
 
-  function cancelFrame() {
+  const cancelFrame = () => {
     clearTimeout(frameTimer)
     cancelAnimationFrame(raf)
   }
-  function fail() {
+  const fail = () => {
     if (disposed || failed) return
     failed = true
     cancelFrame()
     options.onError()
   }
-  function locate() {
+  const locate = () => {
     if (disposed) return
     const target =
       settings.quickLinks.enabled && !settings.quickLinks.useScroll
@@ -59,11 +62,11 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
     const rect = target?.getBoundingClientRect()
     bounds = rect && rect.width > 0 && rect.height > 0 ? rect : null
   }
-  function scheduleLayout() {
+  const scheduleLayout = () => {
     clearTimeout(layoutTimer)
     layoutTimer = setTimeout(locate, 180)
   }
-  function scheduleFrame(immediate = false) {
+  const scheduleFrame = (immediate = false) => {
     if (!running.value || !renderer || failed) return
     const delay = immediate
       ? 0
@@ -71,7 +74,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
     if (delay > 0) frameTimer = setTimeout(() => (raf = requestAnimationFrame(frame)), delay)
     else raf = requestAnimationFrame(frame)
   }
-  function frame(now: number) {
+  const frame = (now: number) => {
     if (!running.value || !renderer || failed) return
     if (lastTick) elapsed += Math.min((now - lastTick) / 1000, 0.1)
     lastTick = now
@@ -90,7 +93,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
       fail()
     }
   }
-  function resize() {
+  const resize = () => {
     clearTimeout(resizeTimer)
     if (!running.value || !renderer || failed) return
     try {
@@ -104,7 +107,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
       fail()
     }
   }
-  function updateRunning() {
+  const updateRunning = () => {
     cancelFrame()
     lastTick = 0
     lastFrame = 0
@@ -113,7 +116,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
       scheduleFrame(true)
     }
   }
-  function scheduleResize() {
+  const scheduleResize = () => {
     clearTimeout(resizeTimer)
     if (running.value && renderer && !failed) {
       // Resize the backing canvas before the next paint so the browser never
@@ -161,5 +164,5 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
     renderer?.dispose()
     renderer = undefined
   })
-  return { running, fail, getRenderer: () => (failed ? undefined : renderer) }
+  return { running, night, fail, getRenderer: () => (failed ? undefined : renderer) }
 }

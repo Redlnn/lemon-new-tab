@@ -15,7 +15,7 @@ import {
 import { beachVertexShader, beachFragmentShader } from './beachShaders'
 
 const STEP = 5
-type BeachOptions = CURRENT_CONFIG_SCHEMA['background']['beach']
+type BeachOptions = CURRENT_CONFIG_SCHEMA['background']['beach'] & { night: boolean }
 type Field = { s: Float32Array }
 type Bounds = { left: number; top: number; width: number; height: number }
 
@@ -39,6 +39,7 @@ export function createBeachScene(
     palms: 4,
     kayaks: 2,
     birds: 3,
+    night: false,
   }
   const context = cv.getContext('webgl2', {
     antialias: false,
@@ -293,7 +294,7 @@ export function createBeachScene(
     for (let tries = 0; tries < 1800 && trees.length < P.palms; tries++) {
       const x = 30 + random() * (W - 60),
         y = 55 + random() * (H - 90)
-      if (sampleArr(next.s, x, y) > -20 || sampleArr(next.s, x, y) < -75) continue
+      if (sampleArr(next.s, x, y) > -28 || sampleArr(next.s, x, y) < -75) continue
       if (
         main &&
         x > main.x - 50 &&
@@ -371,6 +372,10 @@ export function createBeachScene(
   const activeRipples: { x: number; y: number; start: number }[] = []
   const draw = (time: number, bounds: Bounds | null, options: BeachOptions) => {
     sceneTime = time * 1000
+    if (P.night !== options.night) {
+      P.night = options.night
+      treesDirty = true
+    }
     P.shoal = options.shoal
     P.shallow = options.shallow
     P.kayaks = options.kayaks
@@ -490,6 +495,7 @@ export function createBeachScene(
       uSigma: P.sigma,
       uSpacing: P.spacing,
       uWaves: P.waves,
+      uNight: options.night ? 1 : 0,
       uDebug: 0,
       uKayN: 0,
       uBirdN: 0,
@@ -501,7 +507,7 @@ export function createBeachScene(
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     // Only shade boats, birds and their shadows where they can affect the image.
     // Align to 2px so derivatives use the same pixel groups as the full-screen pass.
-    gl.uniform1f(u.uKayN!, P.kayaks)
+    gl.uniform1f(u.uKayN!, options.night ? 0 : P.kayaks)
     gl.uniform1f(u.uBirdN!, P.birds)
     gl.enable(gl.SCISSOR_TEST)
     try {
@@ -550,10 +556,19 @@ export function createBeachScene(
       treeContext.translate(tree.x, tree.y)
       treeContext.scale(tree.mirror, 1)
       treeContext.globalAlpha = visibleOpacity
-      treeContext.fillStyle = 'rgba(69, 103, 89, 0.25)'
+      treeContext.fillStyle = options.night ? 'rgba(8, 17, 30, 0.34)' : 'rgba(69, 103, 89, 0.25)'
       treeContext.beginPath()
-      treeContext.ellipse(0, 0, 2.5, 1.2, 0, 0, Math.PI * 2)
+      treeContext.ellipse(
+        0,
+        0,
+        options.night ? 3.5 : 2.5,
+        options.night ? 1.7 : 1.2,
+        0,
+        0,
+        Math.PI * 2,
+      )
       treeContext.fill()
+      treeContext.filter = options.night ? 'brightness(0.58) saturate(0.72)' : 'none'
       treeContext.drawImage(image, x, y, width, height)
       treeContext.restore()
     }

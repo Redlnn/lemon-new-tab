@@ -38,6 +38,7 @@ type MeadowOptions = {
   whales?: number
   birds?: number
   waterCaustics?: boolean
+  night?: boolean
 }
 type Circle = [number, number, number, number]
 type Field = { s: Float32Array }
@@ -78,6 +79,7 @@ export function createDynamicScene(
     whales: 1,
     birds: 3,
     waterCaustics: false,
+    night: 0,
     avoidCenter: false,
   }
   let sceneNow = 0,
@@ -118,6 +120,7 @@ precision highp float;
 uniform sampler2D uNoise, uFA, uFB, uMeadowGround;
 uniform vec2 uRes, uGrid;
 uniform float uScale, uSeed, uStep, uMix, uEdge;
+uniform float uNight;
 #ifdef OCEAN
 ${waterCausticsShader}
 #endif
@@ -143,6 +146,10 @@ const vec3 INK = vec3(0.24, 0.38, 0.18);                                      //
 const vec3 SHADOW = vec3(0.56, 0.66, 0.52);                                   // 云影：把草地压成深绿
 const vec3 CLOUD_HI = vec3(1.0, 1.0, 0.99);                                   // 云：朝光外沿的亮白
 const vec3 CLOUD_BODY = vec3(0.90, 0.93, 0.96), CLOUD_SH = vec3(0.80, 0.85, 0.90); // 云：主体 / 偏暗的圆（比大海主题少一些蓝；主体不能太白，白色的图标文字要看得清）
+const vec3 NIGHT_G_LIGHT = vec3(0.22, 0.31, 0.34), NIGHT_G_MID = vec3(0.14, 0.23, 0.27);
+const vec3 NIGHT_G_DEEP = vec3(0.09, 0.17, 0.22), NIGHT_INK = vec3(0.08, 0.13, 0.17);
+const vec3 NIGHT_SHADOW = vec3(0.07, 0.12, 0.19), NIGHT_CLOUD_HI = vec3(0.62, 0.70, 0.82);
+const vec3 NIGHT_CLOUD_BODY = vec3(0.31, 0.39, 0.53), NIGHT_CLOUD_SH = vec3(0.22, 0.29, 0.42);
 const vec2 LIGHT = vec2(-0.6, -0.8);                                          // 太阳在左上方
 const vec2 SHADOW_OFF = vec2(115.0, 156.0);                                    // 云影落在右下方，离云远 → 云飘得高
 const int CIRC_K = 36;
@@ -217,7 +224,9 @@ vec4 catColor(vec2 uv) {
   vec4 body=texture(uCat,uv),tail=texture(uCat,source);
   body.a*=1.-catTailMask(uv);tail.a*=catTailMask(source);
   float alpha=body.a+tail.a;
-  return vec4((body.rgb*body.a+tail.rgb*tail.a)/max(alpha,.001),min(alpha,1.));
+  vec3 color = (body.rgb*body.a+tail.rgb*tail.a)/max(alpha,.001);
+  color *= mix(vec3(1.),vec3(.53,.63,.78),uNight);
+  return vec4(color,min(alpha,1.));
 }
 #endif
 
@@ -226,19 +235,25 @@ void main() {
 
 #ifdef MEADOW_GROUND
 #ifdef OCEAN
-  vec3 col = mix(vec3(.14,.30,.63), vec3(.19,.37,.72), clamp(p.y / uRes.y, 0., 1.));
+  vec3 skyDay = mix(vec3(.14,.30,.63), vec3(.19,.37,.72), clamp(p.y / uRes.y, 0., 1.));
+  vec3 skyNight = mix(vec3(.012,.025,.075), vec3(.055,.075,.16), clamp(p.y / uRes.y, 0., 1.));
+  vec3 col = mix(skyDay, skyNight, uNight);
   float depth = N(p + 137., 1600.).b * .7 + N(p + 311., 750.).g * .3;
   col = mix(col, col * vec3(1.09,1.08,1.04), ss(.30,.72,depth) * .72);
   col *= 1.0 + (hash2(floor(p * (0.8 * max(uScale, 1.0)))) - .5) * .035;
 #else
   // ---------- 草地：黄绿和绿的大块水彩晕染，几片颜色深一点，左上（向阳）稍亮；纸的颗粒 ----------
   float w1 = N(p, 1900.0).b, w2 = N(p + 311.0, 650.0).g;
-  vec3 col = mix(G_MID, G_LIGHT, ss(0.3, 0.75, w1 * 0.7 + w2 * 0.3));
-  col = mix(col, G_DEEP, ss(0.45, 0.85, N(p + 977.0, 1300.0).r) * 0.4);       // 阈值放宽：噪声放大很多倍，卡得太陡会出现台阶状的方块
+  vec3 gLight = mix(G_LIGHT, NIGHT_G_LIGHT, uNight);
+  vec3 gMid = mix(G_MID, NIGHT_G_MID, uNight);
+  vec3 gDeep = mix(G_DEEP, NIGHT_G_DEEP, uNight);
+  vec3 ink = mix(INK, NIGHT_INK, uNight);
+  vec3 col = mix(gMid, gLight, ss(0.3, 0.75, w1 * 0.7 + w2 * 0.3));
+  col = mix(col, gDeep, ss(0.45, 0.85, N(p + 977.0, 1300.0).r) * 0.4);       // 阈值放宽：噪声放大很多倍，卡得太陡会出现台阶状的方块
   col *= 1.0 + 0.05 * (0.5 - (p.x + p.y) / (uRes.x + uRes.y));
   col *= 1.0 + (hash2(floor(p * (0.8 * max(uScale, 1.0)))) - 0.5) * 0.035;   // 颗粒按屏幕的实际像素取
   // 画草的墨绿短线
-  col = mix(col, INK, grassInk(p) * 0.75);
+  col = mix(col, ink, grassInk(p) * 0.75);
 #endif
   o = vec4(col, 1.0);
 #else
@@ -261,8 +276,8 @@ void main() {
     float radius = .7 + .9 * hash2(seedc + 3.3);
     sparkle = max(sparkle, (1. - ss(radius * .5, radius * 1.5, length((f - center) * size))) * twinkle);
   }
-  col = mix(col, vec3(.95, 1., 1.), sparkle * .85);
-  col = mix(col, vec3(.60, .90, 1.), waterCaustics(p, uOceanTime) * .15);
+  col = mix(col, mix(vec3(.95, 1., 1.), vec3(.55, .70, .95), uNight), sparkle * .85);
+  col = mix(col, mix(vec3(.60, .90, 1.), vec3(.22, .42, .72), uNight), waterCaustics(p, uOceanTime) * .15);
   vec4 wake = vec4(0.);
   if (p.x >= 0. && p.y >= 0. && p.x < uOceanWakeSize.x && p.y < uOceanWakeSize.y)
     wake = texture(uOceanWake, vec2(p.x / uOceanWakeSize.x, 1. - p.y / uOceanWakeSize.y));
@@ -279,7 +294,7 @@ void main() {
   float inActor=step(0.0,actorUV.x)*step(0.0,actorUV.y)*step(actorUV.x,1.0)*step(actorUV.y,1.0);
   vec4 actor=texture(uActor,actorUV);
   float actorShadow=texture(uActorShadow,actorUV).r*inActor;
-  col=mix(col,col*SHADOW,actorShadow*0.85);
+  col=mix(col,col*mix(SHADOW,NIGHT_SHADOW,uNight),actorShadow*0.85);
   col=mix(col,actor.rgb,actor.a*inActor);
 #endif
 
@@ -291,13 +306,13 @@ void main() {
   float catShadow=catColor(catShadowUV).a;
   float inCat=step(0.,catUV.x)*step(0.,catUV.y)*step(catUV.x,1.)*step(catUV.y,1.);
   float inShadow=step(0.,catShadowUV.x)*step(0.,catShadowUV.y)*step(catShadowUV.x,1.)*step(catShadowUV.y,1.);
-  col=mix(col,col*SHADOW,catShadow*inShadow*.78);
+  col=mix(col,col*mix(SHADOW,NIGHT_SHADOW,uNight),catShadow*inShadow*.78);
   col=mix(col,cat.rgb,cat.a*inCat);
 #endif
 
   // ---------- 云投在草地上的影子（右下方）：一整块深绿 ----------
   float sd = cloudDist(p - SHADOW_OFF);
-  col = mix(col, col * ${ocean ? 'vec3(.60, .68, .86)' : 'SHADOW'}, ss(3.0, -3.0, sd) * 0.85);
+  col = mix(col, col * ${ocean ? 'mix(vec3(.60, .68, .86), vec3(.20, .27, .43), uNight)' : 'mix(SHADOW, NIGHT_SHADOW, uNight)'}, ss(3.0, -3.0, sd) * 0.85);
 
   // ---------- 云：卡通画法（和大海主题一样）——一个个圆合起来，每个圆色调略有不同，
   //            只有朝光（左上）的外轮廓一道亮白，里面没有亮面；边缘干净 ----------
@@ -306,8 +321,11 @@ void main() {
   if (d < 1.5) {
     // 往光那边走一小段就出云了 → 这里是朝光的外沿（离外轮廓超过 21px 的地方不用算）
     float hi = d > -21.0 ? ss(-1.0, 1.0, cloudDist(p + LIGHT * 20.0)) : 0.0;
-    vec3 cc = fc.y > -1e8 ? mix(CLOUD_BODY, CLOUD_SH, fc.w * 0.6) : mix(CLOUD_BODY, CLOUD_SH, 0.45);
-    cc = mix(cc, CLOUD_HI, hi);
+    vec3 cloudBody = mix(CLOUD_BODY, NIGHT_CLOUD_BODY, uNight);
+    vec3 cloudShade = mix(CLOUD_SH, NIGHT_CLOUD_SH, uNight);
+    vec3 cloudHighlight = mix(CLOUD_HI, NIGHT_CLOUD_HI, uNight);
+    vec3 cc = fc.y > -1e8 ? mix(cloudBody, cloudShade, fc.w * 0.6) : mix(cloudBody, cloudShade, 0.45);
+    cc = mix(cc, cloudHighlight, hi);
     col = mix(col, cc, ss(1.0, -1.0, d));
   }
   o = vec4(col, 1.0);
@@ -830,6 +848,7 @@ void main() {
         gl.uniform2f(U.uCGrid!, cgW, cgH)
         gl.uniform1f(U.uCellG!, CELL_G)
         gl.uniform1f(U.uEdge!, P.edge)
+        gl.uniform1f(U.uNight!, P.night)
         if (ocean) {
           gl.activeTexture(gl.TEXTURE0)
           gl.bindTexture(gl.TEXTURE_2D, noiseTex)
@@ -969,6 +988,7 @@ void main() {
       gl.uniform2f(groundPR.U.uRes!, pixelWidth / scale, pixelHeight / scale)
       gl.uniform1f(groundPR.U.uScale!, scale)
       gl.uniform1f(groundPR.U.uSeed!, (seed % 997) * 0.37)
+      gl.uniform1f(groundPR.U.uNight!, P.night)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
       // 保留旧画面直到新缓存准备好；修改画布尺寸后由调用方同一任务内立即重绘。
@@ -1019,6 +1039,12 @@ void main() {
       avoidCenter: boolean,
     ) => {
       sceneNow = time * 1000
+      const nextNight = options.night ? 1 : 0
+      if (P.night !== nextNight && initialized) {
+        P.night = nextNight
+        initialized = false
+        resizeViewport()
+      } else P.night = nextNight
       const changed =
         bounds?.left !== lastBounds?.left ||
         bounds?.top !== lastBounds?.top ||
@@ -1031,12 +1057,12 @@ void main() {
       P.sigma = options.navigationCloudSize ?? options.cloudSize
       P.cover = options.cloudCover
       P.flow = options.flow
-      P.showBoy = !ocean && options.showBoy ? 1 : 0
+      P.showBoy = !ocean && options.showBoy && !options.night ? 1 : 0
       P.showCat = !ocean && options.showCat ? 1 : 0
       if (characters) characters.setCatCount(options.catCount ?? 2)
       if (ocean) {
-        P.sailboats = options.sailboats ?? 1
-        P.yachts = options.yachts ?? 1
+        P.sailboats = options.night ? 0 : (options.sailboats ?? 1)
+        P.yachts = options.night ? 0 : (options.yachts ?? 1)
         P.whales = options.whales ?? 1
         P.birds = options.birds ?? 3
         P.waterCaustics = options.waterCaustics ?? true

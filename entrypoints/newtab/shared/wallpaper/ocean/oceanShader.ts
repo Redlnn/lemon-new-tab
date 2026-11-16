@@ -94,10 +94,10 @@ vec3 oceanOne(vec3 col, vec2 p, vec4 actor, vec2 extra) {
   } else if (kind < 3.5) {
     vec2 sq = oceanRot(-actor.z) * (d - vec2(34.,55.));
     vec3 sh = gullSD(sq,.8);
-    col = mix(col,col*vec3(.7,.74,.84),ss(1.8,-1.8,min(sh.x,sh.y))*.28);
+    col = mix(col,col*mix(vec3(.7,.74,.84),vec3(.38,.48,.65),uNight),ss(1.8,-1.8,min(sh.x,sh.y))*.28);
     vec3 bird = gullSD(q,.68+.32*cos(uOceanTime*4.));
-    col = mix(col,mix(vec3(.80,.84,.88),vec3(.20,.22,.26),ss(.72,.8,bird.z)),ss(.6,-.6,bird.y));
-    col = mix(col,vec3(.99,.99,.98),ss(.6,-.6,bird.x));
+    col = mix(col,mix(mix(vec3(.80,.84,.88),vec3(.20,.22,.26),ss(.72,.8,bird.z)),mix(vec3(.35,.43,.56),vec3(.12,.17,.27),ss(.72,.8,bird.z)),uNight),ss(.6,-.6,bird.y));
+    col = mix(col,mix(vec3(.99,.99,.98),vec3(.58,.67,.80),uNight),ss(.6,-.6,bird.x));
   } else {
     float radius = extra.x * 40., dist = length(q);
     float ripple = (1.-ss(.8,2.,abs(dist-radius)))*exp(-extra.x*1.4);

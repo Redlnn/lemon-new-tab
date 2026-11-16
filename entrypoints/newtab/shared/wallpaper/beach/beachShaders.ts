@@ -11,7 +11,7 @@ export const beachFragmentShader = `#version 300 es
 precision highp float;
 uniform sampler2D uNoise, uFA, uFB;
 uniform vec2 uRes, uGrid;
-uniform float uScale, uSeed, uStep, uMix, uTime, uSpeed, uRunup, uShallow, uShoal, uGrain, uDebug, uWave, uSigma, uSpacing, uWaves;
+uniform float uScale, uSeed, uStep, uMix, uTime, uSpeed, uRunup, uShallow, uShoal, uGrain, uDebug, uWave, uSigma, uSpacing, uWaves, uNight;
 uniform float uKayN;
 uniform vec4 uKay[4];          // x, y, 朝向, 划桨相位
 uniform vec4 uRip[6];
@@ -24,11 +24,14 @@ out vec4 o;
 // 海：近岸 → 远处
 const vec3 SEA0 = vec3(0.74, 0.93, 0.87), SEA1 = vec3(0.47, 0.87, 0.84), SEA2 = vec3(0.17, 0.76, 0.81);
 const vec3 SEA3 = vec3(0.03, 0.66, 0.79), SEA4 = vec3(0.00, 0.56, 0.73);
+const vec3 NIGHT_SEA0 = vec3(0.21, 0.31, 0.40), NIGHT_SEA1 = vec3(0.14, 0.25, 0.36), NIGHT_SEA2 = vec3(0.10, 0.22, 0.35);
+const vec3 NIGHT_SEA3 = vec3(0.06, 0.16, 0.29), NIGHT_SEA4 = vec3(0.035, 0.11, 0.23);
 // 沙：干 → 最湿（淡紫灰）
 const vec3 SAND0 = vec3(0.97, 0.93, 0.88), SAND1 = vec3(0.91, 0.85, 0.84), SAND2 = vec3(0.82, 0.76, 0.79), SAND3 = vec3(0.71, 0.67, 0.75);
-const vec3 FOAM = vec3(0.98, 0.99, 0.98);
+const vec3 NIGHT_SAND0 = vec3(0.43, 0.46, 0.51), NIGHT_SAND1 = vec3(0.35, 0.39, 0.47), NIGHT_SAND2 = vec3(0.28, 0.33, 0.43), NIGHT_SAND3 = vec3(0.22, 0.28, 0.39);
+const vec3 FOAM = vec3(0.98, 0.99, 0.98), NIGHT_FOAM = vec3(0.39, 0.49, 0.62);
 // 湿沙：被水泡过的沙子，比干沙深一点、偏黄（岸边那一圈都往这个颜色靠）
-const vec3 WETSAND = vec3(0.93, 0.86, 0.72);
+const vec3 WETSAND = vec3(0.93, 0.86, 0.72), NIGHT_WETSAND = vec3(0.31, 0.36, 0.44);
 
 float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 // 颗粒和反光点用的随机数（Dave Hoskins 的 hash12）：对整数格子坐标也足够"乱"，不会排成行列
@@ -45,18 +48,24 @@ float fieldS(sampler2D t, vec2 p) {
 }
 
 vec3 seaRamp(float v) {
+  vec3 sea0 = mix(SEA0, NIGHT_SEA0, uNight), sea1 = mix(SEA1, NIGHT_SEA1, uNight);
+  vec3 sea2 = mix(SEA2, NIGHT_SEA2, uNight), sea3 = mix(SEA3, NIGHT_SEA3, uNight), sea4 = mix(SEA4, NIGHT_SEA4, uNight);
   v = clamp(v, 0.0, 1.0) * 4.0;
-  if (v < 1.0) return mix(SEA0, SEA1, v);
-  if (v < 2.0) return mix(SEA1, SEA2, v - 1.0);
-  if (v < 3.0) return mix(SEA2, SEA3, v - 2.0);
-  return mix(SEA3, SEA4, v - 3.0);
+  if (v < 1.0) return mix(sea0, sea1, v);
+  if (v < 2.0) return mix(sea1, sea2, v - 1.0);
+  if (v < 3.0) return mix(sea2, sea3, v - 2.0);
+  return mix(sea3, sea4, v - 3.0);
 }
 vec3 sandRamp(float v) {
+  vec3 sand0 = mix(SAND0, NIGHT_SAND0, uNight), sand1 = mix(SAND1, NIGHT_SAND1, uNight);
+  vec3 sand2 = mix(SAND2, NIGHT_SAND2, uNight), sand3 = mix(SAND3, NIGHT_SAND3, uNight);
   v = clamp(v, 0.0, 1.0) * 3.0;
-  if (v < 1.0) return mix(SAND0, SAND1, v);
-  if (v < 2.0) return mix(SAND1, SAND2, v - 1.0);
-  return mix(SAND2, SAND3, v - 2.0);
+  if (v < 1.0) return mix(sand0, sand1, v);
+  if (v < 2.0) return mix(sand1, sand2, v - 1.0);
+  return mix(sand2, sand3, v - 2.0);
 }
+vec3 foamColor() { return mix(FOAM, NIGHT_FOAM, uNight); }
+vec3 wetSandColor() { return mix(WETSAND, NIGHT_WETSAND, uNight); }
 mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
 // Worley（细胞）噪声：x = F1，y = F2。F2 - F1 很小的地方是细胞边界 → 用来画光网、碎沫网
 vec2 worley(vec2 p) {
@@ -166,19 +175,19 @@ void main() {
       float r = 0.7 + 0.9 * hash2(seedc + 3.3);
       spark = max(spark, (1.0 - ss(r * 0.5, r * 1.5, length((f - c) * cs))) * tw);
     }
-    col = mix(col, vec3(0.95, 1.0, 1.0), spark * 0.85);
-    col = mix(col, vec3(.72, .97, 1.), waterCaustics(p, t) * ss(10., 80., s) * .15);
+    col = mix(col, mix(vec3(0.95, 1.0, 1.0), vec3(.42, .53, .68), uNight), spark * 0.85);
+    col = mix(col, mix(vec3(.72, .97, 1.), vec3(.19, .32, .48), uNight), waterCaustics(p, t) * ss(10., 80., s) * .15);
 
     // 透明浅滩：水浅到能看见沙底，越往外越被青绿色盖住（过渡同样用颗粒喷出来）
     float shoal = uShoal;
     float k = clamp(ss(shoal * 0.15, shoal * 1.25, s) + (g2 - 0.5) * 0.16 * gAmt, 0.0, 1.0);
     if (k < 1.0) {
-      vec3 bed = mix(vec3(0.97, 0.91, 0.79), vec3(0.88, 0.90, 0.77), ss(0.0, shoal, s));
-      vec3 tint = mix(vec3(0.93, 0.99, 0.96), vec3(0.62, 0.92, 0.88), ss(0.0, shoal * 0.9, s));
+      vec3 bed = mix(mix(vec3(0.97, 0.91, 0.79),vec3(.27,.34,.40),uNight), mix(vec3(0.88, 0.90, 0.77),vec3(.20,.29,.36),uNight), ss(0.0, shoal, s));
+      vec3 tint = mix(mix(vec3(0.93, 0.99, 0.96),vec3(.28,.40,.48),uNight), mix(vec3(0.62, 0.92, 0.88),vec3(.18,.34,.44),uNight), ss(0.0, shoal * 0.9, s));
       col = mix(bed * tint, col, k);
     }
     // 贴岸的一段水底是湿沙：从岸线处的湿沙色慢慢过渡到浅滩的沙底色，和沙滩那边接得上，水里没有一道边
-    col = mix(col, mix(sandRamp((g1 - 0.5) * 0.1 * gAmt), WETSAND, 0.6), 1.0 - ss(2.0, 38.0, s));
+    col = mix(col, mix(sandRamp((g1 - 0.5) * 0.1 * gAmt), wetSandColor(), 0.6), 1.0 - ss(2.0, 38.0, s));
 
     // 皮划艇的影子（清澈的水，影子落在海底）
     float shadow = 0.0;
@@ -190,7 +199,7 @@ void main() {
       vec2 pd = paddleSD(q2, k.w);
       shadow = max(shadow, ss(1.6, -1.6, min(sd, min(pd.x, pd.y))));
     }
-    col = mix(col, col * vec3(0.62, 0.78, 0.84), shadow * 0.7);
+    col = mix(col, col * mix(vec3(0.62, 0.78, 0.84),vec3(.40,.52,.67),uNight), shadow * 0.7);
 
     // 涟漪：细白圈
     float rip = 0.0;
@@ -201,7 +210,7 @@ void main() {
       rip = max(rip, (1.0 - ss(0.8, 2.0, abs(dist - rad))) * exp(-r.z * 1.4) * r.w);
       rip = max(rip, (1.0 - ss(0.6, 1.6, abs(dist - rad * 0.6))) * exp(-r.z * 1.8) * r.w * 0.6);
     }
-    col = mix(col, FOAM, step(g2, rip * 0.95));
+    col = mix(col, foamColor(), step(g2, rip * 0.95));
 
     // ---------- 海里的浪 ----------
     float dd = s - 2.0;
@@ -221,11 +230,11 @@ void main() {
     float burst = exp(-fu * 4.5) * ss(0.0, 0.04, fu);
     float spray = exp(-dd / (6.0 * wv)) * burst * energy * 0.45;
     float foam = max(crest, step(g2, max(spray, crestSpray)));
-    col = mix(col, FOAM, foam);
+    col = mix(col, foamColor(), foam);
   } else {
     // ---------- 沙滩（干沙 + 靠水的一窄条常湿带）----------
     float wet = ss(-7.0 - 3.0 * shoreE, 1.0, s) * 0.2;
-    col = mix(sandRamp((g1 - 0.5) * 0.1 * gAmt), WETSAND, wet * 3.0);
+    col = mix(sandRamp((g1 - 0.5) * 0.1 * gAmt), wetSandColor(), wet * 3.0);
     col *= 1.0 - 0.03 * ss(0.4, 0.8, N(p, 900.0).r) * (1.0 - wet);               // 干沙上极轻的大块明暗
   }
 
@@ -237,7 +246,7 @@ void main() {
   // 薄水、湿痕不在岸线处一刀切：往海里再延伸一段、慢慢淡出（开阔岸边才有，小水塘里没有浪）
   float wk = (1.0 - ss(2.0, 38.0, s)) * mix(1.0, energy, ss(2.0, 10.0, s));
   if ((s < 4.0 && reachBase > 0.5) || (s >= 4.0 && wk > 0.01)) {
-    const vec3 FILM = WETSAND, MARK = WETSAND * 0.97;
+    vec3 FILM = wetSandColor(), MARK = wetSandColor() * 0.97;
     float onSand = step(s, 4.0);                                                  // 前沿白边只画在沙滩上
     // 薄水退去时留下的网状碎沫（跟着回流的水往海里漂）
     vec2 wl = worley((p - nrm * fu * 8.0) / 7.0);
@@ -269,12 +278,12 @@ void main() {
       float front = layers[j].x, a = layers[j].y, amp = layers[j].z;
       float cov = ss(front - 1.0, front + layers[j].w, sW);
       float lace = laceNet * cov * ss(0.4, 0.6, a) * (1.0 - ss(0.7, 1.4, a)) * wk;
-      col = mix(col, FOAM, lace * 0.75);
+      col = mix(col, foamColor(), lace * 0.75);
       float edgeK = a < 0.45 ? 1.0 : 1.0 - ss(0.45, 1.05, a);
       float d = sW - front;
       float lineE = (1.0 - ss(0.8 * wv, 1.9 * wv, abs(d - 0.9 * wv))) * edgeK * onSand;    // 前沿白边
       float sprayE = exp(-max(d, 0.0) / (5.0 * wv)) * cov * edgeK * 0.5 * onSand;         // 白边身后的颗粒水雾
-      col = mix(col, FOAM, max(lineE * 0.95, step(g1, sprayE)));
+      col = mix(col, foamColor(), max(lineE * 0.95, step(g1, sprayE)));
     }
   }
 
@@ -321,14 +330,14 @@ void main() {
     vec2 d0 = p - b.xy, d1 = d0 - vec2(34.0, 55.0);
     if (dot(d1, d1) < 400.0) {
       vec3 g = gullSD(rot(-b.z) * d1, b.w);
-      col = mix(col, col * vec3(0.70, 0.74, 0.84), ss(1.8, -1.8, min(g.x, g.y)) * 0.28);
+      col = mix(col, col * mix(vec3(0.70, 0.74, 0.84),vec3(.38,.48,.65),uNight), ss(1.8, -1.8, min(g.x, g.y)) * 0.28);
     }
     if (dot(d0, d0) < 400.0) {
       vec3 g = gullSD(rot(-b.z) * d0, b.w);
-      vec3 wingC = mix(vec3(0.80, 0.84, 0.88), vec3(0.20, 0.22, 0.26), ss(0.72, 0.8, g.z));
+      vec3 wingC = mix(mix(vec3(0.80, 0.84, 0.88), vec3(0.20, 0.22, 0.26), ss(0.72, 0.8, g.z)), mix(vec3(.35,.43,.56),vec3(.12,.17,.27),ss(0.72,0.8,g.z)),uNight);
       col = mix(col, wingC, ss(0.6, -0.6, g.y));
-      col = mix(col, vec3(0.99, 0.99, 0.98), ss(0.6, -0.6, g.x));
-      col = mix(col, vec3(0.98, 0.78, 0.22), ss(0.5, -0.5, length(rot(-b.z) * d0 - vec2(7.2, 0.0)) - 0.9));   // 黄嘴
+      col = mix(col, mix(vec3(0.99, 0.99, 0.98),vec3(.58,.67,.80),uNight), ss(0.6, -0.6, g.x));
+      col = mix(col, mix(vec3(0.98, 0.78, 0.22),vec3(.54,.50,.38),uNight), ss(0.5, -0.5, length(rot(-b.z) * d0 - vec2(7.2, 0.0)) - 0.9));   // 黄嘴
     }
   }
 

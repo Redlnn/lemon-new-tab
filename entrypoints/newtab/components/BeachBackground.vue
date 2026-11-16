@@ -11,13 +11,14 @@ const emit = defineEmits<{ error: [] }>()
 const settings = useSettingsStore()
 const canvas = useTemplateRef('canvas')
 const treeCanvas = useTemplateRef('trees')
-const { running, fail, getRenderer } = useDynamicWallpaper({
+const { running, night, fail, getRenderer } = useDynamicWallpaper({
   name: 'beach',
   create: () => {
     if (!canvas.value || !treeCanvas.value) throw new Error('Missing canvas')
     return createBeachScene(canvas.value, treeCanvas.value, [palm1, palm2, palm3])
   },
-  draw: (renderer, time, bounds) => renderer.draw(time, bounds, settings.background.beach),
+  draw: (renderer, time, bounds) =>
+    renderer.draw(time, bounds, { ...settings.background.beach, night: night.value }),
   fps: () => settings.background.dynamic.fps,
   onError: () => emit('error'),
 })

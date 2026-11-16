@@ -29,6 +29,7 @@ import {
   useLocalWallpaperStore,
   prepareWallpaper,
 } from '@newtab/shared/wallpaper'
+import { useDynamicWallpaperNightTheme } from '@newtab/shared/wallpaper/dynamic/useDynamicWallpaperTheme'
 
 let animationDuration = 1250
 let hasShortenedFade = false
@@ -40,6 +41,7 @@ const MapBackground = defineAsyncComponent(() => import('./MapBackground.vue'))
 const focusStore = useFocusState()
 const settings = useSettingsStore()
 const { t } = useTranslation()
+const dynamicWallpaperNight = useDynamicWallpaperNightTheme()
 
 // 如果设置了快速初始动画，则直接使用短时间
 if (settings.background.fastAnimation) {
@@ -57,6 +59,21 @@ const renderedType = ref(settings.background.bgType)
 const solidColor = computed(
   () => settings.background.solid[isDark.value ? 'dark' : 'light'] || 'var(--el-bg-color-page)',
 )
+const wallpaperColors: Partial<Record<BgType, { day: string; night: string }>> = {
+  [BgType.Meadow]: { day: '#a3bf70', night: '#172321' },
+  [BgType.Beach]: { day: '#008fb9', night: '#101d31' },
+  [BgType.Ocean]: { day: '#315fb2', night: '#0c1930' },
+}
+
+const wallpaperCanvasBaseColor = computed(() => {
+  const type = renderedType.value
+
+  if (type === BgType.Map) return '#efdcae'
+
+  const colors = wallpaperColors[type]
+  return (dynamicWallpaperNight.value ? colors?.night : colors?.day) ?? solidColor.value
+})
+
 // 动态壁纸的场景本身有入场动画，首屏无需先把整张画布从透明渐显。
 const isSwitching = ref(!isDynamicBgType(settings.background.bgType))
 
@@ -585,16 +602,7 @@ onUnmounted(() => {
     class="background-wrapper noselect"
     aria-hidden="true"
     :style="{
-      backgroundColor:
-        renderedType === BgType.Meadow
-          ? '#a3bf70'
-          : renderedType === BgType.Beach
-            ? '#008fb9'
-            : renderedType === BgType.Ocean
-              ? '#315fb2'
-              : renderedType === BgType.Map
-                ? '#efdcae'
-                : solidColor,
+      backgroundColor: wallpaperCanvasBaseColor,
       '--mask-color__light': settings.background.mask.light,
       '--mask-color__night': settings.background.mask.night,
       '--blur-intensity': `${isDynamicBgType(renderedType) ? 0 : settings.background.blur}px`,

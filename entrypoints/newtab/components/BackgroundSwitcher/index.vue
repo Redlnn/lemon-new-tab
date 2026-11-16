@@ -679,6 +679,30 @@ function open(url: string) {
             <template
               v-if="
                 settings.background.bgType === BgType.Meadow ||
+                settings.background.bgType === BgType.Beach ||
+                settings.background.bgType === BgType.Ocean
+              "
+            >
+              <label>
+                <span>{{ t('background.dynamicAutoNightTheme') }}</span>
+                <el-switch
+                  v-model="settings.background.dynamic.autoNightTheme"
+                  :aria-label="t('background.dynamicAutoNightTheme')"
+                />
+              </label>
+              <label>
+                <span>{{ t('background.dynamicNightMode') }}</span>
+                <el-switch
+                  v-model="settings.background.dynamic.nightByTime"
+                  :disabled="!settings.background.dynamic.autoNightTheme"
+                  :active-text="t('background.dynamicNightByTime')"
+                  :inactive-text="t('background.dynamicNightByDarkMode')"
+                />
+              </label>
+            </template>
+            <template
+              v-if="
+                settings.background.bgType === BgType.Meadow ||
                 settings.background.bgType === BgType.Ocean
               "
             >

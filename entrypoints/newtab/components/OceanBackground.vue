@@ -7,7 +7,7 @@ import { createOceanRenderer } from '@newtab/shared/wallpaper/ocean'
 const emit = defineEmits<{ error: [] }>()
 const settings = useSettingsStore()
 const canvas = useTemplateRef('canvas')
-const { running, fail, getRenderer } = useDynamicWallpaper({
+const { running, night, fail, getRenderer } = useDynamicWallpaper({
   name: 'ocean',
   create: () => {
     if (!canvas.value) throw new Error('Missing canvas')
@@ -20,6 +20,7 @@ const { running, fail, getRenderer } = useDynamicWallpaper({
       {
         ...settings.background.ocean,
         navigationCloudSize: settings.background.dynamic.navigationCloudSize,
+        night: night.value,
         showBoy: false,
         showCat: false,
       },

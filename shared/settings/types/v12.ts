@@ -43,7 +43,12 @@ export interface SettingsSchemaV12 extends Omit<
     pauseWhenHidden: boolean
     solid: { light: string; dark: string }
     rotation: { enabled: boolean; order: 'random' | 'ordered' }
-    dynamic: { fps: 25 | 30 | 45 | 60 | 120; navigationCloudSize: number }
+    dynamic: {
+      fps: 25 | 30 | 45 | 60 | 120
+      navigationCloudSize: number
+      autoNightTheme: boolean
+      nightByTime: boolean
+    }
     map: {
       trains: number
       ships: number

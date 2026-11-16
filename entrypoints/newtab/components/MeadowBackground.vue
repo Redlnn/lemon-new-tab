@@ -7,7 +7,7 @@ import { createMeadowRenderer } from '@newtab/shared/wallpaper/meadow'
 const emit = defineEmits<{ error: [] }>()
 const settings = useSettingsStore()
 const canvas = useTemplateRef('canvas')
-const { running, fail, getRenderer } = useDynamicWallpaper({
+const { running, night, fail, getRenderer } = useDynamicWallpaper({
   name: 'meadow',
   create: () => {
     if (!canvas.value) throw new Error('Missing canvas')
@@ -21,6 +21,7 @@ const { running, fail, getRenderer } = useDynamicWallpaper({
         ...settings.background.meadow,
         navigationCloudSize: settings.background.dynamic.navigationCloudSize,
         catCount: settings.background.meadow.catCount,
+        night: night.value,
       },
       settings.quickLinks.enabled && !settings.quickLinks.useScroll,
     ),
@@ -28,7 +29,12 @@ const { running, fail, getRenderer } = useDynamicWallpaper({
   onError: () => emit('error'),
 })
 function moveBoy(x: number, y: number) {
-  if (running.value && settings.background.meadow.clickToMove && settings.background.meadow.showBoy)
+  if (
+    running.value &&
+    !night.value &&
+    settings.background.meadow.clickToMove &&
+    settings.background.meadow.showBoy
+  )
     getRenderer()?.moveBoy(x, y)
 }
 defineExpose({ moveBoy })
