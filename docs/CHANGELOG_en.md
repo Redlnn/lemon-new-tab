@@ -10,7 +10,7 @@ Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you ne
 
 ### New Features✨
 
-- **Wallpaper:** Redesigned the wallpaper picker and added three new animated wallpapers.
+- **Wallpaper:** Redesigned the wallpaper picker and added four new animated wallpapers.
 - **Quick Links:** You can hide "Add Link" button now.
 
 ### Improvements⚡️

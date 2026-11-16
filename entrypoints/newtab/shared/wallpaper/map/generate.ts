@@ -311,8 +311,7 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
       }
     }
   // Ports occupy dry ground on a coast and face the same queried water field.
-  // Collect sites first: a lake may have several nearby towns, but only one
-  // seeded winner should get a harbour on that small shoreline.
+  // Small inland lakes have no room for harbour buildings and cranes.
   const proposedPorts: Place[] = []
   for (const town of map.places.slice()) {
     let port: Point | undefined,
@@ -326,6 +325,11 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
           !inQuiet(p, 40) &&
           d > 12 &&
           d < 28 &&
+          !terrain.lakes.some(
+            (lake) =>
+              Math.min(lake.rx, lake.ry) < 28 &&
+              distance(p, lake) < Math.max(lake.rx, lake.ry) + 65,
+          ) &&
           terrain.navigationWater(p.x, p.y) > 50 &&
           radius < best &&
           [...map.places, ...proposedPorts].every((q) => distance(p, q) > 65)
