@@ -101,6 +101,8 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
     seed,
     width,
     height,
+    viewWidth: request.viewWidth,
+    viewHeight: request.viewHeight,
     navigation,
     navigationLakeCenter:
       navigation && request.showNavigationLake !== false
@@ -217,6 +219,8 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
       ...request,
       width: previous.width,
       height: previous.height,
+      viewWidth: previous.viewWidth,
+      viewHeight: previous.viewHeight,
       navigation: previous.navigation,
     }).water
     const riverKey = (path: Point[]) => {

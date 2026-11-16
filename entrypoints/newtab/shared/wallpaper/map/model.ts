@@ -46,6 +46,8 @@ export type MapData = {
   seed: number
   width: number
   height: number
+  viewWidth: number
+  viewHeight: number
   navigation: Bounds
   navigationLakeCenter: Point | null
   compass: Point

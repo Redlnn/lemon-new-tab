@@ -1,21 +1,21 @@
 import { noise, random, type MapRequest, type MapField } from './model'
 
 export function createTerrain(request: MapRequest) {
-  const { seed, anchorWidth, anchorHeight, navigation } = request
+  const { seed, anchorWidth, anchorHeight, viewWidth, viewHeight, navigation } = request
   const edge = seed % 4
   const edges = [edge]
   if (random(seed + 626, 0) < 0.48)
     edges.push(
       edge < 2 ? 2 + Math.floor(random(seed + 627, 0) * 2) : Math.floor(random(seed + 627, 0) * 2),
     )
-  // The coast is tied to the initial world, never to the buffered canvas size.
+  // Keep the sea depth stable while anchoring right and bottom shores to the viewport.
   const depth = Math.min(anchorWidth, anchorHeight) * (0.17 + random(seed, 19) * 0.15)
   const lakes: { x: number; y: number; rx: number; ry: number }[] = []
   function sea(x: number, y: number) {
     let value = Infinity
     for (const [i, side] of edges.entries()) {
       const across =
-        side === 0 ? x : side === 1 ? anchorWidth - x : side === 2 ? y : anchorHeight - y
+        side === 0 ? x : side === 1 ? viewWidth - x : side === 2 ? y : viewHeight - y
       const along = side < 2 ? y : x
       const reach = depth * (i ? 0.65 + random(seed + 628, 0) * 0.2 : 1)
       const shore =
@@ -45,25 +45,41 @@ export function createTerrain(request: MapRequest) {
       0.03 * Math.sin(angle * 9 + seed)
     return (Math.hypot(dx, dy) - rim) / Math.hypot(Math.cos(angle) / rx, Math.sin(angle) / ry)
   }
-  // Islands are anchored to the opening viewport, so resizing never moves an
-  // existing shoreline. Reject candidates with insufficient open sea around it.
+  // Use stable candidate positions relative to the shore that moves with the viewport.
   const islands: { x: number; y: number; rx: number; ry: number }[] = []
   const islandLimit = Math.max(0, Math.min(10, request.islandLimit ?? 3))
   if (islandLimit && random(seed + 906, 0) < 0.72) {
     const target = 1 + Math.floor(random(seed + 907, 0) * islandLimit)
-    const candidates: { x: number; y: number; rank: number }[] = []
+    const candidates: { x: number; y: number; originalX: number; originalY: number; rank: number }[] = []
+    const offsetX = edges.includes(1) ? viewWidth - anchorWidth : 0,
+      offsetY = edges.includes(3) ? viewHeight - anchorHeight : 0
     for (let y = 75; y < anchorHeight - 75; y += 85)
       for (let x = 75; x < anchorWidth - 75; x += 85) {
         const px = x + (random(seed + 908, x, y) - 0.5) * 70,
-          py = y + (random(seed + 909, x, y) - 0.5) * 70
-        if (sea(px, py) < -145 && navigationWater(px, py) > 125)
-          candidates.push({ x: px, y: py, rank: random(seed + 910, x, y) })
+          py = y + (random(seed + 909, x, y) - 0.5) * 70,
+          islandX = px + offsetX,
+          islandY = py + offsetY
+        if (
+          islandX >= 0 &&
+          islandY >= 0 &&
+          islandX < viewWidth &&
+          islandY < viewHeight &&
+          sea(islandX, islandY) < -145 &&
+          navigationWater(islandX, islandY) > 125
+        )
+          candidates.push({
+            x: islandX,
+            y: islandY,
+            originalX: px,
+            originalY: py,
+            rank: random(seed + 910, x, y),
+          })
       }
     candidates.sort((a, b) => a.rank - b.rank)
     for (const p of candidates) {
       if (islands.length >= target) break
-      const rx = 19 + random(seed + 911, p.x, p.y) * 27,
-        ry = 15 + random(seed + 912, p.x, p.y) * 23
+      const rx = 19 + random(seed + 911, p.originalX, p.originalY) * 27,
+        ry = 15 + random(seed + 912, p.originalX, p.originalY) * 23
       if (islands.some((other) => Math.hypot(p.x - other.x, p.y - other.y) < 150)) continue
       islands.push({ x: p.x, y: p.y, rx, ry })
     }

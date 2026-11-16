@@ -77,6 +77,16 @@ export function createMapScene(
         (visibleBitmap.height / bitmapScale) * scale,
       )
   }
+  function paintDetails() {
+    if (detailsBitmap)
+      detailCtx.drawImage(
+        detailsBitmap,
+        0,
+        0,
+        (detailsBitmap.width / bitmapScale) * scale,
+        (detailsBitmap.height / bitmapScale) * scale,
+      )
+  }
   function startReveal(time: number) {
     revealStart = time
     revealPainted = -1
@@ -104,7 +114,7 @@ export function createMapScene(
       lastRevealPaint = time
       detailCtx.setTransform(1, 0, 0, 1, 0, 0)
       detailCtx.clearRect(0, 0, detailsCanvas.width, detailsCanvas.height)
-      detailCtx.drawImage(detailsBitmap, 0, 0, detailsCanvas.width, detailsCanvas.height)
+      paintDetails()
       if (progress < 1 && maskPixels) {
         const pixels = maskPixels.data,
           threshold = progress * 1.24 - 0.12
@@ -136,7 +146,7 @@ export function createMapScene(
     if (detailsBitmap) {
       detailCtx.setTransform(1, 0, 0, 1, 0, 0)
       detailCtx.clearRect(0, 0, detailsCanvas.width, detailsCanvas.height)
-      detailCtx.drawImage(detailsBitmap, 0, 0, detailsCanvas.width, detailsCanvas.height)
+      paintDetails()
     }
     baseBitmap?.close()
     baseBitmap = null
@@ -202,7 +212,7 @@ export function createMapScene(
         detailsCanvas.style.width = background.style.width
         detailsCanvas.style.height = background.style.height
         detailsCanvas.hidden = false
-        if (detailsBitmap) detailCtx.drawImage(detailsBitmap, 0, 0, detailsCanvas.width, detailsCanvas.height)
+        paintDetails()
         previewBitmap?.close()
         previewBitmap = null
       }
@@ -348,7 +358,7 @@ export function createMapScene(
     detailsCanvas.height = background.height
     detailsCanvas.style.width = background.style.width
     detailsCanvas.style.height = background.style.height
-    if (detailsBitmap) detailCtx.drawImage(detailsBitmap, 0, 0, detailsCanvas.width, detailsCanvas.height)
+    paintDetails()
     paintBackground()
     staticPainted = false
     coast.resize()

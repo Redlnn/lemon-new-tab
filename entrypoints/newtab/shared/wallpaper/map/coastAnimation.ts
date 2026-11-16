@@ -184,8 +184,8 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     started = time
     firstTransition = first
     duration = first ? 2.6 : 1.8
-    currentMix = 0
     active = animate && changed
+    currentMix = active ? 0 : 1
     canvas.hidden = false
     resize()
     if (!active) render(true)
