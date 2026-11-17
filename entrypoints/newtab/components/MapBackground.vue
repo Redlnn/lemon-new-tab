@@ -22,6 +22,7 @@ const { running, getRenderer, fail } = useDynamicWallpaper({
       details.value,
       () => settings.background.map,
       fail,
+      settings.background.dynamic.disableEntrance,
     )
   },
   draw: (renderer, time, bounds) => renderer.draw(time, bounds),

@@ -162,7 +162,9 @@
       "unknownSource": "Using images from unknown sources as backgrounds may expose your device to attacks. Do you want to continue?"
     },
     "resetDefaults": "Restore defaults",
-    "resetCurrentDynamicHint": "Only restore settings for the current live wallpaper"
+    "resetCurrentDynamicHint": "Only restore settings for the current live wallpaper",
+    "disableEntrance": "Disable entrance animation",
+    "unsaved": "Save changes to wallpaper settings?"
   },
   "bookmark": {
     "defaultSort": "Default sorting",

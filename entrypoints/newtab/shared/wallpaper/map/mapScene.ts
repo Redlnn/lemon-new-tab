@@ -16,6 +16,7 @@ export function createMapScene(
   detailsCanvas: HTMLCanvasElement,
   getCounts: () => MapCounts,
   onError: () => void,
+  disableEntrance = false,
 ) {
   const ground = background.getContext('2d', { alpha: false })!,
     ctx = canvas.getContext('2d')!,
@@ -194,7 +195,7 @@ export function createMapScene(
       bitmapScale = frame.scale
       detailsBitmap?.close()
       detailsBitmap = frame.details ?? null
-      coast.begin(bitmap, frame.paper, frame.field, frame.scale, lastTime, lastAnimate && !expanded)
+      coast.begin(bitmap, frame.paper, frame.field, frame.scale, lastTime, lastAnimate && !expanded && !(firstFrame && disableEntrance))
       frame.paper.close()
       introActive = firstFrame && !!frame.details && coast.isActive()
       if (introActive) {

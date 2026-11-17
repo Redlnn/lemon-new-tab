@@ -10,7 +10,7 @@ import cat from '@newtab/assets/meadow/cat.webp'
 import { createMeadowCharacters } from './meadowCharacters'
 import { createDynamicScene } from './meadowScene'
 
-export function createMeadowRenderer(canvas: HTMLCanvasElement) {
+export function createMeadowRenderer(canvas: HTMLCanvasElement, disableEntrance = false) {
   return createDynamicScene(canvas, {
     characters: {
       createCharacters: createMeadowCharacters,
@@ -22,5 +22,5 @@ export function createMeadowRenderer(canvas: HTMLCanvasElement) {
         cats: [cat, catWhite, catCalico, catRagdoll],
       },
     },
-  })
+  }, disableEntrance)
 }

@@ -7,7 +7,7 @@ import { oceanShader } from './oceanShader'
 import { createOceanWake } from './oceanWake'
 import { createOceanWhaleTexture } from './oceanWhale'
 
-export function createOceanRenderer(canvas: HTMLCanvasElement) {
+export function createOceanRenderer(canvas: HTMLCanvasElement, disableEntrance = false) {
   return createDynamicScene(canvas, {
     ocean: {
       whale,
@@ -16,5 +16,5 @@ export function createOceanRenderer(canvas: HTMLCanvasElement) {
       createWake: createOceanWake,
       createWhaleTexture: createOceanWhaleTexture,
     },
-  })
+  }, disableEntrance)
 }

@@ -11,7 +11,7 @@ const { running, night, fail, getRenderer } = useDynamicWallpaper({
   name: 'ocean',
   create: () => {
     if (!canvas.value) throw new Error('Missing canvas')
-    return createOceanRenderer(canvas.value)
+    return createOceanRenderer(canvas.value, settings.background.dynamic.disableEntrance)
   },
   draw: (renderer, time, bounds) =>
     renderer.draw(

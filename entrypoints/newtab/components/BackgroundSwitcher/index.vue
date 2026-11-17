@@ -42,6 +42,45 @@ const { isComposing } = useImeAwareDialog()
 const { t } = useTranslation('settings')
 const settings = useSettingsStore()
 const dynamicActive = computed(() => isDynamicBgType(settings.background.bgType))
+const draftKeys = ['solid', 'dynamic', 'meadow', 'beach', 'ocean', 'map', 'blur', 'vignette', 'mask'] as const
+function snapshotDraft() {
+  const background = settings.background
+  return Object.fromEntries(draftKeys.map((key) => [key, structuredClone(toRaw(background[key]))]))
+}
+let initialDraft = snapshotDraft()
+let closing = false
+async function saveAndClose() {
+  await settings.save()
+  opened.value = false
+}
+async function beforeClose(done: () => void) {
+  if (closing) return
+  const current = snapshotDraft()
+  const changed = JSON.stringify(current) !== JSON.stringify(initialDraft)
+  if (!changed) {
+    done()
+    return
+  }
+  closing = true
+  try {
+    await ElMessageBox.confirm(t('background.unsaved'), t('newtab:common.warning'), {
+      confirmButtonText: t('newtab:common.save'),
+      cancelButtonText: t('newtab:note.discard'),
+      distinguishCancelAndClose: true,
+      type: 'warning',
+    })
+    await settings.save()
+    done()
+  } catch (reason) {
+    if (reason === 'cancel') {
+      Object.assign(settings.background, structuredClone(initialDraft))
+      await settings.save()
+      done()
+    }
+  } finally {
+    closing = false
+  }
+}
 function resetDynamicSettings() {
   const type = settings.background.bgType
   if (!isDynamicBgType(type)) return
@@ -152,6 +191,7 @@ watch(
       releaseThumbnails()
       return
     }
+    initialDraft = snapshotDraft()
     source.value = currentSource()
     await local.init()
     void bingWallpaperURLGetter.init().catch(console.error)
@@ -392,6 +432,7 @@ function open(url: string) {
     class="bg-switcher__drawer"
     :size="windowWidth <= 500 ? '100%' : '430px'"
     :close-on-press-escape="!isComposing"
+    :before-close="beforeClose"
     :title="t('background.preferenceTitle')"
     append-to-body
   >
@@ -676,6 +717,10 @@ function open(url: string) {
                 />
               </el-select>
             </label>
+            <label>
+              <span>{{ t('background.disableEntrance') }}</span>
+              <el-switch v-model="settings.background.dynamic.disableEntrance" :aria-label="t('background.disableEntrance')" />
+            </label>
             <template
               v-if="
                 settings.background.bgType === BgType.Meadow ||
@@ -926,7 +971,7 @@ function open(url: string) {
             {{ t('background.resetDefaults') }}
           </el-button>
         </el-tooltip>
-        <el-button type="primary" @click="opened = false">{{ label('done') }}</el-button>
+        <el-button type="primary" @click="saveAndClose">{{ t('newtab:common.save') }}</el-button>
       </el-space>
     </template>
   </el-drawer>

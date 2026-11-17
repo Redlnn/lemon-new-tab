@@ -50,6 +50,7 @@ export function createDynamicScene(
   scene:
     | { characters: MeadowDependencies; ocean?: never }
     | { characters?: never; ocean: OceanDependencies },
+  disableEntrance = false,
 ) {
   const ocean = !!scene.ocean
   const context = cv.getContext('webgl2', {
@@ -430,9 +431,9 @@ void main() {
       uploadField(target, FB)
       fromI = toI
       toI = target
-      morphT0 = sceneNow
+      morphT0 = fromEmpty && disableEntrance ? sceneNow - 2600 : sceneNow
       morphDur = fromEmpty ? 2600 : MORPH_MS
-      curMix = 0
+      curMix = fromEmpty && disableEntrance ? 1 : 0
     }
 
     /* ======================================================================
@@ -548,6 +549,7 @@ void main() {
       return { x, y, circles, v: 0.7 + rnd() * 0.6, grow: 0, hw: Math.max(-x0, x1) + 20 }
     }
 
+    let firstClouds = true
     const stepSkyClouds = (dt: number) => {
       flowT += dt * P.flow // 云自己的时钟：流动速度越快，鼓包呼吸得也越快
       const want = Math.round(P.cover * 10)
@@ -571,8 +573,13 @@ void main() {
             best = c
           }
         }
-        if (best) skyClouds.push(makeSkyCloud(best.x, best.y))
+        if (best) {
+          const cloud = makeSkyCloud(best.x, best.y)
+          if (firstClouds && disableEntrance) cloud.grow = 1
+          skyClouds.push(cloud)
+        }
       }
+      firstClouds = false
       for (let i = skyClouds.length - 1; i >= 0; i--) {
         const c = skyClouds[i]!
         c.x += P.flow * 10 * c.v * dt // 流动速度 ×1 时约 10px/秒

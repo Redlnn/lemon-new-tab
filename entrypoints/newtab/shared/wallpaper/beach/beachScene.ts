@@ -23,6 +23,7 @@ export function createBeachScene(
   cv: HTMLCanvasElement,
   treesCanvas: HTMLCanvasElement,
   treeUrls: string[],
+  disableEntrance = false,
 ) {
   const P = {
     sigma: 85,
@@ -275,7 +276,7 @@ export function createBeachScene(
     upload(fromIndex, before)
     upload(toIndex, next)
     currentMix = before === next ? 1 : 0
-    transitionStart = sceneTime
+    transitionStart = firstLayout && disableEntrance ? sceneTime - 2600 : sceneTime
     transitionDuration = firstLayout ? 2600 : 1800
     treesDirty = true
     for (const agent of agents.filter((item) => !item.bird)) {

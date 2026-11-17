@@ -48,6 +48,7 @@ export interface SettingsSchemaV12 extends Omit<
       navigationCloudSize: number
       autoNightTheme: boolean
       nightByTime: boolean
+      disableEntrance: boolean
     }
     map: {
       trains: number

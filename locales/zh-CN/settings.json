@@ -162,7 +162,9 @@
       "unknownSource": "使用未知来源的图片作为背景可能会使你的设备遭到攻击，是否继续？"
     },
     "resetDefaults": "恢复默认",
-    "resetCurrentDynamicHint": "仅恢复当前动态壁纸设置"
+    "resetCurrentDynamicHint": "仅恢复当前动态壁纸设置",
+    "disableEntrance": "禁用入场动画",
+    "unsaved": "保存壁纸设置的更改吗？"
   },
   "bookmark": {
     "defaultSort": "默认排序方式",

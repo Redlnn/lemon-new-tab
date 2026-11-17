@@ -162,7 +162,9 @@
       "unknownSource": "Bilinmeyen kaynaklardan alınan görselleri arka plan olarak kullanmak cihazınızı saldırılara maruz bırakabilir. Devam etmek istiyor musunuz?"
     },
     "resetDefaults": "Varsayılanları geri yükle",
-    "resetCurrentDynamicHint": "Yalnızca mevcut canlı duvar kağıdının ayarlarını geri yükle"
+    "resetCurrentDynamicHint": "Yalnızca mevcut canlı duvar kağıdının ayarlarını geri yükle",
+    "disableEntrance": "Giriş animasyonunu devre dışı bırak",
+    "unsaved": "Duvar kağıdı ayarlarındaki değişiklikler kaydedilsin mi?"
   },
   "bookmark": {
     "defaultSort": "Varsayılan sıralama",

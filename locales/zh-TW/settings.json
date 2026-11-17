@@ -162,7 +162,9 @@
       "unknownSource": "使用來源不明的圖片作為背景可能會使裝置遭到攻擊，是否繼續？"
     },
     "resetDefaults": "還原預設值",
-    "resetCurrentDynamicHint": "僅還原目前的動態桌布設定"
+    "resetCurrentDynamicHint": "僅還原目前的動態桌布設定",
+    "disableEntrance": "停用入場動畫",
+    "unsaved": "要儲存桌布設定的變更嗎？"
   },
   "bookmark": {
     "defaultSort": "預設排序方式",

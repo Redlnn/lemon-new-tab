@@ -15,7 +15,7 @@ const { running, night, fail, getRenderer } = useDynamicWallpaper({
   name: 'beach',
   create: () => {
     if (!canvas.value || !treeCanvas.value) throw new Error('Missing canvas')
-    return createBeachScene(canvas.value, treeCanvas.value, [palm1, palm2, palm3])
+    return createBeachScene(canvas.value, treeCanvas.value, [palm1, palm2, palm3], settings.background.dynamic.disableEntrance)
   },
   draw: (renderer, time, bounds) =>
     renderer.draw(time, bounds, { ...settings.background.beach, night: night.value }),

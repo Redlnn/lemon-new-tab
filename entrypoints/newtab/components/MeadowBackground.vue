@@ -11,7 +11,7 @@ const { running, night, fail, getRenderer } = useDynamicWallpaper({
   name: 'meadow',
   create: () => {
     if (!canvas.value) throw new Error('Missing canvas')
-    return createMeadowRenderer(canvas.value)
+    return createMeadowRenderer(canvas.value, settings.background.dynamic.disableEntrance)
   },
   draw: (renderer, time, bounds) =>
     renderer.draw(
