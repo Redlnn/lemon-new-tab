@@ -3,9 +3,30 @@ import { createExtensionWorker } from '@/shared/worker'
 import { createCoastAnimation } from './coastAnimation'
 import type { MapFrame, MapPreview, MapError, MapPreviewComplete } from './map.worker'
 import mapWorkerUrl from './map.worker?worker&url'
-import type { Bounds, MapCounts, MapRequest } from './model'
+import type { Bounds, MapCounts, MapField, MapRequest } from './model'
 import { noise } from './model'
 import { createMapMotion } from './paint'
+
+// Bilinear shoreline distance used to fade trains and ships near the coast when
+// the WebGL transition layer is not created.
+const createFieldVisibility = (field: MapField) => {
+  const { values, cols, rows, step } = field
+  const sample = (x: number, y: number) => {
+    const fx = Math.max(0, Math.min(cols - 1.001, x / step))
+    const fy = Math.max(0, Math.min(rows - 1.001, y / step))
+    const ix = Math.floor(fx),
+      iy = Math.floor(fy),
+      tx = fx - ix,
+      ty = fy - iy,
+      i = iy * cols + ix
+    return (
+      (values[i]! * (1 - tx) + values[i + 1]! * tx) * (1 - ty) +
+      (values[i + cols]! * (1 - tx) + values[i + cols + 1]! * tx) * ty
+    )
+  }
+  return (p: { x: number; y: number }, water: boolean) =>
+    Math.max(0, Math.min(1, (water ? -sample(p.x, p.y) : sample(p.x, p.y)) / 8))
+}
 
 // Static geography is uploaded only when it changes. The transparent animation
 // layer never copies the paper map every frame; expensive work stays off-thread.
@@ -22,7 +43,13 @@ export function createMapScene(
     ctx = canvas.getContext('2d')!,
     detailCtx = detailsCanvas.getContext('2d')!
   if (!ground || !ctx || !detailCtx) throw new Error('Canvas 2D unavailable')
-  const coast = createCoastAnimation(coastCanvas)
+  // The WebGL coast layer exists only for the entrance transition. Without it
+  // the worker paints the same shorelines into the map bitmap, which avoids
+  // creating (and warming) a second WebGL context for static maps.
+  const coast = disableEntrance ? null : createCoastAnimation(coastCanvas)
+  if (!coast) coastCanvas.hidden = true
+  let fieldVisibility: ReturnType<typeof createFieldVisibility> | null = null
+  const fullVisibility = () => 1
   detailsCanvas.hidden = true
   const worker = createExtensionWorker(mapWorkerUrl)
   const seed = Math.floor(Math.random() * 0x7fffffff)
@@ -55,8 +82,22 @@ export function createMapScene(
     maskCtx = mask.getContext('2d')!
   let maskNoise = new Float32Array(),
     maskPixels: ImageData | null = null
+  let coastWarmupScheduled = false
 
-  function paintBackground() {
+  // The first large WebGL allocation and shader run cost tens of milliseconds
+  // on some drivers. Do it while the layer is still hidden instead of on the
+  // frame that finally shows the map.
+  const scheduleCoastWarmup = () => {
+    if (coastWarmupScheduled || !coast) return
+    coastWarmupScheduled = true
+    const run = () => {
+      if (!disposed) coast.prepare(width, height)
+    }
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 100 })
+    else setTimeout(run, 100)
+  }
+
+  const paintBackground = () => {
     ground.fillStyle = '#efdcae'
     ground.fillRect(0, 0, background.width, background.height)
     if (previewBitmap)
@@ -76,7 +117,7 @@ export function createMapScene(
         (bitmap.height / bitmapScale) * scale,
       )
   }
-  function paintDetails() {
+  const paintDetails = () => {
     if (detailsBitmap)
       detailCtx.drawImage(
         detailsBitmap,
@@ -86,7 +127,7 @@ export function createMapScene(
         (detailsBitmap.height / bitmapScale) * scale,
       )
   }
-  function startReveal(time: number) {
+  const startReveal = (time: number) => {
     revealStart = time
     revealPainted = -1
     lastRevealPaint = -Infinity
@@ -104,7 +145,7 @@ export function createMapScene(
     detailsCanvas.hidden = false
     detailsCanvas.style.opacity = '1'
   }
-  function paintReveal(time: number) {
+  const paintReveal = (time: number) => {
     if (!introActive || !detailsBitmap) return
     const progress = Math.min(1, Math.max(0, (time - revealStart) / 1.2))
     // Ink soaks into irregular patches; labels and symbols use the same mask.
@@ -132,14 +173,14 @@ export function createMapScene(
       }
     }
   }
-  function revealVisibility(p: { x: number; y: number }) {
+  const revealVisibility = (p: { x: number; y: number }) => {
     if (!introActive) return 1
     const threshold = revealPainted * 1.24 - 0.12,
       n = noise(seed + 922, p.x / 340, p.y / 340),
       edge = Math.min(1, Math.max(0, (threshold - n + 0.12) / 0.24))
     return edge * edge * (3 - 2 * edge)
   }
-  function finishReveal() {
+  const finishReveal = () => {
     if (!introActive) return
     introActive = false
     if (detailsBitmap) {
@@ -195,9 +236,17 @@ export function createMapScene(
       bitmapScale = frame.scale
       detailsBitmap?.close()
       detailsBitmap = frame.details ?? null
-      coast.begin(bitmap, frame.paper, frame.field, frame.scale, lastTime, lastAnimate && !expanded && !(firstFrame && disableEntrance))
+      coast?.begin(
+        bitmap,
+        frame.paper,
+        frame.field,
+        frame.scale,
+        lastTime,
+        lastAnimate && !expanded && !(firstFrame && disableEntrance),
+      )
       frame.paper.close()
-      introActive = firstFrame && !!frame.details && coast.isActive()
+      fieldVisibility = coast ? null : createFieldVisibility(frame.field)
+      introActive = firstFrame && !!frame.details && !!coast?.isActive()
       if (introActive) {
         startReveal(lastTime)
       } else {
@@ -211,14 +260,19 @@ export function createMapScene(
         previewBitmap = null
       }
       paintBackground()
-      const moving = coast.draw(lastTime, lastAnimate)
+      const moving = coast?.draw(lastTime, lastAnimate) ?? false
       paintReveal(lastTime)
       background.dataset.coastMoving = String(moving)
       motion = createMapMotion(frame.motion, getCounts)
       ctx.setTransform(1, 0, 0, 1, 0, 0)
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.setTransform(scale, 0, 0, scale, 0, 0)
-      motion(ctx, lastTime, coast.visibility, revealVisibility)
+      motion(
+        ctx,
+        lastTime,
+        coast?.visibility ?? fieldVisibility ?? fullVisibility,
+        revealVisibility,
+      )
       staticPainted = false
       background.dataset.ready = String(frame.id)
       background.dataset.generationMs = frame.milliseconds.toFixed(1)
@@ -240,14 +294,15 @@ export function createMapScene(
       onError()
     }
   }
-  function sendPending() {
+  const sendPending = () => {
     if (!pending || busy || disposed || introActive) return
     busy = true
     try {
       // A queued request can wait until the initial transition completes.
       // Determine this at dispatch time, not when the layout was measured.
       pending.first = !bitmap
-      pending.shoreline = !coast.available()
+      pending.previewCoast = !!pending.first && disableEntrance
+      pending.shoreline = !coast?.available()
       worker.postMessage(pending)
     } catch (error) {
       busy = false
@@ -256,7 +311,7 @@ export function createMapScene(
     }
     pending = null
   }
-  function requestMap(immediate = false, previewOnly = false) {
+  const requestMap = (immediate = false, previewOnly = false) => {
     clearTimeout(timer)
     const send = () => {
       const viewWidth = window.innerWidth,
@@ -329,14 +384,14 @@ export function createMapScene(
     if (immediate) send()
     else timer = setTimeout(send, 80)
   }
-  function resizeViewport(trim = false) {
+  const resizeViewport = (trim = false) => {
     const nextScale = Math.round(Math.min(devicePixelRatio || 1, 1.5) * 100) / 100
     const reuse = !trim && nextScale === scale
     const nextWidth = Math.max(reuse ? width : 0, Math.ceil(window.innerWidth / 256) * 256 + 128)
     const nextHeight = Math.max(reuse ? height : 0, Math.ceil(window.innerHeight / 256) * 256 + 128)
     if (nextWidth === width && nextHeight === height && scale === nextScale) return false
     if (introActive) {
-      coast.draw(lastTime, false)
+      coast?.draw(lastTime, false)
       finishReveal()
     }
     width = nextWidth
@@ -355,11 +410,12 @@ export function createMapScene(
     paintDetails()
     paintBackground()
     staticPainted = false
-    coast.resize()
+    coast?.resize()
+    scheduleCoastWarmup()
     if (!trim && bitmap) requestMap(false, true)
     return true
   }
-  function updateNavigation(bounds: DOMRect | null) {
+  const updateNavigation = (bounds: DOMRect | null) => {
     const nextKey = bounds
       ? `${Math.round(bounds.left)},${Math.round(bounds.top)},${Math.round(bounds.width)},${Math.round(bounds.height)}`
       : ''
@@ -370,7 +426,7 @@ export function createMapScene(
       : null
     requestMap(!bitmap)
   }
-  function resize(bounds: DOMRect | null) {
+  const resize = (bounds: DOMRect | null) => {
     // The shared controller calls this after the drag settles. Release large
     // high-DPR backing stores instead of retaining the largest window forever.
     resizeViewport(true)
@@ -378,18 +434,23 @@ export function createMapScene(
     requestMap(!bitmap)
   }
   let staticPainted = false
-  function draw(time: number, bounds: DOMRect | null, animate = true) {
+  const draw = (time: number, bounds: DOMRect | null, animate = true) => {
     lastTime = animate ? time : 0
     lastAnimate = animate
     updateNavigation(bounds)
-    const moving = coast.draw(lastTime, animate)
+    const moving = coast?.draw(lastTime, animate) ?? false
     paintReveal(lastTime)
     if (!moving) finishReveal()
     if (background.dataset.coastMoving !== String(moving))
       background.dataset.coastMoving = String(moving)
     if (!animate && staticPainted) return
     ctx.setTransform(scale, 0, 0, scale, 0, 0)
-    motion?.(ctx, animate ? time : 0, coast.visibility, revealVisibility)
+    motion?.(
+      ctx,
+      animate ? time : 0,
+      coast?.visibility ?? fieldVisibility ?? fullVisibility,
+      revealVisibility,
+    )
     staticPainted = !animate && !!motion
   }
   return {
@@ -397,7 +458,7 @@ export function createMapScene(
     resize,
     draw,
     loseCoastContext() {
-      coast.loseContext()
+      coast?.loseContext()
       finishReveal()
       paintBackground()
       requestedKey = ''
@@ -414,7 +475,7 @@ export function createMapScene(
       bitmap?.close()
       previewBitmap?.close()
       detailsBitmap?.close()
-      coast.dispose()
+      coast?.dispose()
       background.width =
         background.height =
         canvas.width =

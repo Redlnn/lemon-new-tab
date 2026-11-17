@@ -10,19 +10,42 @@ export function createTerrain(request: MapRequest) {
     )
   // Keep the sea depth stable while anchoring right and bottom shores to the viewport.
   const depth = Math.min(anchorWidth, anchorHeight) * (0.17 + random(seed, 19) * 0.15)
+  // Shore noise only varies along the coast, and the same lattice values are
+  // queried tens of thousands of times per map. Cache the lattice once.
+  const shoreNoise = (noiseSeed: number): ((x: number) => number) => {
+    const lattice = new Map<number, number>()
+    return (x: number) => {
+      const base = Math.floor(x)
+      const u0 = x - base
+      const u = u0 * u0 * (3 - 2 * u0)
+      let a = lattice.get(base)
+      if (a === undefined) {
+        a = random(noiseSeed, base, 0)
+        lattice.set(base, a)
+      }
+      let b = lattice.get(base + 1)
+      if (b === undefined) {
+        b = random(noiseSeed, base + 1, 0)
+        lattice.set(base + 1, b)
+      }
+      return a + (b - a) * u
+    }
+  }
+  const shoreReceives = edges.map((_, i) => shoreNoise(seed + 3 + i * 17))
+  const shoreDetails = edges.map((_, i) => shoreNoise(seed + 104 + i * 17))
+  const reaches = edges.map((_, i) => depth * (i ? 0.65 + random(seed + 628, 0) * 0.2 : 1))
   const lakes: { x: number; y: number; rx: number; ry: number }[] = []
   function sea(x: number, y: number) {
     let value = Infinity
     for (const [i, side] of edges.entries()) {
-      const across =
-        side === 0 ? x : side === 1 ? viewWidth - x : side === 2 ? y : viewHeight - y
+      const across = side === 0 ? x : side === 1 ? viewWidth - x : side === 2 ? y : viewHeight - y
       const along = side < 2 ? y : x
-      const reach = depth * (i ? 0.65 + random(seed + 628, 0) * 0.2 : 1)
+      const reach = reaches[i]!
       const shore =
         reach +
-        (noise(seed + 3 + i * 17, along / 260, 0) - 0.5) * reach * 1.5 +
+        (shoreReceives[i]!(along / 260) - 0.5) * reach * 1.5 +
         17 * Math.sin(along / 43 + seed + i * 2) +
-        (noise(seed + 104 + i * 17, along / 17, 0) - 0.5) * 5
+        (shoreDetails[i]!(along / 17) - 0.5) * 5
       value = Math.min(value, across - shore)
     }
     return value
@@ -35,8 +58,13 @@ export function createTerrain(request: MapRequest) {
     const size = Math.max(40, Math.min(200, request.navigationLakeSize ?? 100)) / 100
     const rx = (navigation.width * 0.44 + 8) * size,
       ry = Math.max(navigation.height * 0.5 + 8, Math.min(112, Math.max(62, rx * 0.38))) * size
-    const dx = (x - navigation.x - navigation.width * 0.51) / rx
-    const dy = (y - navigation.y - navigation.height * 0.55) / ry
+    const cx = navigation.x + navigation.width * 0.51,
+      cy = navigation.y + navigation.height * 0.55
+    // The contour never leaves its rim, so samples far outside the ellipse can
+    // skip the trigonometry that shapes the shore.
+    if (Math.abs(x - cx) > rx * 1.4 || Math.abs(y - cy) > ry * 1.4) return Infinity
+    const dx = (x - cx) / rx
+    const dy = (y - cy) / ry
     const angle = Math.atan2(dy, dx)
     const rim =
       1 +
@@ -50,7 +78,13 @@ export function createTerrain(request: MapRequest) {
   const islandLimit = Math.max(0, Math.min(10, request.islandLimit ?? 3))
   if (islandLimit && random(seed + 906, 0) < 0.72) {
     const target = 1 + Math.floor(random(seed + 907, 0) * islandLimit)
-    const candidates: { x: number; y: number; originalX: number; originalY: number; rank: number }[] = []
+    const candidates: {
+      x: number
+      y: number
+      originalX: number
+      originalY: number
+      rank: number
+    }[] = []
     const offsetX = edges.includes(1) ? viewWidth - anchorWidth : 0,
       offsetY = edges.includes(3) ? viewHeight - anchorHeight : 0
     for (let y = 75; y < anchorHeight - 75; y += 85)

@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 import { version } from '@/package.json'
 
 import { warmBookmarkCache } from '@/shared/bookmarks/cacheBridge'
+import { BgType, isDynamicBgType } from '@/shared/enums'
 import { i18n } from '@/shared/i18n'
 import { hydrateFaviconCache, setFaviconCacheEnabled } from '@/shared/media'
 import { useSettingsStore } from '@/shared/settings'
@@ -54,6 +55,20 @@ export const main = async (hasSettings: boolean) => {
   }
 
   setupAutoSaveSettings(settings)
+
+  // 与首屏挂载并行加载当前壁纸的分包，避免动态壁纸首帧再等待模块下载。
+  if (isDynamicBgType(settings.background.bgType)) {
+    // 动态壁纸各自是独立分包，只预热当前选中的那一份，其余保持按需加载。
+    const dynamicWallpaperLoaders: Partial<Record<BgType, () => Promise<unknown>>> = {
+      [BgType.Meadow]: () => import('./components/MeadowBackground.vue'),
+      [BgType.Beach]: () => import('./components/BeachBackground.vue'),
+      [BgType.Ocean]: () => import('./components/OceanBackground.vue'),
+      [BgType.Map]: () => import('./components/MapBackground.vue'),
+    }
+    void dynamicWallpaperLoaders[settings.background.bgType]?.().catch((error) => {
+      console.error('[newtab] Failed to preload dynamic wallpaper:', error)
+    })
+  }
 
   // 搜索引擎与首屏挂载并行；快捷链接由 App 在相关组件创建前统一初始化。
   const dataStoresInit = useCustomSearchEngineStore().init()

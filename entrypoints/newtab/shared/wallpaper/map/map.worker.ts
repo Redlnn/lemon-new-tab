@@ -33,6 +33,7 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
   try {
     const start = performance.now()
     let previewMs = 0
+    let contours: ReturnType<typeof coastContours> | undefined
     if (request.preview) {
       const scale = 0.5,
         canvas = new OffscreenCanvas(
@@ -40,7 +41,24 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
           Math.ceil(request.height * scale),
         ),
         ctx = canvas.getContext('2d', { alpha: false })!
-      if (request.first) {
+      if (request.first && request.previewCoast) {
+        // Without the entrance transition the paper below is visible at once,
+        // so show the real sea and shore instead of an empty sheet while the
+        // full map is still being generated.
+        const terrain = createTerrain(request)
+        contours = coastContours(request.width, request.height, terrain.water)
+        paintTerrain(
+          ctx,
+          {
+            ...contours,
+            seed: request.seed,
+            width: request.width,
+            height: request.height,
+          },
+          scale,
+          true,
+        )
+      } else if (request.first) {
         const texture = paperTexture(request.seed, request.width, request.height)
         ctx.drawImage(texture, 0, 0, canvas.width, canvas.height)
       } else {
@@ -80,6 +98,7 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
           previousLakeKey === `${request.showNavigationLake},${request.navigationLakeSize}`
           ? previous
           : undefined,
+        contours,
       )
     const generationMs = performance.now() - generationStart
     const canvas = new OffscreenCanvas(
@@ -134,12 +153,7 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
       },
     }
     self.postMessage(frame, {
-      transfer: [
-        bitmap,
-        paper,
-        ...(details ? [details] : []),
-        field.values.buffer as ArrayBuffer,
-      ],
+      transfer: [bitmap, paper, ...(details ? [details] : []), field.values.buffer as ArrayBuffer],
     })
     previous = map
     previousIslandLimit = request.islandLimit

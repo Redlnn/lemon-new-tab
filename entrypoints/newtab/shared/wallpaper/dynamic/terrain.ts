@@ -9,62 +9,81 @@ export function createTerrain(seed: number, step: number, sigma: () => number, w
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296
   }
 
-  const vnoise = (x: number, y: number, k = 0) => {
-    const ix = Math.floor(x),
-      iy = Math.floor(y),
-      fx = x - ix,
-      fy = y - iy
-    const ux = fx * fx * (3 - 2 * fx),
-      uy = fy * fy * (3 - 2 * fy)
-    const a = hash2(ix, iy, k),
-      b = hash2(ix + 1, iy, k),
-      c = hash2(ix, iy + 1, k),
-      d = hash2(ix + 1, iy + 1, k)
-    return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy
-  }
-
-  const fbm = (x: number, y: number, k = 0) => {
-    let a = 0.5,
-      s = 0
-    for (let i = 0; i < 4; i++) {
-      s += a * vnoise(x, y, k + i * 7)
-      x = x * 2.03 + 17.1
-      y = y * 2.03 + 17.1
-      a *= 0.5
+  // The land field samples the same smooth fbm on a regular pixel grid. Each
+  // octave's lattice is tiny compared to the grid, so evaluating it once per
+  // lattice node removes millions of duplicated hash evaluations. Both warp
+  // channels share the same grid traversal.
+  const buildNoiseGrids = (width: number, height: number, spacing: number) => {
+    const first = new Float64Array(width * height)
+    const second = new Float64Array(width * height)
+    const xIndex = new Int32Array(width),
+      xBlend = new Float64Array(width)
+    let amp = 0.5,
+      scale = 0.0028 * spacing,
+      offset = 0
+    for (let octave = 0; octave < 4; octave++) {
+      const kFirst = 1 + octave * 7,
+        kSecond = 2 + octave * 7
+      const xMin = Math.floor(offset),
+        yMin = Math.floor(offset)
+      const xMax = Math.floor(scale * (width - 1) + offset),
+        yMax = Math.floor(scale * (height - 1) + offset)
+      const tw = xMax - xMin + 2,
+        th = yMax - yMin + 2
+      const tableFirst = new Float64Array(tw * th),
+        tableSecond = new Float64Array(tw * th)
+      for (let iy = 0; iy < th; iy++)
+        for (let ix = 0; ix < tw; ix++) {
+          tableFirst[iy * tw + ix] = hash2(xMin + ix, yMin + iy, kFirst)
+          tableSecond[iy * tw + ix] = hash2(xMin + ix, yMin + iy, kSecond)
+        }
+      for (let gx = 0; gx < width; gx++) {
+        const x = scale * gx + offset,
+          fx = x - Math.floor(x)
+        xIndex[gx] = Math.floor(x) - xMin
+        xBlend[gx] = fx * fx * (3 - 2 * fx)
+      }
+      let index = 0
+      for (let gy = 0; gy < height; gy++) {
+        const y = scale * gy + offset,
+          fy = y - Math.floor(y),
+          iy = Math.floor(y) - yMin,
+          uy = fy * fy * (3 - 2 * fy)
+        for (let gx = 0; gx < width; gx++, index++) {
+          const ux = xBlend[gx]!,
+            row = iy * tw + xIndex[gx]!
+          const a1 = tableFirst[row]!,
+            b1 = tableFirst[row + 1]!,
+            c1 = tableFirst[row + tw]!,
+            d1 = tableFirst[row + tw + 1]!
+          const a2 = tableSecond[row]!,
+            b2 = tableSecond[row + 1]!,
+            c2 = tableSecond[row + tw]!,
+            d2 = tableSecond[row + tw + 1]!
+          first[index]! +=
+            amp * (a1 + (b1 - a1) * ux + (c1 - a1) * uy + (a1 - b1 - c1 + d1) * ux * uy)
+          second[index]! +=
+            amp * (a2 + (b2 - a2) * ux + (c2 - a2) * uy + (a2 - b2 - c2 + d2) * ux * uy)
+        }
+      }
+      amp *= 0.5
+      scale *= 2.03
+      offset = offset * 2.03 + 17.1
     }
-    return s
+    return { first, second }
   }
 
-  const tileNoise = (x: number, y: number, px: number, py: number, k: number) => {
-    const ix = Math.floor(x),
-      iy = Math.floor(y),
-      fx = x - ix,
-      fy = y - iy
-    const ux = fx * fx * (3 - 2 * fx),
-      uy = fy * fy * (3 - 2 * fy)
-    const m = (v: number, p: number) => ((v % p) + p) % p
-    const x0 = m(ix, px),
-      x1 = m(ix + 1, px),
-      y0 = m(iy, py),
-      y1 = m(iy + 1, py)
-    const a = hash2(x0, y0, k),
-      b = hash2(x1, y0, k),
-      c = hash2(x0, y1, k),
-      d = hash2(x1, y1, k)
-    return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy
-  }
-
-  const tileFbm = (u: number, v: number, periods: number[], k: number) => {
-    let s = 0,
-      w = 0.5,
-      tw = 0
-    for (let i = 0; i < periods.length; i++) {
-      const period = periods[i]!
-      s += w * tileNoise(u * period, v * period, period, period, k + i * 13)
-      tw += w
-      w *= 0.5
+  const latticeCache = new Map<number, Float64Array>()
+  const lattice = (period: number, k: number) => {
+    const key = period * 4096 + k
+    let table = latticeCache.get(key)
+    if (!table) {
+      table = new Float64Array(period * period)
+      for (let y = 0; y < period; y++)
+        for (let x = 0; x < period; x++) table[y * period + x] = hash2(x, y, k)
+      latticeCache.set(key, table)
     }
-    return s / tw
+    return table
   }
 
   const makeNoiseImage = () => {
@@ -76,19 +95,62 @@ export function createTerrain(seed: number, step: number, sigma: () => number, w
       [8, 16, 32],
       [16, 32, 64, 128],
     ]
+    // Every channel reuses the same five tile periods. The per-axis lattice
+    // indices and blend weights only depend on the pixel coordinate, so they
+    // are precomputed once for the whole image and shared by all channels.
+    const periods = [8, 16, 32, 64, 128]
+    const slots = new Map(periods.map((period, index) => [period, index]))
+    const axes = periods.map(() => ({
+      base: new Int32Array(S),
+      next: new Int32Array(S),
+      blend: new Float64Array(S),
+    }))
+    for (let s = 0; s < periods.length; s++) {
+      const period = periods[s]!,
+        axis = axes[s]!
+      for (let i = 0; i < S; i++) {
+        const q = (i / S) * period,
+          base = Math.floor(q),
+          f = q - base
+        axis.base[i] = base
+        axis.next[i] = base + 1 === period ? 0 : base + 1
+        axis.blend[i] = f * f * (3 - 2 * f)
+      }
+    }
+    const layers = chans.map((channel, c) => {
+      const total = channel.reduce((sum, _, i) => sum + 0.5 ** (i + 1), 0)
+      return channel.map((period, l) => ({
+        slot: slots.get(period)!,
+        table: lattice(period, 100 + c * 50 + l * 13),
+        weight: 0.5 ** (l + 1) / total,
+      }))
+    })
     for (let y = 0; y < S; y++)
       for (let x = 0; x < S; x++) {
-        const u = x / S,
-          v = y / S,
-          i = (y * S + x) * 4
+        const i = (y * S + x) * 4
         for (let c = 0; c < 4; c++) {
-          const n = tileFbm(u, v, chans[c]!, 100 + c * 50)
+          let n = 0
+          for (const layer of layers[c]!) {
+            const period = periods[layer.slot]!,
+              axis = axes[layer.slot]!,
+              table = layer.table
+            const x0 = axis.base[x]!,
+              x1 = axis.next[x]!,
+              y0 = axis.base[y]!,
+              y1 = axis.next[y]!,
+              ux = axis.blend[x]!,
+              uy = axis.blend[y]!
+            const a = table[y0 * period + x0]!,
+              b = table[y0 * period + x1]!,
+              cc = table[y1 * period + x0]!,
+              dd = table[y1 * period + x1]!
+            n += layer.weight * (a + (b - a) * ux + (cc - a) * uy + (a - b - cc + dd) * ux * uy)
+          }
           d[i + c] = Math.min(Math.max((n - 0.5) * 1.9 + 0.5, 0), 1) * 255
         }
       }
     return { S, d }
   }
-
   /* ======================================================================
    陆地场（CPU）：s = 到海岸的有符号距离（<0 陆地）
    ====================================================================== */
@@ -96,31 +158,44 @@ export function createTerrain(seed: number, step: number, sigma: () => number, w
     Gh = 1
   let NZ: { wx: Float32Array; wy: Float32Array } | undefined
   let accumulation = new Float32Array(0)
+  // The warp field is very low frequency; evaluating it every other cell and
+  // interpolating keeps the shape while halving the octave work.
+  const NOISE_CELL = 2
 
   const resize = (width: number, height: number) => {
     if (NZ && width === Gw && height === Gh) return
-    const oldWidth = Gw,
-      oldHeight = Gh,
-      oldNoise = NZ
     Gw = width
     Gh = height
-    const N = Gw * Gh
-    NZ = { wx: new Float32Array(N), wy: new Float32Array(N) }
-    const copiedWidth = oldNoise ? Math.min(oldWidth, Gw) : 0
-    const copiedHeight = oldNoise ? Math.min(oldHeight, Gh) : 0
-    for (let gy = 0; gy < Gh; gy++) {
-      if (oldNoise && gy < copiedHeight) {
-        NZ.wx.set(oldNoise.wx.subarray(gy * oldWidth, gy * oldWidth + copiedWidth), gy * Gw)
-        NZ.wy.set(oldNoise.wy.subarray(gy * oldWidth, gy * oldWidth + copiedWidth), gy * Gw)
-      }
-      for (let gx = gy < copiedHeight ? copiedWidth : 0; gx < Gw; gx++) {
-        const i = gy * Gw + gx,
-          x = gx * step,
-          y = gy * step
-        NZ.wx[i] = fbm(x * 0.0028, y * 0.0028, 1) - 0.47
-        NZ.wy[i] = fbm(x * 0.0028, y * 0.0028, 2) - 0.47
+    const cols = Math.ceil(width / NOISE_CELL) + 1,
+      rows = Math.ceil(height / NOISE_CELL) + 1
+    const coarse = buildNoiseGrids(cols, rows, step * NOISE_CELL)
+    const N = width * height
+    const wx = new Float32Array(N),
+      wy = new Float32Array(N)
+    for (let gy = 0; gy < height; gy++) {
+      const ny = gy / NOISE_CELL,
+        iy = Math.floor(ny),
+        fy = ny - iy,
+        row = iy * cols
+      for (let gx = 0; gx < width; gx++) {
+        const nx = gx / NOISE_CELL,
+          ix = Math.floor(nx),
+          fx = nx - ix,
+          base = row + ix
+        const topX = coarse.first[base]! + (coarse.first[base + 1]! - coarse.first[base]!) * fx,
+          bottomX =
+            coarse.first[base + cols]! +
+            (coarse.first[base + cols + 1]! - coarse.first[base + cols]!) * fx
+        const topY = coarse.second[base]! + (coarse.second[base + 1]! - coarse.second[base]!) * fx,
+          bottomY =
+            coarse.second[base + cols]! +
+            (coarse.second[base + cols + 1]! - coarse.second[base + cols]!) * fx
+        const index = gy * width + gx
+        wx[index] = topX + (bottomX - topX) * fy - 0.47
+        wy[index] = topY + (bottomY - topY) * fy - 0.47
       }
     }
+    NZ = { wx, wy }
   }
 
   const computeField = (rects: FieldRect[]) => {

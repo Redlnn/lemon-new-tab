@@ -602,8 +602,7 @@ void main() {
       return t * t * (3 - 2 * t)
     }
 
-    let massList: { circles: number[]; W: number; H: number } | null = null,
-      massT = -1e9
+    let massList: { circles: number[]; W: number; H: number } | null = null
 
     const buildMassCircles = () => {
       const list: number[] = []
@@ -650,7 +649,9 @@ void main() {
             r *= sstep(5, 11, r) // 太小的圆慢慢缩没，不留小点
             if (r < 0.5) continue
             if (isBig) big.set(cx + ',' + cy, [x, y, r])
-            list.push(x, y, r * (1 + 0.04 * Math.sin(flowT * (0.09 + 0.035 * ph) + ph * 6.283)), ph)
+            // The slow breathing is applied per frame in uploadCircles, so the
+            // base circles only need rebuilding when the cloud field changes.
+            list.push(x, y, r, ph)
           }
       }
       // 大圆：圆心在云团里，越靠云边越小
@@ -686,7 +687,7 @@ void main() {
       (0.65 * Math.sin(flowT * 0.2 + y * 0.013 - x * 0.006 + 1.7) +
         0.25 * Math.cos(flowT * 0.28 + ph * 6.283))
 
-    const uploadCircles = (t: number) => {
+    const uploadCircles = () => {
       gl.activeTexture(gl.TEXTURE3) // 用第 3 号纹理单元，不要动到别的纹理
       const gw = Math.ceil(W / CELL_G) + 7,
         gh = Math.ceil(H / CELL_G) + 7 // 左、上多 4 格（右下方的云影要用到画面外的云），右、下多 3 格
@@ -702,12 +703,9 @@ void main() {
         circBuf = new Float32Array(gw * CIRC_K * gh * 4)
         circleCounts = new Uint8Array(gw * gh)
       }
-      // 图标周围云团的圆：只在图标挪动时（场在过渡）每帧重算，平时每 0.5 秒重算一次（呼吸很慢，看不出跳）
+      // 图标周围云团的圆：只在云场变化（图标挪动、尺寸改变）时重算；缓慢的呼吸每帧在下面叠加
       const morphing = curMix < 1 || !massList || massList.W !== W || massList.H !== H
-      if (morphing || t - massT > 0.5) {
-        massList = { circles: buildMassCircles(), W, H }
-        massT = t
-      }
+      if (morphing) massList = { circles: buildMassCircles(), W, H }
       const list = circleList
       list.length = 0
       for (const value of massList!.circles) list.push(value)
@@ -718,6 +716,7 @@ void main() {
           ph = list[i + 3]!
         list[i] = x + wobX(x, y, r, ph)
         list[i + 1] = y + wobY(x, y, r, ph)
+        list[i + 2] = r * (1 + 0.04 * Math.sin(flowT * (0.09 + 0.035 * ph) + ph * 6.283))
       }
       // 天上的小云
       for (const c of skyClouds) {
@@ -803,21 +802,14 @@ void main() {
       if (actor && !actorPR)
         actorPR = program(FS.replace('#version 300 es', '#version 300 es\n#define MEADOW_ACTOR'))
       // 小猫的局部绘制共享本帧云数据，不额外重算、上传云团。
-      uploadCircles(now / 1000)
+      uploadCircles()
       const t = now / 1000
       oceanCounts[0] = P.sailboats
       oceanCounts[1] = P.yachts
       oceanCounts[2] = P.whales
       oceanCounts[3] = P.birds
       const subjects =
-        oceanMotion?.step(
-          t,
-          dt,
-          W,
-          H,
-          oceanCounts,
-          cloudClearance,
-        ) ?? emptyOceanSubjects
+        oceanMotion?.step(t, dt, W, H, oceanCounts, cloudClearance) ?? emptyOceanSubjects
       const wakeTexture = oceanWake?.draw(subjects, t, W, H)
       let actorCount = 0
       for (const kind of oceanDrawOrder) {

@@ -100,13 +100,13 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     t = Math.max(0, Math.min(1, t))
     return t * t * (3 - 2 * t)
   }
-  function releaseImages() {
+  const releaseImages = () => {
     if (gl) {
       gl.deleteTexture(paper)
     }
     paper = null
   }
-  function finish() {
+  const finish = () => {
     active = false
     currentMix = 1
     firstTransition = false
@@ -114,8 +114,8 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     canvas.width = canvas.height = 1
     releaseImages()
   }
-  function resize() {
-    if (disabled || !to.length) return
+  const resize = () => {
+    if (disabled) return
     renderScale = Math.min(1, devicePixelRatio || 1)
     // Keep this layer in the same buffered world coordinates as the 2D map.
     // Window dragging only clips it; it must not reallocate a GL framebuffer
@@ -129,7 +129,20 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     if (canvas.style.width !== `${width}px`) canvas.style.width = `${width}px`
     if (canvas.style.height !== `${height}px`) canvas.style.height = `${height}px`
   }
-  function upload(bitmap: ImageBitmap) {
+  // Allocate the framebuffer and run the shader once while the layer is still
+  // hidden, so the browser's first large GL allocation does not land on the
+  // frame that finally shows the map.
+  const prepare = (width: number, height: number) => {
+    if (disabled || !program || to.length) return
+    worldWidth = width
+    worldHeight = height
+    resize()
+    gl!.viewport(0, 0, canvas.width, canvas.height)
+    gl!.useProgram(program)
+    gl!.bindVertexArray(vao)
+    gl!.drawArrays(gl!.TRIANGLES, 0, 3)
+  }
+  const upload = (bitmap: ImageBitmap) => {
     const texture = gl!.createTexture()!
     gl!.bindTexture(gl!.TEXTURE_2D, texture)
     gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MIN_FILTER, gl!.LINEAR)
@@ -139,14 +152,14 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     gl!.texImage2D(gl!.TEXTURE_2D, 0, gl!.RGBA, gl!.RGBA, gl!.UNSIGNED_BYTE, bitmap)
     return texture
   }
-  function begin(
+  const begin = (
     bitmap: ImageBitmap,
     paperBitmap: ImageBitmap,
     field: MapField,
     scale: number,
     time: number,
     animate: boolean,
-  ) {
+  ) => {
     const first = !to.length
     const sameTarget =
       !first &&
@@ -190,7 +203,7 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     resize()
     if (!active) render(true)
   }
-  function draw(time: number, animate = true) {
+  const draw = (time: number, animate = true) => {
     if (!active) return false
     if (!animate || disabled) {
       active = false
@@ -208,7 +221,7 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     render(false)
     return true
   }
-  function render(final: boolean) {
+  const render = (final: boolean) => {
     resize()
     gl!.viewport(0, 0, canvas.width, canvas.height)
     gl!.useProgram(program)
@@ -233,13 +246,13 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     gl!.drawArrays(gl!.TRIANGLES, 0, 3)
     if (final) releaseImages()
   }
-  function sample(values: Float32Array, i: number, tx: number, ty: number) {
+  const sample = (values: Float32Array, i: number, tx: number, ty: number) => {
     return (
       (values[i]! * (1 - tx) + values[i + 1]! * tx) * (1 - ty) +
       (values[i + cols]! * (1 - tx) + values[i + cols + 1]! * tx) * ty
     )
   }
-  function value(p: Point) {
+  const value = (p: Point) => {
     if (!to.length) return 34
     const x = Math.max(0, Math.min(cols - 1.001, p.x / step)),
       y = Math.max(0, Math.min(rows - 1.001, p.y / step)),
@@ -253,6 +266,7 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
   return {
     available: () => !disabled,
     isActive: () => active,
+    prepare,
     begin,
     draw,
     resize,
