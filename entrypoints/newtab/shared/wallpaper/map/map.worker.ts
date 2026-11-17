@@ -94,7 +94,7 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
     paintMapDetails(detailCtx, map, request)
     const details = detailCanvas.transferToImageBitmap()
     const bitmap = canvas.transferToImageBitmap(),
-      { navigation, compass, places, rails, waves, ships } = map
+      { seed, navigation, compass, places, rails, waves, ships } = map
     const texture = paperTexture(request.seed, request.width, request.height)
     const paperCanvas = new OffscreenCanvas(texture.width, texture.height)
     paperCanvas.getContext('2d')!.drawImage(texture, 0, 0)
@@ -108,6 +108,7 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
       paper,
       field,
       motion: {
+        seed,
         navigation,
         navigationLakeCenter: map.navigationLakeCenter,
         compass,

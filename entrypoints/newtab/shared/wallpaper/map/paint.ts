@@ -367,18 +367,18 @@ export function paintMapDetails(ctx: Context, map: MapData, request: MapRequest)
 
 export type MotionData = Pick<
   MapData,
-  'navigation' | 'navigationLakeCenter' | 'compass' | 'places' | 'rails' | 'waves' | 'ships'
+  'seed' | 'navigation' | 'navigationLakeCenter' | 'compass' | 'places' | 'rails' | 'waves' | 'ships'
 >
 export function createMapMotion(map: MotionData, getCounts: () => MapCounts) {
   const rails = map.rails
     .map((route) => ({ route, lengths: pathLengths(route.points) }))
     .filter(({ lengths }) => lengths.at(-1)! > 120)
-    .slice(0, 10)
     .map(({ route, lengths }) => ({
       points: route.points,
       lengths,
       phase: random(514, route.from, route.to),
     }))
+  const trainSeed = Math.floor(Math.random() * 0x7fffffff)
   const ships = map.ships.map((points) => ({
     points,
     lengths: pathLengths(points),
@@ -503,43 +503,50 @@ export function createMapMotion(map: MotionData, getCounts: () => MapCounts) {
       ctx.stroke()
       ctx.restore()
     })
-    rails.forEach((rail, index) => {
-      if (index >= trains) return
-      const total = rail.lengths.at(-1)!,
-        span = total + 90,
-        phase = (time * 17 + rail.phase * span * 2) % (span * 2)
-      const forward = phase < span,
-        head = forward ? phase - 35 : span * 2 - phase + 35
-      for (let car = 3; car >= 0; car--) {
-        const d = head + (forward ? -1 : 1) * car * 11
-        if (d < 0 || d >= total) continue
-        const p = samplePath(rail.points, rail.lengths, d)
-        if (!visible(p, 30)) continue
-        const alpha = visibility(p, false) * revealVisibility(p)
-        if (alpha <= 0) continue
-        mark(p.x - 30, p.y - 30, 60, 60)
-        ctx.save()
-        ctx.globalAlpha = alpha
-        ctx.translate(p.x, p.y)
-        ctx.rotate(p.angle + (forward ? 0 : Math.PI))
-        ctx.fillStyle = car ? '#8d7954' : '#594b34'
-        ctx.fillRect(-4, -2.5, 8, 5)
-        ctx.strokeRect(-4, -2.5, 8, 5)
-        if (!car) {
-          ctx.fillStyle = '#e9dbb7'
-          ctx.fillRect(1, -1.5, 2, 3)
-          for (let puff = 0; puff < 3; puff++) {
-            const age = (time * 0.6 + puff / 3) % 1
-            ctx.globalAlpha = (1 - age) * 0.24 * alpha
-            ctx.beginPath()
-            ctx.arc(-age * 18, -4 - age * 9, 1 + age * 4, 0, Math.PI * 2)
-            ctx.stroke()
+    const trainSlots = Math.min(trains, 10)
+    if (trainSlots && rails.length) {
+      const cycle = Math.max(...rails.map((rail) => rail.lengths.at(-1)! + 90)) * 2
+      for (let index = 0; index < trainSlots; index++) {
+        const travel = time * 17 + rails[index % rails.length]!.phase * cycle,
+          trip = Math.floor(travel / cycle),
+          cyclePhase = travel % cycle,
+          rail = rails[Math.floor(random(trainSeed + trip, index) * rails.length)]!,
+          total = rail.lengths.at(-1)!,
+          span = total + 90,
+          phase = (cyclePhase / cycle) * span * 2
+        const forward = phase < span,
+          head = forward ? phase - 35 : span * 2 - phase + 35
+        for (let car = 3; car >= 0; car--) {
+          const d = head + (forward ? -1 : 1) * car * 11
+          if (d < 0 || d >= total) continue
+          const p = samplePath(rail.points, rail.lengths, d)
+          if (!visible(p, 30)) continue
+          const alpha = visibility(p, false) * revealVisibility(p)
+          if (alpha <= 0) continue
+          mark(p.x - 30, p.y - 30, 60, 60)
+          ctx.save()
+          ctx.globalAlpha = alpha
+          ctx.translate(p.x, p.y)
+          ctx.rotate(p.angle + (forward ? 0 : Math.PI))
+          ctx.fillStyle = car ? '#8d7954' : '#594b34'
+          ctx.fillRect(-4, -2.5, 8, 5)
+          ctx.strokeRect(-4, -2.5, 8, 5)
+          if (!car) {
+            ctx.fillStyle = '#e9dbb7'
+            ctx.fillRect(1, -1.5, 2, 3)
+            for (let puff = 0; puff < 3; puff++) {
+              const age = (time * 0.6 + puff / 3) % 1
+              ctx.globalAlpha = (1 - age) * 0.24 * alpha
+              ctx.beginPath()
+              ctx.arc(-age * 18, -4 - age * 9, 1 + age * 4, 0, Math.PI * 2)
+              ctx.stroke()
+            }
+            ctx.globalAlpha = 1
           }
-          ctx.globalAlpha = 1
+          ctx.restore()
         }
-        ctx.restore()
       }
-    })
+    }
     for (const place of map.places) {
       if (place.kind !== 'castle') continue
       if (!visible(place, 50)) continue
