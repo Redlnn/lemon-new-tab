@@ -5,6 +5,7 @@ import {
   meadowResizeEntry,
   meadowRunFrame,
 } from './meadowMotion'
+import { BACK_RUN_ATLAS, FRONT_RUN_ATLAS, RUN_ATLAS } from './meadowFrameAtlas'
 import type { MeadowAssets, MeadowProgram, MeadowRegion } from './meadowScene'
 
 type Point = { x: number; y: number }
@@ -343,8 +344,8 @@ export function createMeadowCharacters({
 precision highp float;
 uniform sampler2D uCharacter, uRunSprite, uFrontRunSprite, uBackRunSprite;
 uniform vec2 uRes, uOffset, uKite, uBody, uLegs, uHand, uReelHand, uTug;
-uniform vec4 uPose, uMotion;
-uniform vec2 uGround;
+uniform vec4 uPose, uMotion, uRunCrop, uFrameCrop;
+uniform vec2 uGround, uRunCellSize, uFrameCellSize;
 uniform vec3 uContactL, uContactR;
 uniform vec3 uPlace;
 uniform float uScale, uTime, uLook, uShadow, uRunWind, uTension, uKiteRock, uFacing;
@@ -429,9 +430,14 @@ vec4 characterColor(vec2 p) {
     vec2 cell=vec2(col,floor(uRunFrame/3.));
     vec2 uv=spriteUV(p-vec2(0.,uMotion.w));
     uv.x=clamp(uv.x-col*26./418.,.002,.998);
-    return spriteColor(uMotion.y>.5
-      ? textureLod(uBackRunSprite,(uv+cell)/3.,uShadow*2.8)
-      : textureLod(uFrontRunSprite,(uv+cell)/3.,uShadow*2.8),p);
+    vec2 frameUV=(uv*320.-uFrameCrop.xy)/uFrameCellSize;
+    float inFrame=step(0.,frameUV.x)*step(0.,frameUV.y)*step(frameUV.x,uFrameCrop.z/uFrameCellSize.x)*step(frameUV.y,uFrameCrop.w/uFrameCellSize.y);
+    vec4 frameSample=uMotion.y>.5
+      ? textureLod(uBackRunSprite,(cell+frameUV)/3.,uShadow*2.8)
+      : textureLod(uFrontRunSprite,(cell+frameUV)/3.,uShadow*2.8);
+    vec4 frame=spriteColor(frameSample,p);
+    frame.a*=inFrame;
+    return frame;
   }
   vec2 boy=personSource(p),space=bodySpace(p);
   // 直接使用新男孩全身素材；右手本来就在画面左侧，不再镜像人物或拼旧身体。
@@ -447,7 +453,10 @@ vec4 characterColor(vec2 p) {
   vec4 front=over(over(person,shoulder),arm);
   vec2 runPoint=p-vec2(0.,uMotion.w-10.);
   vec2 cell=vec2(step(1.5,uMotion.x),0.);
-  vec4 back=spriteColor(textureLod(uRunSprite,(spriteUV(runPoint)+cell)*vec2(.5,1.),lod),runPoint);
+  vec2 runUV=(spriteUV(runPoint)*384.-uRunCrop.xy)/uRunCellSize;
+  float inRunFrame=step(0.,runUV.x)*step(0.,runUV.y)*step(runUV.x,uRunCrop.z/uRunCellSize.x)*step(runUV.y,uRunCrop.w/uRunCellSize.y);
+  vec4 back=spriteColor(textureLod(uRunSprite,(runUV+cell)*vec2(.5,1.),lod),runPoint);
+  back.a*=inRunFrame;
   return uMotion.y>.5 ? back : front;
 }
 void main() {
@@ -570,13 +579,13 @@ void main() {
       image.src = path
     }
     loadSprite(assets.boy, gl.TEXTURE4, texture)
-    loadSprite(assets.boyRun, gl.TEXTURE7, runTexture, 768, undefined, 0.5)
-    loadSprite(assets.boyFrontFrames, gl.TEXTURE10, frontFramesTexture, 960, () => {
+    loadSprite(assets.boyRun, gl.TEXTURE7, runTexture, RUN_ATLAS.cell[0] * 2, undefined, RUN_ATLAS.cell[1] / RUN_ATLAS.cell[0])
+    loadSprite(assets.boyFrontFrames, gl.TEXTURE10, frontFramesTexture, FRONT_RUN_ATLAS.cell[0] * 3, () => {
       frontReady = true
-    })
-    loadSprite(assets.boyBackFrames, gl.TEXTURE11, backFramesTexture, 960, () => {
+    }, FRONT_RUN_ATLAS.cell[1] / FRONT_RUN_ATLAS.cell[0])
+    loadSprite(assets.boyBackFrames, gl.TEXTURE11, backFramesTexture, BACK_RUN_ATLAS.cell[0] * 3, () => {
       backReady = true
-    })
+    }, BACK_RUN_ATLAS.cell[1] / BACK_RUN_ATLAS.cell[0])
     const choosePosition = (s: number, preferredPosition: Point | null = position) => {
       let best = null,
         bestScore = Infinity
@@ -862,6 +871,16 @@ void main() {
         gl.bindTexture(gl.TEXTURE_2D, backFramesTexture)
         gl.uniform1i(shader.U.uBackRunSprite!, 11)
         gl.uniform1f(shader.U.uRunFrame!, runFrame)
+        const frameCrop = (activity.back ? BACK_RUN_ATLAS : FRONT_RUN_ATLAS).crops[
+          Math.max(0, Math.floor(runFrame))
+        ]!
+        const frameCell = activity.back ? BACK_RUN_ATLAS.cell : FRONT_RUN_ATLAS.cell
+        const runFrameIndex = activity.frame > 1.5 ? 1 : 0
+        const runCrop = RUN_ATLAS.crops[runFrameIndex]!
+        gl.uniform4f(shader.U.uFrameCrop!, frameCrop[0], frameCrop[1], frameCrop[2], frameCrop[3])
+        gl.uniform2f(shader.U.uFrameCellSize!, frameCell[0], frameCell[1])
+        gl.uniform4f(shader.U.uRunCrop!, runCrop[0], runCrop[1], runCrop[2], runCrop[3])
+        gl.uniform2f(shader.U.uRunCellSize!, RUN_ATLAS.cell[0], RUN_ATLAS.cell[1])
         gl.uniform1i(shader.U.uRunSprite!, 7)
         gl.uniform1i(shader.U.uCharacter!, 4)
         gl.uniform2f(shader.U.uRes!, width / k, height / k)
