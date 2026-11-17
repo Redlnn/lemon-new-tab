@@ -660,11 +660,7 @@ async function handleQuickLinkDragEnd(event: DragEndEvent) {
         source,
         moveTarget,
       })
-      if (source.origin === 'top-sites') {
-        await refreshDebounced()
-      } else if (changed) {
-        await refreshDebounced()
-      }
+      if (source.origin === 'top-sites' || changed) await refreshDebounced()
     } catch (error) {
       console.error('[quick-links] Failed to persist drag order:', error)
       ElMessage.error('拖拽排序保存失败')

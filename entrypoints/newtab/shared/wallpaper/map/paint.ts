@@ -384,6 +384,7 @@ export function createMapMotion(map: MotionData, getCounts: () => MapCounts) {
     lengths: pathLengths(points),
     phase: random(515, Math.round(points[0]!.x), Math.round(points[0]!.y)),
   }))
+  const trainCycle = Math.max(0, ...rails.map((rail) => rail.lengths.at(-1)! + 90)) * 2
   const dirty: { x: number; y: number; width: number; height: number }[] = []
   let dirtyCount = 0
   const mark = (x: number, y: number, width: number, height: number) => {
@@ -407,7 +408,7 @@ export function createMapMotion(map: MotionData, getCounts: () => MapCounts) {
       ctx.clearRect(box.x, box.y, box.width, box.height)
     }
     dirtyCount = 0
-    const { trains, ships: shipLimit } = getCounts()
+    const { trains, ships: shipLimit, showNavigationLake, navigationLakeSize } = getCounts()
     const viewportWidth = window.innerWidth,
       viewportHeight = window.innerHeight
     const visible = (p: Point, margin: number) =>
@@ -416,8 +417,8 @@ export function createMapMotion(map: MotionData, getCounts: () => MapCounts) {
       p.y >= -margin &&
       p.y <= viewportHeight + margin
     const lake = map.navigationLakeCenter
-    if (lake && getCounts().showNavigationLake) {
-      const radius = getCounts().navigationLakeSize
+    if (lake && showNavigationLake) {
+      const radius = navigationLakeSize
       const lakeRx = radius * 0.44
       const lakeRy = radius * 0.44
       for (let i = 0; i < 5; i++) {
@@ -505,15 +506,14 @@ export function createMapMotion(map: MotionData, getCounts: () => MapCounts) {
     })
     const trainSlots = Math.min(trains, 10)
     if (trainSlots && rails.length) {
-      const cycle = Math.max(...rails.map((rail) => rail.lengths.at(-1)! + 90)) * 2
       for (let index = 0; index < trainSlots; index++) {
-        const travel = time * 17 + rails[index % rails.length]!.phase * cycle,
-          trip = Math.floor(travel / cycle),
-          cyclePhase = travel % cycle,
+        const travel = time * 17 + rails[index % rails.length]!.phase * trainCycle,
+          trip = Math.floor(travel / trainCycle),
+          cyclePhase = travel % trainCycle,
           rail = rails[Math.floor(random(trainSeed + trip, index) * rails.length)]!,
           total = rail.lengths.at(-1)!,
           span = total + 90,
-          phase = (cyclePhase / cycle) * span * 2
+          phase = (cyclePhase / trainCycle) * span * 2
         const forward = phase < span,
           head = forward ? phase - 35 : span * 2 - phase + 35
         for (let car = 3; car >= 0; car--) {

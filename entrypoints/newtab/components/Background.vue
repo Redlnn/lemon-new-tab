@@ -392,26 +392,32 @@ let onlineFetchController: AbortController | null = null
 
 let backgroundLoads = 0
 let hasDisplayedBackground = false
+async function loadBackgroundSource(type: BgType, requestVersion: number) {
+  const provider = bgTypeProviders[type]
+  if (!provider) return
+
+  if (type === BgType.Bing) await bingWallpaperURLGetter.init()
+  else if (type === BgType.Local) {
+    await localLibrary.init()
+    if (requestVersion !== backgroundRequestVersion) return
+    await localLibrary.choose(activeVariant.value)
+  }
+
+  // 初始化可能更新 URL 或选中项，先让统一入口接收最新来源，再准备媒体。
+  await nextTick()
+  if (requestVersion !== backgroundRequestVersion) return
+  return provider()
+}
+
 async function updateBackgroundURL(type: BgType): Promise<void> {
   backgroundLoads++
   try {
     const requestVersion = ++backgroundRequestVersion
     invalidateMonet()
-    const provider = bgTypeProviders[type]
-    if (!provider) return
 
-    let source: BackgroundSource
+    let source: BackgroundSource | undefined
     try {
-      if (type === BgType.Bing) await bingWallpaperURLGetter.init()
-      else if (type === BgType.Local) {
-        await localLibrary.init()
-        if (requestVersion !== backgroundRequestVersion) return
-        await localLibrary.choose(activeVariant.value)
-      }
-      // 初始化可能更新 URL 或选中项，先让统一入口接收最新来源，再准备媒体。
-      await nextTick()
-      if (requestVersion !== backgroundRequestVersion) return
-      source = await provider()
+      source = await loadBackgroundSource(type, requestVersion)
     } catch (error) {
       if (requestVersion !== backgroundRequestVersion) return
       requestedSource = undefined
@@ -419,6 +425,7 @@ async function updateBackgroundURL(type: BgType): Promise<void> {
       isSwitching.value = false
       return
     }
+    if (!source) return
     if (requestVersion !== backgroundRequestVersion) {
       revokeDiscardedSource(source)
       return

@@ -1,4 +1,4 @@
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useRafFn } from '@vueuse/core'
 
 import { useSettingsStore } from '@/shared/settings'
 
@@ -23,8 +23,6 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   const running = useWallpaperActivity()
   const night = useDynamicWallpaperNightTheme()
   let renderer: T | undefined
-  let raf = 0
-  let frameTimer: ReturnType<typeof setTimeout> | undefined
   let layoutTimer: ReturnType<typeof setTimeout> | undefined
   let resizeTimer: ReturnType<typeof setTimeout> | undefined
   let resizeObserver: ResizeObserver | undefined
@@ -33,19 +31,14 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   let bounds: DOMRect | null = null
   let elapsed = 0
   let lastTick = 0
-  let lastFrame = 0
   let viewportDirty = false
   let disposed = false
   let failed = false
 
-  const cancelFrame = () => {
-    clearTimeout(frameTimer)
-    cancelAnimationFrame(raf)
-  }
   const fail = () => {
     if (disposed || failed) return
     failed = true
-    cancelFrame()
+    pauseFrames()
     options.onError()
   }
   const locate = () => {
@@ -66,33 +59,22 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
     clearTimeout(layoutTimer)
     layoutTimer = setTimeout(locate, 180)
   }
-  const scheduleFrame = (immediate = false) => {
-    if (!running.value || !renderer || failed) return
-    const delay = immediate
-      ? 0
-      : Math.max(0, 1000 / options.fps() - (performance.now() - lastFrame) - 3)
-    if (delay > 0) frameTimer = setTimeout(() => (raf = requestAnimationFrame(frame)), delay)
-    else raf = requestAnimationFrame(frame)
-  }
-  const frame = (now: number) => {
-    if (!running.value || !renderer || failed) return
-    if (lastTick) elapsed += Math.min((now - lastTick) / 1000, 0.1)
-    lastTick = now
-    const interval = 1000 / options.fps()
-    try {
-      const viewportChanged = viewportDirty && renderer.resizeViewport()
-      viewportDirty = false
-      if (viewportChanged || !lastFrame || now - lastFrame >= interval - 1) {
-        lastFrame =
-          viewportChanged || !lastFrame ? now : Math.max(lastFrame + interval, now - interval)
+  const { pause: pauseFrames, resume: resumeFrames } = useRafFn(
+    ({ timestamp: now }) => {
+      if (!running.value || !renderer || failed) return
+      if (lastTick) elapsed += Math.min((now - lastTick) / 1000, 0.1)
+      lastTick = now
+      try {
+        if (viewportDirty) renderer.resizeViewport()
+        viewportDirty = false
         options.draw(renderer, elapsed, bounds)
+      } catch (error) {
+        console.error(`[${options.name}] Could not render:`, error)
+        fail()
       }
-      scheduleFrame()
-    } catch (error) {
-      console.error(`[${options.name}] Could not render:`, error)
-      fail()
-    }
-  }
+    },
+    { immediate: false, fpsLimit: options.fps },
+  )
   const resize = () => {
     clearTimeout(resizeTimer)
     if (!running.value || !renderer || failed) return
@@ -108,12 +90,11 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
     }
   }
   const updateRunning = () => {
-    cancelFrame()
+    pauseFrames()
     lastTick = 0
-    lastFrame = 0
     if (running.value && renderer && !failed) {
       resize()
-      scheduleFrame(true)
+      resumeFrames()
     }
   }
   const scheduleResize = () => {
@@ -122,8 +103,8 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
       // Resize the backing canvas before the next paint so the browser never
       // displays a stretched frame. Scene layout remains debounced separately.
       viewportDirty = true
-      cancelFrame()
-      scheduleFrame(true)
+      pauseFrames()
+      resumeFrames()
       resizeTimer = setTimeout(resize, 180)
     }
   }
@@ -156,7 +137,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   })
   onBeforeUnmount(() => {
     disposed = true
-    cancelFrame()
+    pauseFrames()
     clearTimeout(layoutTimer)
     clearTimeout(resizeTimer)
     resizeObserver?.disconnect()

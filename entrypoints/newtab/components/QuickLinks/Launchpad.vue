@@ -545,12 +545,8 @@ async function handleLaunchpadDragEnd(event: DragEndEvent) {
         source,
         moveTarget,
       })
-      if (source.origin === 'top-sites') {
-        await refreshDebounced()
-        dndRenderKey.value++
-      } else if (changed) {
-        await refreshDebounced()
-      }
+      if (source.origin === 'top-sites' || changed) await refreshDebounced()
+      if (source.origin === 'top-sites') dndRenderKey.value++
     } catch (error) {
       console.error('[launchpad] Failed to persist drag order:', error)
       ElMessage.error('拖拽排序保存失败')

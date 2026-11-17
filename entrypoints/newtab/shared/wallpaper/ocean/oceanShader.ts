@@ -86,9 +86,11 @@ vec3 oceanOne(vec3 col, vec2 p, vec4 actor, vec2 extra) {
     float tailPitch = .76 + .24 * cos(uOceanTime * 1.3 + actor.x * .01);
     float pitchWeight = ss(-60., -110., q.x);
     q.x = mix(q.x, -60. + (q.x + 60.) / tailPitch, pitchWeight);
-    vec2 whaleUV = vec2(.5 - q.x / 300., .5 + q.y / 100.);
-    float inside = step(0., whaleUV.x) * step(0., whaleUV.y) * step(whaleUV.x, 1.) * step(whaleUV.y, 1.);
-    vec4 whale = texture(uOceanWhale, whaleUV);
+    float inside = step(-150., q.x) * step(q.x, 150.) * step(-50., q.y) * step(q.y, 50.);
+    vec4 whale = texture(uOceanWhale, vec2(
+      ((.5 - q.x / 300.) * 1086. - 60.) / 973.,
+      ((.5 + q.y / 100.) * 362. - 2.) / 357.
+    ));
     col = mix(col, vec3(.035,.14,.34), whale.a * inside * .32);
     col += whale.rgb * whale.a * inside * .045;
   } else if (kind < 3.5) {
