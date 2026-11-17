@@ -11,16 +11,20 @@ import { createMeadowCharacters } from './meadowCharacters'
 import { createDynamicScene } from './meadowScene'
 
 export function createMeadowRenderer(canvas: HTMLCanvasElement, disableEntrance = false) {
-  return createDynamicScene(canvas, {
-    characters: {
-      createCharacters: createMeadowCharacters,
-      assets: {
-        boy,
-        boyRun,
-        boyFrontFrames,
-        boyBackFrames,
-        cats: [cat, catWhite, catCalico, catRagdoll],
+  return createDynamicScene(
+    canvas,
+    {
+      characters: {
+        createCharacters: createMeadowCharacters,
+        assets: {
+          boy,
+          boyRun,
+          boyFrontFrames,
+          boyBackFrames,
+          cats: [cat, catWhite, catCalico, catRagdoll],
+        },
       },
     },
-  }, disableEntrance)
+    disableEntrance,
+  )
 }

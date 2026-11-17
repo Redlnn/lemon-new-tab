@@ -42,7 +42,17 @@ const { isComposing } = useImeAwareDialog()
 const { t } = useTranslation('settings')
 const settings = useSettingsStore()
 const dynamicActive = computed(() => isDynamicBgType(settings.background.bgType))
-const draftKeys = ['solid', 'dynamic', 'meadow', 'beach', 'ocean', 'map', 'blur', 'vignette', 'mask'] as const
+const draftKeys = [
+  'solid',
+  'dynamic',
+  'meadow',
+  'beach',
+  'ocean',
+  'map',
+  'blur',
+  'vignette',
+  'mask',
+] as const
 function snapshotDraft() {
   const background = settings.background
   return Object.fromEntries(draftKeys.map((key) => [key, structuredClone(toRaw(background[key]))]))
@@ -719,7 +729,10 @@ function open(url: string) {
             </label>
             <label>
               <span>{{ t('background.disableEntrance') }}</span>
-              <el-switch v-model="settings.background.dynamic.disableEntrance" :aria-label="t('background.disableEntrance')" />
+              <el-switch
+                v-model="settings.background.dynamic.disableEntrance"
+                :aria-label="t('background.disableEntrance')"
+              />
             </label>
             <template
               v-if="

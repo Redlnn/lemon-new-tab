@@ -1,11 +1,11 @@
 import { chooseMeadowCats } from './meadowCats'
+import { BACK_RUN_ATLAS, FRONT_RUN_ATLAS, RUN_ATLAS } from './meadowFrameAtlas'
 import {
   meadowClickTarget,
   meadowMoveFacing,
   meadowResizeEntry,
   meadowRunFrame,
 } from './meadowMotion'
-import { BACK_RUN_ATLAS, FRONT_RUN_ATLAS, RUN_ATLAS } from './meadowFrameAtlas'
 import type { MeadowAssets, MeadowProgram, MeadowRegion } from './meadowScene'
 
 type Point = { x: number; y: number }
@@ -579,13 +579,34 @@ void main() {
       image.src = path
     }
     loadSprite(assets.boy, gl.TEXTURE4, texture)
-    loadSprite(assets.boyRun, gl.TEXTURE7, runTexture, RUN_ATLAS.cell[0] * 2, undefined, RUN_ATLAS.cell[1] / RUN_ATLAS.cell[0])
-    loadSprite(assets.boyFrontFrames, gl.TEXTURE10, frontFramesTexture, FRONT_RUN_ATLAS.cell[0] * 3, () => {
-      frontReady = true
-    }, FRONT_RUN_ATLAS.cell[1] / FRONT_RUN_ATLAS.cell[0])
-    loadSprite(assets.boyBackFrames, gl.TEXTURE11, backFramesTexture, BACK_RUN_ATLAS.cell[0] * 3, () => {
-      backReady = true
-    }, BACK_RUN_ATLAS.cell[1] / BACK_RUN_ATLAS.cell[0])
+    loadSprite(
+      assets.boyRun,
+      gl.TEXTURE7,
+      runTexture,
+      RUN_ATLAS.cell[0] * 2,
+      undefined,
+      RUN_ATLAS.cell[1] / RUN_ATLAS.cell[0],
+    )
+    loadSprite(
+      assets.boyFrontFrames,
+      gl.TEXTURE10,
+      frontFramesTexture,
+      FRONT_RUN_ATLAS.cell[0] * 3,
+      () => {
+        frontReady = true
+      },
+      FRONT_RUN_ATLAS.cell[1] / FRONT_RUN_ATLAS.cell[0],
+    )
+    loadSprite(
+      assets.boyBackFrames,
+      gl.TEXTURE11,
+      backFramesTexture,
+      BACK_RUN_ATLAS.cell[0] * 3,
+      () => {
+        backReady = true
+      },
+      BACK_RUN_ATLAS.cell[1] / BACK_RUN_ATLAS.cell[0],
+    )
     const choosePosition = (s: number, preferredPosition: Point | null = position) => {
       let best = null,
         bestScore = Infinity

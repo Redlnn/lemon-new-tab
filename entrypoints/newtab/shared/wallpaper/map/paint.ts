@@ -367,7 +367,14 @@ export function paintMapDetails(ctx: Context, map: MapData, request: MapRequest)
 
 export type MotionData = Pick<
   MapData,
-  'seed' | 'navigation' | 'navigationLakeCenter' | 'compass' | 'places' | 'rails' | 'waves' | 'ships'
+  | 'seed'
+  | 'navigation'
+  | 'navigationLakeCenter'
+  | 'compass'
+  | 'places'
+  | 'rails'
+  | 'waves'
+  | 'ships'
 >
 export function createMapMotion(map: MotionData, getCounts: () => MapCounts) {
   const rails = map.rails
