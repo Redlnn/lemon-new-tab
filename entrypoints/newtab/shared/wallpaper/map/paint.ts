@@ -385,7 +385,9 @@ export function createMapMotion(map: MotionData, getCounts: () => MapCounts) {
       lengths,
       phase: random(514, route.from, route.to),
     }))
-  const trainSeed = Math.floor(Math.random() * 0x7fffffff)
+  // 火车每次出场仍然随机选铁轨，但随机序列由地图种子决定：同一张地图重绘时
+  // 火车的身份和相位保持连续，不会因为重新生成而全部跳轨。
+  const trainSeed = map.seed
   const ships = map.ships.map((points) => ({
     points,
     lengths: pathLengths(points),
