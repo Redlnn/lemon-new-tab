@@ -4,8 +4,17 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// 该示例需要 Playwright。当前环境没有 Playwright 时，按
+// references/cdp-extension-ui.md 或 references/bidi-extension-ui.md 的降级流程执行。
 const require = createRequire(import.meta.url)
-const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
+let chromium
+try {
+  ;({ chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright'))
+} catch {
+  throw new Error(
+    'Playwright is not available. Check the project/global install, otherwise use the CDP/BiDi fallback in references/headless-extension-ui.md.',
+  )
+}
 // examples/ -> extension-browser-debugging/ -> skills/ -> .agents/ -> project root
 const projectRoot = fileURLToPath(new URL('../../../../', import.meta.url))
 const profileRoot = await mkdtemp(join(tmpdir(), 'lemon-extension-qa-'))
