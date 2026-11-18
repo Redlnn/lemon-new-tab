@@ -14,7 +14,7 @@ import LaunchRound from '~icons/ic/round-launch'
 import MotionIcon from '~icons/ic/round-motion-photos-on'
 
 import { BgType, isDynamicBgType } from '@/shared/enums'
-import { sha256Hex } from '@/shared/json'
+import { jsonEquals, sha256Hex } from '@/shared/json'
 import { defaultSettings, useSettingsStore, type BingWallpaperResolution } from '@/shared/settings'
 import { idbGet } from '@/shared/storage/idb'
 import {
@@ -103,6 +103,12 @@ function resetDynamicSettings() {
     settings.background.ocean = structuredClone(defaultSettings.background.ocean)
   else settings.background.map = structuredClone(defaultSettings.background.map)
 }
+// 只有当前动态壁纸的通用设置或它自己的设置偏离默认值时，才需要“恢复默认”。
+const dynamicSettingsChanged = computed(() => {
+  const type = settings.background.bgType
+  if (!isDynamicBgType(type)) return false
+  return !jsonEquals(settings.background.dynamic, defaultSettings.background.dynamic)
+})
 const vignetteEnabled = computed({
   get: () => settings.background.vignette,
   set: (value: boolean) => (settings.background.vignette = value),
@@ -976,11 +982,12 @@ function open(url: string) {
     <template #footer>
       <el-space>
         <el-tooltip
+          v-if="dynamicSettingsChanged"
           effect="dark"
           :content="t('background.resetCurrentDynamicHint')"
           placement="top-end"
         >
-          <el-button v-if="dynamicActive" text @click="resetDynamicSettings">
+          <el-button text @click="resetDynamicSettings">
             {{ t('background.resetDefaults') }}
           </el-button>
         </el-tooltip>
