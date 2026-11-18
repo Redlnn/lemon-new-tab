@@ -97,7 +97,7 @@ export const defaultSettings = {
     solid: { light: '', dark: '' },
     rotation: { enabled: false, order: 'random' },
     dynamic: {
-      fps: 25,
+      fps: 30,
       navigationCloudSize: 72,
       autoNightTheme: true,
       nightByTime: true,
