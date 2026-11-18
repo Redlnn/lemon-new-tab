@@ -74,8 +74,7 @@ const wallpaperCanvasBaseColor = computed(() => {
   return (dynamicWallpaperNight.value ? colors?.night : colors?.day) ?? solidColor.value
 })
 
-// 动态壁纸的场景本身有入场动画，首屏无需先把整张画布从透明渐显。
-const isSwitching = ref(!isDynamicBgType(settings.background.bgType))
+const isSwitching = ref(true)
 
 const imageRef = useTemplateRef('imageRef')
 const videoRef = useTemplateRef('videoRef')
@@ -634,7 +633,7 @@ onUnmounted(() => {
     />
     <Transition
       name="bg-fade"
-      :css="settings.perf.bgSwitchAnim && !isDynamicBgType(settings.background.bgType)"
+      :css="settings.perf.bgSwitchAnim"
       @before-leave="(element) => element.querySelector('video')?.pause()"
     >
       <div
