@@ -56,6 +56,8 @@ export function createDynamicScene(
   const context = cv.getContext('webgl2', {
     antialias: false,
     alpha: false,
+    depth: false,
+    stencil: false,
     powerPreference: 'low-power',
   })
   if (!context) throw new Error('WebGL2 unavailable')

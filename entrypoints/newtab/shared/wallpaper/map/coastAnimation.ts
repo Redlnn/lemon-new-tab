@@ -35,6 +35,8 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     alpha: true,
     premultipliedAlpha: true,
     antialias: false,
+    depth: false,
+    stencil: false,
     preserveDrawingBuffer: true,
     powerPreference: 'low-power',
   })
