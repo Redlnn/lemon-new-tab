@@ -33,6 +33,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   let bounds: DOMRect | null = null
   let elapsed = 0
   let lastTick = 0
+  let nextFrame = 0
   let viewportDirty = false
   let disposed = false
   let failed = false
@@ -64,18 +65,27 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   const { pause: pauseFrames, resume: resumeFrames } = useRafFn(
     ({ timestamp: now }) => {
       if (!canDraw.value || !renderer || failed) return
-      if (lastTick) elapsed += Math.min((now - lastTick) / 1000, 0.1)
-      lastTick = now
+      const interval = 1000 / options.fps()
+      const due = now + 0.1 >= nextFrame
       try {
-        if (viewportDirty) renderer.resizeViewport()
+        const resized = viewportDirty && renderer.resizeViewport()
         viewportDirty = false
+        if (!due && !resized) return
+        if (due) {
+          // Keep the fractional deadline across display refreshes and drop missed frames.
+          const deadline = nextFrame || now
+          nextFrame =
+            deadline + Math.max(1, Math.floor((now + 0.1 - deadline) / interval) + 1) * interval
+        }
+        if (lastTick) elapsed += Math.min((now - lastTick) / 1000, 0.1)
+        lastTick = now
         options.draw(renderer, elapsed, bounds)
       } catch (error) {
         console.error(`[${options.name}] Could not render:`, error)
         fail()
       }
     },
-    { immediate: false, fpsLimit: options.fps },
+    { immediate: false },
   )
   const resize = () => {
     clearTimeout(resizeTimer)
@@ -94,6 +104,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   const updateRunning = () => {
     pauseFrames()
     lastTick = 0
+    nextFrame = 0
     if (canDraw.value && renderer && !failed) {
       resize()
       resumeFrames()
@@ -105,8 +116,6 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
       // Resize the backing canvas before the next paint so the browser never
       // displays a stretched frame. Scene layout remains debounced separately.
       viewportDirty = true
-      pauseFrames()
-      resumeFrames()
       resizeTimer = setTimeout(resize, 180)
     }
   }
@@ -117,6 +126,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
       scheduleLayout()
   })
   watch(canDraw, updateRunning, { flush: 'post' })
+  watch(options.fps, () => (nextFrame = 0))
   watch(() => [settings.quickLinks, settings.layout, settings.dock], scheduleLayout, {
     deep: true,
     flush: 'post',
@@ -126,8 +136,9 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
       renderer = options.create()
       resizeObserver = new ResizeObserver(scheduleLayout)
       mutationObserver = new MutationObserver(() => {
+        if (!settings.quickLinks.enabled || settings.quickLinks.useScroll) return
         const current = document.querySelector('.quick-links__container--current')
-        if (!settings.quickLinks.useScroll && current !== observed) scheduleLayout()
+        if (current !== observed) scheduleLayout()
       })
       mutationObserver.observe(document.body, { childList: true, subtree: true })
       locate()
