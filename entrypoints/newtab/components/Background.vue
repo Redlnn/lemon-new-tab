@@ -40,6 +40,7 @@ const MapBackground = defineAsyncComponent(() => import('./MapBackground.vue'))
 
 const focusStore = useFocusState()
 const settings = useSettingsStore()
+defineProps<{ quickLinksReady: boolean }>()
 const { t } = useTranslation()
 const dynamicWallpaperNight = useDynamicWallpaperNightTheme()
 
@@ -641,7 +642,13 @@ onUnmounted(() => {
         v-show="!isSwitching"
         ref="bgRef"
         class="background-container"
-        :class="backgroundCss"
+        :class="[
+          backgroundCss,
+          {
+            'background-container--map-direct':
+              renderedType === BgType.Map && settings.background.dynamic.disableEntrance,
+          },
+        ]"
         :style="{
           scale: isDynamicBgType(renderedType) ? 1 : backgroundScale,
           translate: backgroundTranslate,
@@ -664,7 +671,11 @@ onUnmounted(() => {
           ref="ocean"
           @error="handleOceanError"
         />
-        <MapBackground v-else-if="renderedType === BgType.Map" @error="handleMapError" />
+        <MapBackground
+          v-else-if="renderedType === BgType.Map"
+          :quick-links-ready="quickLinksReady"
+          @error="handleMapError"
+        />
         <video
           v-else-if="isVideoWallpaper"
           class="background background--video"

@@ -16,11 +16,13 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   name: string
   create: () => T
   draw: (renderer: T, time: number, bounds: DOMRect | null) => void
+  ready?: () => boolean
   fps: () => number
   onError: () => void
 }) {
   const settings = useSettingsStore()
   const running = useWallpaperActivity()
+  const canDraw = computed(() => running.value && (options.ready?.() ?? true))
   const night = useDynamicWallpaperNightTheme()
   let renderer: T | undefined
   let layoutTimer: ReturnType<typeof setTimeout> | undefined
@@ -61,7 +63,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   }
   const { pause: pauseFrames, resume: resumeFrames } = useRafFn(
     ({ timestamp: now }) => {
-      if (!running.value || !renderer || failed) return
+      if (!canDraw.value || !renderer || failed) return
       if (lastTick) elapsed += Math.min((now - lastTick) / 1000, 0.1)
       lastTick = now
       try {
@@ -77,7 +79,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   )
   const resize = () => {
     clearTimeout(resizeTimer)
-    if (!running.value || !renderer || failed) return
+    if (!canDraw.value || !renderer || failed) return
     try {
       viewportDirty = false
       locate()
@@ -92,14 +94,14 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   const updateRunning = () => {
     pauseFrames()
     lastTick = 0
-    if (running.value && renderer && !failed) {
+    if (canDraw.value && renderer && !failed) {
       resize()
       resumeFrames()
     }
   }
   const scheduleResize = () => {
     clearTimeout(resizeTimer)
-    if (running.value && renderer && !failed) {
+    if (canDraw.value && renderer && !failed) {
       // Resize the backing canvas before the next paint so the browser never
       // displays a stretched frame. Scene layout remains debounced separately.
       viewportDirty = true
@@ -114,7 +116,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
     if (event.target instanceof Element && event.target.closest('.quick-links, .app'))
       scheduleLayout()
   })
-  watch(running, updateRunning)
+  watch(canDraw, updateRunning, { flush: 'post' })
   watch(() => [settings.quickLinks, settings.layout, settings.dock], scheduleLayout, {
     deep: true,
     flush: 'post',
@@ -145,5 +147,5 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
     renderer?.dispose()
     renderer = undefined
   })
-  return { running, night, fail, getRenderer: () => (failed ? undefined : renderer) }
+  return { running: canDraw, night, fail, getRenderer: () => (failed ? undefined : renderer) }
 }

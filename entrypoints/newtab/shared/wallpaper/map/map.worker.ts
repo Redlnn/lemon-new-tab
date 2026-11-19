@@ -10,7 +10,7 @@ export type MapFrame = {
   scale: number
   bitmap: ImageBitmap
   details?: ImageBitmap
-  paper: ImageBitmap
+  paper?: ImageBitmap
   field: MapField
   motion: MotionData
   milliseconds: number
@@ -33,7 +33,6 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
   try {
     const start = performance.now()
     let previewMs = 0
-    let contours: ReturnType<typeof coastContours> | undefined
     if (request.preview) {
       const scale = 0.5,
         canvas = new OffscreenCanvas(
@@ -41,24 +40,7 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
           Math.ceil(request.height * scale),
         ),
         ctx = canvas.getContext('2d', { alpha: false })!
-      if (request.first && request.previewCoast) {
-        // Without the entrance transition the paper below is visible at once,
-        // so show the real sea and shore instead of an empty sheet while the
-        // full map is still being generated.
-        const terrain = createTerrain(request)
-        contours = coastContours(request.width, request.height, terrain.water)
-        paintTerrain(
-          ctx,
-          {
-            ...contours,
-            seed: request.seed,
-            width: request.width,
-            height: request.height,
-          },
-          scale,
-          true,
-        )
-      } else if (request.first) {
+      if (request.first) {
         const texture = paperTexture(request.seed, request.width, request.height)
         ctx.drawImage(texture, 0, 0, canvas.width, canvas.height)
       } else {
@@ -98,7 +80,6 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
           previousLakeKey === `${request.showNavigationLake},${request.navigationLakeSize}`
           ? previous
           : undefined,
-        contours,
       )
     const generationMs = performance.now() - generationStart
     const canvas = new OffscreenCanvas(
@@ -108,17 +89,22 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
     const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) throw new Error('Map canvas unavailable')
     paintTerrain(ctx, map, request.scale, request.shoreline)
-    const detailCanvas = new OffscreenCanvas(canvas.width, canvas.height),
-      detailCtx = detailCanvas.getContext('2d')!
-    paintMapDetails(detailCtx, map, request)
-    const details = detailCanvas.transferToImageBitmap()
-    const bitmap = canvas.transferToImageBitmap(),
-      { seed, navigation, compass, places, rails, waves, ships } = map
-    const texture = paperTexture(request.seed, request.width, request.height)
-    const paperCanvas = new OffscreenCanvas(texture.width, texture.height)
-    paperCanvas.getContext('2d')!.drawImage(texture, 0, 0)
-    const paper = paperCanvas.transferToImageBitmap(),
-      field = sampleMapField(request)
+    let details: ImageBitmap | undefined
+    let paper: ImageBitmap | undefined
+    if (request.shoreline) {
+      paintMapDetails(ctx, map, request)
+    } else {
+      const detailCanvas = new OffscreenCanvas(canvas.width, canvas.height)
+      paintMapDetails(detailCanvas.getContext('2d')!, map, request)
+      details = detailCanvas.transferToImageBitmap()
+      const texture = paperTexture(request.seed, request.width, request.height)
+      const paperCanvas = new OffscreenCanvas(texture.width, texture.height)
+      paperCanvas.getContext('2d')!.drawImage(texture, 0, 0)
+      paper = paperCanvas.transferToImageBitmap()
+    }
+    const bitmap = canvas.transferToImageBitmap()
+    const { seed, navigation, compass, places, rails, waves, ships } = map
+    const field = sampleMapField(request)
     const frame: MapFrame = {
       id: request.id,
       scale: request.scale,
@@ -153,7 +139,11 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
       },
     }
     self.postMessage(frame, {
-      transfer: [bitmap, paper, ...(details ? [details] : []), field.values.buffer as ArrayBuffer],
+      transfer: [
+        bitmap,
+        ...(paper && details ? [paper, details] : []),
+        field.values.buffer as ArrayBuffer,
+      ],
     })
     previous = map
     previousIslandLimit = request.islandLimit

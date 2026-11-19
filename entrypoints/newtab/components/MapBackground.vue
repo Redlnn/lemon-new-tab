@@ -5,11 +5,14 @@ import { useDynamicWallpaper } from '@newtab/shared/wallpaper/dynamic/useDynamic
 import { createMapScene } from '@newtab/shared/wallpaper/map/mapScene'
 
 const emit = defineEmits<{ error: [] }>()
+const props = defineProps<{ quickLinksReady: boolean }>()
 const canvas = useTemplateRef('canvas')
 const background = useTemplateRef('background')
 const coast = useTemplateRef('coast')
 const details = useTemplateRef('details')
 const settings = useSettingsStore()
+const disableEntrance = settings.background.dynamic.disableEntrance
+const firstFrameReady = ref(false)
 const { running, getRenderer, fail } = useDynamicWallpaper({
   name: 'map',
   create: (): ReturnType<typeof createMapScene> => {
@@ -22,10 +25,13 @@ const { running, getRenderer, fail } = useDynamicWallpaper({
       details.value,
       () => settings.background.map,
       fail,
-      settings.background.dynamic.disableEntrance,
+      disableEntrance,
+      () => (firstFrameReady.value = true),
     )
   },
   draw: (renderer, time, bounds) => renderer.draw(time, bounds),
+  ready: () =>
+    !settings.quickLinks.enabled || settings.quickLinks.useScroll || props.quickLinksReady,
   fps: () => settings.background.dynamic.fps,
   onError: () => emit('error'),
 })
@@ -45,7 +51,14 @@ watch(
 </script>
 
 <template>
-  <div class="map-background" aria-hidden="true">
+  <div
+    class="map-background"
+    :class="{
+      'map-background--waiting': disableEntrance && !firstFrameReady,
+      'map-background--fade': disableEntrance && settings.perf.bgSwitchAnim,
+    }"
+    aria-hidden="true"
+  >
     <canvas ref="background" class="map-background__canvas map-background__paper"></canvas>
     <canvas
       ref="coast"
@@ -70,5 +83,13 @@ watch(
   overflow: hidden;
   pointer-events: none;
   background: #efdcae;
+}
+
+.map-background--waiting {
+  opacity: 0;
+}
+
+.map-background--fade {
+  transition: opacity var(--bg-opacity-duration);
 }
 </style>

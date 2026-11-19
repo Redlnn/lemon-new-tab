@@ -1,6 +1,6 @@
 /* 集中过渡类：Vue 过渡与对话框过渡 */
 
-.bg-fade-enter-from,
+.bg-fade-enter-from:not(.background-container--map-direct),
 .bg-fade-leave-to {
   opacity: 0;
 }

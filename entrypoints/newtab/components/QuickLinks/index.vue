@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useDebounceFn, useEventListener, useResizeObserver, useWindowSize } from '@vueuse/core'
+import { useDebounceFn, useEventListener, useWindowSize } from '@vueuse/core'
 import '@newtab/styles/quick-links.scss'
 
 import {
@@ -120,7 +120,7 @@ const topSiteDisplayItems = computed(() =>
 
 const visibleCategoryGroups = computed(() => userGroups.value)
 
-const { updateMaxCols, maxFitCols, maxFitRows } = usePagedGridLayout()
+const { maxFitCols, maxFitRows } = usePagedGridLayout()
 const slotsPerPage = computed(() => maxFitCols.value * maxFitRows.value)
 const isDragging = ref(false)
 const dndRenderKey = ref(0)
@@ -722,11 +722,6 @@ useEventListener(
   { passive: true },
 )
 
-// useResizeObserver 会在开始观察时立即触发一次，因此不需要额外的 onMounted 刷新调用
-useResizeObserver(document.documentElement, () => {
-  updateMaxCols()
-})
-
 watch(
   () => [
     settings.quickLinks.layout.columns,
@@ -738,7 +733,6 @@ watch(
     settings.quickLinks.useScroll,
   ],
   async () => {
-    updateMaxCols()
     await refreshDebounced()
   },
 )
@@ -774,8 +768,6 @@ watch(
     }
   },
 )
-
-watch(isOnlyTouchDevice, updateMaxCols)
 
 onBeforeUnmount(() => {
   clearEdgeSwitchTimer()

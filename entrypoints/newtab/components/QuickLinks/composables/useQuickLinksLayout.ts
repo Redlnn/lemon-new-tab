@@ -1,4 +1,4 @@
-import { useDebounceFn, useWindowSize } from '@vueuse/core'
+import { useWindowSize } from '@vueuse/core'
 
 import { useSettingsStore } from '@/shared/settings'
 
@@ -52,19 +52,14 @@ export function usePagedGridLayout() {
   }
 
   // 最大列数
-  const maxFitCols = ref(settings.quickLinks.layout.columns)
-
-  const updateMaxCols = useDebounceFn(() => {
-    maxFitCols.value = computeFitColumns()
-  }, 100)
-  onScopeDispose(() => updateMaxCols.cancel())
+  const maxFitCols = computed(computeFitColumns)
 
   // 纯最大行数
   const maxFitRows = computed(() =>
     windowHeight.value < 450 ? 1 : settings.quickLinks.layout.rows,
   )
 
-  return { updateMaxCols, maxFitCols, maxFitRows }
+  return { maxFitCols, maxFitRows }
 }
 
 export function useDockLayout() {

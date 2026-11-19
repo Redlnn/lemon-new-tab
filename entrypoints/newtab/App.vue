@@ -40,7 +40,7 @@ provide(APP_DIALOGS, dialogs)
 
 const elLocale = useElementLang()
 const settings = useSettingsStore()
-const { quickLinksReady } = useQuickLinksBootstrap()
+const { quickLinksReady, quickLinksSettled } = useQuickLinksBootstrap()
 const minimalMode = ref(false)
 const retirement = useRetiredCloudSync()
 
@@ -249,7 +249,7 @@ function toggleMinimalMode() {
         <yi-yan v-if="settings.yiyan.enabled" @contextmenu.stop />
       </div>
     </main>
-    <background ref="BackgroundRef" />
+    <background ref="BackgroundRef" :quick-links-ready="quickLinksSettled" />
     <div
       class="action-btn-container"
       :class="actionClass"

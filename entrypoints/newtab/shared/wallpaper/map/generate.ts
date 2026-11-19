@@ -77,11 +77,7 @@ const endings = [
   'moor',
 ]
 
-export function generateMap(
-  request: MapRequest,
-  previous?: MapData,
-  contours?: Pick<MapData, 'coast' | 'waterPolygons'>,
-): MapData {
+export function generateMap(request: MapRequest, previous?: MapData): MapData {
   const { seed, width, height, navigation } = request
   if (previous?.seed !== seed) previous = undefined
   const terrain = createTerrain(request)
@@ -113,7 +109,7 @@ export function generateMap(
         ? { x: navigation.x + navigation.width * 0.51, y: navigation.y + navigation.height * 0.55 }
         : null,
     compass,
-    ...(contours ?? coastContours(width, height, water)),
+    ...coastContours(width, height, water),
     rivers: [],
     riverWidths: [],
     places: [],

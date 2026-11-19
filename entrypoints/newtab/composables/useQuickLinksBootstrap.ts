@@ -9,6 +9,7 @@ export function useQuickLinksBootstrap() {
   const settings = useSettingsStore()
   const quickLinksStore = useQuickLinksStore()
   const quickLinksReady = ref(false)
+  const quickLinksSettled = ref(false)
   let initTask: Promise<void> | null = null
 
   const shouldLoadTopSites = () =>
@@ -42,6 +43,7 @@ export function useQuickLinksBootstrap() {
     try {
       await initTask
     } finally {
+      quickLinksSettled.value = true
       initTask = null
     }
   }
@@ -63,5 +65,8 @@ export function useQuickLinksBootstrap() {
     }
   })
 
-  return { quickLinksReady: readonly(quickLinksReady) }
+  return {
+    quickLinksReady: readonly(quickLinksReady),
+    quickLinksSettled: readonly(quickLinksSettled),
+  }
 }

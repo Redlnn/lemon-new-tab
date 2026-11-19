@@ -37,7 +37,8 @@ export function createMapScene(
   detailsCanvas: HTMLCanvasElement,
   getCounts: () => MapCounts,
   onError: () => void,
-  disableEntrance = false,
+  disableEntrance: boolean,
+  onFirstFrame: () => void,
 ) {
   const ground = background.getContext('2d', { alpha: false })!,
     ctx = canvas.getContext('2d')!,
@@ -220,7 +221,7 @@ export function createMapScene(
     if (disposed || frame.id !== generation) {
       if ('bitmap' in frame) {
         frame.bitmap.close()
-        frame.paper.close()
+        frame.paper?.close()
         frame.details?.close()
       }
     } else if ('error' in frame) {
@@ -236,15 +237,17 @@ export function createMapScene(
       bitmapScale = frame.scale
       detailsBitmap?.close()
       detailsBitmap = frame.details ?? null
-      coast?.begin(
-        bitmap,
-        frame.paper,
-        frame.field,
-        frame.scale,
-        lastTime,
-        lastAnimate && !expanded && !(firstFrame && disableEntrance),
-      )
-      frame.paper.close()
+      if (frame.paper) {
+        coast?.begin(
+          bitmap,
+          frame.paper,
+          frame.field,
+          frame.scale,
+          lastTime,
+          lastAnimate && !expanded,
+        )
+        frame.paper.close()
+      }
       fieldVisibility = coast ? null : createFieldVisibility(frame.field)
       introActive = firstFrame && !!frame.details && !!coast?.isActive()
       if (introActive) {
@@ -254,7 +257,7 @@ export function createMapScene(
         detailsCanvas.height = background.height
         detailsCanvas.style.width = background.style.width
         detailsCanvas.style.height = background.style.height
-        detailsCanvas.hidden = false
+        detailsCanvas.hidden = !detailsBitmap
         paintDetails()
         previewBitmap?.close()
         previewBitmap = null
@@ -279,6 +282,7 @@ export function createMapScene(
       background.dataset.counts = JSON.stringify(frame.counts)
       background.dataset.navigation = JSON.stringify(frame.motion.navigation)
       background.dataset.compass = JSON.stringify(frame.motion.compass)
+      if (firstFrame) onFirstFrame()
     }
     sendPending()
   }
@@ -301,7 +305,6 @@ export function createMapScene(
       // A queued request can wait until the initial transition completes.
       // Determine this at dispatch time, not when the layout was measured.
       pending.first = !bitmap
-      pending.previewCoast = !!pending.first && disableEntrance
       pending.shoreline = !coast?.available()
       worker.postMessage(pending)
     } catch (error) {
@@ -373,7 +376,7 @@ export function createMapScene(
         showNavigationLake: counts.showNavigationLake,
         navigationLakeSize: counts.navigationLakeSize,
         first: !bitmap,
-        preview: previewOnly || (fillNeeded && !hasPreview),
+        preview: previewOnly || ((!!bitmap || !disableEntrance) && fillNeeded && !hasPreview),
         compassCandidates: compassCandidates.length
           ? compassCandidates
           : [corners[(seed + 1) % 4]!],
