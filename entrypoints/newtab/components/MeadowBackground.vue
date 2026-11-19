@@ -7,7 +7,7 @@ import { createMeadowRenderer } from '@newtab/shared/wallpaper/meadow'
 const emit = defineEmits<{ error: [] }>()
 const settings = useSettingsStore()
 const canvas = useTemplateRef('canvas')
-const { running, night, fail, getRenderer } = useDynamicWallpaper({
+const { running, night, loseContext, restoreContext, getRenderer } = useDynamicWallpaper({
   name: 'meadow',
   create: () => {
     if (!canvas.value) throw new Error('Missing canvas')
@@ -45,7 +45,8 @@ defineExpose({ moveBoy })
     <canvas
       ref="canvas"
       class="meadow-background__canvas"
-      @webglcontextlost.prevent="fail"
+      @webglcontextlost.prevent="loseContext"
+      @webglcontextrestored="restoreContext"
     ></canvas>
   </div>
 </template>

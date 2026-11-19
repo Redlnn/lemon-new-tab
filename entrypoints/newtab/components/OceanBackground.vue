@@ -7,7 +7,7 @@ import { createOceanRenderer } from '@newtab/shared/wallpaper/ocean'
 const emit = defineEmits<{ error: [] }>()
 const settings = useSettingsStore()
 const canvas = useTemplateRef('canvas')
-const { running, night, fail, getRenderer } = useDynamicWallpaper({
+const { running, night, loseContext, restoreContext, getRenderer } = useDynamicWallpaper({
   name: 'ocean',
   create: () => {
     if (!canvas.value) throw new Error('Missing canvas')
@@ -37,7 +37,12 @@ defineExpose({ ripple })
 
 <template>
   <div class="ocean-background" aria-hidden="true">
-    <canvas ref="canvas" class="ocean-background__canvas" @webglcontextlost.prevent="fail"></canvas>
+    <canvas
+      ref="canvas"
+      class="ocean-background__canvas"
+      @webglcontextlost.prevent="loseContext"
+      @webglcontextrestored="restoreContext"
+    ></canvas>
   </div>
 </template>
 

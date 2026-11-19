@@ -1097,7 +1097,7 @@ void main() {
         if (ripples.length === 6) ripples.shift()
         ripples.push({ x, y, start: sceneNow / 1000 })
       },
-      dispose() {
+      dispose(contextLost = false) {
         disposed = true
         for (const image of pendingImages) {
           image.onload = null
@@ -1105,7 +1105,7 @@ void main() {
           image.src = ''
         }
         pendingImages.clear()
-        gl.getExtension('WEBGL_lose_context')?.loseContext()
+        if (!contextLost) gl.getExtension('WEBGL_lose_context')?.loseContext()
       },
     }
   } catch (error) {

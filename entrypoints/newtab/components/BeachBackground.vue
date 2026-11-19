@@ -11,7 +11,7 @@ const emit = defineEmits<{ error: [] }>()
 const settings = useSettingsStore()
 const canvas = useTemplateRef('canvas')
 const treeCanvas = useTemplateRef('trees')
-const { running, night, fail, getRenderer } = useDynamicWallpaper({
+const { running, night, loseContext, restoreContext, getRenderer } = useDynamicWallpaper({
   name: 'beach',
   create: () => {
     if (!canvas.value || !treeCanvas.value) throw new Error('Missing canvas')
@@ -35,7 +35,12 @@ defineExpose({ ripple })
 
 <template>
   <div class="beach-background" aria-hidden="true">
-    <canvas ref="canvas" class="beach-background__canvas" @webglcontextlost.prevent="fail"></canvas>
+    <canvas
+      ref="canvas"
+      class="beach-background__canvas"
+      @webglcontextlost.prevent="loseContext"
+      @webglcontextrestored="restoreContext"
+    ></canvas>
     <canvas ref="trees" class="beach-background__canvas"></canvas>
   </div>
 </template>

@@ -9,7 +9,7 @@ import { useDynamicWallpaperNightTheme } from './useDynamicWallpaperTheme'
 type DynamicRenderer = {
   resizeViewport: () => boolean
   resize: (bounds: DOMRect | null) => void
-  dispose: () => void
+  dispose: (contextLost?: boolean) => void
 }
 
 export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
@@ -22,7 +22,8 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
 }) {
   const settings = useSettingsStore()
   const running = useWallpaperActivity()
-  const canDraw = computed(() => running.value && (options.ready?.() ?? true))
+  const contextLost = ref(false)
+  const canDraw = computed(() => !contextLost.value && running.value && (options.ready?.() ?? true))
   const night = useDynamicWallpaperNightTheme()
   let renderer: T | undefined
   let layoutTimer: ReturnType<typeof setTimeout> | undefined
@@ -158,5 +159,27 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
     renderer?.dispose()
     renderer = undefined
   })
-  return { running: canDraw, night, fail, getRenderer: () => (failed ? undefined : renderer) }
+  return {
+    running: canDraw,
+    night,
+    fail,
+    loseContext() {
+      if (disposed || failed || contextLost.value) return
+      contextLost.value = true
+      pauseFrames()
+      renderer?.dispose(true)
+      renderer = undefined
+    },
+    restoreContext() {
+      if (disposed || failed || !contextLost.value) return
+      try {
+        renderer = options.create()
+        contextLost.value = false
+      } catch (error) {
+        console.error(`[${options.name}] Could not restore renderer:`, error)
+        fail()
+      }
+    },
+    getRenderer: () => (failed ? undefined : renderer),
+  }
 }

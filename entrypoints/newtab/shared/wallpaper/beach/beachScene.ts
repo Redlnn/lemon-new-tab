@@ -31,6 +31,29 @@ export function createBeachScene(
   treeUrls: string[],
   disableEntrance = false,
 ) {
+  const gl = cv.getContext('webgl2', {
+    antialias: false,
+    alpha: false,
+    depth: false,
+    stencil: false,
+    powerPreference: 'low-power',
+  })
+  if (!gl) throw new Error('WebGL2 unavailable')
+  try {
+    return initializeBeachScene(gl, cv, treesCanvas, treeUrls, disableEntrance)
+  } catch (error) {
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    throw error
+  }
+}
+
+function initializeBeachScene(
+  gl: WebGL2RenderingContext,
+  cv: HTMLCanvasElement,
+  treesCanvas: HTMLCanvasElement,
+  treeUrls: string[],
+  disableEntrance: boolean,
+) {
   const P = {
     sigma: 85,
     warp: 34,
@@ -48,15 +71,6 @@ export function createBeachScene(
     birds: 3,
     night: false,
   }
-  const context = cv.getContext('webgl2', {
-    antialias: false,
-    alpha: false,
-    depth: false,
-    stencil: false,
-    powerPreference: 'low-power',
-  })
-  if (!context) throw new Error('WebGL2 unavailable')
-  const gl: WebGL2RenderingContext = context
   const treeContext = treesCanvas.getContext('2d')
   if (!treeContext) throw new Error('Canvas 2D unavailable')
   const seed = (Math.random() * 1e6) | 0
@@ -659,13 +673,14 @@ export function createBeachScene(
       if (activeRipples.length === 6) activeRipples.shift()
       activeRipples.push({ x, y, start: sceneTime / 1000 })
     },
-    dispose() {
+    dispose(contextLost = false) {
       for (const img of images) {
         img.onload = null
         img.onerror = null
         img.src = ''
       }
-      gl.getExtension('WEBGL_lose_context')?.loseContext()
+      if (!contextLost) gl.getExtension('WEBGL_lose_context')?.loseContext()
+      treesCanvas.width = treesCanvas.height = 1
     },
   }
 }
