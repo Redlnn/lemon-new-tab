@@ -37,8 +37,7 @@ float oceanGlint(vec2 p) {
   return coverage * glint * mix(.78, .58, uNight);
 }
 #ifdef OCEAN_DETAIL
-uniform vec4 uOceanActors[22]; // x, y, heading, kind
-uniform vec2 uOceanExtras[22]; // boom angle or ripple age
+uniform highp sampler2D uOceanActors; // two texels per actor: pose and extra data
 uniform int uOceanCount;
 uniform sampler2D uOceanWhale;
 float oceanEllipse(vec2 p, vec2 r) { return (length(p / r) - 1.) * min(r.x, r.y); }
@@ -137,9 +136,10 @@ vec3 oceanOne(vec3 col, vec2 p, vec4 actor, vec2 extra) {
   return col;
 }
 vec3 oceanDetail(vec3 col, vec2 p) {
-  for (int i = 0; i < 22; i++) {
-    if (i >= uOceanCount) break;
-    col = oceanOne(col,p,uOceanActors[i],uOceanExtras[i]);
+  for (int i = 0; i < uOceanCount; i++) {
+    vec4 actor = texelFetch(uOceanActors, ivec2(i * 2, 0), 0);
+    vec2 extra = texelFetch(uOceanActors, ivec2(i * 2 + 1, 0), 0).xy;
+    col = oceanOne(col,p,actor,extra);
   }
   return col;
 }

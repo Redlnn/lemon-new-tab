@@ -981,7 +981,7 @@ void main() {
     }
   }
 
-  // 每次打开场景随机选择两只猫，贴图只上传一次，并优先避开男孩的路线。
+  // 按设置增加小猫，素材只上传一次，位置避开男孩的路线与其他猫。
   let meadowCatScene: ReturnType<typeof createMeadowCatScene> | null = null
   let catCount = 2
   const meadowCatSegmentDistance = (p: Point, a: Point, b: Point) => {
@@ -1030,7 +1030,7 @@ void main() {
     sceneSeed: number,
     regions: MeadowRegion[],
     cloudSize: number,
-    other: { x: number; y: number; size: number } | null,
+    others: ({ x: number; y: number; size: number } | null)[],
   ) => {
     const { lanes, scale } = meadowCatRunLanes(state, width, height, taskbar)
     const size =
@@ -1052,10 +1052,17 @@ void main() {
       const x = i < 256 ? random() : (((i - 256) % 9) + 0.5) / 9
       const y = i < 256 ? random() : (Math.floor((i - 256) / 9) + 0.5) / 9
       const p = { x: pad + x * (width - pad * 2), y: pad + y * (height - taskbar - pad * 2) }
-      const separation = (size + (other?.size || 0)) / 2 + 8
-      if (other && Math.abs(p.x - other.x) < separation && Math.abs(p.y - other.y) < separation)
+      if (
+        others.some((other) => {
+          if (!other) return false
+          const separation = (size + other.size) / 2 + 8
+          return Math.abs(p.x - other.x) < separation && Math.abs(p.y - other.y) < separation
+        })
+      )
         continue
-      const routeDistance = Math.min(...lanes.map(([a, b]) => meadowCatSegmentDistance(p, a, b)))
+      let routeDistance = Infinity
+      for (const [a, b] of lanes)
+        routeDistance = Math.min(routeDistance, meadowCatSegmentDistance(p, a, b))
       let score = Math.max(0, clearance - routeDistance) * 4
       for (const icon of regions) {
         const dx = Math.max(icon.x - p.x, 0, p.x - icon.x - icon.w)
@@ -1086,18 +1093,16 @@ void main() {
   }
 
   const createMeadowCatScene = () => {
-    const cats = chooseMeadowCats().map((index) => ({
-      texture: gl.createTexture(),
-      source: assets.cats[index]!,
-      ready: false,
-    }))
+    const sources = chooseMeadowCats(assets.cats)
+    const cats: { texture: WebGLTexture | null; ready: boolean }[] = []
     let layout = '',
       signature = '',
       routeState: BoyState | null = null,
       places: ReturnType<typeof meadowCatChoosePlace>[] = []
     let time = 0,
       previousTime: number | null = null
-    for (const cat of cats) {
+    const loadCat = (source: string) => {
+      const cat = { texture: gl.createTexture(), ready: false }
       const image = new Image()
       pendingImages.add(image)
       image.onload = () => {
@@ -1120,7 +1125,8 @@ void main() {
         pendingImages.delete(image)
         if (!isDisposed()) console.warn('草地小猫素材加载失败')
       }
-      image.src = cat.source
+      image.src = source
+      return cat
     }
     return {
       prepare(boy: Boy | null, now: number) {
@@ -1138,56 +1144,47 @@ void main() {
         const next = [layout, seed].join(',')
         if (next !== signature) {
           signature = next
-          const first = meadowCatChoosePlace(
-            routeState,
-            W,
-            H,
-            TASKBAR,
-            seed,
-            regions,
-            P.sigma,
-            null,
-          )
-          const second = meadowCatChoosePlace(
-            routeState,
-            W,
-            H,
-            TASKBAR,
-            seed + 7919,
-            regions,
-            P.sigma,
-            first,
-          )
-          places = [first, second]
+          places = []
         }
-        return cats.slice(0, catCount).flatMap((cat, index) => {
+        while (places.length < catCount)
+          places.push(
+            meadowCatChoosePlace(
+              routeState,
+              W,
+              H,
+              TASKBAR,
+              seed + places.length * 7919,
+              regions,
+              P.sigma,
+              places,
+            ),
+          )
+        while (cats.length < Math.min(catCount, sources.length))
+          cats.push(loadCat(sources[cats.length]!))
+        const visible = []
+        for (let index = 0; index < catCount; index++) {
+          const cat = cats[index % cats.length]!
           const place = places[index]
-          if (!cat.ready || !place) return []
+          if (!cat.ready || !place) continue
           const size = place.size,
             rect: Vec4 = [place.x - size / 2, place.y - size / 2, size, size],
             shadow: Vec2 = [size * 0.045, size * 0.06]
-          return [
-            {
-              texture: cat.texture,
-              rect,
-              shadow,
-              tail: meadowCatTailAngle(time, seed + index * 1301),
-              bounds: [
-                rect[0] - 2,
-                rect[1] - 2,
-                size + shadow[0] + 4,
-                size + shadow[1] + 4,
-              ] as Vec4,
-            },
-          ]
-        })
+          visible.push({
+            texture: cat.texture,
+            rect,
+            shadow,
+            tail: meadowCatTailAngle(time, seed + index * 1301),
+            bounds: [rect[0] - 2, rect[1] - 2, size + shadow[0] + 4, size + shadow[1] + 4] as Vec4,
+          })
+        }
+        return visible
       },
     }
   }
 
   return {
     setCatCount(count: number) {
-      catCount = Math.max(0, Math.min(3, Math.round(count)))
+      catCount = Math.max(0, Math.round(count))
     },
     moveBoy(x: number, y: number) {
       syncScene()

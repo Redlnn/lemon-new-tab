@@ -1,5 +1,6 @@
 import type { CURRENT_CONFIG_SCHEMA } from '@/shared/settings/current'
 
+import { createActorTexture } from '../dynamic/actorTexture'
 import { createFieldTextures } from '../dynamic/fieldTextures'
 import { snapshotField } from '../dynamic/fieldTransition'
 import { createTerrain } from '../dynamic/terrain'
@@ -131,6 +132,7 @@ function initializeBeachScene(
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
   const fieldStorage = createFieldTextures(gl)
+  const birdTexture = createActorTexture(gl, 8)
   let causticsTexture: WebGLTexture | null = null
   const fieldTextures = fieldStorage.textures
   let current: Field | null = null,
@@ -153,7 +155,6 @@ function initializeBeachScene(
   let trees: Tree[] = [],
     previousTrees: Tree[] = []
   const kay = new Float32Array(16),
-    birds = new Float32Array(32),
     ripples = new Float32Array(24)
   type PalmSprite = {
     image: HTMLImageElement
@@ -221,13 +222,15 @@ function initializeBeachScene(
     img.src = url
     return img
   })
-  const agents = Array.from({ length: 12 }, (_, i) => ({
+  const createAgent = (bird: boolean) => ({
     x: Math.random() * W,
     y: Math.random() * H,
     angle: Math.random() * 6.28,
     phase: Math.random() * 6.28,
-    bird: i >= 4,
-  }))
+    bird,
+  })
+  const kayakCapacity = kay.length / 4
+  const agents = Array.from({ length: kayakCapacity }, () => createAgent(false))
   const upload = (index: number, field: Field) => {
     fieldStorage.resize(Gw, Gh)
     fieldStorage.upload(index, field.s)
@@ -509,9 +512,11 @@ function initializeBeachScene(
         sampleArr(fromField, x, y) * (1 - currentMix) + sampleArr(toField, x, y) * currentMix,
     )
     kay.fill(0)
-    birds.fill(0)
+    while (agents.length < kayakCapacity + P.birds) agents.push(createAgent(true))
+    agents.length = kayakCapacity + P.birds
+    const birds = birdTexture.reserve(P.birds)
     agents.forEach((agent, i) => {
-      if (agent.bird ? i - 4 >= P.birds : i >= P.kayaks) return
+      if (!agent.bird && i >= P.kayaks) return
       const margin = 70
       const aheadX = agent.x + Math.cos(agent.angle) * 100,
         aheadY = agent.y + Math.sin(agent.angle) * 100
@@ -542,7 +547,7 @@ function initializeBeachScene(
       agent.x += Math.cos(agent.angle) * dt * (agent.bird ? 40 : 8)
       agent.y += Math.sin(agent.angle) * dt * (agent.bird ? 40 : 8)
       const data = agent.bird ? birds : kay
-      const offset = (agent.bird ? i - 4 : i) * 4
+      const offset = (agent.bird ? i - kayakCapacity : i) * 4
       data[offset] = agent.x
       data[offset + 1] = agent.y
       data[offset + 2] = agent.angle
@@ -563,6 +568,7 @@ function initializeBeachScene(
     }
     const causticsOpacity = options.waterCaustics ? 1 - options.waterTransparency / 100 : 0
     if (causticsOpacity > 0 && !causticsTexture) causticsTexture = createWaterCaustics(gl)
+    birdTexture.upload(P.birds)
     gl.viewport(0, 0, cv.width, cv.height)
     gl.useProgram(program)
     gl.bindVertexArray(vao)
@@ -600,20 +606,20 @@ function initializeBeachScene(
     gl.uniform1f(u.uNight!, options.night ? 1 : 0)
     gl.uniform1f(u.uDebug!, 0)
     gl.uniform1f(u.uKayN!, 0)
-    gl.uniform1f(u.uBirdN!, 0)
+    gl.uniform1i(u.uBirdN!, 0)
     gl.uniform4fv(u.uKay!, kay)
-    gl.uniform4fv(u.uBird!, birds)
+    gl.uniform1i(u.uBird!, 8)
     gl.uniform4fv(u.uRip!, ripples)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     // Only shade boats, birds and their shadows where they can affect the image.
     // Align to 2px so derivatives use the same pixel groups as the full-screen pass.
     gl.uniform1f(u.uKayN!, options.night ? 0 : P.kayaks)
-    gl.uniform1f(u.uBirdN!, P.birds)
+    gl.uniform1i(u.uBirdN!, P.birds)
     gl.enable(gl.SCISSOR_TEST)
     try {
       for (let i = 0; i < agents.length; i++) {
         const agent = agents[i]!
-        if (agent.bird ? i - 4 >= P.birds : i >= P.kayaks) continue
+        if (!agent.bird && (i >= P.kayaks || options.night)) continue
         if (agent.bird) {
           drawRegion(agent.x, agent.y, -22, -22, 22, 22)
           drawRegion(agent.x + 34, agent.y + 55, -22, -22, 22, 22)

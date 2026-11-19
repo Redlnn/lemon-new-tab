@@ -75,8 +75,8 @@ uniform float uScale, uSeed, uTime, uSpeed, uRunup, uShallow, uShoal, uGrain, uD
 uniform float uKayN;
 uniform vec4 uKay[4];          // x, y, 朝向, 划桨相位
 uniform vec4 uRip[6];
-uniform float uBirdN;
-uniform vec4 uBird[8];         // x, y, 朝向, 翅膀展开程度
+uniform int uBirdN;
+uniform highp sampler2D uBird; // x, y, 朝向, 翅膀展开程度
 ${beachField}
 ${waterCausticsShader}
 out vec4 o;
@@ -381,9 +381,8 @@ void main() {
   }
 
   // ---------- 海鸟：白身子、浅灰翅膀、黑翅尖的海鸥，飞得高，影子落得远 ----------
-  for (int i = 0; i < 8; i++) {
-    if (float(i) >= uBirdN) break;
-    vec4 b = uBird[i];
+  for (int i = 0; i < uBirdN; i++) {
+    vec4 b = texelFetch(uBird, ivec2(i, 0), 0);
     vec2 d0 = p - b.xy, d1 = d0 - vec2(34.0, 55.0);
     if (dot(d1, d1) < 400.0) {
       vec3 g = gullSD(rot(-b.z) * d1, b.w);

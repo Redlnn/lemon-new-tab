@@ -1,3 +1,4 @@
+import { createActorTexture } from '../dynamic/actorTexture'
 import { createFieldTextures } from '../dynamic/fieldTextures'
 import { snapshotField } from '../dynamic/fieldTransition'
 import { createTerrain } from '../dynamic/terrain'
@@ -94,10 +95,9 @@ export function createDynamicScene(
     lastBounds: MeadowBounds | null = null
   const ripples: { x: number; y: number; start: number }[] = []
   const oceanMotion = scene.ocean?.createMotion() ?? null
-  const oceanActors = new Float32Array(22 * 4)
-  const oceanExtras = new Float32Array(22 * 2)
   const oceanCounts = [0, 0, 0, 0]
   try {
+    const oceanActors = ocean ? createActorTexture(gl, 10) : null
     const seed = (Math.random() * 1e6) | 0
 
     const terrain = createTerrain(
@@ -868,37 +868,35 @@ void main() {
         oceanMotion?.step(t, dt, W, H, oceanCounts, cloudClearance) ?? emptyOceanSubjects
       const wakeTexture = oceanWake?.draw(subjects, t, W, H)
       let actorCount = 0
-      for (const kind of oceanDrawOrder) {
-        for (const subject of subjects) {
-          if (subject.kind !== kind) continue
-          const offset = actorCount * 4,
-            extra = actorCount * 2
-          oceanActors[offset] = subject.x
-          oceanActors[offset + 1] = subject.y
-          oceanActors[offset + 2] = subject.heading
-          oceanActors[offset + 3] = subject.kind
-          oceanExtras[extra] = subject.kind === 2 ? subject.bend : subject.boom
-          oceanExtras[extra + 1] = 0
-          actorCount++
+      if (oceanActors) {
+        const actors = oceanActors.reserve((subjects.length + ripples.length) * 2)
+        for (const kind of oceanDrawOrder) {
+          for (const subject of subjects) {
+            if (subject.kind !== kind) continue
+            const offset = actorCount++ * 8
+            actors[offset] = subject.x
+            actors[offset + 1] = subject.y
+            actors[offset + 2] = subject.heading
+            actors[offset + 3] = subject.kind
+            actors[offset + 4] = subject.kind === 2 ? subject.bend : subject.boom
+          }
         }
-      }
-      for (let i = ripples.length - 1; i >= 0; i--) {
-        const ripple = ripples[i]!
-        const age = t - ripple.start
-        if (age >= 4) ripples.splice(i, 1)
-        else {
-          const offset = actorCount * 4,
-            extra = actorCount * 2
-          oceanActors[offset] = ripple.x
-          oceanActors[offset + 1] = ripple.y
-          oceanActors[offset + 2] = 0
-          oceanActors[offset + 3] = 4
-          oceanExtras[extra] = age
-          oceanExtras[extra + 1] = 0
-          actorCount++
+        for (let i = ripples.length - 1; i >= 0; i--) {
+          const ripple = ripples[i]!
+          const age = t - ripple.start
+          if (age >= 4) ripples.splice(i, 1)
+          else {
+            const offset = actorCount++ * 8
+            actors[offset] = ripple.x
+            actors[offset + 1] = ripple.y
+            actors[offset + 2] = 0
+            actors[offset + 3] = 4
+            actors[offset + 4] = age
+          }
         }
+        if (actorCount) oceanActors.upload(actorCount * 2)
       }
-      const render = (renderer: MeadowProgram, cat: (typeof cats)[number] | null) => {
+      const configurePass = (renderer: MeadowProgram) => {
         const { p, U } = renderer
         gl.useProgram(p)
         gl.viewport(0, 0, cv.width, cv.height)
@@ -940,8 +938,7 @@ void main() {
             gl.activeTexture(gl.TEXTURE6)
             gl.bindTexture(gl.TEXTURE_2D, whaleTexture)
             gl.uniform1i(U.uOceanWhale!, 6)
-            gl.uniform4fv(U.uOceanActors!, oceanActors)
-            gl.uniform2fv(U.uOceanExtras!, oceanExtras)
+            gl.uniform1i(U.uOceanActors!, 10)
             gl.uniform1i(U.uOceanCount!, actorCount)
           }
         }
@@ -954,18 +951,11 @@ void main() {
           gl.uniform1i(U.uActorShadow!, 6)
           gl.uniform4f(U.uActorRect!, ...actor.rect)
         }
-        if (cat) {
-          gl.activeTexture(gl.TEXTURE8)
-          gl.bindTexture(gl.TEXTURE_2D, cat.texture)
-          gl.uniform1i(U.uCat!, 8)
-          gl.uniform4f(U.uCatRect!, ...cat.rect)
-          gl.uniform2f(U.uCatShadow!, ...cat.shadow)
-          gl.uniform1f(U.uCatTail!, cat.tail)
-        }
-        gl.drawArrays(gl.TRIANGLES, 0, 3)
       }
-      render(actor ? actorPR! : PR, null)
-      if (oceanPR) {
+      configurePass(actor ? actorPR! : PR)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+      if (oceanPR && actorCount) {
+        configurePass(oceanPR)
         gl.enable(gl.SCISSOR_TEST)
         try {
           const paint = (x: number, y: number, size: number) => {
@@ -976,7 +966,7 @@ void main() {
             const bottom = Math.min(cv.height, Math.ceil((y + size) * k))
             if (right <= left || bottom <= top) return
             gl.scissor(left, cv.height - bottom, right - left, bottom - top)
-            render(oceanPR, null)
+            gl.drawArrays(gl.TRIANGLES, 0, 3)
           }
           for (const subject of subjects)
             paint(subject.x, subject.y, subject.kind === 2 ? 220 : 110)
@@ -995,6 +985,11 @@ void main() {
           )
         if (!actor && !catPR)
           catPR = program(FS.replace('#version 300 es', '#version 300 es\n#define MEADOW_CAT'))
+        const catPass = (actor ? catActorPR : catPR)!
+        configurePass(catPass)
+        const { U } = catPass
+        gl.activeTexture(gl.TEXTURE8)
+        gl.uniform1i(U.uCat!, 8)
         gl.enable(gl.SCISSOR_TEST)
         try {
           for (const cat of cats) {
@@ -1010,7 +1005,11 @@ void main() {
               Math.max(0, right - left),
               Math.max(0, bottom - top),
             )
-            render((actor ? catActorPR : catPR)!, cat)
+            gl.bindTexture(gl.TEXTURE_2D, cat.texture)
+            gl.uniform4f(U.uCatRect!, ...cat.rect)
+            gl.uniform2f(U.uCatShadow!, ...cat.shadow)
+            gl.uniform1f(U.uCatTail!, cat.tail)
+            gl.drawArrays(gl.TRIANGLES, 0, 3)
           }
         } finally {
           gl.disable(gl.SCISSOR_TEST)

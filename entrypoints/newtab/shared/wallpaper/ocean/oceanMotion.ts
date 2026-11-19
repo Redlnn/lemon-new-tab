@@ -21,23 +21,7 @@ const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle)
 export function createOceanMotion() {
   const subjects: OceanSubject[] = []
   const activeSubjects: OceanSubject[] = []
-  const counts = [3, 3, 2, 8]
-  for (let kind = 0; kind < counts.length; kind++)
-    for (let index = 0; index < counts[kind]!; index++)
-      subjects.push({
-        kind,
-        index,
-        x: -1,
-        y: -1,
-        heading: 0.5 + index,
-        boom: 0,
-        bend: 0,
-        tailHeading: 0.5 + index,
-        side: 1,
-        phase: index * 2.7 + kind * 1.9,
-        initialized: false,
-        trail: [],
-      })
+  const reserved = [0, 0, 0, 0]
 
   function step(
     time: number,
@@ -47,6 +31,25 @@ export function createOceanMotion() {
     active: number[],
     clearance: (x: number, y: number) => number,
   ) {
+    for (let kind = 0; kind < active.length; kind++) {
+      while (reserved[kind]! < active[kind]!) {
+        const index = reserved[kind]!++
+        subjects.push({
+          kind,
+          index,
+          x: -1,
+          y: -1,
+          heading: 0.5 + index,
+          boom: 0,
+          bend: 0,
+          tailHeading: 0.5 + index,
+          side: 1,
+          phase: index * 2.7 + kind * 1.9,
+          initialized: false,
+          trail: [],
+        })
+      }
+    }
     activeSubjects.length = 0
     for (const subject of subjects) {
       if (subject.index >= active[subject.kind]!) {

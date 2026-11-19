@@ -1,6 +1,11 @@
-/** 从四只不同的猫中等概率抽取两只，不放回。 */
-export function chooseMeadowCats(random: () => number = Math.random): [number, number] {
-  const first = Math.floor(random() * 4)
-  const second = Math.floor(random() * 3)
-  return [first, second >= first ? second + 1 : second]
+/** 随机排列猫的素材，场景增加猫时继续使用同一顺序。 */
+export function chooseMeadowCats(assets: readonly string[], random = Math.random) {
+  const order = [...assets]
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1))
+    const selected = order[j]!
+    order[j] = order[i]!
+    order[i] = selected
+  }
+  return order
 }
