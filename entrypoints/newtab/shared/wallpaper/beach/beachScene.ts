@@ -30,6 +30,7 @@ export function createBeachScene(
   treesCanvas: HTMLCanvasElement,
   treeUrls: string[],
   disableEntrance = false,
+  showMainIsland = true,
 ) {
   const gl = cv.getContext('webgl2', {
     antialias: false,
@@ -40,7 +41,7 @@ export function createBeachScene(
   })
   if (!gl) throw new Error('WebGL2 unavailable')
   try {
-    return initializeBeachScene(gl, cv, treesCanvas, treeUrls, disableEntrance)
+    return initializeBeachScene(gl, cv, treesCanvas, treeUrls, disableEntrance, showMainIsland)
   } catch (error) {
     gl.getExtension('WEBGL_lose_context')?.loseContext()
     throw error
@@ -53,6 +54,7 @@ function initializeBeachScene(
   treesCanvas: HTMLCanvasElement,
   treeUrls: string[],
   disableEntrance: boolean,
+  showMainIsland: boolean,
 ) {
   const P = {
     sigma: 85,
@@ -375,7 +377,7 @@ function initializeBeachScene(
       oldFrom && oldTo
         ? { s: snapshotField(oldFrom.s, oldTo.s, oldMix, oldWidth, oldHeight, Gw, Gh, empty, STEP) }
         : undefined
-    setLayout(bounds, true, oldField)
+    setLayout(bounds, true, oldField, showMainIsland)
     lastBounds = ''
   }
   const drawRegion = (
@@ -453,6 +455,8 @@ function initializeBeachScene(
     P.shallow = options.shallow
     P.kayaks = options.kayaks
     P.birds = options.birds
+    const mainIslandChanged = showMainIsland !== options.showMainIsland
+    showMainIsland = options.showMainIsland
     if (P.sigma !== options.sigma || P.warp !== options.warp || P.palms !== options.palms) {
       if (
         !pendingField ||
@@ -475,7 +479,7 @@ function initializeBeachScene(
       }
     } else pendingField = undefined
     const key = bounds ? `${bounds.left},${bounds.top},${bounds.width},${bounds.height}` : ''
-    if (key !== lastBounds) {
+    if (mainIslandChanged || key !== lastBounds) {
       lastBounds = key
       setLayout(bounds, false, undefined, options.showMainIsland)
     }

@@ -20,6 +20,7 @@ const { running, night, loseContext, restoreContext, getRenderer } = useDynamicW
       treeCanvas.value,
       [palm1, palm2, palm3],
       settings.background.dynamic.disableEntrance,
+      settings.background.beach.showMainIsland,
     )
   },
   draw: (renderer, time, bounds) =>
