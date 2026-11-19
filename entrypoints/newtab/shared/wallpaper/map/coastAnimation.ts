@@ -210,13 +210,8 @@ function initializeCoastAnimation(canvas: HTMLCanvasElement, gl: WebGL2Rendering
     canvas.hidden = false
     resize()
   }
-  const draw = (time: number, animate = true) => {
+  const draw = (time: number) => {
     if (!active) return false
-    if (!animate || disabled) {
-      active = false
-      currentMix = 1
-      return false
-    }
     const elapsed = time - started
     currentMix = ease(elapsed / duration)
     if (currentMix >= 1) {

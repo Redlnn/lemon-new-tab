@@ -3,7 +3,7 @@ import { createExtensionWorker } from '@/shared/worker'
 import { limitCanvasScale } from '../dynamic/viewport'
 
 import { createCoastAnimation } from './coastAnimation'
-import type { MapFrame, MapPreview, MapError, MapPreviewComplete } from './map.worker'
+import type { MapFrame, MapPreview, MapError } from './map.worker'
 import mapWorkerUrl from './map.worker?worker&url'
 import type { Bounds, MapCounts, MapField, MapRequest } from './model'
 import { noise } from './model'
@@ -64,21 +64,21 @@ export function createMapScene(
     scale = 1,
     generation = 0,
     busy = false,
+    resizing = false,
+    lastViewport = '',
     disposed = false
   let navigation: Bounds = null,
     key = '',
     requestedKey = '',
     bitmap: ImageBitmap | null = null
   let bitmapScale = 1
-  let previewBitmap: ImageBitmap | null = null,
-    previewScale = 1
+  let preview: MapPreview | null = null
   let pending: MapRequest | null = null,
     timer: ReturnType<typeof setTimeout> | undefined
   let motion: ReturnType<typeof createMapMotion> | null = null
   let detailsBitmap: ImageBitmap | null = null,
     introActive = false
   let lastTime = 0
-  let lastAnimate = true
   let revealStart = 0,
     revealPainted = -1,
     lastRevealPaint = -Infinity
@@ -111,14 +111,16 @@ export function createMapScene(
   const paintBackground = () => {
     ground.fillStyle = '#efdcae'
     ground.fillRect(0, 0, background.width, background.height)
-    if (previewBitmap)
+    if (preview) {
+      const ratio = scale / preview.scale
       ground.drawImage(
-        previewBitmap,
+        preview.bitmap,
         0,
         0,
-        (previewBitmap.width / previewScale) * scale,
-        (previewBitmap.height / previewScale) * scale,
+        preview.bitmap.width * ratio,
+        preview.bitmap.height * ratio,
       )
+    }
     if (bitmap)
       ground.drawImage(
         bitmap,
@@ -127,6 +129,10 @@ export function createMapScene(
         (bitmap.width / bitmapScale) * scale,
         (bitmap.height / bitmapScale) * scale,
       )
+  }
+  const clearPreview = () => {
+    preview?.bitmap.close()
+    preview = null
   }
   const paintDetails = () => {
     if (detailsBitmap)
@@ -221,27 +227,18 @@ export function createMapScene(
     mask.width = mask.height = 1
     maskPixels = null
     maskNoise = new Float32Array()
-    previewBitmap?.close()
-    previewBitmap = null
+    clearPreview()
     paintBackground()
   }
   const visibility = () =>
     coast?.available() && coast.isActive() ? coast.visibility : (fieldVisibility ?? fullVisibility)
-  worker.onmessage = (
-    event: MessageEvent<MapFrame | MapPreview | MapError | MapPreviewComplete>,
-  ) => {
+  worker.onmessage = (event: MessageEvent<MapFrame | MapPreview | MapError>) => {
     const frame = event.data
-    if ('previewComplete' in frame) {
-      busy = false
-      sendPending()
-      return
-    }
     if ('preview' in frame) {
-      if (disposed || frame.id !== generation) frame.bitmap.close()
+      if (disposed || frame.id !== generation || bitmap) frame.bitmap.close()
       else {
-        previewBitmap?.close()
-        previewBitmap = frame.bitmap
-        previewScale = frame.scale
+        clearPreview()
+        preview = frame
         paintBackground()
         background.dataset.preview = String(frame.id)
         background.dataset.previewMs = frame.milliseconds.toFixed(1)
@@ -270,14 +267,7 @@ export function createMapScene(
       detailsBitmap = frame.details ?? null
       if (frame.paper) {
         try {
-          coast?.begin(
-            bitmap,
-            frame.paper,
-            frame.field,
-            frame.scale,
-            lastTime,
-            lastAnimate && !expanded,
-          )
+          coast?.begin(bitmap, frame.paper, frame.field, frame.scale, lastTime, !expanded)
         } catch (error) {
           disableCoast(error)
         } finally {
@@ -285,7 +275,7 @@ export function createMapScene(
         }
       }
       fieldVisibility = createFieldVisibility(frame.field)
-      const moving = coast?.draw(lastTime, lastAnimate) ?? false
+      const moving = coast?.draw(lastTime) ?? false
       introActive = firstFrame && !!detailsBitmap && moving
       if (introActive) {
         startReveal(lastTime)
@@ -298,8 +288,7 @@ export function createMapScene(
           detailsCanvas.hidden = false
           paintDetails()
         }
-        previewBitmap?.close()
-        previewBitmap = null
+        clearPreview()
       }
       if (!moving && detailsBitmap) finishTransition()
       else {
@@ -312,7 +301,6 @@ export function createMapScene(
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.setTransform(scale, 0, 0, scale, 0, 0)
       motion(ctx, lastTime, visibility(), revealVisibility)
-      staticPainted = false
       background.dataset.ready = String(frame.id)
       background.dataset.generationMs = frame.milliseconds.toFixed(1)
       background.dataset.counts = JSON.stringify(frame.counts)
@@ -335,31 +323,31 @@ export function createMapScene(
     }
   }
   const sendPending = () => {
-    if (!pending || busy || disposed || introActive) return
+    if (!pending || busy || disposed || resizing || introActive) return
+    const request = pending
+    pending = null
     busy = true
     try {
       // A queued request can wait until the initial transition completes.
       // Determine this at dispatch time, not when the layout was measured.
-      pending.first = !bitmap
-      pending.shoreline = !coast?.available()
-      worker.postMessage(pending)
+      request.preview = !bitmap && !disableEntrance
+      request.shoreline = !coast?.available()
+      worker.postMessage(request)
     } catch (error) {
       busy = false
       console.error('[map] Could not send map request to worker:', error)
       onError()
     }
-    pending = null
   }
-  const requestMap = (immediate = false, previewOnly = false) => {
+  const requestMap = (immediate = false) => {
+    if (resizing) return
     clearTimeout(timer)
     const send = () => {
       const viewWidth = window.innerWidth,
         viewHeight = window.innerHeight
-      const islandLimit = getCounts().islands
       const counts = getCounts()
-      const nextKey = `${previewOnly},${width},${height},${scale},${viewWidth},${viewHeight},${key},${islandLimit},${counts.showNavigationLake},${counts.navigationLakeSize}`
+      const nextKey = `${width},${height},${scale},${viewWidth},${viewHeight},${key},${counts.islands},${counts.showNavigationLake},${counts.navigationLakeSize}`
       if (nextKey === requestedKey) return
-      requestedKey = nextKey
       const quiet = [
         ...document.querySelectorAll(
           '.clock, .search-box, .quick-links__category-groups, .action-btn-container, .dock',
@@ -388,13 +376,7 @@ export function createMapScene(
                 p.y - 60 < q.y + q.height,
             ),
         )
-      const fillNeeded = bitmap
-        ? width > bitmap.width / bitmapScale + 1 || height > bitmap.height / bitmapScale + 1
-        : true
-      const hasPreview =
-        previewBitmap &&
-        width <= previewBitmap.width / previewScale + 1 &&
-        height <= previewBitmap.height / previewScale + 1
+      requestedKey = nextKey
       pending = {
         id: ++generation,
         seed,
@@ -407,12 +389,9 @@ export function createMapScene(
         scale,
         navigation,
         quiet,
-        previewOnly,
-        islandLimit,
+        islandLimit: counts.islands,
         showNavigationLake: counts.showNavigationLake,
         navigationLakeSize: counts.navigationLakeSize,
-        first: !bitmap,
-        preview: previewOnly || ((!!bitmap || !disableEntrance) && fillNeeded && !hasPreview),
         compassCandidates: compassCandidates.length
           ? compassCandidates
           : [corners[(seed + 1) % 4]!],
@@ -423,10 +402,14 @@ export function createMapScene(
     if (immediate) send()
     else timer = setTimeout(send, 80)
   }
+  const viewportKey = () => `${window.innerWidth},${window.innerHeight},${devicePixelRatio}`
   const resizeViewport = (trim = false) => {
+    if (resizing && window.innerWidth <= width && window.innerHeight <= height) return false
     const bufferedWidth = Math.ceil(window.innerWidth / 256) * 256 + 128
     const bufferedHeight = Math.ceil(window.innerHeight / 256) * 256 + 128
-    const desiredScale = Math.round(Math.min(devicePixelRatio || 1, 1.5) * 100) / 100
+    const desiredScale = resizing
+      ? scale
+      : Math.round(Math.min(devicePixelRatio || 1, 1.5) * 100) / 100
     const nextScale = limitCanvasScale(bufferedWidth, bufferedHeight, desiredScale)
     const reuse = !trim && nextScale === scale
     const reuseWidth = Math.max(width, bufferedWidth)
@@ -435,8 +418,7 @@ export function createMapScene(
     const nextWidth = fits ? reuseWidth : bufferedWidth
     const nextHeight = fits ? reuseHeight : bufferedHeight
     if (nextWidth === width && nextHeight === height && scale === nextScale) return false
-    if (detailsBitmap) {
-      coast?.draw(lastTime, false)
+    if (!resizing && detailsBitmap) {
       finishTransition()
       sendPending()
     }
@@ -444,54 +426,83 @@ export function createMapScene(
     height = nextHeight
     scale = nextScale
     for (const target of [background, canvas]) {
-      target.width = Math.ceil(width * scale)
-      target.height = Math.ceil(height * scale)
+      const pixelWidth = Math.ceil(width * scale),
+        pixelHeight = Math.ceil(height * scale)
+      if (target.width !== pixelWidth) target.width = pixelWidth
+      if (target.height !== pixelHeight) target.height = pixelHeight
       target.style.width = `${width}px`
       target.style.height = `${height}px`
     }
     paintBackground()
-    staticPainted = false
     scheduleCoastWarmup()
-    if (!trim && bitmap) requestMap(false, true)
     return true
   }
+  const startResize = () => {
+    const nextViewport = viewportKey()
+    if (!resizing && bitmap && lastViewport !== nextViewport) {
+      resizing = true
+      clearTimeout(timer)
+      if (busy || pending) {
+        // Discard an obsolete full result and let the settled viewport request it again if needed.
+        generation++
+        requestedKey = ''
+      }
+      pending = null
+    }
+    lastViewport = nextViewport
+  }
   const updateNavigation = (bounds: DOMRect | null) => {
-    const nextKey = bounds
-      ? `${Math.round(bounds.left)},${Math.round(bounds.top)},${Math.round(bounds.width)},${Math.round(bounds.height)}`
-      : ''
-    if (nextKey === key) return
-    key = nextKey
-    navigation = bounds
-      ? { x: bounds.left, y: bounds.top, width: bounds.width, height: bounds.height }
+    const next = bounds
+      ? {
+          x: Math.round(bounds.left),
+          y: Math.round(bounds.top),
+          width: Math.round(bounds.width),
+          height: Math.round(bounds.height),
+        }
       : null
-    requestMap(!bitmap)
+    const nextKey = next ? `${next.x},${next.y},${next.width},${next.height}` : ''
+    if (nextKey === key) return false
+    key = nextKey
+    navigation = next
+    return true
   }
   const resize = (bounds: DOMRect | null) => {
     // The shared controller calls this after the drag settles. Release large
     // high-DPR backing stores instead of retaining the largest window forever.
+    resizing = false
+    lastViewport = viewportKey()
     resizeViewport(true)
     updateNavigation(bounds)
     requestMap(!bitmap)
   }
-  let staticPainted = false
-  const draw = (time: number, bounds: DOMRect | null, animate = true) => {
-    lastTime = animate ? time : 0
-    lastAnimate = animate
-    updateNavigation(bounds)
-    const moving = coast?.draw(lastTime, animate) ?? false
-    paintReveal(lastTime)
-    if (!moving && detailsBitmap) {
+  const draw = (time: number, bounds: DOMRect | null) => {
+    lastTime = time
+    if (updateNavigation(bounds)) requestMap(!bitmap)
+    const moving = (resizing ? coast?.isActive() : coast?.draw(time)) ?? false
+    if (!resizing) paintReveal(lastTime)
+    if (!resizing && !moving && detailsBitmap) {
       finishTransition()
       sendPending()
     }
     if (background.dataset.coastMoving !== String(moving))
       background.dataset.coastMoving = String(moving)
-    if (!animate && staticPainted) return
     ctx.setTransform(scale, 0, 0, scale, 0, 0)
-    motion?.(ctx, animate ? time : 0, visibility(), revealVisibility)
-    staticPainted = !animate && !!motion
+    const currentBitmap = bitmap
+    const clipMotion =
+      resizing &&
+      currentBitmap &&
+      (width > currentBitmap.width / bitmapScale || height > currentBitmap.height / bitmapScale)
+    if (clipMotion) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(0, 0, currentBitmap.width / bitmapScale, currentBitmap.height / bitmapScale)
+      ctx.clip()
+    }
+    motion?.(ctx, time, visibility(), revealVisibility)
+    if (clipMotion) ctx.restore()
   }
   return {
+    startResize,
     resizeViewport,
     resize,
     draw,
@@ -510,7 +521,7 @@ export function createMapScene(
       cancelCoastWarmup?.()
       worker.terminate()
       bitmap?.close()
-      previewBitmap?.close()
+      clearPreview()
       detailsBitmap?.close()
       coast?.dispose()
       background.width =

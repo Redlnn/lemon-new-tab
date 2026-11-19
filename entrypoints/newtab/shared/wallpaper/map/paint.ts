@@ -250,11 +250,6 @@ export function paintCoast(ctx: Context, coast: MapData['coast'], seed: number) 
   })
 }
 
-export function paintMap(ctx: Context, map: MapData, request: MapRequest, shoreline = true) {
-  paintTerrain(ctx, map, request.scale, shoreline)
-  paintMapDetails(ctx, map, request)
-}
-
 export function paintMapDetails(ctx: Context, map: MapData, request: MapRequest) {
   ctx.setTransform(request.scale, 0, 0, request.scale, 0, 0)
   ctx.lineCap = 'round'

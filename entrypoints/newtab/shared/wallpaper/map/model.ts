@@ -15,8 +15,6 @@ export type MapRequest = {
   quiet?: NonNullable<Bounds>[]
   compassCandidates?: Point[]
   preview?: boolean
-  previewOnly?: boolean
-  first?: boolean
   shoreline?: boolean
   islandLimit?: number
   showNavigationLake?: boolean

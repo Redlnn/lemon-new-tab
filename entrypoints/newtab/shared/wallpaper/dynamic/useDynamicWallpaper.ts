@@ -7,6 +7,7 @@ import { useWallpaperActivity } from '@newtab/composables/useWallpaperActivity'
 import { useDynamicWallpaperNightTheme } from './useDynamicWallpaperTheme'
 
 type DynamicRenderer = {
+  startResize?: () => void
   resizeViewport: () => boolean
   resize: (bounds: DOMRect | null) => void
   dispose: (contextLost?: boolean) => void
@@ -35,6 +36,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   let elapsed = 0
   let lastTick = 0
   let nextFrame = 0
+  let pixelRatio = window.devicePixelRatio
   let viewportDirty = false
   let disposed = false
   let failed = false
@@ -69,6 +71,8 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
       const interval = 1000 / options.fps()
       const due = now + 0.1 >= nextFrame
       try {
+        // A display scale change can occur without a window resize event.
+        if (pixelRatio !== window.devicePixelRatio) scheduleResize()
         const resized = viewportDirty && renderer.resizeViewport()
         viewportDirty = false
         if (!due && !resized) return
@@ -93,6 +97,7 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
     if (!canDraw.value || !renderer || failed) return
     try {
       viewportDirty = false
+      pixelRatio = window.devicePixelRatio
       locate()
       renderer.resize(bounds)
       scheduleLayout()
@@ -114,6 +119,8 @@ export function useDynamicWallpaper<T extends DynamicRenderer>(options: {
   const scheduleResize = () => {
     clearTimeout(resizeTimer)
     if (canDraw.value && renderer && !failed) {
+      pixelRatio = window.devicePixelRatio
+      renderer.startResize?.()
       // Resize the backing canvas before the next paint so the browser never
       // displays a stretched frame. Scene layout remains debounced separately.
       viewportDirty = true

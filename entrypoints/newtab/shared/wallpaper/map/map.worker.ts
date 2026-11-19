@@ -1,9 +1,8 @@
-import { coastContours } from './coast'
 import { generateMap } from './generate'
 import type { MapData, MapRequest, MapField } from './model'
 import { paintMapDetails, paintTerrain, type MotionData } from './paint'
 import { paperTexture } from './paper'
-import { createTerrain, sampleMapField } from './terrain'
+import { sampleMapField } from './terrain'
 
 export type MapFrame = {
   id: number
@@ -24,39 +23,29 @@ export type MapPreview = {
   milliseconds: number
 }
 export type MapError = { id: number; error: string }
-export type MapPreviewComplete = { id: number; previewComplete: true }
-let previous: MapData | undefined
-let previousIslandLimit: number | undefined
-let previousLakeKey = ''
+let previous:
+  | {
+      key: string
+      map: MapData
+      field: MapField
+      islandLimit: MapRequest['islandLimit']
+      lakeKey: string
+    }
+  | undefined
 self.onmessage = (event: MessageEvent<MapRequest>) => {
   const request = event.data
   try {
     const start = performance.now()
     let previewMs = 0
     if (request.preview) {
-      const scale = 0.5,
-        canvas = new OffscreenCanvas(
-          Math.ceil(request.width * scale),
-          Math.ceil(request.height * scale),
-        ),
-        ctx = canvas.getContext('2d', { alpha: false })!
-      if (request.first) {
-        const texture = paperTexture(request.seed, request.width, request.height)
-        ctx.drawImage(texture, 0, 0, canvas.width, canvas.height)
-      } else {
-        const terrain = createTerrain(request)
-        paintTerrain(
-          ctx,
-          {
-            ...coastContours(request.width, request.height, terrain.water, 16),
-            seed: request.seed,
-            width: request.width,
-            height: request.height,
-          },
-          scale,
-          request.shoreline,
-        )
-      }
+      const scale = 0.5
+      const canvas = new OffscreenCanvas(
+        Math.ceil(request.width * scale),
+        Math.ceil(request.height * scale),
+      )
+      const ctx = canvas.getContext('2d', { alpha: false })!
+      const texture = paperTexture(request.seed, request.width, request.height)
+      ctx.drawImage(texture, 0, 0, canvas.width, canvas.height)
       const bitmap = canvas.transferToImageBitmap()
       previewMs = performance.now() - start
       const preview: MapPreview = {
@@ -68,20 +57,33 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
       }
       self.postMessage(preview, { transfer: [bitmap] })
     }
-    if (request.previewOnly) {
-      const complete: MapPreviewComplete = { id: request.id, previewComplete: true }
-      self.postMessage(complete)
-      return
-    }
-    const generationStart = performance.now(),
-      map = generateMap(
+    const geometryKey = JSON.stringify([
+      request.seed,
+      request.width,
+      request.height,
+      request.viewWidth,
+      request.viewHeight,
+      request.anchorWidth,
+      request.anchorHeight,
+      request.navigation,
+      request.quiet,
+      request.compassCandidates,
+      request.islandLimit,
+      request.showNavigationLake,
+      request.navigationLakeSize,
+    ])
+    const cached = previous?.key === geometryKey ? previous : undefined
+    const lakeKey = `${request.showNavigationLake},${request.navigationLakeSize}`
+    const generationStart = performance.now()
+    const map =
+      cached?.map ??
+      generateMap(
         request,
-        previousIslandLimit === request.islandLimit &&
-          previousLakeKey === `${request.showNavigationLake},${request.navigationLakeSize}`
-          ? previous
+        previous?.islandLimit === request.islandLimit && previous?.lakeKey === lakeKey
+          ? previous.map
           : undefined,
       )
-    const generationMs = performance.now() - generationStart
+    const generationMs = cached ? 0 : performance.now() - generationStart
     const canvas = new OffscreenCanvas(
       Math.ceil(request.width * request.scale),
       Math.ceil(request.height * request.scale),
@@ -104,14 +106,15 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
     }
     const bitmap = canvas.transferToImageBitmap()
     const { seed, navigation, compass, places, rails, waves, ships } = map
-    const field = sampleMapField(request)
+    const field = cached?.field ?? sampleMapField(request)
+    const fieldValues = field.values.slice()
     const frame: MapFrame = {
       id: request.id,
       scale: request.scale,
       bitmap,
       details,
       paper,
-      field,
+      field: { ...field, values: fieldValues },
       motion: {
         seed,
         navigation,
@@ -125,6 +128,7 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
       milliseconds: performance.now() - start,
       counts: {
         generationMs: Math.round(generationMs),
+        geometryReused: cached ? 1 : 0,
         previewMs: Math.round(previewMs),
         paintMs: Math.round(performance.now() - generationStart - generationMs),
         places: places.length,
@@ -139,15 +143,9 @@ self.onmessage = (event: MessageEvent<MapRequest>) => {
       },
     }
     self.postMessage(frame, {
-      transfer: [
-        bitmap,
-        ...(paper && details ? [paper, details] : []),
-        field.values.buffer as ArrayBuffer,
-      ],
+      transfer: [bitmap, ...(paper && details ? [paper, details] : []), fieldValues.buffer],
     })
-    previous = map
-    previousIslandLimit = request.islandLimit
-    previousLakeKey = `${request.showNavigationLake},${request.navigationLakeSize}`
+    previous = { key: geometryKey, map, field, islandLimit: request.islandLimit, lakeKey }
   } catch (error) {
     self.postMessage({ id: request.id, error: String(error) })
   }
