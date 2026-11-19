@@ -56,6 +56,7 @@ function initializeBeachScene(
   disableEntrance: boolean,
   showMainIsland: boolean,
 ) {
+  const maxTextureSize: number = gl.getParameter(gl.MAX_TEXTURE_SIZE)
   const P = {
     sigma: 85,
     warp: 34,
@@ -343,8 +344,17 @@ function initializeBeachScene(
     }
   }
   const resizeViewport = (trim = false) => {
-    const nextScale = Math.min(window.devicePixelRatio || 1, P.quality)
-    const { width, height } = canvasViewportSize(cv, nextScale, scale, trim)
+    const {
+      width,
+      height,
+      scale: nextScale,
+    } = canvasViewportSize(
+      cv,
+      Math.min(window.devicePixelRatio || 1, P.quality),
+      scale,
+      trim,
+      maxTextureSize,
+    )
     if (cv.style.width && scale === nextScale && cv.width === width && cv.height === height)
       return false
     scale = nextScale

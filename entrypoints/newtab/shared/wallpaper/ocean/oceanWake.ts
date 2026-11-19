@@ -1,3 +1,5 @@
+import { limitCanvasScale } from '../dynamic/viewport'
+
 import type { OceanWakeSubject } from './oceanMotion'
 
 function wakeRandom(seed: number, n: number) {
@@ -8,11 +10,13 @@ function wakeRandom(seed: number, n: number) {
 // Foam particles use recorded world-space stern positions. The trail remains
 // behind when a boat turns or the viewport changes.
 export function createOceanWake(gl: WebGL2RenderingContext) {
+  const maxTextureSize: number = gl.getParameter(gl.MAX_TEXTURE_SIZE)
   const vertex = `#version 300 es
 in vec4 point;
 uniform vec2 size;
+uniform float scale;
 out float opacity;
-void main() { gl_Position = vec4(point.x / size.x * 2. - 1., 1. - point.y / size.y * 2., 0., 1.); opacity = point.z; gl_PointSize = point.w; }`
+void main() { gl_Position = vec4(point.x / size.x * 2. - 1., 1. - point.y / size.y * 2., 0., 1.); opacity = point.z; gl_PointSize = max(1., point.w * scale); }`
   const fragment = `#version 300 es
 precision mediump float;
 in float opacity;
@@ -56,6 +60,7 @@ void main() {
   gl.bufferData(gl.ARRAY_BUFFER, vertices.byteLength, gl.DYNAMIC_DRAW)
   const location = gl.getAttribLocation(program, 'point')
   const sizeLocation = gl.getUniformLocation(program, 'size')
+  const scaleLocation = gl.getUniformLocation(program, 'scale')
   gl.enableVertexAttribArray(location)
   gl.vertexAttribPointer(location, 4, gl.FLOAT, false, 0, 0)
   gl.bindVertexArray(sceneVao)
@@ -84,8 +89,9 @@ void main() {
       }
       return texture
     }
-    const textureWidth = Math.max(1, Math.ceil(width)),
-      textureHeight = Math.max(1, Math.ceil(height))
+    const scale = limitCanvasScale(width, height, 1, maxTextureSize)
+    const textureWidth = Math.max(1, Math.ceil(width * scale)),
+      textureHeight = Math.max(1, Math.ceil(height * scale))
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
     if (textureWidth !== previousWidth || textureHeight !== previousHeight) {
       gl.bindTexture(gl.TEXTURE_2D, texture)
@@ -144,6 +150,7 @@ void main() {
     if (used) {
       gl.useProgram(program)
       gl.uniform2f(sizeLocation, width, height)
+      gl.uniform1f(scaleLocation, scale)
       gl.bindVertexArray(vao)
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices, 0, used)

@@ -124,6 +124,7 @@ void main() {
 
     const FS = `#version 300 es
 precision highp float;
+precision highp int;
 uniform sampler2D uNoise, uFA, uFB, uMeadowGround;
 uniform vec2 uRes, uGrid;
 uniform float uScale, uSeed, uStep, uMix, uEdge;
@@ -140,6 +141,7 @@ uniform float uCatTail;
 #endif
 uniform highp sampler2D uCirc;   // 云的圆（CPU 算好、按格子分好）：每格最多 CIRC_K 个，(x, y, 半径, 色调)，半径 0 = 没有了
 uniform vec2 uCGrid;             // 格子数
+uniform int uCloudStride;        // 纹理每行能容纳的格子数
 uniform float uCellG;            // 格子大小（px）
 out vec4 o;
 
@@ -178,8 +180,9 @@ float cloudDist(vec2 q, bool front, inout vec4 fc) {
   float d = sF - uEdge + 0.6 * 95.0;                                              // 主体：把圆之间的缝填上
   ivec2 cell = ivec2(floor(q / uCellG)) + 4;                                      // 格子比屏幕左、上多 4 格（右下方的云影要用到），右、下多 3 格
   if (cell.x < 0 || cell.y < 0 || float(cell.x) >= uCGrid.x || float(cell.y) >= uCGrid.y) return d;
+  int index = cell.y * int(uCGrid.x) + cell.x;
   for (int k = 0; k < CIRC_K; k++) {
-    vec4 c = texelFetch(uCirc, ivec2(cell.x * CIRC_K + k, cell.y), 0);
+    vec4 c = texelFetch(uCirc, ivec2((index % uCloudStride) * CIRC_K + k, index / uCloudStride), 0);
     if (c.z <= 0.0) break;
     float di = length(q - c.xy) - c.z;
     d = smin(d, di, 6.0);
@@ -435,11 +438,22 @@ void main() {
    ====================================================================== */
     const CELL_G = 48,
       CIRC_K = 36
+    const maxTextureSize: number = gl.getParameter(gl.MAX_TEXTURE_SIZE)
+    const maxCellsPerRow = Math.floor(maxTextureSize / CIRC_K)
+    const emptyCloudTexture = gl.createTexture()
+    gl.activeTexture(gl.TEXTURE3)
+    gl.bindTexture(gl.TEXTURE_2D, emptyCloudTexture)
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 1, 1)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
     let circTex: WebGLTexture | null = null,
       circBuf = new Float32Array(0),
       cgW = 0,
-      cgH = 0
+      cgH = 0,
+      cloudStride = 1,
+      cellSize = CELL_G
     let circleCounts = new Uint8Array(0)
+    let cloudBounds: { left: number; right: number; top: number; bottom: number } | null = null
     const circleList: number[] = []
     const circleOrder: number[] = []
     const rnd1 = (x: number, y: number, k: number) => hash2(x, y, k) // 固定的随机数（和换种子一起变）
@@ -590,6 +604,7 @@ void main() {
 
     const buildMassCircles = () => {
       const list: number[] = []
+      if (curMix >= 1 && (!P.showNavigationCloud || !regions.length)) return list
       // 图标周围的云团：三层圆（大 / 小 / 很小），每层是一张固定的格子，每格随机放一个圆。
       // 圆的基础大小只看圆心在云团里多深，图标不动就不变；显不显示也按基础大小决定，
       // 最后才乘上很轻（±4%）、很慢（一圈 50~70 秒）的"呼吸" → 圆的大小不会忽大忽小
@@ -672,21 +687,6 @@ void main() {
         0.25 * Math.cos(flowT * 0.28 + ph * 6.283))
 
     const uploadCircles = () => {
-      gl.activeTexture(gl.TEXTURE3) // 用第 3 号纹理单元，不要动到别的纹理
-      const gw = Math.ceil(W / CELL_G) + 7,
-        gh = Math.ceil(H / CELL_G) + 7 // 左、上多 4 格（右下方的云影要用到画面外的云），右、下多 3 格
-      if (!circTex || gw !== cgW || gh !== cgH) {
-        cgW = gw
-        cgH = gh
-        if (circTex) gl.deleteTexture(circTex)
-        circTex = gl.createTexture()
-        gl.bindTexture(gl.TEXTURE_2D, circTex)
-        gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, gw * CIRC_K, gh)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-        circBuf = new Float32Array(gw * CIRC_K * gh * 4)
-        circleCounts = new Uint8Array(gw * gh)
-      }
       // 图标周围云团的圆：只在云场变化（图标挪动、尺寸改变）时重算；缓慢的呼吸每帧在下面叠加
       const morphing = curMix < 1 || !massList || massList.W !== W || massList.H !== H
       if (morphing) massList = { circles: buildMassCircles(), W, H }
@@ -711,8 +711,53 @@ void main() {
             list.push(c.x + dx + wobX(dx, dy, r, ph), c.y + dy + wobY(dx, dy, r, ph), rb, ph) // 天上的云：按云自己的坐标算，整朵飘的时候也在轻轻翻动
         })
       }
+      if (!list.length) {
+        if (circTex) {
+          gl.deleteTexture(circTex)
+          circTex = null
+          circBuf = new Float32Array(0)
+          circleCounts = new Uint8Array(0)
+          cloudBounds = null
+          cgW = cgH = 0
+        }
+        return
+      }
+      cellSize = CELL_G
+      let gw = Math.ceil(W / cellSize) + 7,
+        gh = Math.ceil(H / cellSize) + 7
+      while (gw * gh > maxCellsPerRow * maxTextureSize) {
+        cellSize *= 2
+        gw = Math.ceil(W / cellSize) + 7
+        gh = Math.ceil(H / cellSize) + 7
+      }
+      gl.activeTexture(gl.TEXTURE3)
+      if (!circTex || gw !== cgW || gh !== cgH) {
+        cgW = gw
+        cgH = gh
+        cloudStride = Math.min(gw, maxCellsPerRow)
+        const rows = Math.ceil((gw * gh) / cloudStride)
+        if (circTex) gl.deleteTexture(circTex)
+        circTex = gl.createTexture()
+        if (!circTex) throw new Error('Could not create cloud texture')
+        gl.bindTexture(gl.TEXTURE_2D, circTex)
+        gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, cloudStride * CIRC_K, rows)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+        circBuf = new Float32Array(cloudStride * CIRC_K * rows * 4)
+        circleCounts = new Uint8Array(gw * gh)
+        cloudBounds = null
+      }
       // 分到格子里（圆盖到的每个格子都放一份；一个格子放不下就留大的）
-      circBuf.fill(0)
+      const previous = cloudBounds
+      const stride = cloudStride * CIRC_K
+      if (previous) {
+        for (let row = previous.top; row < previous.bottom; row++)
+          circBuf.fill(0, (row * stride + previous.left) * 4, (row * stride + previous.right) * 4)
+      }
+      let left = stride,
+        right = 0,
+        top = Infinity,
+        bottom = 0
       const cnt = circleCounts
       cnt.fill(0)
       const order = circleOrder
@@ -723,26 +768,54 @@ void main() {
         const x = list[i]!,
           y = list[i + 1]!,
           r = list[i + 2]! + 6
-        const x0 = Math.max(0, Math.floor((x - r) / CELL_G) + 4),
-          x1 = Math.min(gw - 1, Math.floor((x + r) / CELL_G) + 4)
-        const y0 = Math.max(0, Math.floor((y - r) / CELL_G) + 4),
-          y1 = Math.min(gh - 1, Math.floor((y + r) / CELL_G) + 4)
+        const x0 = Math.max(0, Math.floor((x - r) / cellSize) + 4),
+          x1 = Math.min(gw - 1, Math.floor((x + r) / cellSize) + 4)
+        const y0 = Math.max(0, Math.floor((y - r) / cellSize) + 4),
+          y1 = Math.min(gh - 1, Math.floor((y + r) / cellSize) + 4)
         for (let gy = y0; gy <= y1; gy++)
           for (let gx = x0; gx <= x1; gx++) {
             const ci = gy * gw + gx
-            const nx = Math.max((gx - 4) * CELL_G, Math.min(x, (gx - 3) * CELL_G)),
-              ny = Math.max((gy - 4) * CELL_G, Math.min(y, (gy - 3) * CELL_G))
+            const nx = Math.max((gx - 4) * cellSize, Math.min(x, (gx - 3) * cellSize)),
+              ny = Math.max((gy - 4) * cellSize, Math.min(y, (gy - 3) * cellSize))
             if ((nx - x) * (nx - x) + (ny - y) * (ny - y) > r * r) continue // 圆碰不到这个格子
             if (cnt[ci]! >= CIRC_K) continue
-            const o = ((gy * gw + gx) * CIRC_K + cnt[ci]!++) * 4
+            const texel = ci * CIRC_K + cnt[ci]!++
+            const column = texel % stride,
+              row = Math.floor(texel / stride)
+            left = Math.min(left, column)
+            right = Math.max(right, column + 1)
+            top = Math.min(top, row)
+            bottom = Math.max(bottom, row + 1)
+            const o = texel * 4
             circBuf[o] = x
             circBuf[o + 1] = y
             circBuf[o + 2] = list[i + 2]!
             circBuf[o + 3] = list[i + 3]!
           }
       }
+      cloudBounds = right > left ? { left, right, top, bottom } : null
+      if (previous) {
+        left = Math.min(left, previous.left)
+        right = Math.max(right, previous.right)
+        top = Math.min(top, previous.top)
+        bottom = Math.max(bottom, previous.bottom)
+      }
+      if (right <= left) return
       gl.bindTexture(gl.TEXTURE_2D, circTex)
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gw * CIRC_K, gh, gl.RGBA, gl.FLOAT, circBuf)
+      gl.pixelStorei(gl.UNPACK_ROW_LENGTH, stride)
+      gl.texSubImage2D(
+        gl.TEXTURE_2D,
+        0,
+        left,
+        top,
+        right - left,
+        bottom - top,
+        gl.RGBA,
+        gl.FLOAT,
+        circBuf,
+        (top * stride + left) * 4,
+      )
+      gl.pixelStorei(gl.UNPACK_ROW_LENGTH, 0)
     }
 
     // 人物和投影使用局部纹理，合成到云层之下。
@@ -762,8 +835,8 @@ void main() {
         FA && FB
           ? sampleArr(FA.s, x, y) * (1 - curMix) + sampleArr(FB.s, x, y) * curMix - P.edge + 57
           : 1000
-      const gx = Math.floor(x / CELL_G) + 4,
-        gy = Math.floor(y / CELL_G) + 4
+      const gx = Math.floor(x / cellSize) + 4,
+        gy = Math.floor(y / cellSize) + 4
       if (gx < 0 || gy < 0 || gx >= cgW || gy >= cgH) return distance
       const start = (gy * cgW + gx) * CIRC_K * 4
       for (let i = 0; i < CIRC_K; i++) {
@@ -844,10 +917,11 @@ void main() {
         gl.uniform1f(U.uStep!, STEP)
         gl.uniform1f(U.uMix!, curMix)
         gl.activeTexture(gl.TEXTURE3)
-        gl.bindTexture(gl.TEXTURE_2D, circTex)
+        gl.bindTexture(gl.TEXTURE_2D, circTex ?? emptyCloudTexture)
         gl.uniform1i(U.uCirc!, 3)
         gl.uniform2f(U.uCGrid!, cgW, cgH)
-        gl.uniform1f(U.uCellG!, CELL_G)
+        gl.uniform1i(U.uCloudStride!, cloudStride)
+        gl.uniform1f(U.uCellG!, cellSize)
         gl.uniform1f(U.uEdge!, P.edge)
         gl.uniform1f(U.uNight!, P.night)
         if (ocean) {
@@ -945,12 +1019,16 @@ void main() {
     }
 
     const resizeViewport = (trim = false) => {
-      const scale = Math.min(window.devicePixelRatio || 1, P.quality)
-      const { width: pixelWidth, height: pixelHeight } = canvasViewportSize(
-        cv,
+      const {
+        width: pixelWidth,
+        height: pixelHeight,
         scale,
+      } = canvasViewportSize(
+        cv,
+        Math.min(window.devicePixelRatio || 1, P.quality),
         resolution.scale,
         trim,
+        maxTextureSize,
       )
       if (
         initialized &&
