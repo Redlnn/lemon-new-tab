@@ -16,7 +16,10 @@ import MotionIcon from '~icons/ic/round-motion-photos-on'
 import { BgType, isDynamicBgType } from '@/shared/enums'
 import { jsonEquals, sha256Hex } from '@/shared/json'
 import { defaultSettings, useSettingsStore, type BingWallpaperResolution } from '@/shared/settings'
-import { OCEAN_GLINT_DENSITY_RANGE } from '@/shared/settings/constraints'
+import {
+  BEACH_WATER_TRANSPARENCY_RANGE,
+  OCEAN_GLINT_DENSITY_RANGE,
+} from '@/shared/settings/constraints'
 import { idbGet } from '@/shared/storage/idb'
 import {
   addWallpaper,
@@ -192,6 +195,15 @@ const beachControls = [
   { key: 'palms', min: 0, max: 10 },
   { key: 'kayaks', min: 0, max: 4 },
   { key: 'birds', min: 0, max: 10 },
+  { key: 'fishSchools', min: 0, max: 8 },
+] as const
+const beachWaterControls = [
+  { key: 'waterDensity', min: 25, max: 200 },
+  {
+    key: 'waterTransparency',
+    min: BEACH_WATER_TRANSPARENCY_RANGE[0],
+    max: BEACH_WATER_TRANSPARENCY_RANGE[1],
+  },
 ] as const
 const oceanControls = [
   { key: 'sailboats', max: 3 },
@@ -913,6 +925,16 @@ function open(url: string) {
                 <el-switch
                   v-model="settings.background.beach.waterCaustics"
                   :aria-label="t('background.waterCaustics')"
+                />
+              </label>
+              <label v-for="control in beachWaterControls" :key="control.key">
+                <span>{{ t(`background.beach.${control.key}`) }}</span>
+                <el-slider
+                  v-model="settings.background.beach[control.key]"
+                  :min="control.min"
+                  :max="control.max"
+                  :disabled="!settings.background.beach.waterCaustics"
+                  :aria-label="t(`background.beach.${control.key}`)"
                 />
               </label>
               <label v-for="control in beachControls" :key="control.key">

@@ -38,6 +38,9 @@
       "showNavigationCloud": "Gezinme bulutu"
     },
     "beach": {
+      "waterDensity": "Su dalgacığı yoğunluğu",
+      "waterTransparency": "Su dalgacığı saydamlığı",
+      "fishSchools": "Balık sürüsü sayısı",
       "sigma": "Ada boyutu",
       "warp": "Kıyı girintileri",
       "shoal": "Berrak sığlık",

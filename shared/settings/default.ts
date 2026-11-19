@@ -126,6 +126,9 @@ export const defaultSettings = {
       birds: 3,
       showMainIsland: true,
       waterCaustics: true,
+      waterDensity: 100,
+      waterTransparency: 90,
+      fishSchools: 3,
     },
     meadow: {
       cloudSize: 72,

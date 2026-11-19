@@ -38,6 +38,9 @@
       "showNavigationCloud": "导航云团"
     },
     "beach": {
+      "waterDensity": "水波纹密度",
+      "waterTransparency": "水波纹透明度",
+      "fishSchools": "鱼群数量",
       "sigma": "海岛大小",
       "warp": "海岸曲折",
       "shoal": "透明浅滩",

@@ -6,13 +6,19 @@ import { createTerrain } from '../dynamic/terrain'
 import { canvasViewportSize, setCanvasViewportStyle } from '../dynamic/viewport'
 import { createWaterCaustics } from '../dynamic/waterCaustics'
 
+import { createBeachFish } from './beachFish'
 import {
   beachRegionsSeparate,
   createBeachIslands,
   shouldRepositionBeachIslands,
   type BeachRect,
 } from './beachIslands'
-import { beachVertexShader, beachFragmentShader } from './beachShaders'
+import {
+  beachFishFragment,
+  beachFishVertex,
+  beachFragmentShader,
+  beachVertexShader,
+} from './beachShaders'
 
 const STEP = 5
 type BeachOptions = CURRENT_CONFIG_SCHEMA['background']['beach'] & { night: boolean }
@@ -45,6 +51,8 @@ export function createBeachScene(
   const context = cv.getContext('webgl2', {
     antialias: false,
     alpha: false,
+    depth: false,
+    stencil: false,
     powerPreference: 'low-power',
   })
   if (!context) throw new Error('WebGL2 unavailable')
@@ -74,22 +82,26 @@ export function createBeachScene(
       throw new Error(gl.getShaderInfoLog(shader) || 'Shader error')
     return shader
   }
-  const vertex = compile(gl.VERTEX_SHADER, beachVertexShader)
-  const fragment = compile(gl.FRAGMENT_SHADER, beachFragmentShader)
-  const program = gl.createProgram()
-  if (!program) throw new Error('Could not create beach program')
-  gl.attachShader(program, vertex)
-  gl.attachShader(program, fragment)
-  gl.linkProgram(program)
-  gl.deleteShader(vertex)
-  gl.deleteShader(fragment)
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-    throw new Error(gl.getProgramInfoLog(program) || 'Shader linking failed')
-  const uniforms: Record<string, WebGLUniformLocation> = {}
-  for (let i = 0; i < gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS); i++) {
-    const name = gl.getActiveUniform(program, i)!.name.replace(/\[0\]$/, '')
-    uniforms[name] = gl.getUniformLocation(program, name)!
+  const createProgram = (vertexSource: string, fragmentSource: string) => {
+    const vertex = compile(gl.VERTEX_SHADER, vertexSource)
+    const fragment = compile(gl.FRAGMENT_SHADER, fragmentSource)
+    const program = gl.createProgram()
+    if (!program) throw new Error('Could not create beach program')
+    gl.attachShader(program, vertex)
+    gl.attachShader(program, fragment)
+    gl.linkProgram(program)
+    gl.deleteShader(vertex)
+    gl.deleteShader(fragment)
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS))
+      throw new Error(gl.getProgramInfoLog(program) || 'Shader linking failed')
+    const uniforms: Record<string, WebGLUniformLocation> = {}
+    for (let i = 0; i < gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS); i++) {
+      const name = gl.getActiveUniform(program, i)!.name.replace(/\[0\]$/, '')
+      uniforms[name] = gl.getUniformLocation(program, name)!
+    }
+    return { program, uniforms }
   }
+  const { program, uniforms } = createProgram(beachVertexShader, beachFragmentShader)
   const vao = gl.createVertexArray()
   gl.bindVertexArray(vao)
   const noise = gl.createTexture()
@@ -371,6 +383,52 @@ export function createBeachScene(
   }
   let pendingField: { sigma: number; warp: number; palms: number; since: number } | undefined
   const activeRipples: { x: number; y: number; start: number }[] = []
+  const fish = createBeachFish()
+  const createFishPass = () => {
+    const { program, uniforms } = createProgram(beachFishVertex, beachFishFragment)
+    const vao = gl.createVertexArray()
+    const buffer = gl.createBuffer()
+    if (!vao || !buffer) throw new Error('Could not create beach fish buffers')
+    gl.bindVertexArray(vao)
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferData(gl.ARRAY_BUFFER, fish.data.byteLength, gl.DYNAMIC_DRAW)
+    gl.enableVertexAttribArray(0)
+    gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 20, 0)
+    gl.vertexAttribDivisor(0, 1)
+    gl.enableVertexAttribArray(1)
+    gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 20, 16)
+    gl.vertexAttribDivisor(1, 1)
+    return { program, uniforms, vao, buffer }
+  }
+  let fishPass: ReturnType<typeof createFishPass> | undefined
+
+  const drawFish = (count: number, time: number, night: boolean) => {
+    if (!count) return
+    fishPass ??= createFishPass()
+    const { program, uniforms: u, vao, buffer } = fishPass
+    gl.useProgram(program)
+    gl.bindVertexArray(vao)
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, fish.data, 0, count * 5)
+    gl.uniform1i(u.uFA!, 1)
+    gl.uniform1i(u.uFB!, 2)
+    gl.uniform2f(u.uRes!, cv.width / scale, cv.height / scale)
+    gl.uniform2f(u.uGrid!, Gw, Gh)
+    gl.uniform1f(u.uStep!, STEP)
+    gl.uniform1f(u.uMix!, currentMix)
+    gl.uniform1f(u.uTime!, time)
+    gl.uniform1f(u.uNight!, night ? 1 : 0)
+    gl.uniform1f(u.uShoal!, P.shoal)
+    gl.enable(gl.BLEND)
+    gl.uniform1i(u.uFishShadow!, 1)
+    gl.blendFunc(gl.ZERO, gl.SRC_COLOR)
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count)
+    gl.uniform1i(u.uFishShadow!, 0)
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count)
+    gl.disable(gl.BLEND)
+  }
+
   const draw = (time: number, bounds: Bounds | null, options: BeachOptions) => {
     sceneTime = time * 1000
     if (P.night !== options.night) {
@@ -412,6 +470,16 @@ export function createBeachScene(
     currentMix = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2
     const dt = lastTime ? Math.min(time - lastTime, 0.1) : 0
     lastTime = time
+    const fromField = previous.s
+    const toField = current.s
+    const fishCount = fish.update(
+      options.fishSchools,
+      W,
+      H,
+      dt,
+      (x, y) =>
+        sampleArr(fromField, x, y) * (1 - currentMix) + sampleArr(toField, x, y) * currentMix,
+    )
     kay.fill(0)
     birds.fill(0)
     agents.forEach((agent, i) => {
@@ -465,7 +533,8 @@ export function createBeachScene(
         ripples[offset + 3] = 1
       }
     }
-    if (options.waterCaustics && !causticsTexture) causticsTexture = createWaterCaustics(gl)
+    const causticsOpacity = options.waterCaustics ? 1 - options.waterTransparency / 100 : 0
+    if (causticsOpacity > 0 && !causticsTexture) causticsTexture = createWaterCaustics(gl)
     gl.viewport(0, 0, cv.width, cv.height)
     gl.useProgram(program)
     gl.bindVertexArray(vao)
@@ -484,7 +553,8 @@ export function createBeachScene(
     gl.activeTexture(gl.TEXTURE7)
     gl.bindTexture(gl.TEXTURE_2D, causticsTexture ?? noise)
     gl.uniform1i(u.uWaterCaustics!, 7)
-    gl.uniform1f(u.uWaterCausticsEnabled!, options.waterCaustics ? 1 : 0)
+    gl.uniform1f(u.uWaterCausticsScale!, options.waterDensity / 100)
+    gl.uniform1f(u.uWaterCausticsOpacity!, causticsOpacity)
     gl.uniform1f(u.uScale!, scale)
     gl.uniform1f(u.uSeed!, (seed % 997) * 0.37)
     gl.uniform1f(u.uStep!, STEP)
@@ -524,6 +594,7 @@ export function createBeachScene(
     } finally {
       gl.disable(gl.SCISSOR_TEST)
     }
+    drawFish(fishCount, time, options.night)
     if (!treesDirty && currentMix >= 1) return
     treesDirty = false
     treeContext.setTransform(scale, 0, 0, scale, 0, 0)

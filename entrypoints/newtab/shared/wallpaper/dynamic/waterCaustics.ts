@@ -1,10 +1,10 @@
-// The cellular texture is generated once at a small fixed size. Both water
-// scenes reuse it rather than evaluating a Voronoi search at every pixel.
+// Bake the cellular pattern once instead of searching for cells at every pixel.
 export const waterCausticsShader = `
 uniform sampler2D uWaterCaustics;
-uniform float uWaterCausticsEnabled;
+uniform float uWaterCausticsScale, uWaterCausticsOpacity;
 float waterCaustics(vec2 p, float time) {
-  if (uWaterCausticsEnabled < .5) return 0.;
+  if (uWaterCausticsOpacity <= 0.) return 0.;
+  p *= uWaterCausticsScale;
   vec2 drift = vec2(time * 1.5, time * .65);
   vec2 noise = texture(uNoise, p / 640. + vec2(time * .001, -time * .0007)).rg - .5;
   vec2 warp = vec2(
@@ -15,7 +15,7 @@ float waterCaustics(vec2 p, float time) {
   vec2 b = mat2(.8, .6, -.6, .8) * (p - drift * .65 - warp) / 920.;
   float first = texture(uWaterCaustics, a).r;
   float second = texture(uWaterCaustics, b).r;
-  return clamp(first * .82 + second * .28, 0., 1.);
+  return clamp(first * .82 + second * .28, 0., 1.) * uWaterCausticsOpacity;
 }`
 
 export function createWaterCaustics(gl: WebGL2RenderingContext) {

@@ -79,6 +79,9 @@ export interface SettingsSchemaV12 extends Omit<
       birds: number
       showMainIsland: boolean
       waterCaustics: boolean
+      waterDensity: number
+      waterTransparency: number
+      fishSchools: number
     }
     meadow: {
       cloudSize: number

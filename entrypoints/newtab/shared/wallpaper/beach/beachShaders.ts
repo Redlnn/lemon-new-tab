@@ -1,6 +1,66 @@
 import { beachGullShader } from '../dynamic/gullShader'
 import { waterCausticsShader } from '../dynamic/waterCaustics'
 
+const beachField = `
+uniform sampler2D uFA, uFB;
+uniform vec2 uGrid;
+uniform float uStep, uMix;
+float fieldS(sampler2D t, vec2 p) {
+  vec2 edge = clamp(p, vec2(0.0), (uGrid - 1.0) * uStep);
+  return texture(t, (edge / uStep + 0.5) / uGrid).r + length(p - edge);
+}`
+
+const fishShadowOffset = 'vec2(6., 10.)'
+
+export const beachFishVertex = `#version 300 es
+layout(location=0) in vec4 aFish; // Screen position, heading, size.
+layout(location=1) in float aPhase;
+uniform vec2 uRes;
+uniform bool uFishShadow;
+out vec2 vLocal, vPoint;
+flat out float vPhase;
+void main() {
+  vec2 corner = vec2(gl_VertexID & 1, gl_VertexID >> 1) * 2. - 1.;
+  vLocal = corner * vec2(10., 5.);
+  float c = cos(aFish.z), s = sin(aFish.z);
+  vPoint = aFish.xy + mat2(c, s, -s, c) * vLocal * aFish.w;
+  if (uFishShadow) vPoint += ${fishShadowOffset};
+  vPhase = aPhase;
+  gl_Position = vec4(vPoint / uRes * vec2(2., -2.) + vec2(-1., 1.), 0., 1.);
+}`
+
+export const beachFishFragment = `#version 300 es
+precision highp float;
+in vec2 vLocal, vPoint;
+flat in float vPhase;
+uniform float uTime, uNight, uShoal;
+uniform bool uFishShadow;
+${beachField}
+out vec4 o;
+void main() {
+  float depth = mix(fieldS(uFA, vPoint), fieldS(uFB, vPoint), uMix);
+  if (uFishShadow) {
+    vec2 source = vPoint - ${fishShadowOffset};
+    depth = min(depth, mix(fieldS(uFA, source), fieldS(uFB, source), uMix));
+  }
+  vec2 p = vLocal;
+  p.y += max(0., -p.x) * .19 * sin(uTime * (5.2 + vPhase * .2) + vPhase - p.x * .3);
+  float body = 1. - smoothstep(.72, 1.18, length(p / vec2(5., 1.9)));
+  float tail = (1. - smoothstep(.12, .85, abs(p.y) - (-p.x - 3.2) * .58))
+    * smoothstep(-8.7, -7.7, p.x) * (1. - smoothstep(-4.2, -3.1, p.x));
+  float shoalBand = max(0., uShoal - 110.) * .35;
+  float opacity = max(body, tail * .82) * smoothstep(46. + shoalBand, 114. + shoalBand, depth);
+  float haze = mix(1., .65, smoothstep(110., 450., depth));
+  if (uFishShadow) {
+    // Multiply the painted water by the same cool tint as the kayak shadow.
+    vec3 tint = mix(vec3(.62, .78, .84), vec3(.40, .52, .67), uNight);
+    o = vec4(mix(vec3(1.), tint, opacity * haze * .47), 1.);
+    return;
+  }
+  vec3 ink = mix(vec3(.12, .42, .44), vec3(.19, .33, .49), uNight);
+  o = vec4(ink, opacity * haze * mix(.50, .33, uNight));
+}`
+
 export const beachVertexShader = `#version 300 es
 void main() {
   vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
@@ -9,14 +69,15 @@ void main() {
 
 export const beachFragmentShader = `#version 300 es
 precision highp float;
-uniform sampler2D uNoise, uFA, uFB;
-uniform vec2 uRes, uGrid;
-uniform float uScale, uSeed, uStep, uMix, uTime, uSpeed, uRunup, uShallow, uShoal, uGrain, uDebug, uWave, uSigma, uSpacing, uWaves, uNight;
+uniform sampler2D uNoise;
+uniform vec2 uRes;
+uniform float uScale, uSeed, uTime, uSpeed, uRunup, uShallow, uShoal, uGrain, uDebug, uWave, uSigma, uSpacing, uWaves, uNight;
 uniform float uKayN;
 uniform vec4 uKay[4];          // x, y, 朝向, 划桨相位
 uniform vec4 uRip[6];
 uniform float uBirdN;
 uniform vec4 uBird[8];         // x, y, 朝向, 翅膀展开程度
+${beachField}
 ${waterCausticsShader}
 out vec4 o;
 
@@ -42,10 +103,6 @@ float hash2(vec2 p) {
 }
 float ss(float a, float b, float x) { float t = clamp((x - a) / (b - a), 0.0, 1.0); return t * t * (3.0 - 2.0 * t); }
 vec4 N(vec2 p, float scale) { return texture(uNoise, p / scale + uSeed * 0.013); }
-float fieldS(sampler2D t, vec2 p) {
-  vec2 edge = clamp(p, vec2(0.0), (uGrid - 1.0) * uStep);
-  return texture(t, (edge / uStep + 0.5) / uGrid).r + length(p - edge);
-}
 
 vec3 seaRamp(float v) {
   vec3 sea0 = mix(SEA0, NIGHT_SEA0, uNight), sea1 = mix(SEA1, NIGHT_SEA1, uNight);
@@ -176,7 +233,7 @@ void main() {
       spark = max(spark, (1.0 - ss(r * 0.5, r * 1.5, length((f - c) * cs))) * tw);
     }
     col = mix(col, mix(vec3(0.95, 1.0, 1.0), vec3(.42, .53, .68), uNight), spark * 0.85);
-    col = mix(col, mix(vec3(.72, .97, 1.), vec3(.19, .32, .48), uNight), waterCaustics(p, t) * ss(10., 80., s) * .15);
+    col = mix(col, mix(vec3(.72, .97, 1.), vec3(.19, .32, .48), uNight), waterCaustics(p, t) * ss(10., 80., s));
 
     // 透明浅滩：水浅到能看见沙底，越往外越被青绿色盖住（过渡同样用颗粒喷出来）
     float shoal = uShoal;

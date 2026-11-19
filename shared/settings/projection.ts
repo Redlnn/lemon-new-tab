@@ -3,6 +3,7 @@ import { BUILT_IN_SEARCH_ENGINE_KEYS, normalizeBuiltInSearchEngineOrder } from '
 import { normalizeSuggestionProviders } from '../searchSuggestionProviders.ts'
 
 import {
+  BEACH_WATER_TRANSPARENCY_RANGE,
   BLUR_RANGE,
   EFFECT_SURFACES,
   OCEAN_GLINT_DENSITY_RANGE,
@@ -82,14 +83,17 @@ const INTEGER_RANGES: Record<string, readonly [number, number]> = {
   'background.ocean.yachts': [0, 3],
   'background.ocean.whales': [0, 2],
   'background.ocean.birds': [0, 10],
+  'background.ocean.glintDensity': OCEAN_GLINT_DENSITY_RANGE,
   'background.beach.sigma': [40, 150],
   'background.beach.warp': [0, 80],
-  'background.ocean.glintDensity': OCEAN_GLINT_DENSITY_RANGE,
   'background.beach.shoal': [0, 300],
   'background.beach.shallow': [120, 700],
   'background.beach.palms': [0, 10],
   'background.beach.kayaks': [0, 4],
   'background.beach.birds': [0, 10],
+  'background.beach.waterDensity': [25, 200],
+  'background.beach.waterTransparency': BEACH_WATER_TRANSPARENCY_RANGE,
+  'background.beach.fishSchools': [0, 8],
 }
 for (const surface of EFFECT_SURFACES) {
   INTEGER_RANGES[`perf.${surface}.transparency`] = TRANSPARENCY_RANGE

@@ -38,6 +38,9 @@
       "showNavigationCloud": "Navigation cloud"
     },
     "beach": {
+      "waterDensity": "Water ripple density",
+      "waterTransparency": "Water ripple transparency",
+      "fishSchools": "Fish schools",
       "sigma": "Island size",
       "warp": "Coast irregularity",
       "shoal": "Clear shallows",
