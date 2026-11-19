@@ -21,7 +21,11 @@ export const useSettingsStore = defineStore('option', () => {
     (value) => {
       applyingStorage = true
       try {
-        Object.assign(state, normalizeCurrentSettings(value))
+        const next = normalizeCurrentSettings(value)
+        const reconcile = <K extends keyof CURRENT_CONFIG_SCHEMA>(key: K) => {
+          if (!jsonEquals(state[key], next[key])) state[key] = next[key]
+        }
+        for (const key of Object.keys(next) as (keyof CURRENT_CONFIG_SCHEMA)[]) reconcile(key)
       } finally {
         applyingStorage = false
       }
@@ -86,6 +90,7 @@ export const useSettingsStore = defineStore('option', () => {
     init,
     deinit,
     save,
+    isDirty: writer.isDirty,
     getRawState,
     isApplyingStorage,
     prepareCommit: writer.prepareCommit,

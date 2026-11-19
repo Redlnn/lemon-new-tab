@@ -72,7 +72,7 @@ async function handleClose() {
       .filter((line) => line.trim().length > 0)
       .join('\n')
   }
-  await settings.save()
+  if (settings.isDirty()) await settings.save()
 }
 
 const handleMenuSelect = (key: string) => router.push(key as SettingsRoute)

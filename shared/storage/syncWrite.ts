@@ -67,6 +67,7 @@ export function createDraftWriter<T>(
   }
   return {
     receive,
+    isDirty: () => !!failed || !jsonEquals(readDraft(), base),
     reset(value: T) {
       base = structuredClone(value)
       applyDraft(structuredClone(value))
