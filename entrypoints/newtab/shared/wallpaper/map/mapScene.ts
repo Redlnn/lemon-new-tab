@@ -1,5 +1,7 @@
 import { createExtensionWorker } from '@/shared/worker'
 
+import { limitCanvasScale } from '../dynamic/viewport'
+
 import { createCoastAnimation } from './coastAnimation'
 import type { MapFrame, MapPreview, MapError, MapPreviewComplete } from './map.worker'
 import mapWorkerUrl from './map.worker?worker&url'
@@ -44,6 +46,7 @@ export function createMapScene(
     ctx = canvas.getContext('2d')!,
     detailCtx = detailsCanvas.getContext('2d')!
   if (!ground || !ctx || !detailCtx) throw new Error('Canvas 2D unavailable')
+  const worker = createExtensionWorker(mapWorkerUrl)
   // The WebGL coast layer exists only for the entrance transition. Without it
   // the worker paints the same shorelines into the map bitmap, which avoids
   // creating (and warming) a second WebGL context for static maps.
@@ -52,7 +55,7 @@ export function createMapScene(
   let fieldVisibility: ReturnType<typeof createFieldVisibility> | null = null
   const fullVisibility = () => 1
   detailsCanvas.hidden = true
-  const worker = createExtensionWorker(mapWorkerUrl)
+  detailsCanvas.width = detailsCanvas.height = 1
   const seed = Math.floor(Math.random() * 0x7fffffff)
   const anchorWidth = window.innerWidth,
     anchorHeight = window.innerHeight
@@ -83,19 +86,26 @@ export function createMapScene(
     maskCtx = mask.getContext('2d')!
   let maskNoise = new Float32Array(),
     maskPixels: ImageData | null = null
-  let coastWarmupScheduled = false
+  let cancelCoastWarmup: (() => void) | undefined
+  let coastWarmed = false
 
   // The first large WebGL allocation and shader run cost tens of milliseconds
   // on some drivers. Do it while the layer is still hidden instead of on the
   // frame that finally shows the map.
   const scheduleCoastWarmup = () => {
-    if (coastWarmupScheduled || !coast) return
-    coastWarmupScheduled = true
+    if (coastWarmed || !coast?.available()) return
+    coastWarmed = true
     const run = () => {
+      cancelCoastWarmup = undefined
       if (!disposed) coast.prepare(width, height)
     }
-    if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 100 })
-    else setTimeout(run, 100)
+    if (typeof requestIdleCallback === 'function') {
+      const request = requestIdleCallback(run, { timeout: 100 })
+      cancelCoastWarmup = () => cancelIdleCallback(request)
+    } else {
+      const request = setTimeout(run, 100)
+      cancelCoastWarmup = () => clearTimeout(request)
+    }
   }
 
   const paintBackground = () => {
@@ -181,21 +191,42 @@ export function createMapScene(
       edge = Math.min(1, Math.max(0, (threshold - n + 0.12) / 0.24))
     return edge * edge * (3 - 2 * edge)
   }
-  const finishReveal = () => {
-    if (!introActive) return
-    introActive = false
-    if (detailsBitmap) {
-      detailCtx.setTransform(1, 0, 0, 1, 0, 0)
-      detailCtx.clearRect(0, 0, detailsCanvas.width, detailsCanvas.height)
-      paintDetails()
+  const disableCoast = (error?: unknown) => {
+    if (!coast?.available()) return
+    if (error) console.warn('[map] Using Canvas 2D shorelines:', error)
+    coast.loseContext()
+    requestedKey = ''
+    requestMap()
+  }
+  const finishTransition = () => {
+    if (!bitmap || !detailsBitmap) return
+    const combined = new OffscreenCanvas(bitmap.width, bitmap.height)
+    const context = combined.getContext('2d', { alpha: false })
+    if (!context) throw new Error('Could not combine map layers')
+    context.drawImage(bitmap, 0, 0)
+    try {
+      coast?.bake(context, bitmap.width, bitmap.height)
+    } catch (error) {
+      disableCoast(error)
     }
+    context.drawImage(detailsBitmap, 0, 0)
+    const flattened = combined.transferToImageBitmap()
+    bitmap.close()
+    bitmap = flattened
+    detailsBitmap.close()
+    detailsBitmap = null
+    detailsCanvas.hidden = true
+    detailsCanvas.width = detailsCanvas.height = 1
+    introActive = false
+    mask.width = mask.height = 1
     maskPixels = null
     maskNoise = new Float32Array()
     previewBitmap?.close()
     previewBitmap = null
     paintBackground()
-    sendPending()
   }
+  const visibility = () =>
+    coast?.available() && coast.isActive() ? coast.visibility : (fieldVisibility ?? fullVisibility)
   worker.onmessage = (
     event: MessageEvent<MapFrame | MapPreview | MapError | MapPreviewComplete>,
   ) => {
@@ -238,44 +269,49 @@ export function createMapScene(
       detailsBitmap?.close()
       detailsBitmap = frame.details ?? null
       if (frame.paper) {
-        coast?.begin(
-          bitmap,
-          frame.paper,
-          frame.field,
-          frame.scale,
-          lastTime,
-          lastAnimate && !expanded,
-        )
-        frame.paper.close()
+        try {
+          coast?.begin(
+            bitmap,
+            frame.paper,
+            frame.field,
+            frame.scale,
+            lastTime,
+            lastAnimate && !expanded,
+          )
+        } catch (error) {
+          disableCoast(error)
+        } finally {
+          frame.paper.close()
+        }
       }
-      fieldVisibility = coast ? null : createFieldVisibility(frame.field)
-      introActive = firstFrame && !!frame.details && !!coast?.isActive()
+      fieldVisibility = createFieldVisibility(frame.field)
+      const moving = coast?.draw(lastTime, lastAnimate) ?? false
+      introActive = firstFrame && !!detailsBitmap && moving
       if (introActive) {
         startReveal(lastTime)
       } else {
-        detailsCanvas.width = background.width
-        detailsCanvas.height = background.height
-        detailsCanvas.style.width = background.style.width
-        detailsCanvas.style.height = background.style.height
-        detailsCanvas.hidden = !detailsBitmap
-        paintDetails()
+        if (moving && detailsBitmap) {
+          detailsCanvas.width = background.width
+          detailsCanvas.height = background.height
+          detailsCanvas.style.width = background.style.width
+          detailsCanvas.style.height = background.style.height
+          detailsCanvas.hidden = false
+          paintDetails()
+        }
         previewBitmap?.close()
         previewBitmap = null
       }
-      paintBackground()
-      const moving = coast?.draw(lastTime, lastAnimate) ?? false
-      paintReveal(lastTime)
+      if (!moving && detailsBitmap) finishTransition()
+      else {
+        paintBackground()
+        paintReveal(lastTime)
+      }
       background.dataset.coastMoving = String(moving)
       motion = createMapMotion(frame.motion, getCounts)
       ctx.setTransform(1, 0, 0, 1, 0, 0)
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.setTransform(scale, 0, 0, scale, 0, 0)
-      motion(
-        ctx,
-        lastTime,
-        coast?.visibility ?? fieldVisibility ?? fullVisibility,
-        revealVisibility,
-      )
+      motion(ctx, lastTime, visibility(), revealVisibility)
       staticPainted = false
       background.dataset.ready = String(frame.id)
       background.dataset.generationMs = frame.milliseconds.toFixed(1)
@@ -388,14 +424,21 @@ export function createMapScene(
     else timer = setTimeout(send, 80)
   }
   const resizeViewport = (trim = false) => {
-    const nextScale = Math.round(Math.min(devicePixelRatio || 1, 1.5) * 100) / 100
+    const bufferedWidth = Math.ceil(window.innerWidth / 256) * 256 + 128
+    const bufferedHeight = Math.ceil(window.innerHeight / 256) * 256 + 128
+    const desiredScale = Math.round(Math.min(devicePixelRatio || 1, 1.5) * 100) / 100
+    const nextScale = limitCanvasScale(bufferedWidth, bufferedHeight, desiredScale)
     const reuse = !trim && nextScale === scale
-    const nextWidth = Math.max(reuse ? width : 0, Math.ceil(window.innerWidth / 256) * 256 + 128)
-    const nextHeight = Math.max(reuse ? height : 0, Math.ceil(window.innerHeight / 256) * 256 + 128)
+    const reuseWidth = Math.max(width, bufferedWidth)
+    const reuseHeight = Math.max(height, bufferedHeight)
+    const fits = reuse && limitCanvasScale(reuseWidth, reuseHeight, nextScale) === nextScale
+    const nextWidth = fits ? reuseWidth : bufferedWidth
+    const nextHeight = fits ? reuseHeight : bufferedHeight
     if (nextWidth === width && nextHeight === height && scale === nextScale) return false
-    if (introActive) {
+    if (detailsBitmap) {
       coast?.draw(lastTime, false)
-      finishReveal()
+      finishTransition()
+      sendPending()
     }
     width = nextWidth
     height = nextHeight
@@ -406,14 +449,8 @@ export function createMapScene(
       target.style.width = `${width}px`
       target.style.height = `${height}px`
     }
-    detailsCanvas.width = background.width
-    detailsCanvas.height = background.height
-    detailsCanvas.style.width = background.style.width
-    detailsCanvas.style.height = background.style.height
-    paintDetails()
     paintBackground()
     staticPainted = false
-    coast?.resize()
     scheduleCoastWarmup()
     if (!trim && bitmap) requestMap(false, true)
     return true
@@ -443,17 +480,15 @@ export function createMapScene(
     updateNavigation(bounds)
     const moving = coast?.draw(lastTime, animate) ?? false
     paintReveal(lastTime)
-    if (!moving) finishReveal()
+    if (!moving && detailsBitmap) {
+      finishTransition()
+      sendPending()
+    }
     if (background.dataset.coastMoving !== String(moving))
       background.dataset.coastMoving = String(moving)
     if (!animate && staticPainted) return
     ctx.setTransform(scale, 0, 0, scale, 0, 0)
-    motion?.(
-      ctx,
-      animate ? time : 0,
-      coast?.visibility ?? fieldVisibility ?? fullVisibility,
-      revealVisibility,
-    )
+    motion?.(ctx, animate ? time : 0, visibility(), revealVisibility)
     staticPainted = !animate && !!motion
   }
   return {
@@ -461,11 +496,9 @@ export function createMapScene(
     resize,
     draw,
     loseCoastContext() {
-      coast?.loseContext()
-      finishReveal()
-      paintBackground()
-      requestedKey = ''
-      requestMap(true)
+      if (disposed || !coast?.available()) return
+      disableCoast()
+      finishTransition()
     },
     invalidateLayout(rebuild = true) {
       requestedKey = ''
@@ -474,6 +507,7 @@ export function createMapScene(
     dispose() {
       disposed = true
       clearTimeout(timer)
+      cancelCoastWarmup?.()
       worker.terminate()
       bitmap?.close()
       previewBitmap?.close()

@@ -1,5 +1,6 @@
 import { createFieldTextures } from '../dynamic/fieldTextures'
 import { snapshotField } from '../dynamic/fieldTransition'
+import { limitCanvasScale } from '../dynamic/viewport'
 
 import type { MapField, Point } from './model'
 
@@ -37,9 +38,20 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     antialias: false,
     depth: false,
     stencil: false,
-    preserveDrawingBuffer: true,
     powerPreference: 'low-power',
   })
+  if (!gl) return null
+  try {
+    return initializeCoastAnimation(canvas, gl)
+  } catch (error) {
+    console.warn('[map] Coast animation unavailable:', error)
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    return null
+  }
+}
+
+function initializeCoastAnimation(canvas: HTMLCanvasElement, gl: WebGL2RenderingContext) {
+  const maxTextureSize: number = gl.getParameter(gl.MAX_TEXTURE_SIZE)
   let from: Float32Array = new Float32Array(),
     to: Float32Array = new Float32Array(),
     cols = 0,
@@ -49,81 +61,83 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     duration = 2.6,
     currentMix = 1,
     active = false,
-    disabled = !gl,
+    disabled = false,
     worldWidth = 1,
     worldHeight = 1,
     renderScale = 1
   let firstTransition = false
-  let program: WebGLProgram | null = null,
-    vao: WebGLVertexArrayObject | null = null
   let paper: WebGLTexture | null = null
-  const fields = gl ? createFieldTextures(gl) : null
+  const fields = createFieldTextures(gl)
   const uniforms: Record<string, WebGLUniformLocation | null> = {}
   canvas.hidden = true
-  if (gl) {
-    const compile = (kind: number, source: string) => {
-      const shader = gl.createShader(kind)!
-      gl.shaderSource(shader, source)
-      gl.compileShader(shader)
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        const error = gl.getShaderInfoLog(shader)
-        gl.deleteShader(shader)
-        throw new Error(error || 'Map transition shader failed')
-      }
-      return shader
+  const compile = (kind: number, source: string) => {
+    const shader = gl.createShader(kind)
+    if (!shader) throw new Error('Could not create map transition shader')
+    gl.shaderSource(shader, source)
+    gl.compileShader(shader)
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      const error = gl.getShaderInfoLog(shader)
+      gl.deleteShader(shader)
+      throw new Error(error || 'Map transition shader failed')
     }
-    const vs = compile(gl.VERTEX_SHADER, vertex),
-      fs = compile(gl.FRAGMENT_SHADER, fragment)
-    program = gl.createProgram()!
-    gl.attachShader(program, vs)
-    gl.attachShader(program, fs)
-    gl.linkProgram(program)
-    gl.deleteShader(vs)
-    gl.deleteShader(fs)
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-      throw new Error(gl.getProgramInfoLog(program) || 'Map transition program failed')
-    vao = gl.createVertexArray()
-    for (const name of [
-      'uFrom',
-      'uTo',
-      'uPaper',
-      'uGrid',
-      'uWorld',
-      'uCanvas',
-      'uStep',
-      'uMix',
-      'uScale',
-      'uFirst',
-      'uFinal',
-    ])
-      uniforms[name] = gl.getUniformLocation(program, name)
+    return shader
   }
+  const vs = compile(gl.VERTEX_SHADER, vertex),
+    fs = compile(gl.FRAGMENT_SHADER, fragment)
+  const program = gl.createProgram()
+  const vao = gl.createVertexArray()
+  if (!program || !vao) throw new Error('Could not create map transition program')
+  gl.attachShader(program, vs)
+  gl.attachShader(program, fs)
+  gl.linkProgram(program)
+  gl.deleteShader(vs)
+  gl.deleteShader(fs)
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS))
+    throw new Error(gl.getProgramInfoLog(program) || 'Map transition program failed')
+  for (const name of [
+    'uFrom',
+    'uTo',
+    'uPaper',
+    'uGrid',
+    'uWorld',
+    'uCanvas',
+    'uStep',
+    'uMix',
+    'uScale',
+    'uFirst',
+    'uFinal',
+  ])
+    uniforms[name] = gl.getUniformLocation(program, name)
   const ease = (t: number) => {
     t = Math.max(0, Math.min(1, t))
     return t * t * (3 - 2 * t)
   }
   const releaseImages = () => {
-    if (gl) {
-      gl.deleteTexture(paper)
-    }
+    gl.deleteTexture(paper)
     paper = null
   }
   const finish = () => {
     active = false
     currentMix = 1
     firstTransition = false
+    from = to
     canvas.hidden = true
     canvas.width = canvas.height = 1
     releaseImages()
   }
   const resize = () => {
     if (disabled) return
-    renderScale = Math.min(1, devicePixelRatio || 1)
     // Keep this layer in the same buffered world coordinates as the 2D map.
     // Window dragging only clips it; it must not reallocate a GL framebuffer
     // for every pixel of the drag.
     const width = worldWidth,
       height = worldHeight
+    renderScale = limitCanvasScale(
+      width,
+      height,
+      Math.min(1, devicePixelRatio || 1),
+      maxTextureSize,
+    )
     const w = Math.ceil(width * renderScale),
       h = Math.ceil(height * renderScale)
     if (canvas.width !== w) canvas.width = w
@@ -135,23 +149,24 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
   // hidden, so the browser's first large GL allocation does not land on the
   // frame that finally shows the map.
   const prepare = (width: number, height: number) => {
-    if (disabled || !program || to.length) return
+    if (disabled || to.length) return
     worldWidth = width
     worldHeight = height
     resize()
-    gl!.viewport(0, 0, canvas.width, canvas.height)
-    gl!.useProgram(program)
-    gl!.bindVertexArray(vao)
-    gl!.drawArrays(gl!.TRIANGLES, 0, 3)
+    gl.viewport(0, 0, canvas.width, canvas.height)
+    gl.useProgram(program)
+    gl.bindVertexArray(vao)
+    gl.drawArrays(gl.TRIANGLES, 0, 3)
   }
   const upload = (bitmap: ImageBitmap) => {
-    const texture = gl!.createTexture()!
-    gl!.bindTexture(gl!.TEXTURE_2D, texture)
-    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MIN_FILTER, gl!.LINEAR)
-    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MAG_FILTER, gl!.LINEAR)
-    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_WRAP_S, gl!.CLAMP_TO_EDGE)
-    gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_WRAP_T, gl!.CLAMP_TO_EDGE)
-    gl!.texImage2D(gl!.TEXTURE_2D, 0, gl!.RGBA, gl!.RGBA, gl!.UNSIGNED_BYTE, bitmap)
+    const texture = gl.createTexture()
+    if (!texture) throw new Error('Could not upload map paper texture')
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap)
     return texture
   }
   const begin = (
@@ -163,15 +178,6 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     animate: boolean,
   ) => {
     const first = !to.length
-    const sameTarget =
-      !first &&
-      cols === field.cols &&
-      rows === field.rows &&
-      to.every((value, i) => Math.abs(value - field.values[i]!) < 0.01)
-    if (sameTarget) {
-      if (!animate && active) draw(time, false)
-      return
-    }
     const mix = active ? ease((time - started) / duration) : 1
     const before = first
       ? new Float32Array(field.values.length).fill(34)
@@ -193,9 +199,9 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     }
     releaseImages()
     paper = upload(paperBitmap)
-    fields!.resize(cols, rows)
-    fields!.upload(0, from)
-    fields!.upload(1, to)
+    fields.resize(cols, rows)
+    fields.upload(0, from)
+    fields.upload(1, to)
     started = time
     firstTransition = first
     duration = first ? 2.6 : 1.8
@@ -203,50 +209,45 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     currentMix = active ? 0 : 1
     canvas.hidden = false
     resize()
-    if (!active) render(true)
   }
   const draw = (time: number, animate = true) => {
     if (!active) return false
     if (!animate || disabled) {
       active = false
       currentMix = 1
-      if (!disabled) render(true)
       return false
     }
     const elapsed = time - started
     currentMix = ease(elapsed / duration)
     if (currentMix >= 1) {
       active = false
-      render(true)
       return false
     }
     render(false)
     return true
   }
   const render = (final: boolean) => {
-    resize()
-    gl!.viewport(0, 0, canvas.width, canvas.height)
-    gl!.useProgram(program)
-    gl!.bindVertexArray(vao)
-    gl!.activeTexture(gl!.TEXTURE0)
-    gl!.bindTexture(gl!.TEXTURE_2D, fields!.textures[0]!)
-    gl!.activeTexture(gl!.TEXTURE1)
-    gl!.bindTexture(gl!.TEXTURE_2D, fields!.textures[1]!)
-    gl!.activeTexture(gl!.TEXTURE2)
-    gl!.bindTexture(gl!.TEXTURE_2D, paper)
-    gl!.uniform1i(uniforms.uFrom!, 0)
-    gl!.uniform1i(uniforms.uTo!, 1)
-    gl!.uniform1i(uniforms.uPaper!, 2)
-    gl!.uniform2f(uniforms.uGrid!, cols, rows)
-    gl!.uniform2f(uniforms.uWorld!, worldWidth, worldHeight)
-    gl!.uniform2f(uniforms.uCanvas!, canvas.width, canvas.height)
-    gl!.uniform1f(uniforms.uStep!, step)
-    gl!.uniform1f(uniforms.uMix!, currentMix)
-    gl!.uniform1f(uniforms.uScale!, renderScale)
-    gl!.uniform1f(uniforms.uFirst!, firstTransition ? 1 : 0)
-    gl!.uniform1f(uniforms.uFinal!, final ? 1 : 0)
-    gl!.drawArrays(gl!.TRIANGLES, 0, 3)
-    if (final) releaseImages()
+    gl.viewport(0, 0, canvas.width, canvas.height)
+    gl.useProgram(program)
+    gl.bindVertexArray(vao)
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, fields.textures[0]!)
+    gl.activeTexture(gl.TEXTURE1)
+    gl.bindTexture(gl.TEXTURE_2D, fields.textures[1]!)
+    gl.activeTexture(gl.TEXTURE2)
+    gl.bindTexture(gl.TEXTURE_2D, paper)
+    gl.uniform1i(uniforms.uFrom!, 0)
+    gl.uniform1i(uniforms.uTo!, 1)
+    gl.uniform1i(uniforms.uPaper!, 2)
+    gl.uniform2f(uniforms.uGrid!, cols, rows)
+    gl.uniform2f(uniforms.uWorld!, worldWidth, worldHeight)
+    gl.uniform2f(uniforms.uCanvas!, canvas.width, canvas.height)
+    gl.uniform1f(uniforms.uStep!, step)
+    gl.uniform1f(uniforms.uMix!, currentMix)
+    gl.uniform1f(uniforms.uScale!, renderScale)
+    gl.uniform1f(uniforms.uFirst!, firstTransition ? 1 : 0)
+    gl.uniform1f(uniforms.uFinal!, final ? 1 : 0)
+    gl.drawArrays(gl.TRIANGLES, 0, 3)
   }
   const sample = (values: Float32Array, i: number, tx: number, ty: number) => {
     return (
@@ -271,20 +272,27 @@ export function createCoastAnimation(canvas: HTMLCanvasElement) {
     prepare,
     begin,
     draw,
-    resize,
+    bake(target: OffscreenCanvasRenderingContext2D, width: number, height: number) {
+      if (disabled) return
+      currentMix = 1
+      render(true)
+      // Copy in the same task, before the browser presents and clears the WebGL buffer.
+      target.drawImage(canvas, 0, 0, width, height)
+      finish()
+    },
     visibility: (p: Point, water: boolean) =>
       Math.max(0, Math.min(1, (water ? -value(p) : value(p)) / 8)),
     loseContext() {
       disabled = true
       finish()
+      if (!gl.isContextLost()) gl.getExtension('WEBGL_lose_context')?.loseContext()
     },
     dispose() {
       finish()
-      if (gl) {
-        for (const texture of fields!.textures) gl.deleteTexture(texture)
-        gl.deleteProgram(program)
-        gl.deleteVertexArray(vao)
-      }
+      for (const texture of fields.textures) gl.deleteTexture(texture)
+      gl.deleteProgram(program)
+      gl.deleteVertexArray(vao)
+      if (!disabled) gl.getExtension('WEBGL_lose_context')?.loseContext()
     },
   }
 }

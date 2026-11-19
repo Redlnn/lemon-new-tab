@@ -63,7 +63,7 @@ watch(
     <canvas
       ref="coast"
       class="map-background__canvas map-background__coast"
-      @webglcontextlost.prevent="getRenderer()?.loseCoastContext()"
+      @webglcontextlost="getRenderer()?.loseCoastContext()"
     ></canvas>
     <canvas ref="details" class="map-background__canvas"></canvas>
     <canvas ref="canvas" class="map-background__canvas"></canvas>
