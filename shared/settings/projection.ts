@@ -2,7 +2,12 @@ import { BgType, ClockWeight, DrawerDirection, SortMode } from '../enums.ts'
 import { BUILT_IN_SEARCH_ENGINE_KEYS, normalizeBuiltInSearchEngineOrder } from '../searchEngines.ts'
 import { normalizeSuggestionProviders } from '../searchSuggestionProviders.ts'
 
-import { BLUR_RANGE, EFFECT_SURFACES, TRANSPARENCY_RANGE } from './constraints.ts'
+import {
+  BLUR_RANGE,
+  EFFECT_SURFACES,
+  OCEAN_GLINT_DENSITY_RANGE,
+  TRANSPARENCY_RANGE,
+} from './constraints.ts'
 import { defaultSettings } from './default.ts'
 
 type RecordValue = Record<string, unknown>
@@ -79,6 +84,7 @@ const INTEGER_RANGES: Record<string, readonly [number, number]> = {
   'background.ocean.birds': [0, 10],
   'background.beach.sigma': [40, 150],
   'background.beach.warp': [0, 80],
+  'background.ocean.glintDensity': OCEAN_GLINT_DENSITY_RANGE,
   'background.beach.shoal': [0, 300],
   'background.beach.shallow': [120, 700],
   'background.beach.palms': [0, 10],

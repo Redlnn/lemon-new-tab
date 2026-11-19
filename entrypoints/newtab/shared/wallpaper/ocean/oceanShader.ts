@@ -4,10 +4,38 @@ import { beachGullShader } from '../dynamic/gullShader'
 // subjects keep their correct order instead of erasing each other.
 export const oceanShader = `
 #ifdef OCEAN
-uniform float uOceanTime;
+uniform float uOceanTime, uOceanGlints, uGlintPatchScale;
 uniform sampler2D uOceanWake;
 uniform vec2 uOceanWakeSize;
 mat2 oceanRot(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
+float oceanGlint(vec2 p) {
+  if (uOceanGlints < .5) return 0.;
+  vec2 drift = uOceanTime * vec2(2.4, .8);
+  vec2 surface = (p + drift) * uGlintPatchScale;
+  float light = .65 * N(surface, 740.).g + .35 * N(surface + 170., 325.).r;
+  float coverage = smoothstep(.515, .72, light);
+  if (coverage <= 0.) return 0.;
+
+  float glint = 0.;
+  for (int layer = 0; layer < 2; layer++) {
+    float offset = float(layer) * 31.7;
+    vec2 size = layer == 0 ? vec2(25., 10.) : vec2(35., 14.);
+    vec2 q = oceanRot(layer == 0 ? -.18 : .11) * (p + drift * .5) / size + offset;
+    vec2 seed = floor(q) + offset + uSeed * .1;
+    if (hash2(seed) > .38) continue;
+    vec2 center = .25 + .5 * vec2(hash2(seed + 1.3), hash2(seed + 2.9));
+    vec2 local = (fract(q) - center) * size;
+    float phase = uOceanTime * (2.2 + 1.5 * hash2(seed + 8.1)) + 6.28 * hash2(seed + 5.7);
+    local.y += .22 * sin(local.x * .38 + phase);
+    float halfLength = .9 + 2.3 * hash2(seed + 3.3);
+    float halfWidth = .24 + .23 * hash2(seed + 4.1);
+    float aa = .5 / uScale;
+    float specular = (1. - smoothstep(halfLength - aa, halfLength + aa, abs(local.x)))
+      * (1. - smoothstep(max(0., halfWidth - aa), halfWidth + aa, abs(local.y)));
+    glint = max(glint, specular * smoothstep(.05, .96, sin(phase)));
+  }
+  return coverage * glint * mix(.78, .58, uNight);
+}
 #ifdef OCEAN_DETAIL
 uniform vec4 uOceanActors[22]; // x, y, heading, kind
 uniform vec2 uOceanExtras[22]; // boom angle or ripple age

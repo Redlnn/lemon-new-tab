@@ -27,6 +27,8 @@
       "error": "The map could not start. Switched to a solid background."
     },
     "ocean": {
+      "glintDensity": "Glint patch density",
+      "glints": "Surface glints",
       "sailboats": "Sailboats count",
       "yachts": "Yachts count",
       "whales": "Whales count",

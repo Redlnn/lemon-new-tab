@@ -114,6 +114,7 @@ export const defaultSettings = {
       whales: 1,
       birds: 3,
       waterCaustics: true,
+      glintDensity: 100,
     },
     beach: {
       sigma: 85,

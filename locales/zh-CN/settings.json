@@ -27,6 +27,8 @@
       "error": "地图背景无法启动，已切换至纯色背景。"
     },
     "ocean": {
+      "glintDensity": "波光区块密度",
+      "glints": "海面波光",
       "sailboats": "帆船数量",
       "yachts": "游艇数量",
       "whales": "鲸鱼数量",

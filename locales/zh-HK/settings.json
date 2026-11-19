@@ -27,6 +27,8 @@
       "error": "地圖背景無法啟動，已切換至純色背景。"
     },
     "ocean": {
+      "glintDensity": "波光區塊密度",
+      "glints": "海面波光",
       "sailboats": "帆船數量",
       "yachts": "遊艇數量",
       "whales": "鯨魚數量",

@@ -27,6 +27,8 @@
       "error": "Harita arka planı başlatılamadı. Düz renge geçildi."
     },
     "ocean": {
+      "glintDensity": "Parıltı kümelerinin yoğunluğu",
+      "glints": "Deniz parıltıları",
       "sailboats": "Yelkenliler sayısı",
       "yachts": "Yatlar sayısı",
       "whales": "Balinalar sayısı",

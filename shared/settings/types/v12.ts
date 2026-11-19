@@ -67,6 +67,7 @@ export interface SettingsSchemaV12 extends Omit<
       whales: number
       birds: number
       waterCaustics: boolean
+      glintDensity: number
     }
     beach: {
       sigma: number

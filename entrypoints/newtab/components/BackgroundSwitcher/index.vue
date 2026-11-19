@@ -16,6 +16,7 @@ import MotionIcon from '~icons/ic/round-motion-photos-on'
 import { BgType, isDynamicBgType } from '@/shared/enums'
 import { jsonEquals, sha256Hex } from '@/shared/json'
 import { defaultSettings, useSettingsStore, type BingWallpaperResolution } from '@/shared/settings'
+import { OCEAN_GLINT_DENSITY_RANGE } from '@/shared/settings/constraints'
 import { idbGet } from '@/shared/storage/idb'
 import {
   addWallpaper,
@@ -829,10 +830,20 @@ function open(url: string) {
                 <el-slider v-model="settings.background.ocean.flow" :min="0" :max="3" :step="0.1" />
               </label>
               <label>
-                <span>{{ t('background.waterCaustics') }}</span>
+                <span>{{ t('background.ocean.glints') }}</span>
                 <el-switch
                   v-model="settings.background.ocean.waterCaustics"
-                  :aria-label="t('background.waterCaustics')"
+                  :aria-label="t('background.ocean.glints')"
+                />
+              </label>
+              <label>
+                <span>{{ t('background.ocean.glintDensity') }}</span>
+                <el-slider
+                  v-model="settings.background.ocean.glintDensity"
+                  :min="OCEAN_GLINT_DENSITY_RANGE[0]"
+                  :max="OCEAN_GLINT_DENSITY_RANGE[1]"
+                  :disabled="!settings.background.ocean.waterCaustics"
+                  :aria-label="t('background.ocean.glintDensity')"
                 />
               </label>
               <label v-for="control in oceanControls" :key="control.key">

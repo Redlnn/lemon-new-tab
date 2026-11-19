@@ -2,7 +2,6 @@ import { createFieldTextures } from '../dynamic/fieldTextures'
 import { snapshotField } from '../dynamic/fieldTransition'
 import { createTerrain } from '../dynamic/terrain'
 import { canvasViewportSize, setCanvasViewportStyle } from '../dynamic/viewport'
-import { createWaterCaustics, waterCausticsShader } from '../dynamic/waterCaustics'
 export type MeadowAssets = {
   boy: string
   boyRun: string
@@ -40,6 +39,7 @@ type MeadowOptions = {
   whales?: number
   birds?: number
   waterCaustics?: boolean
+  glintDensity?: number
   night?: boolean
 }
 type Circle = [number, number, number, number]
@@ -82,6 +82,7 @@ export function createDynamicScene(
     whales: 1,
     birds: 3,
     waterCaustics: false,
+    glintPatchScale: 1,
     night: 0,
     avoidCenter: false,
   }
@@ -125,9 +126,6 @@ uniform sampler2D uNoise, uFA, uFB, uMeadowGround;
 uniform vec2 uRes, uGrid;
 uniform float uScale, uSeed, uStep, uMix, uEdge;
 uniform float uNight;
-#ifdef OCEAN
-${waterCausticsShader}
-#endif
 #ifdef MEADOW_ACTOR
 uniform sampler2D uActor, uActorShadow;
 uniform vec4 uActorRect;
@@ -264,24 +262,9 @@ void main() {
   vec3 col = texelFetch(uMeadowGround, ivec2(gl_FragCoord.xy), 0).rgb;
 
 #ifdef OCEAN
-  // Same slow water drift and two irregular reflection grids as the beach sea.
   vec2 drift = vec2(uOceanTime * 2.2, uOceanTime * .9);
   col *= 1. + (N(p + drift * 4., 1600.).r - .5) * .02;
-  float glitter = ss(.32, .72, N(p + drift * 3., 520.).g);
-  float sparkle = 0.;
-  for (int L = 0; L < 2; L++) {
-    float fl = float(L), size = L == 0 ? 23. : 37.;
-    vec2 q = oceanRot(L == 0 ? .62 : -1.13) * p / size + fl * 17.3;
-    vec2 cell = floor(q), f = fract(q), seedc = cell + fl * 51.7 + uSeed * .1;
-    if (hash2(seedc) > (L == 0 ? .11 : .16) * glitter) continue;
-    vec2 center = .15 + .7 * vec2(hash2(seedc + 1.3), hash2(seedc + 2.9));
-    float life = fract(uOceanTime * (.3 + .35 * hash2(seedc + 8.1)) + hash2(seedc + 5.7));
-    float twinkle = ss(0., .1, life) * (1. - ss(.2, .45, life));
-    float radius = .7 + .9 * hash2(seedc + 3.3);
-    sparkle = max(sparkle, (1. - ss(radius * .5, radius * 1.5, length((f - center) * size))) * twinkle);
-  }
-  col = mix(col, mix(vec3(.95, 1., 1.), vec3(.55, .70, .95), uNight), sparkle * .85);
-  col = mix(col, mix(vec3(.60, .90, 1.), vec3(.22, .42, .72), uNight), waterCaustics(p, uOceanTime) * .15);
+  col = mix(col, mix(vec3(.81, .96, 1.), vec3(.38, .54, .79), uNight), oceanGlint(p));
   float wake = 0.;
   if (p.x >= 0. && p.y >= 0. && p.x < uOceanWakeSize.x && p.y < uOceanWakeSize.y)
     wake = texture(uOceanWake, vec2(p.x / uOceanWakeSize.x, 1. - p.y / uOceanWakeSize.y)).r;
@@ -382,7 +365,6 @@ void main() {
     const whaleTexture = scene.ocean
       ? scene.ocean.createWhaleTexture(gl, scene.ocean.whale, pendingImages, () => disposed)
       : null
-    let causticsTexture: WebGLTexture | null = null
 
     let noiseTex: WebGLTexture | null = null
 
@@ -794,7 +776,6 @@ void main() {
       return distance
     }
     const drawScene = (now: number, dt: number) => {
-      if (ocean && P.waterCaustics && !causticsTexture) causticsTexture = createWaterCaustics(gl)
       // 隐藏男孩时只保留路线状态，小猫仍能独立显示并避开男孩再次出现的路线。
       const boy = P.showBoy || P.showCat ? characters?.prepareBoy(now, P.showBoy === 1) : null
       const actor = P.showBoy === 1 && boy?.rect ? boy : null
@@ -873,10 +854,8 @@ void main() {
           gl.uniform1i(U.uNoise!, 0)
           gl.uniform1f(U.uSeed!, (seed % 997) * 0.37)
           gl.uniform1f(U.uOceanTime!, now / 1000)
-          gl.activeTexture(gl.TEXTURE7)
-          gl.bindTexture(gl.TEXTURE_2D, causticsTexture ?? noiseTex)
-          gl.uniform1i(U.uWaterCaustics!, 7)
-          gl.uniform1f(U.uWaterCausticsEnabled!, P.waterCaustics ? 1 : 0)
+          gl.uniform1f(U.uOceanGlints!, P.waterCaustics ? 1 : 0)
+          gl.uniform1f(U.uGlintPatchScale!, P.glintPatchScale)
           gl.activeTexture(gl.TEXTURE4)
           gl.bindTexture(gl.TEXTURE_2D, wakeTexture ?? null)
           gl.uniform1i(U.uOceanWake!, 4)
@@ -1084,6 +1063,7 @@ void main() {
         P.whales = options.whales ?? 1
         P.birds = options.birds ?? 3
         P.waterCaustics = options.waterCaustics ?? true
+        P.glintPatchScale = Math.sqrt((options.glintDensity ?? 100) / 100)
       }
       P.avoidCenter = avoidCenter
       if (changed || sizeChanged) {
