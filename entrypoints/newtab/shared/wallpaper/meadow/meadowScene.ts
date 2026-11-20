@@ -184,7 +184,11 @@ float cloudDist(vec2 q, bool front, inout vec4 fc) {
   for (int k = 0; k < CIRC_K; k++) {
     vec4 c = texelFetch(uCirc, ivec2((index % uCloudStride) * CIRC_K + k, index / uCloudStride), 0);
     if (c.z <= 0.0) break;
-    float di = length(q - c.xy) - c.z;
+    vec2 delta = q - c.xy;
+    // 远处的圆既不能进入平滑合并范围，也不会覆盖当前像素。
+    float bound = c.z + max(d, 0.0) + 6.5;
+    if (d < 80.0 && dot(delta, delta) > bound * bound) continue;
+    float di = length(delta) - c.z;
     d = smin(d, di, 6.0);
     if (front && di < 0.0 && c.y > fc.y) fc = c;
   }
