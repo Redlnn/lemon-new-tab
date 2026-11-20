@@ -443,7 +443,7 @@ void main() {
     const emptyCloudTexture = gl.createTexture()
     gl.activeTexture(gl.TEXTURE3)
     gl.bindTexture(gl.TEXTURE_2D, emptyCloudTexture)
-    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 1, 1)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 1, 1, 0, gl.RGBA, gl.FLOAT, new Float32Array(4))
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
     let circTex: WebGLTexture | null = null,
@@ -731,7 +731,8 @@ void main() {
         gh = Math.ceil(H / cellSize) + 7
       }
       gl.activeTexture(gl.TEXTURE3)
-      if (!circTex || gw !== cgW || gh !== cgH) {
+      const allocate = !circTex || gw !== cgW || gh !== cgH
+      if (allocate) {
         cgW = gw
         cgH = gh
         cloudStride = Math.min(gw, maxCellsPerRow)
@@ -740,7 +741,6 @@ void main() {
         circTex = gl.createTexture()
         if (!circTex) throw new Error('Could not create cloud texture')
         gl.bindTexture(gl.TEXTURE_2D, circTex)
-        gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, cloudStride * CIRC_K, rows)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
         circBuf = new Float32Array(cloudStride * CIRC_K * rows * 4)
@@ -794,6 +794,21 @@ void main() {
           }
       }
       cloudBounds = right > left ? { left, right, top, bottom } : null
+      if (allocate) {
+        // Initialize every texel once to avoid the driver's lazy clear on the first partial upload.
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA32F,
+          stride,
+          circBuf.length / (stride * 4),
+          0,
+          gl.RGBA,
+          gl.FLOAT,
+          circBuf,
+        )
+        return
+      }
       if (previous) {
         left = Math.min(left, previous.left)
         right = Math.max(right, previous.right)
