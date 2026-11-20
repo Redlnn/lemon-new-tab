@@ -550,6 +550,8 @@ void main() {
       heightRatio = 1,
     ) => {
       const image = new Image()
+      // WXT serves these assets from the dev server rather than the extension origin.
+      image.crossOrigin = 'anonymous'
       pendingImages.add(image)
       image.onload = () => {
         pendingImages.delete(image)
@@ -1104,6 +1106,7 @@ void main() {
     const loadCat = (source: string) => {
       const cat = { texture: gl.createTexture(), ready: false }
       const image = new Image()
+      image.crossOrigin = 'anonymous'
       pendingImages.add(image)
       image.onload = () => {
         pendingImages.delete(image)

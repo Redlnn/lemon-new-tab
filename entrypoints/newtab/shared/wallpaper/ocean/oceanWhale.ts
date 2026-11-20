@@ -14,6 +14,7 @@ export function createOceanWhaleTexture(
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
   const image = new Image()
+  image.crossOrigin = 'anonymous'
   pendingImages.add(image)
   image.onload = () => {
     pendingImages.delete(image)

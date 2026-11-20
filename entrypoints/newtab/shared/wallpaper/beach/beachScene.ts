@@ -215,6 +215,7 @@ function initializeBeachScene(
   const sprites: (PalmSprite | undefined)[] = []
   const images = treeUrls.map((url, index) => {
     const img = new Image()
+    img.crossOrigin = 'anonymous'
     img.onload = () => {
       sprites[index] = preparePalm(img)
       treesDirty = true
