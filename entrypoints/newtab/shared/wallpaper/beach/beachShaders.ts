@@ -173,26 +173,28 @@ void main() {
   // 浪的时钟：沿岸只有大尺度的先后差异，一长段海岸整齐地涌上来
   float wv = uWave;                                // 浪的大小：放大线宽、水雾
   float lam = uSpacing;                            // 浪的间距（px）
-  // 沿岸的先后差异要很平缓：用最粗的一层噪声、放大尺度。原来 r 通道带 37px 的细节，
-  // 沿岸走一百来像素浪的节奏就差四分之一拍，新浪的侧边从岸线陡直地立起来，两拍交界处白边戛然而止（像个缺口）
-  float along = N(p, 4200.0).b * 1.2;
-  float u = t * uSpeed / lam + along;             // 每 1.0 = 一道浪
-  float fu = fract(u), cyc = floor(u);
-
-  // 浪的能量：只有开阔海面才起浪。往陆地、往海各探一段：
-  // 陆地太窄（探到对面的水）或水域太小（探不到深水）→ 浪减弱到平静
+  float swashLimit = -uSigma * 0.78 - 12.0;
   vec2 gr = vec2(dFdx(s0), -dFdy(s0));
   vec2 nrm = length(gr) > 1e-4 ? normalize(gr) : vec2(0.0, 1.0);
-  float sIn = mix(fieldS(uFA, p - nrm * 45.0), fieldS(uFB, p - nrm * 45.0), uMix);
-  float sOut = mix(fieldS(uFA, p + nrm * 70.0), fieldS(uFB, p + nrm * 70.0), uMix);
-  float energy = mix(ss(2.0, -18.0, sIn), 1.0, ss(15.0, 40.0, s)) * ss(25.0, 70.0, sOut);
+  float along = 0.0, fu = 0.0, cyc = 0.0, energy = 0.0;
+  if (s > swashLimit) {
+    // 用粗噪声让沿岸浪相缓慢变化，避免泡沫在相邻浪之间出现断口。
+    along = N(p, 4200.0).b * 1.2;
+    float u = t * uSpeed / lam + along;          // 每 1.0 = 一道浪
+    fu = fract(u);
+    cyc = floor(u);
+    // 向陆地和海面取样，削弱狭窄陆地和封闭水域的浪。
+    float sIn = mix(fieldS(uFA, p - nrm * 45.0), fieldS(uFB, p - nrm * 45.0), uMix);
+    float sOut = mix(fieldS(uFA, p + nrm * 70.0), fieldS(uFB, p + nrm * 70.0), uMix);
+    energy = mix(ss(2.0, -18.0, sIn), 1.0, ss(15.0, 40.0, s)) * ss(25.0, 70.0, sOut);
+  }
   // 沙滩上（冲上来的薄水、湿沙带）用"岸线处"的能量：沿法线回到岸线上再往两边探。
   // 不能按像素自己的位置探——越往岸上离开阔水面越远、能量越小，薄水冲多远就取决于像素自己在哪，
   // 岸线一拐弯探的方向变得快，前沿就出现台阶和缺口
   // sW：薄水层用的"离岸距离"。往岸上走，岸线急拐弯处的等距线会收成尖角（湿痕、水膜前沿出现楔形），
   // 所以用周围 10px 的平均值把尖角磨圆；贴着水边时仍用原值，水膜和岸线对得上
   float shoreE = 0.0, sW = s;
-  if (s < 4.0 && s > -uSigma * 0.78 - 12.0) {         // 只有薄水冲得到的那一条沙滩需要（再往里的干沙不用算）
+  if (s < 4.0 && s > swashLimit) {                  // 只计算薄水能冲到的沙滩
     // 法线也用前后左右的差来算：dFdx 在场纹理每个 5px 格子边上会跳，拐角处探的位置跟着跳
     #define SF(q) mix(fieldS(uFA, q), fieldS(uFB, q), uMix)
     float fR = SF(p + vec2(10.0, 0.0)), fL = SF(p - vec2(10.0, 0.0)), fD = SF(p + vec2(0.0, 10.0)), fU = SF(p - vec2(0.0, 10.0));
@@ -219,7 +221,7 @@ void main() {
     // 再按大尺度噪声成片聚集 → 看不出格子
     float glitter = ss(0.32, 0.72, N(p + drift * 3.0, 520.0).g) * deepK;
     float spark = 0.0;
-    for (int L = 0; L < 2; L++) {
+    if (glitter > 0.0) for (int L = 0; L < 2; L++) {
       float fl = float(L), cs = L == 0 ? 23.0 : 37.0;
       mat2 R = rot(L == 0 ? 0.62 : -1.13);
       vec2 q = R * p / cs + fl * 17.3;
@@ -233,7 +235,9 @@ void main() {
       spark = max(spark, (1.0 - ss(r * 0.5, r * 1.5, length((f - c) * cs))) * tw);
     }
     col = mix(col, mix(vec3(0.95, 1.0, 1.0), vec3(.42, .53, .68), uNight), spark * 0.85);
-    col = mix(col, mix(vec3(.72, .97, 1.), vec3(.19, .32, .48), uNight), waterCaustics(p, t) * ss(10., 80., s));
+    float causticsDepth = ss(10., 80., s);
+    if (causticsDepth > 0.0)
+      col = mix(col, mix(vec3(.72, .97, 1.), vec3(.19, .32, .48), uNight), waterCaustics(p, t) * causticsDepth);
 
     // 透明浅滩：水浅到能看见沙底，越往外越被青绿色盖住（过渡同样用颗粒喷出来）
     float shoal = uShoal;
@@ -251,7 +255,9 @@ void main() {
     for (int i = 0; i < 4; i++) {
       if (float(i) >= uKayN) break;
       vec4 k = uKay[i];
-      vec2 q2 = rot(-k.z) * (p - k.xy - vec2(8.0, 13.0));
+      vec2 delta = p - k.xy - vec2(8.0, 13.0);
+      if (dot(delta, delta) > 960.0) continue;
+      vec2 q2 = rot(-k.z) * delta;
       float sd = hullSD(q2);
       vec2 pd = paddleSD(q2, k.w);
       shadow = max(shadow, ss(1.6, -1.6, min(sd, min(pd.x, pd.y))));
@@ -263,7 +269,10 @@ void main() {
     for (int i = 0; i < 6; i++) {
       vec4 r = uRip[i];
       if (r.w <= 0.0) continue;
-      float dist = length(p - r.xy), rad = r.z * 40.0;
+      vec2 delta = p - r.xy;
+      float rad = r.z * 40.0, outer = rad + 3.0;
+      if (dot(delta, delta) > outer * outer) continue;
+      float dist = length(delta);
       rip = max(rip, (1.0 - ss(0.8, 2.0, abs(dist - rad))) * exp(-r.z * 1.4) * r.w);
       rip = max(rip, (1.0 - ss(0.6, 1.6, abs(dist - rad * 0.6))) * exp(-r.z * 1.8) * r.w * 0.6);
     }
@@ -299,10 +308,14 @@ void main() {
   // 同时有 3 层：各自推进 → 停住 → 回落，最高点各不相同；前沿一道颗粒白边，退去后留下慢慢消失的湿痕
   // 冲得再高也不淹到图标：图标边缘大约在 s ≈ -离岸距离 处，留出余量
   // ×0.25：开阔岸边冲浪幅度 120 时约冲上 30px，和原来（按像素位置探能量时实际达到的）一样
-  float reachBase = min(uRunup * 0.25 * shoreE * (0.85 + 0.3 * N(p, 900.0).g), uSigma * 0.78);
+  float reachBase = 0.0;
+  if (shoreE > 0.0)
+    reachBase = min(uRunup * 0.25 * shoreE * (0.85 + 0.3 * N(p, 900.0).g), uSigma * 0.78);
   // 薄水、湿痕不在岸线处一刀切：往海里再延伸一段、慢慢淡出（开阔岸边才有，小水塘里没有浪）
   float wk = (1.0 - ss(2.0, 38.0, s)) * mix(1.0, energy, ss(2.0, 10.0, s));
-  if ((s < 4.0 && reachBase > 0.5) || (s >= 4.0 && wk > 0.01)) {
+  // 保留湿痕和浪线的羽化，以及颗粒遮罩 step(0, 0) 的行为。
+  bool canReachSand = sW > -reachBase - max(4.0, wv) || g1 == 0.0;
+  if ((s < 4.0 && reachBase > 0.5 && canReachSand) || (s >= 4.0 && wk > 0.01)) {
     vec3 FILM = wetSandColor(), MARK = wetSandColor() * 0.97;
     float onSand = step(s, 4.0);                                                  // 前沿白边只画在沙滩上
     // 薄水退去时留下的网状碎沫（跟着回流的水往海里漂）
