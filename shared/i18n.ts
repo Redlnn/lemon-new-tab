@@ -37,6 +37,7 @@ const resources = import.meta.glob<Record<string, unknown>>('/locales/*/*.json',
 // 交给 i18next 等待当前语言及回退资源，语言切换完成前不发布新语言。
 const resourceBackend: BackendModule = {
   type: 'backend',
+  callbackApi: false,
   init() {},
   read(language, namespace) {
     const load = resources[`/locales/${language}/${namespace}.json`]
