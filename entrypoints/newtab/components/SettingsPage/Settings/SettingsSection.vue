@@ -6,13 +6,11 @@ const props = withDefaults(
   defineProps<{
     title: string
     summary?: string
-    wide?: boolean
     mobileOpen?: boolean
     contentClass?: string
   }>(),
   {
     summary: '',
-    wide: true,
     mobileOpen: false,
     contentClass: '',
   },
@@ -40,8 +38,7 @@ function handleToggle(event: Event) {
 
 <template>
   <details
-    class="settings-section"
-    :class="{ 'settings-section--wide': wide }"
+    class="settings-section settings-section--wide"
     :name="isMobile ? 'settings-page-section' : undefined"
     :open="open"
     @toggle="handleToggle"

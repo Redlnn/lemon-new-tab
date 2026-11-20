@@ -350,10 +350,6 @@ html.colorful .se-switcher__dialog {
       object-fit: cover;
     }
 
-    &--default {
-      opacity: 0.5;
-    }
-
     .se-switcher-item:hover &,
     .se-switcher-item.is-active & {
       background-color: var(--se-icon-active-background);

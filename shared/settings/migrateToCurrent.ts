@@ -38,12 +38,8 @@ export function migrateSettingsOneVersion(settings: MigratableSettings): Migrata
   }
 }
 
-export function migrateSettingsToCurrent(settings: MigratableSettings): {
-  settings: CURRENT_CONFIG_SCHEMA
-  migrated: boolean
-} {
+export function migrateSettingsToCurrent(settings: MigratableSettings): CURRENT_CONFIG_SCHEMA {
   let current = settings
-  let migrated = false
 
   while (current.version < CURRENT_CONFIG_VERSION) {
     const previousVersion = current.version
@@ -51,17 +47,13 @@ export function migrateSettingsToCurrent(settings: MigratableSettings): {
     if (current.version <= previousVersion || current.version > CURRENT_CONFIG_VERSION) {
       throw new Error(`Invalid migration result: ${previousVersion} -> ${current.version}`)
     }
-    migrated = true
   }
 
   if (current.version !== CURRENT_CONFIG_VERSION) {
     throw new Error(`Unexpected config version after migration: ${current.version}`)
   }
 
-  return {
-    settings: normalizeCurrentSettings(current as CURRENT_CONFIG_SCHEMA),
-    migrated,
-  }
+  return normalizeCurrentSettings(current as CURRENT_CONFIG_SCHEMA)
 }
 
 /** 修复 WXT 元数据已前进、但配置值仍停留在旧版本的异常状态。 */

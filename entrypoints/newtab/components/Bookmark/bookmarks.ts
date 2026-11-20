@@ -431,7 +431,6 @@ export const useBookmarkStore = defineStore('bookmark', () => {
     firstMatchPath,
     loadBookmarks,
     moveBookmark,
-    getBookmarkNode,
     getBookmarkChildrenCount,
     isBookmarkSelfOrDescendant,
     _setSortMode,

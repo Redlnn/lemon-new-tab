@@ -7,7 +7,6 @@ import { SettingsRoute } from '../composables/useSettingsRouter'
 interface Props {
   currentRoute: SettingsRoute
   title: string
-  isMobile?: boolean
   disableTransition?: boolean
 }
 

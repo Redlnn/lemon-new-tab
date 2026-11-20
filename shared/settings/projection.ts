@@ -100,20 +100,9 @@ for (const surface of EFFECT_SURFACES) {
   INTEGER_RANGES[`perf.${surface}.blurIntensity`] = BLUR_RANGE
 }
 
-export function isSyncedSetting(path: string): boolean {
+function isSyncedSetting(path: string): boolean {
   return SYNC_GROUPS.has(path.split('.')[0]!) && !LOCAL_PATHS.has(path)
 }
-
-export function settingLeaves(value: unknown, prefix = ''): Array<[string, unknown]> {
-  if (!isSettingsObject(value)) return [[prefix, value]]
-  return Object.entries(value).flatMap(([key, item]) =>
-    settingLeaves(item, prefix ? `${prefix}.${key}` : key),
-  )
-}
-
-export const SYNC_SETTING_PATHS = settingLeaves(defaultSettings)
-  .map(([path]) => path)
-  .filter(isSyncedSetting)
 
 function validLeaf(value: unknown, fallback: unknown, path: string): boolean {
   if (ENUMS[path]) return ENUMS[path].includes(value)

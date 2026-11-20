@@ -630,7 +630,6 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     replace,
     save,
     getGroup,
-    getDefaultGroupItems,
     getGroupItemCount,
     setGroupingEnabled,
     ensureDefaultGroup,
@@ -651,7 +650,6 @@ export const useQuickLinksStore = defineStore('quickLinks', () => {
     insertFlatQuickLink,
     getQuickLink,
     findQuickLinkTargetById,
-    getSnapshot,
     setBuiltInAppEnabled,
   }
 })

@@ -94,14 +94,11 @@ function handleClickCapture(event: MouseEvent) {
     v-bind="$attrs"
     class="quick-link-dnd-sortable"
     tabindex="-1"
-    :class="{
-      'quick-link-dnd-sortable--dragging': isDragging,
-      'quick-link-dnd-sortable--drop-target': isDropTarget,
-    }"
+    :class="{ 'quick-link-dnd-sortable--drop-target': isDropTarget }"
     @click.capture="handleClickCapture"
     @dragstart.prevent
     @[QUICK_LINK_TOUCH_CONTEXT_MENU_EVENT].stop="handleTouchContextMenu"
   >
-    <slot :is-dragging="isDragging" :is-drop-target="isDropTarget" />
+    <slot />
   </div>
 </template>

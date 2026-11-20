@@ -35,10 +35,6 @@ export async function inspectSettings() {
   return { compatible: true, hasSettings: storedSettings.settings !== null }
 }
 
-export async function isSettingsCompatible(): Promise<boolean> {
-  return (await inspectSettings()).compatible
-}
-
 export async function shouldStartApp() {
   const result = await inspectSettings()
   if (result.compatible) return { canStart: true, hasSettings: result.hasSettings }

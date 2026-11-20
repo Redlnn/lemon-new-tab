@@ -129,27 +129,27 @@ async function writeMetadata(state: BookmarkCacheMetadata['state']) {
   }
 }
 
-async function cacheTree(tree: BookmarkTreeNode[], generationAtStart: number) {
+async function cacheTree(tree: BookmarkTreeNode[], generationAtStart: number): Promise<void> {
   if (!hasBookmarkContent(tree)) {
     await clearSnapshot()
-    return false
+    return
   }
 
   const estimatedBytes = normalizeAndEstimateTree(tree)
-  if (generationAtStart !== generation) return false
+  if (generationAtStart !== generation) return
 
   if (estimatedBytes > MAX_CACHE_BYTES) {
     await clearSnapshot()
-    if (generationAtStart !== generation) return false
-    if (!(await hasEnoughStorage(NODE_OVERHEAD_BYTES))) return false
+    if (generationAtStart !== generation) return
+    if (!(await hasEnoughStorage(NODE_OVERHEAD_BYTES))) return
     const saved = await writeMetadata('oversize')
     if (saved && generationAtStart === generation) cacheInvalidated = false
-    return saved
+    return
   }
 
   if (!(await hasEnoughStorage(estimatedBytes)) || generationAtStart !== generation) {
     await clearSnapshot()
-    return false
+    return
   }
 
   const metadata: BookmarkCacheMetadata = { schemaVersion: CACHE_SCHEMA_VERSION, state: 'ready' }
@@ -161,16 +161,15 @@ async function cacheTree(tree: BookmarkTreeNode[], generationAtStart: number) {
   } catch (error) {
     console.warn('[bookmark-cache] Failed to write bookmark cache:', error)
     await clearSnapshot()
-    return false
+    return
   }
 
   if (generationAtStart !== generation) {
     await clearSnapshot()
-    return false
+    return
   }
 
   cacheInvalidated = false
-  return true
 }
 
 async function readBrowserTree() {

@@ -605,7 +605,6 @@ onUnmounted(() => {
 
 <template>
   <div
-    ref="backgroundWrapper"
     class="background-wrapper noselect"
     aria-hidden="true"
     :style="{
@@ -640,7 +639,6 @@ onUnmounted(() => {
       <div
         :key="isDynamicBgType(renderedType) ? renderedType : bgURL"
         v-show="!isSwitching"
-        ref="bgRef"
         class="background-container"
         :class="[
           backgroundCss,

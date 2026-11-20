@@ -223,7 +223,7 @@ function handleTab(event: KeyboardEvent) {
       @focusin="focusedKey = virtualItemKey(items[index]!)"
       @focusout="focusedKey = null"
     >
-      <slot :item="items[index]!" :index="index" />
+      <slot :item="items[index]!" />
     </div>
     <div
       v-if="add"

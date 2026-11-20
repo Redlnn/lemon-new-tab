@@ -1,15 +1,13 @@
 import { jsonEquals } from '../json.ts'
-import { projectSettings, SYNC_SETTING_PATHS } from '../settings/projection.ts'
+import { projectSettings } from '../settings/projection.ts'
 
 import type { JsonObject } from './types.ts'
-
-export { SYNC_SETTING_PATHS }
 
 export function pickSyncSettings(settings: unknown): JsonObject {
   return projectSettings(settings, { syncOnly: true }) as JsonObject
 }
 
-export function completeSyncSettings(settings: unknown): JsonObject {
+function completeSyncSettings(settings: unknown): JsonObject {
   return projectSettings(settings, { syncOnly: true, defaults: true }) as JsonObject
 }
 

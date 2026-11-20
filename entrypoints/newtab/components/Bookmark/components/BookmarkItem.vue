@@ -51,14 +51,12 @@ const props = withDefaults(
     depth?: number
     isSearching?: boolean
     isSortedMode?: boolean
-    disableDrag?: boolean
     dropPreviewPlacement?: 'before' | 'after' | 'inside' | null
   }>(),
   {
     depth: 1,
     isSearching: false,
     isSortedMode: false,
-    disableDrag: false,
     dropPreviewPlacement: null,
   },
 )
@@ -66,7 +64,7 @@ const isFolder = computed(() => !!props.node.children)
 const isTopLevel = computed(() => props.depth === 1)
 // 搜索、非原始排序或显式禁用时不允许改写真实书签顺序。
 const isDragDisabled = computed(() => {
-  return props.disableDrag || props.isSearching || props.isSortedMode
+  return props.isSearching || props.isSortedMode
 })
 const expandeds = computed(() => activeMap?.value[props.depth] ?? [])
 const id = computed(() => props.node.id)

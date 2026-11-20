@@ -871,7 +871,7 @@ defineExpose({ refresh, getActiveGroupId })
       @dragOver="handleQuickLinkDragOver"
       @dragEnd="handleQuickLinkDragEnd"
     >
-      <div ref="quickLinksWrapperRef" class="quick-links__wrapper" :class="containerBaseClasses">
+      <div class="quick-links__wrapper" :class="containerBaseClasses">
         <div v-if="settings.quickLinks.useScroll" class="quick-links__scroll">
           <section
             v-for="section in scrollSections"

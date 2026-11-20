@@ -171,7 +171,6 @@ watch(windowWidth, (newWidth, oldWidth) => {
           v-else
           key="detail"
           ref="detailViewRef"
-          is-mobile
           disable-transition
           :current-route="router.currentRoute.value"
           :title="currentPageTitle"

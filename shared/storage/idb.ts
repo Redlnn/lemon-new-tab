@@ -172,20 +172,6 @@ export async function idbSetMany<S extends StoreName>(
   ])
 }
 
-/** 返回指定 store 的全部字符串键值对。 */
-export async function idbGetAllEntries<S extends StoreName>(
-  storeName: S,
-): Promise<Array<[string, LemonDBSchema[S]['value']]>> {
-  const db = await getDB()
-  const transaction = db.transaction(storeName, 'readonly')
-  const [keys, values] = await Promise.all([
-    transaction.store.getAllKeys(),
-    transaction.store.getAll(),
-    transaction.done,
-  ])
-  return values.map((value, index) => [String(keys[index]), value])
-}
-
 /** 删除指定 store 中某个 key */
 export async function idbDelete(storeName: StoreName, key: string): Promise<void> {
   const db = await getDB()

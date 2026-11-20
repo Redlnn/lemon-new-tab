@@ -26,8 +26,7 @@ import type { SyncScopePreferences, SyncSnapshotV1 } from './types.ts'
 const MAX_JSON_BACKUP_BYTES = 25 * 1024 * 1024
 const textDecoder = new TextDecoder('utf-8', { fatal: true })
 
-export interface PreparedBrowserImport extends ParsedLocalBackup {
-  source: 'json-v1' | 'legacy-json'
+interface PreparedBrowserImport extends ParsedLocalBackup {
   scope: SyncScopePreferences
   legacyIcons?: LegacyLocalIcons
 }
@@ -57,7 +56,6 @@ export async function prepareBrowserImport(file: Blob): Promise<PreparedBrowserI
     const parsed = parseJsonBackup(value, browser.runtime.getManifest().version)
     return {
       ...parsed,
-      source: 'json-v1',
       scope: inferImportScope(parsed.snapshot),
     }
   }
@@ -128,7 +126,7 @@ async function prepareLegacyImport(value: unknown): Promise<PreparedBrowserImpor
     if (!isRecord(record.settings) || !Number.isSafeInteger(record.settings.version)) {
       throw new TypeError('Legacy settings version is invalid')
     }
-    settings = migrateSettingsToCurrent(record.settings as unknown as MigratableSettings).settings
+    settings = migrateSettingsToCurrent(record.settings as unknown as MigratableSettings)
   }
   let quickLinks: QuickLinksData = materializeLegacyQuickLinks(current)
   if (quickLinksValue !== undefined) {
@@ -155,7 +153,6 @@ async function prepareLegacyImport(value: unknown): Promise<PreparedBrowserImpor
   await deduplicateInlineImages(snapshot)
   return {
     snapshot,
-    source: 'legacy-json',
     scope: { ...DEFAULT_SYNC_SCOPE, userIcons: false },
     legacyIcons: collectLegacyIcons(quickLinks, customSearchEngines),
   }

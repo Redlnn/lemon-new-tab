@@ -7,7 +7,7 @@ import {
   reloadNewtabTabs,
 } from './legacySettingsRecovery'
 
-export async function handleInvaildSettings(): Promise<boolean> {
+export async function handleInvaildSettings(): Promise<void> {
   const { default: DownloadRound } = await import('~icons/ic/round-download')
   const includeSync = ref(false)
 
@@ -72,7 +72,5 @@ export async function handleInvaildSettings(): Promise<boolean> {
       },
     )
     location.reload()
-    return false
   }
-  return false
 }

@@ -5,8 +5,6 @@
     transparent var(--le-dialog-secondary-transparency)
   );
   --note-item-background: var(--le-bg-color-overlay-opacity-60);
-  --note-item-hover-background: var(--le-bg-color-overlay-opacity-30);
-  --note-item-active-background: var(--el-color-primary-light-9);
   display: flex;
   flex-direction: column;
   max-width: 93%;
@@ -18,21 +16,6 @@
   box-shadow: 0 0 15px 0 var(--le-bg-color-page-opacity-60);
   transition: background-color var(--el-transition-duration-fast) ease;
 }
-
-// html.dark:not(.colorful) .note__dialog {
-// }
-
-// html.colorful .note__dialog {
-// }
-
-// html.dialog-transparent .note__dialog {
-// }
-
-// html.dark.dialog-transparent .note__dialog {
-// }
-
-// html.colorful.dialog-transparent .note__dialog {
-// }
 
 .note-header {
   z-index: 1;

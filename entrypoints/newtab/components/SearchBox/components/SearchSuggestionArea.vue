@@ -144,9 +144,6 @@ function clearSearchSuggestions() {
   isShowSearchHistories.value = false
   searchSuggestions.value = []
 }
-function hideSearchHistories() {
-  isShowSearchHistories.value = false
-}
 
 async function remoteSuggestions(query: string, signal: AbortSignal): Promise<SearchSuggestion[]> {
   const apiId = settings.search.suggestionAPI
@@ -333,7 +330,6 @@ watch(isExpanded, (expanded) => emit('expandedChange', expanded), { immediate: t
 defineExpose({
   clearActiveSuggest,
   clearSearchSuggestions,
-  hideSearchHistories,
   showSearchHistories,
   handleInput,
   navigateActiveSuggest,
@@ -343,7 +339,6 @@ defineExpose({
 
 <template>
   <div
-    ref="searchSuggestionArea"
     :id="listId"
     class="search-suggestion-area"
     role="listbox"

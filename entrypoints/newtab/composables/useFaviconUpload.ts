@@ -3,7 +3,7 @@ import { useTranslation } from 'i18next-vue'
 
 import { isImageFile } from '@/shared/media'
 
-const DEFAULT_WARN_SIZE_KB = 1024
+const WARN_SIZE_KB = 1024
 
 function formatBytes(bytes: number) {
   if (bytes === 0) return '0 B'
@@ -13,18 +13,15 @@ function formatBytes(bytes: number) {
   return `${parseFloat((bytes / Math.pow(unit, index)).toFixed(2))} ${units[index]}`
 }
 
-export function useFaviconUpload(options?: { maxKB?: number }) {
+export function useFaviconUpload() {
   const { t } = useTranslation()
-  const warnSizeKB = options?.maxKB ?? DEFAULT_WARN_SIZE_KB
-
-  const isSvg = (file: Blob) => file.type.endsWith('svg+xml')
 
   const beforeFaviconUpload: UploadProps['beforeUpload'] = async (rawFile) => {
     if (!isImageFile(rawFile, ['image/x-icon', 'image/svg+xml'])) {
       ElMessage.error(t('settings:background.warning.fileIsNotImage'))
       return false
     }
-    if (rawFile.size / 1024 > warnSizeKB) {
+    if (rawFile.size / 1024 > WARN_SIZE_KB) {
       try {
         await ElMessageBox.confirm(
           t('common.tooLargeImageConfirm', { size: formatBytes(rawFile.size) }),
@@ -58,5 +55,5 @@ export function useFaviconUpload(options?: { maxKB?: number }) {
     onDone(base64)
   }
 
-  return { beforeFaviconUpload, fileToBase64, httpRequest, isSvg }
+  return { beforeFaviconUpload, httpRequest }
 }

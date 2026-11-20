@@ -1,23 +1,3 @@
-@mixin gen-var-opacity($base-name, $css-var-name, $ops) {
-  @each $op in $ops {
-    --#{$base-name}-opacity-#{$op}: color-mix(
-      in oklch,
-      var(--#{$css-var-name}),
-      transparent #{$op}%
-    );
-  }
-}
-
-@mixin gen-colorful-var-opacity($base-name, $css-var-name, $p, $ops) {
-  @each $op in $ops {
-    --#{$base-name}-opacity-#{$op}: color-mix(
-      in oklch,
-      color-mix(in oklch, var(--#{$css-var-name}) 100%, var(--el-color-primary) #{$p}%),
-      transparent #{$op}%
-    );
-  }
-}
-
 @mixin gen-semantic-overlay-colors($base-color, $roles) {
   @each $role, $default-transparency in $roles {
     --le-#{$role}-transparency: #{$default-transparency} * 1%;
@@ -29,7 +9,6 @@
   }
 }
 
-$opacities: (15, 20, 30, 35, 50, 60, 80, 90);
 $semantic-overlay-roles: (
   'bookmark': 15,
   'bookmark-menu': 30,
@@ -55,16 +34,21 @@ $semantic-overlay-roles: (
 );
 
 :root {
-  @include gen-var-opacity('le-bg-color-overlay', 'el-bg-color-overlay', $opacities);
-  @include gen-var-opacity('le-text-color-primary', 'el-text-color-primary', (65));
-  @include gen-var-opacity('le-bg-color-page', 'el-bg-color-page', (60));
-  @include gen-var-opacity('le-fill-color-lighter', 'el-fill-color-lighter', (20));
-  @include gen-var-opacity('le-fill-color-dark', 'el-fill-color-dark', (20));
+  --le-bg-color-overlay-opacity-60: color-mix(in oklch, var(--el-bg-color-overlay), transparent 60%);
+  --le-text-color-primary-opacity-65: color-mix(in oklch, var(--el-text-color-primary), transparent 65%);
+  --le-bg-color-page-opacity-60: color-mix(in oklch, var(--el-bg-color-page), transparent 60%);
+  --le-fill-color-dark-opacity-20: color-mix(in oklch, var(--el-fill-color-dark), transparent 20%);
+
   @include gen-semantic-overlay-colors(var(--el-bg-color-overlay), $semantic-overlay-roles);
 }
 
 html.colorful {
-  @include gen-colorful-var-opacity('le-bg-color-overlay', 'el-bg-color-overlay', 30, $opacities);
+  --le-bg-color-overlay-opacity-60: color-mix(
+    in oklch,
+    color-mix(in oklch, var(--el-bg-color-overlay) 100%, var(--el-color-primary) 30%),
+    transparent 60%
+  );
+
   @include gen-semantic-overlay-colors(
     color-mix(in oklch, var(--el-bg-color-overlay) 100%, var(--el-color-primary) 30%),
     $semantic-overlay-roles

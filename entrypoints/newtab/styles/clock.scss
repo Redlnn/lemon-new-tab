@@ -175,19 +175,3 @@ html.dark .clock {
     color: var(--clock-night-invert-color);
   }
 }
-
-@media (width <= 600px) {
-  .clock {
-    &__time-container {
-      font-size: 40px;
-
-      &-medium {
-        font-size: 40px;
-      }
-    }
-
-    &__date {
-      font-size: var(--el-font-size-small);
-    }
-  }
-}

@@ -596,7 +596,6 @@ onBeforeUnmount(() => {
             <!-- 搜索栏 -->
             <div class="launchpad-search">
               <el-input
-                ref="searchInput"
                 v-model="query"
                 :placeholder="t('dock.launchpad.search')"
                 clearable

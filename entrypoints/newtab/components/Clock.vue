@@ -120,7 +120,6 @@ const dateStyle = computed(() => {
 
 <template>
   <div
-    ref="time"
     class="clock noselect"
     :class="[
       settings.clock.style.shadow ? 'clock--shadow' : undefined,

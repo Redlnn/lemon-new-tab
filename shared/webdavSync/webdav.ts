@@ -984,11 +984,11 @@ export class WebDavVaultRepository {
   async pruneHistory(
     metadata: VaultMetadataV1,
     revisions: readonly SyncRevisionV1[],
-  ): Promise<{ deletedAssets: number; deletedRevisions: number; skipped: boolean }> {
+  ): Promise<void> {
     const parentIds = new Set(revisions.flatMap((revision) => revision.parentRevisionIds))
     const headRevisions = revisions.filter((revision) => !parentIds.has(revision.revisionId))
     if (headRevisions.length !== 1) {
-      return { deletedAssets: 0, deletedRevisions: 0, skipped: true }
+      return
     }
 
     const root = `${this.directory}/generations/${metadata.generationId}`
@@ -1003,7 +1003,7 @@ export class WebDavVaultRepository {
       before.some((commit) => !expectedIds.has(commit.revisionId)) ||
       commitEntryById.size !== expectedIds.size
     ) {
-      return { deletedAssets: 0, deletedRevisions: 0, skipped: true }
+      return
     }
 
     const byId = new Map(revisions.map((revision) => [revision.revisionId, revision]))
@@ -1051,7 +1051,7 @@ export class WebDavVaultRepository {
       remainingCommits.length !== keep.size ||
       remainingCommits.some((commit) => !keep.has(commit.revisionId))
     ) {
-      return { deletedAssets: 0, deletedRevisions: removing.length, skipped: true }
+      return
     }
     const retainedAssets = new Set(
       revisions
@@ -1059,7 +1059,6 @@ export class WebDavVaultRepository {
         .flatMap((revision) => revision.assets.map((asset) => asset.path)),
     )
     const graceCutoff = Date.now() - ORPHAN_RESOURCE_GRACE_MS
-    let deletedAssets = 0
     const assetRoot = `${root}/assets`
     for (const entry of await this.client.list(assetRoot)) {
       if (entry.isCollection) continue
@@ -1067,7 +1066,6 @@ export class WebDavVaultRepository {
       const modified = Date.parse(entry.lastModified ?? '')
       if (!retainedAssets.has(path) && Number.isFinite(modified) && modified < graceCutoff) {
         await this.client.delete(`${assetRoot}/${entry.name}`, true)
-        deletedAssets += 1
       }
     }
     const revisionRoot = `${root}/revisions`
@@ -1086,11 +1084,6 @@ export class WebDavVaultRepository {
       if (!entry.isCollection && Number.isFinite(modified) && modified < deviceCutoff) {
         await this.client.delete(`${deviceRoot}/${entry.name}`, true)
       }
-    }
-    return {
-      deletedAssets,
-      deletedRevisions: removing.length,
-      skipped: false,
     }
   }
 

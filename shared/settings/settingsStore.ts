@@ -60,13 +60,10 @@ export const useSettingsStore = defineStore('option', () => {
     })
   }
 
-  const deinit = () => {
-    unwatchStorage?.()
-    unwatchStorage = null
-  }
   onScopeDispose(() => {
     disposed = true
-    deinit()
+    unwatchStorage?.()
+    unwatchStorage = null
   })
 
   const save = async () => {
@@ -81,17 +78,13 @@ export const useSettingsStore = defineStore('option', () => {
     }
   }
 
-  // 返回原始（非响应式）底层状态对象，对structuredClone安全
-  const getRawState = (): CURRENT_CONFIG_SCHEMA => toRaw(state) as CURRENT_CONFIG_SCHEMA
   const isApplyingStorage = () => applyingStorage
 
   return {
     ...toRefs(state),
     init,
-    deinit,
     save,
     isDirty: writer.isDirty,
-    getRawState,
     isApplyingStorage,
     prepareCommit: writer.prepareCommit,
     setDockReplaceQuickLinks,
