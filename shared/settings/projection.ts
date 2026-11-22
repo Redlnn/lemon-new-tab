@@ -141,7 +141,7 @@ function normalizeLeaf(value: unknown, path: string): unknown {
       ? normalizeBuiltInSearchEngineOrder(keys)
       : [...new Set(keys)]
   }
-  return structuredClone(value)
+  return Array.isArray(value) ? value.slice() : value
 }
 
 /** 只读取当前结构的字段。远端非法值拒绝；本机缺失/无效值可以补齐默认值。 */
@@ -155,16 +155,18 @@ export function projectSettings(
       const path = prefix ? `${prefix}.${key}` : key
       const present = Object.hasOwn(source, key) && source[key] !== undefined
       if (isSettingsObject(fallback)) {
-        if (present && !isSettingsObject(source[key]) && strict)
-          throw new TypeError(`Invalid setting: ${path}`)
-        const next = visit(fallback, isSettingsObject(source[key]) ? source[key] : {}, path)
+        const branch = source[key]
+        const valid = isSettingsObject(branch)
+        if (present && !valid && strict) throw new TypeError(`Invalid setting: ${path}`)
+        if (!valid && !defaults) continue
+        const next = visit(fallback, valid ? branch : {}, path)
         if (Object.keys(next).length) result[key] = next
       } else {
         if (syncOnly && !isSyncedSetting(path)) continue
         const valid = present && validLeaf(source[key], fallback, path)
         if (present && !valid && strict) throw new TypeError(`Invalid setting: ${path}`)
         if (valid) result[key] = normalizeLeaf(source[key], path)
-        else if (defaults) result[key] = structuredClone(fallback)
+        else if (defaults) result[key] = Array.isArray(fallback) ? fallback.slice() : fallback
       }
     }
     return result

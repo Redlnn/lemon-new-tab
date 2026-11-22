@@ -716,21 +716,27 @@ export async function resolveRevisionAssets(
   knownAssets: readonly AssetReferenceV1[],
   encryptionKey?: CryptoKey,
 ): Promise<AssetReferenceV1[]> {
+  const wallpapers = snapshot.optional?.wallpapers
+  if (!wallpapers?.light?.items.length && !wallpapers?.dark?.items.length) return []
+  const keyOf = (id: string, hash: string) => `${id}:${hash}`
+  const knownByKey = new Map<string, AssetReferenceV1>()
+  for (const asset of knownAssets) {
+    const key = keyOf(asset.id, asset.sha256)
+    if (!knownByKey.has(key)) knownByKey.set(key, asset)
+  }
+  const resolvedKeys = new Set<string>()
   const result: AssetReferenceV1[] = []
   for (const variant of ['light', 'dark'] as const) {
-    for (const reference of snapshot.optional?.wallpapers?.[variant]?.items ?? []) {
-      const role = wallpaperRole(variant)
-      const resolved = result.find(
-        (asset) => asset.id === reference.assetId && asset.sha256 === reference.sha256,
-      )
-      if (resolved) continue
-      const known = knownAssets.find(
-        (asset) => asset.id === reference.assetId && asset.sha256 === reference.sha256,
-      )
+    for (const reference of wallpapers[variant]?.items ?? []) {
+      const key = keyOf(reference.assetId, reference.sha256)
+      if (resolvedKeys.has(key)) continue
+      const known = knownByKey.get(key)
       if (known) {
         result.push(known)
+        resolvedKeys.add(key)
         continue
       }
+      const role = wallpaperRole(variant)
       const blob = await getLocalWallpaperBlob(variant, reference.sha256)
       if (!blob) throw new WebDavError('corrupted', 'Selected local wallpaper is unavailable')
       let uploaded: AssetReferenceV1
@@ -767,6 +773,7 @@ export async function resolveRevisionAssets(
         throw new WebDavError('corrupted', 'Uploaded wallpaper does not match its snapshot')
       }
       result.push(uploaded)
+      resolvedKeys.add(keyOf(uploaded.id, uploaded.sha256))
     }
   }
   return result
@@ -780,15 +787,31 @@ export async function prepareIncomingWallpapers(
   assets: readonly AssetReferenceV1[],
   encryptionKey?: CryptoKey,
 ): Promise<IncomingWallpaperResources | undefined> {
-  if (!state.scope.wallpapers) return undefined
+  const wallpapers = snapshot.optional?.wallpapers
+  if (
+    !state.scope.wallpapers ||
+    (!wallpapers?.light?.items.length && !wallpapers?.dark?.items.length)
+  )
+    return undefined
+  let assetsById: Map<string, AssetReferenceV1> | undefined
+  const downloaded = new Map<string, Blob>()
   const result: IncomingWallpaperResources = {}
   for (const variant of ['light', 'dark'] as const) {
-    for (const reference of snapshot.optional?.wallpapers?.[variant]?.items ?? []) {
+    for (const reference of wallpapers[variant]?.items ?? []) {
       let blob = await getLocalWallpaperBlob(variant, reference.sha256)
       if (!blob) {
-        const asset = assets.find((item) => item.id === reference.assetId)
-        if (!asset) throw new WebDavError('corrupted', 'Revision wallpaper reference is missing')
-        blob = await readWallpaperAsset(repository, metadata, asset, encryptionKey)
+        blob = downloaded.get(reference.assetId)
+        if (!blob) {
+          if (!assetsById) {
+            assetsById = new Map()
+            for (const asset of assets)
+              if (!assetsById.has(asset.id)) assetsById.set(asset.id, asset)
+          }
+          const asset = assetsById.get(reference.assetId)
+          if (!asset) throw new WebDavError('corrupted', 'Revision wallpaper reference is missing')
+          blob = await readWallpaperAsset(repository, metadata, asset, encryptionKey)
+          downloaded.set(reference.assetId, blob)
+        }
       }
       result[`${variant}:${reference.id}`] = {
         variant,
@@ -800,7 +823,7 @@ export async function prepareIncomingWallpapers(
     }
   }
 
-  return Object.keys(result).length ? result : undefined
+  return result
 }
 
 function encryptedAssetStorageId(metadata: VaultMetadataV1, asset: AssetReferenceV1): string {
@@ -985,10 +1008,12 @@ async function runSynchronizationOnce(): Promise<void> {
   }
   const { scope } = initialState
   const state = initialState
-  const comparisonRevisions = revisions.map((revision) => ({
-    ...revision,
-    snapshot: preserveExcludedScope(revision.snapshot, comparisonBase, scope),
-  }))
+  const headIds = new Set(findRevisionHeads(revisions).map((revision) => revision.revisionId))
+  const comparisonRevisions = revisions.map((revision) =>
+    headIds.has(revision.revisionId)
+      ? { ...revision, snapshot: preserveExcludedScope(revision.snapshot, comparisonBase, scope) }
+      : revision,
+  )
   const capture = await captureBrowserSyncSnapshotResult(scope, reinitialize ? undefined : baseline)
   await patchSyncState({ resourceOmissions: capture.resourceOmissions })
   const local =

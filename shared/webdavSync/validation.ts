@@ -228,14 +228,14 @@ function isWallpaperGroup(value: unknown): boolean {
     !Array.isArray(value.order)
   )
     return false
-  const ids = value.items.map((item) => (item as { id: string }).id)
+  const ids = new Set(value.items.map((item) => (item as { id: string }).id))
   return (
-    new Set(ids).size === ids.length &&
-    value.order.length === ids.length &&
-    new Set(value.order).size === ids.length &&
-    value.order.every((id) => typeof id === 'string' && ids.includes(id)) &&
+    ids.size === value.items.length &&
+    value.order.length === ids.size &&
+    new Set(value.order).size === ids.size &&
+    value.order.every((id) => typeof id === 'string' && ids.has(id)) &&
     typeof value.fixedId === 'string' &&
-    (!value.fixedId || ids.includes(value.fixedId))
+    (!value.fixedId || ids.has(value.fixedId))
   )
 }
 function isWallpapers(value: unknown): boolean {

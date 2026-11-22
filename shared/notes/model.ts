@@ -42,11 +42,10 @@ export function projectNotes(snapshot: NoteSnapshot): NoteSnapshot {
 
 export function assertNoteSnapshotSize(snapshot: NoteSnapshot): void {
   const encoder = new TextEncoder()
-  if (
-    snapshot.notes.some(
-      (note) => encoder.encode(JSON.stringify(note)).byteLength > MAX_NOTE_BYTES,
-    ) ||
-    encoder.encode(JSON.stringify(snapshot)).byteLength > MAX_NOTES_BYTES
-  )
-    throw new NoteSaveError('tooLarge')
+  let total = '{"notes":[]}'.length
+  for (const [index, note] of snapshot.notes.entries()) {
+    const size = encoder.encode(JSON.stringify(note)).byteLength
+    total += size + (index ? 1 : 0)
+    if (size > MAX_NOTE_BYTES || total > MAX_NOTES_BYTES) throw new NoteSaveError('tooLarge')
+  }
 }

@@ -1033,18 +1033,23 @@ export class WebDavVaultRepository {
       ordered.slice(0, MAX_HISTORY_VERSIONS).map((revision) => revision.revisionId),
     )
     const cutoff = Date.now() - HISTORY_RETENTION_DAYS * 24 * 60 * 60 * 1000
-    const removing = revisions.filter((revision) => {
-      if (protectedIds.has(revision.revisionId)) return false
-      if (!countKeep.has(revision.revisionId)) return true
-      const modified = Date.parse(commitEntryById.get(revision.revisionId)?.lastModified ?? '')
-      return Number.isFinite(modified) && modified < cutoff
-    })
-    const keep = new Set(
-      revisions
-        .filter((revision) => !removing.includes(revision))
-        .map((revision) => revision.revisionId),
-    )
-    for (const revision of removing) await this.deleteRevision(metadata, revision.revisionId)
+    const removing: string[] = []
+    const keep = new Set<string>()
+    for (const { revisionId } of revisions) {
+      if (!protectedIds.has(revisionId)) {
+        if (!countKeep.has(revisionId)) {
+          removing.push(revisionId)
+          continue
+        }
+        const modified = Date.parse(commitEntryById.get(revisionId)?.lastModified ?? '')
+        if (Number.isFinite(modified) && modified < cutoff) {
+          removing.push(revisionId)
+          continue
+        }
+      }
+      keep.add(revisionId)
+    }
+    for (const revisionId of removing) await this.deleteRevision(metadata, revisionId)
 
     const remainingCommits = await this.listCommits(metadata)
     if (

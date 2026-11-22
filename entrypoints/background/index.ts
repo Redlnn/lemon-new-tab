@@ -110,15 +110,14 @@ export default defineBackground(() => {
       const state = stateChange.newValue as LocalSyncStateV1
       applyingRemote = state.pending?.phase === 'applying-local'
     }
+    if (!configured || applyingRemote) return
     const syncDataChanged = Object.entries(changes).some(([key, change]) =>
       key === 'settings'
         ? syncSettingsChanged(change.oldValue, change.newValue) ||
           syncWallpaperSettingsChanged(change.oldValue, change.newValue)
         : SYNC_DATA_KEYS.has(key),
     )
-    if (!applyingRemote && syncDataChanged) {
-      scheduleConfiguredDataChange()
-    }
+    if (syncDataChanged) coordinator.dataChanged()
   })
 
   const handleWebDavMessage = async (message: WebDavSyncMessage) => {
@@ -197,7 +196,7 @@ export default defineBackground(() => {
     }
     if (message.type === 'webdav-sync:resume-apply') {
       // 没有本机应用日志时，打开新标签页不应等待后台的远端网络任务。
-      if (!(await hasPendingApply())) return getOrCreateSyncState()
+      if (!(await hasPendingApply())) return
       const { resumePendingBrowserApply } = await import('@/shared/webdavSync/browserData')
       await coordinator.runExclusive(async () => {
         try {
@@ -207,7 +206,7 @@ export default defineBackground(() => {
           await recordSyncFailure(error)
         }
       })
-      return getOrCreateSyncState()
+      return undefined
     }
     if (message.type === 'webdav-sync:unlock-encryption') {
       const { unlockBrowserEncryption } = await import('@/shared/webdavSync/browserEngine')

@@ -116,37 +116,47 @@ async function prepareLegacyImport(value: unknown): Promise<PreparedBrowserImpor
     record.customSearchEngines !== undefined
   if (!hasKnownField) throw new TypeError('Backup format is unsupported')
 
-  const [current, currentEngines, ui] = await Promise.all([
-    captureBrowserSyncSnapshotResult({ ...DEFAULT_SYNC_SCOPE }).then((result) => result.snapshot),
-    customSearchEngineStorage.getValue(),
-    getUiPreferences(),
-  ])
-  let settings: unknown = current.settings
+  let importedSettings: unknown
   if (record.settings !== undefined) {
-    if (!isRecord(record.settings) || !Number.isSafeInteger(record.settings.version)) {
+    if (!isRecord(record.settings) || !Number.isSafeInteger(record.settings.version))
       throw new TypeError('Legacy settings version is invalid')
-    }
-    settings = migrateSettingsToCurrent(record.settings as unknown as MigratableSettings)
+    importedSettings = migrateSettingsToCurrent(record.settings as unknown as MigratableSettings)
   }
-  let quickLinks: QuickLinksData = materializeLegacyQuickLinks(current)
+  let importedLinks: QuickLinksData | undefined
   if (quickLinksValue !== undefined) {
     if (!isQuickLinksData(quickLinksValue)) throw new TypeError('Legacy Quick Links are invalid')
-    quickLinks = ensureQuickLinksStableIds(structuredClone(quickLinksValue)).value
+    importedLinks = ensureQuickLinksStableIds(structuredClone(quickLinksValue)).value
   }
-  let customSearchEngines = currentEngines
-  if (record.customSearchEngines !== undefined) {
-    if (!isCustomSearchEngines(record.customSearchEngines)) {
-      throw new TypeError('Legacy custom search engines are invalid')
-    }
-    customSearchEngines = structuredClone(record.customSearchEngines)
-  }
+  const importedEngines = record.customSearchEngines
+  if (importedEngines !== undefined && !isCustomSearchEngines(importedEngines))
+    throw new TypeError('Legacy custom search engines are invalid')
+
+  const needsSettings = record.settings === undefined
+  const needsLinks = importedLinks === undefined
+  const [current, customSearchEngines, ui] = await Promise.all([
+    needsSettings || needsLinks
+      ? captureBrowserSyncSnapshotResult({
+          ...DEFAULT_SYNC_SCOPE,
+          settings: needsSettings,
+          quickLinks: needsLinks,
+          notes: false,
+          customSearchEngines: false,
+          uiPreferences: false,
+        }).then((result) => result.snapshot)
+      : undefined,
+    importedEngines === undefined
+      ? customSearchEngineStorage.getValue()
+      : structuredClone(importedEngines),
+    getUiPreferences(),
+  ])
+  const quickLinks = importedLinks ?? materializeLegacyQuickLinks(current?.quickLinks)
   const snapshot = captureSyncSnapshot({
-    settings,
+    settings: needsSettings ? current?.settings : importedSettings,
     quickLinks,
     customSearchEngines,
     ui: {
-      language: ui.language || current.ui?.language || 'en',
-      colorMode: ui.colorMode || current.ui?.colorMode || 'auto',
+      language: ui.language || 'en',
+      colorMode: ui.colorMode || 'auto',
     },
     scope: { ...DEFAULT_SYNC_SCOPE, userIcons: false },
   })
@@ -217,8 +227,14 @@ async function restoreLegacyIcons(icons: LegacyLocalIcons): Promise<void> {
   ])
 }
 
-function materializeLegacyQuickLinks(snapshot: SyncSnapshotV1): QuickLinksData {
-  const quickLinks = snapshot.quickLinks ?? { items: [], rootOrder: [], groups: [], groupOrder: [] }
+function materializeLegacyQuickLinks(
+  quickLinks: SyncSnapshotV1['quickLinks'] = {
+    items: [],
+    rootOrder: [],
+    groups: [],
+    groupOrder: [],
+  },
+): QuickLinksData {
   const items = new Map(quickLinks.items.map((item) => [item.id, { ...item }]))
   return quickLinks.groups.length
     ? {

@@ -402,18 +402,31 @@ export async function prepareBrowserApply(
   if (!validation.ok) throw new Error(validation.error)
   const resources: Array<readonly [string, Blob]> = []
   const pendingWallpapers: Record<string, PendingWallpaperApplyV1> = {}
+  const referencesByVariant = new Map<WallpaperVariant, Map<string, SyncWallpaperV1>>()
+  const verifiedBlobs = new WeakMap<Blob, string>()
   for (const [key, wallpaper] of Object.entries(wallpapers ?? {})) {
-    const reference = snapshot.optional?.wallpapers?.[wallpaper.variant]?.items.find(
-      (item) => item.id === wallpaper.itemId,
-    )
+    const { variant, blob } = wallpaper
+    let references = referencesByVariant.get(variant)
+    if (!references) {
+      const items = snapshot.optional?.wallpapers?.[variant]?.items ?? []
+      references = new Map(items.map((item) => [item.id, item]))
+      referencesByVariant.set(variant, references)
+    }
+    const reference = references.get(wallpaper.itemId)
     if (
       !reference ||
       reference.assetId !== wallpaper.assetId ||
       reference.sha256 !== wallpaper.sha256 ||
-      reference.size !== wallpaper.blob.size ||
-      reference.mimeType !== wallpaper.blob.type ||
-      (await sha256Hex(await wallpaper.blob.arrayBuffer())) !== wallpaper.sha256
+      reference.size !== blob.size ||
+      reference.mimeType !== blob.type
     )
+      throw new Error('Incoming wallpaper does not match the validated snapshot')
+    let hash = verifiedBlobs.get(blob)
+    if (hash === undefined) {
+      hash = await sha256Hex(await blob.arrayBuffer())
+      verifiedBlobs.set(blob, hash)
+    }
+    if (hash !== wallpaper.sha256)
       throw new Error('Incoming wallpaper does not match the validated snapshot')
     const temporaryKey = `pending-wallpaper-${operationId}-${key}`
     resources.push([temporaryKey, wallpaper.blob])

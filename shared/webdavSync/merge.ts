@@ -213,10 +213,9 @@ function normalizeOrder(order: readonly string[], validIds: ReadonlySet<string>)
       result.push(id)
     }
   }
-  for (const id of [...validIds].sort()) {
-    if (!seen.has(id)) result.push(id)
-  }
-  return result
+  if (seen.size === validIds.size) return result
+  const missing = [...validIds].filter((id) => !seen.has(id))
+  return result.concat(missing.sort())
 }
 
 function mergeOrder(
@@ -265,61 +264,57 @@ function mergeQuickLinks(
     false,
   )
   const groupIds = new Set(groups.map((group) => group.id))
-  const locations = new Map<string, string>()
-  const locationMap = (value: NonNullable<SyncSnapshotV1['quickLinks']>) => {
-    const result = new Map(value.rootOrder.map((id) => [id, 'root']))
+  const indexLinks = (value: NonNullable<SyncSnapshotV1['quickLinks']>) => {
+    const locations = new Map(value.rootOrder.map((id) => [id, 'root']))
+    const groupOrders = new Map<string, readonly string[]>([['root', value.rootOrder]])
     for (const group of value.groups) {
-      for (const id of group.itemIds) result.set(id, group.id)
+      if (!groupOrders.has(group.id)) groupOrders.set(group.id, group.itemIds)
+      for (const id of group.itemIds) locations.set(id, group.id)
     }
-    return result
+    return { locations, groupOrders }
   }
-  const baseLocations = locationMap(base)
-  const localLocations = locationMap(local)
-  const remoteLocations = locationMap(remote)
+  const baseIndex = indexLinks(base)
+  const localIndex = indexLinks(local)
+  const remoteIndex = indexLinks(remote)
+  const idsByLocation = new Map<string, Set<string>>()
   for (const id of itemIds) {
-    const baseLocation = baseLocations.get(id) ?? MISSING
-    const localLocation = localLocations.get(id) ?? MISSING
-    const remoteLocation = remoteLocations.get(id) ?? MISSING
-    let location = mergeJson(
+    const mergedLocation = mergeJson(
       'quick-links',
       `quickLinks.location.${id}`,
-      baseLocation,
-      localLocation,
-      remoteLocation,
+      baseIndex.locations.get(id) ?? MISSING,
+      localIndex.locations.get(id) ?? MISSING,
+      remoteIndex.locations.get(id) ?? MISSING,
       conflicts,
     )
-    if (location === MISSING || typeof location !== 'string' || !groupIds.has(location)) {
-      location = 'root'
+    const location =
+      typeof mergedLocation === 'string' && groupIds.has(mergedLocation) ? mergedLocation : 'root'
+    let ids = idsByLocation.get(location)
+    if (!ids) {
+      ids = new Set()
+      idsByLocation.set(location, ids)
     }
-    locations.set(id, location)
+    ids.add(id)
   }
-  const idsAt = (location: string) =>
-    new Set([...locations].filter(([, value]) => value === location).map(([id]) => id))
-  const orderAt = (value: NonNullable<SyncSnapshotV1['quickLinks']>, location: string) =>
-    location === 'root'
-      ? value.rootOrder
-      : (value.groups.find((group) => group.id === location)?.itemIds ?? [])
-  const rootIds = idsAt('root')
+  const emptyIds: ReadonlySet<string> = new Set()
   const rootOrder = mergeOrder(
     'quick-links',
     'quickLinks.rootOrder',
-    orderAt(base, 'root'),
-    orderAt(local, 'root'),
-    orderAt(remote, 'root'),
-    rootIds,
+    base.rootOrder,
+    local.rootOrder,
+    remote.rootOrder,
+    idsByLocation.get('root') ?? emptyIds,
     conflicts,
   )
   const mergedGroups: SyncQuickLinkGroupV1[] = groups.map((group) => {
-    const ids = idsAt(group.id)
     return {
       ...group,
       itemIds: mergeOrder(
         'quick-links',
         `quickLinks.groups.${group.id}.itemIds`,
-        orderAt(base, group.id),
-        orderAt(local, group.id),
-        orderAt(remote, group.id),
-        ids,
+        baseIndex.groupOrders.get(group.id) ?? [],
+        localIndex.groupOrders.get(group.id) ?? [],
+        remoteIndex.groupOrders.get(group.id) ?? [],
+        idsByLocation.get(group.id) ?? emptyIds,
         conflicts,
       ),
     }

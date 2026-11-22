@@ -24,39 +24,38 @@ export function syncWallpaperSettingsChanged(previous: unknown, next: unknown): 
   )
 }
 
-function mergeObjects(target: JsonObject, incoming: JsonObject): JsonObject {
-  const result = structuredClone(target)
-  const merge = (into: JsonObject, source: JsonObject) => {
-    for (const [key, value] of Object.entries(source)) {
-      const current = into[key]
-      if (
-        current &&
-        value &&
-        typeof current === 'object' &&
-        typeof value === 'object' &&
-        !Array.isArray(current) &&
-        !Array.isArray(value)
-      )
-        merge(current, value)
-      else into[key] = structuredClone(value)
-    }
+/** Both trees are owned by the caller's projection. */
+function mergeProjectedSettings(target: JsonObject, incoming: JsonObject): JsonObject {
+  for (const [key, value] of Object.entries(incoming)) {
+    const current = target[key]
+    if (
+      current &&
+      value &&
+      typeof current === 'object' &&
+      typeof value === 'object' &&
+      !Array.isArray(current) &&
+      !Array.isArray(value)
+    )
+      mergeProjectedSettings(current, value)
+    else target[key] = value
   }
-  merge(result, incoming)
-  return result
+  return target
 }
 
 export function applySyncSettings<T>(current: T, incoming: JsonObject): T {
   // 应用时同步清理本机已废弃字段；本机专用字段沿用当前值。
   const settings = projectSettings(current, { defaults: true, strict: false }) as JsonObject
-  return mergeObjects(settings, pickSyncSettings(incoming)) as T
+  return mergeProjectedSettings(settings, pickSyncSettings(incoming)) as T
 }
 
 /** 缺少字段表示旧发布尚未携带，沿用比较基线；未知字段不会进入工作数据。 */
 export function normalizeRemoteSyncSettings(baseline: JsonObject, remote: JsonObject): JsonObject {
-  return pickSyncSettings(mergeObjects(completeSyncSettings(baseline), pickSyncSettings(remote)))
+  return pickSyncSettings(
+    mergeProjectedSettings(completeSyncSettings(baseline), pickSyncSettings(remote)),
+  )
 }
 
 /** 只合并同步字段，不引入完整设置或本机元数据。 */
 export function mergeSyncSettingValues(base: JsonObject, incoming: JsonObject): JsonObject {
-  return mergeObjects(pickSyncSettings(base), pickSyncSettings(incoming))
+  return mergeProjectedSettings(pickSyncSettings(base), pickSyncSettings(incoming))
 }
