@@ -7,6 +7,14 @@ type WakePoint = {
   normalY: number
   specks: WakeSpeck[]
 }
+type WhalePose = {
+  bodyHeading: number
+  tailHeading: number
+  turnRate: number
+  headSlope: number
+  tailSlope: number
+  tailPitch: number
+}
 type OceanSubject = {
   kind: number
   index: number
@@ -14,8 +22,7 @@ type OceanSubject = {
   y: number
   heading: number
   boom: number
-  bend: number
-  tailHeading: number
+  whale: WhalePose | null
   side: number
   phase: number
   initialized: boolean
@@ -25,6 +32,8 @@ type OceanSubject = {
 // Clouds in the meadow compositor travel from left to right.
 const WIND = 0
 const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle))
+const follow = (dt: number, seconds: number) => -Math.expm1(-dt / seconds)
+const turnSlope = (angle: number) => Math.tan(Math.max(-0.46, Math.min(0.46, wrapAngle(angle))))
 
 function createWakePoint(subject: OceanSubject, time: number): WakePoint {
   const yacht = subject.kind === 1
@@ -80,8 +89,7 @@ export function createOceanMotion() {
           y: -1,
           heading: 0.5 + index,
           boom: 0,
-          bend: 0,
-          tailHeading: 0.5 + index,
+          whale: null,
           side: 1,
           phase: index * 2.7 + kind * 1.9,
           initialized: false,
@@ -112,8 +120,16 @@ export function createOceanMotion() {
           }
         }
         subject.trail.length = 0
-        subject.tailHeading = subject.heading
-        subject.bend = 0
+        if (subject.kind === 2) {
+          subject.whale = {
+            bodyHeading: subject.heading,
+            tailHeading: subject.heading,
+            turnRate: 0,
+            headSlope: 0,
+            tailSlope: 0,
+            tailPitch: 1,
+          }
+        }
         subject.initialized = true
       }
       const margin = Math.min(100, width * 0.18, height * 0.18)
@@ -145,16 +161,19 @@ export function createOceanMotion() {
         )
         turn = leftFree > rightFree ? -0.3 : 0.3
       }
+      const whale = subject.whale
+      if (whale) {
+        whale.turnRate += (turn - whale.turnRate) * follow(dt, 0.42)
+        turn = whale.turnRate
+      }
       subject.heading += turn * dt
-      if (subject.kind === 2) {
-        // The tail follows the body's actual heading with inertia; there is
-        // no independent lateral swimming oscillation.
-        const lag = wrapAngle(subject.heading - subject.tailHeading)
-        subject.tailHeading += lag * Math.min(1, dt * 1.4)
-        subject.bend = Math.max(
-          -18,
-          Math.min(18, wrapAngle(subject.heading - subject.tailHeading) * 75),
-        )
+      if (whale) {
+        // The swimming direction leads the body, and the body leads the flukes.
+        whale.bodyHeading += wrapAngle(subject.heading - whale.bodyHeading) * follow(dt, 0.55)
+        whale.tailHeading += wrapAngle(whale.bodyHeading - whale.tailHeading) * follow(dt, 1.35)
+        whale.headSlope = turnSlope(subject.heading - whale.bodyHeading)
+        whale.tailSlope = turnSlope(whale.tailHeading - whale.bodyHeading)
+        whale.tailPitch = 0.76 + 0.24 * Math.cos(time * 1.3 + subject.phase)
       }
       const speed = subject.kind === 0 ? 10 : subject.kind === 1 ? 16 : subject.kind === 2 ? 5 : 35
       subject.x += Math.cos(subject.heading) * speed * dt

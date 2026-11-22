@@ -62,7 +62,7 @@ float oceanHull(vec2 q, float length, float width) {
   return max(abs(q.y) - halfWidth, max(q.x - length, -q.x - length * .8));
 }
 ${beachGullShader}
-vec3 oceanOne(vec3 col, vec2 p, vec4 actor, vec2 extra) {
+vec3 oceanOne(vec3 col, vec2 p, vec4 actor, vec3 extra) {
   vec2 d = p - actor.xy;
   float kind = actor.w;
   if (kind < 4. && dot(d,d) > (kind > 1.5 && kind < 2.5 ? 48400. : 12000.)) return col;
@@ -106,13 +106,20 @@ vec3 oceanOne(vec3 col, vec2 p, vec4 actor, vec2 extra) {
       col = mix(col, vec3(.75,.83,.82), ss(.4,-.5,hatch));
     }
   } else if (kind < 2.5) {
-    // The tail trails the body while turning. Up/down strokes are shown as
-    // foreshortening from above, not as a side-to-side sweep.
-    float tailWeight = ss(20., -90., q.x);
-    q.y -= tailWeight * extra.x;
-    float tailPitch = .76 + .24 * cos(uOceanTime * 1.3 + actor.x * .01);
+    // Integrate a smooth change in slope from the torso to the head and tail.
+    // Project across that curve so the flukes rotate with the tail.
+    float endSlope = q.x >= 0. ? extra.x : extra.y;
+    float t = min(abs(q.x) / 150., 1.);
+    float centerY = sign(q.x) * endSlope *
+      (150. * t*t*t * (1. - .5*t) + max(abs(q.x) - 150., 0.));
+    float slope = endSlope * t*t * (3. - 2.*t);
+    vec2 tangent = normalize(vec2(1., slope));
+    float across = q.y - centerY;
+    q.x += across * tangent.x * tangent.y;
+    q.y = across * tangent.x;
+    // The vertical fluke stroke is foreshortened in the overhead view.
     float pitchWeight = ss(-60., -110., q.x);
-    q.x = mix(q.x, -60. + (q.x + 60.) / tailPitch, pitchWeight);
+    q.x = mix(q.x, -60. + (q.x + 60.) / extra.z, pitchWeight);
     float inside = step(-150., q.x) * step(q.x, 150.) * step(-50., q.y) * step(q.y, 50.);
     vec4 whale = texture(uOceanWhale, vec2(
       ((.5 - q.x / 300.) * 1086. - 60.) / 973.,
@@ -138,7 +145,7 @@ vec3 oceanOne(vec3 col, vec2 p, vec4 actor, vec2 extra) {
 vec3 oceanDetail(vec3 col, vec2 p) {
   for (int i = 0; i < uOceanCount; i++) {
     vec4 actor = texelFetch(uOceanActors, ivec2(i * 2, 0), 0);
-    vec2 extra = texelFetch(uOceanActors, ivec2(i * 2 + 1, 0), 0).xy;
+    vec3 extra = texelFetch(uOceanActors, ivec2(i * 2 + 1, 0), 0).xyz;
     col = oceanOne(col,p,actor,extra);
   }
   return col;

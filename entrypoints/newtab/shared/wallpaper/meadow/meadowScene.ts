@@ -902,11 +902,16 @@ void main() {
           for (const subject of subjects) {
             if (subject.kind !== kind) continue
             const offset = actorCount++ * 8
+            const whale = subject.whale
             actors[offset] = subject.x
             actors[offset + 1] = subject.y
-            actors[offset + 2] = subject.heading
+            actors[offset + 2] = whale?.bodyHeading ?? subject.heading
             actors[offset + 3] = subject.kind
-            actors[offset + 4] = subject.kind === 2 ? subject.bend : subject.boom
+            actors[offset + 4] = whale?.headSlope ?? subject.boom
+            if (whale) {
+              actors[offset + 5] = whale.tailSlope
+              actors[offset + 6] = whale.tailPitch
+            }
           }
         }
         for (let i = ripples.length - 1; i >= 0; i--) {
