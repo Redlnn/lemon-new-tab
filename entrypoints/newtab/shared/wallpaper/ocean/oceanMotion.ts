@@ -1,4 +1,12 @@
-type WakePoint = { x: number; y: number; heading: number; time: number }
+type WakeSpeck = { side: number; jitter: number; size: number }
+type WakePoint = {
+  x: number
+  y: number
+  time: number
+  normalX: number
+  normalY: number
+  specks: WakeSpeck[]
+}
 type OceanSubject = {
   kind: number
   index: number
@@ -17,6 +25,37 @@ type OceanSubject = {
 // Clouds in the meadow compositor travel from left to right.
 const WIND = 0
 const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle))
+
+function createWakePoint(subject: OceanSubject, time: number): WakePoint {
+  const yacht = subject.kind === 1
+  const stern = yacht ? 29 : 23
+  const sin = Math.sin(subject.heading),
+    cos = Math.cos(subject.heading)
+  const seed = time * 31.7 + subject.phase * 13.1
+  const random = (n: number) => {
+    const value = Math.sin(seed + n * 19.3) * 43758.5453
+    return value - Math.floor(value)
+  }
+  const sizes = [0, 1, 2].map((i) => 2.5 + random(i + 4) * 2.5)
+  const specks: WakeSpeck[] = []
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < sizes.length; i++)
+      specks.push({ side, jitter: random(i + side * 5) - 0.5, size: sizes[i]! })
+  }
+  // Motor yachts also leave a lighter stream of propeller bubbles.
+  if (yacht) {
+    for (let i = 0; i < 2; i++)
+      specks.push({ side: 0, jitter: random(i + 17) - 0.5, size: 2 + random(i + 21) * 2 })
+  }
+  return {
+    x: subject.x - cos * stern,
+    y: subject.y - sin * stern,
+    time,
+    normalX: -sin,
+    normalY: cos,
+    specks,
+  }
+}
 
 export function createOceanMotion() {
   const subjects: OceanSubject[] = []
@@ -131,15 +170,7 @@ export function createOceanMotion() {
       }
       if (subject.kind < 2) {
         const last = subject.trail.at(-1)
-        if (!last || time - last.time >= 0.16) {
-          const stern = subject.kind === 0 ? 23 : 29
-          subject.trail.push({
-            x: subject.x - Math.cos(subject.heading) * stern,
-            y: subject.y - Math.sin(subject.heading) * stern,
-            heading: subject.heading,
-            time,
-          })
-        }
+        if (!last || time - last.time >= 0.16) subject.trail.push(createWakePoint(subject, time))
         while (
           subject.trail.length &&
           (subject.trail.length > 60 || time - subject.trail[0]!.time > 8)

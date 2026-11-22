@@ -171,12 +171,17 @@ float fieldS(sampler2D t, vec2 p) {
   vec2 edge = clamp(p, vec2(0.0), (uGrid - 1.0) * uStep);
   return texture(t, (edge / uStep + 0.5) / uGrid).r + length(p - edge);
 }
+float visibleFieldS(vec2 p) {
+  if (uMix == 0.0) return fieldS(uFA, p);
+  if (uMix == 1.0) return fieldS(uFB, p);
+  return mix(fieldS(uFA, p), fieldS(uFB, p), uMix);
+}
 float smin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
 
 // 到云的距离（<0 在云里）：图标周围云团的主体 + 自己格子里的圆（和天空主题同一套）
 // front = true 时顺便找出盖住这个点、圆心最靠下（最前面）的那个圆：fc = (圆心 x, y, 半径, 色调)
 float cloudDist(vec2 q, bool front, inout vec4 fc) {
-  float sF = mix(fieldS(uFA, q), fieldS(uFB, q), uMix);
+  float sF = visibleFieldS(q);
   float d = sF - uEdge + 0.6 * 95.0;                                              // 主体：把圆之间的缝填上
   ivec2 cell = ivec2(floor(q / uCellG)) + 4;                                      // 格子比屏幕左、上多 4 格（右下方的云影要用到），右、下多 3 格
   if (cell.x < 0 || cell.y < 0 || float(cell.x) >= uCGrid.x || float(cell.y) >= uCGrid.y) return d;
@@ -415,8 +420,11 @@ void main() {
         FA = computeField([])
         uploadField(toI, FA)
       } else if (FA && FB) {
-        FA = { s: snapshotField(FA.s, FB.s, curMix, Gw, Gh, Gw, Gh, 0, STEP) }
-        uploadField(toI, FA)
+        if (curMix === 1) FA = FB
+        else {
+          FA = { s: snapshotField(FA.s, FB.s, curMix, Gw, Gh, Gw, Gh, 0, STEP) }
+          uploadField(toI, FA)
+        }
       }
       FB = nf
       uploadField(target, FB)
@@ -431,8 +439,12 @@ void main() {
    当前的场（图标挪动时在新旧两张之间过渡）
    ====================================================================== */
     let curMix = 1
-    const curS = (x: number, y: number) =>
-      FB && FA ? sampleArr(FA.s, x, y) * (1 - curMix) + sampleArr(FB.s, x, y) * curMix : 999
+    const curS = (x: number, y: number) => {
+      if (!FA || !FB) return 999
+      if (curMix === 0) return sampleArr(FA.s, x, y)
+      if (curMix === 1) return sampleArr(FB.s, x, y)
+      return sampleArr(FA.s, x, y) * (1 - curMix) + sampleArr(FB.s, x, y) * curMix
+    }
 
     /* ======================================================================
    云的圆：每帧在 CPU 上算好所有的圆（几百个），按格子分好上传成一张小纹理，着色器只读自己格子里的几个
@@ -850,10 +862,7 @@ void main() {
     })
 
     const cloudClearance = (x: number, y: number) => {
-      let distance =
-        FA && FB
-          ? sampleArr(FA.s, x, y) * (1 - curMix) + sampleArr(FB.s, x, y) * curMix - P.edge + 57
-          : 1000
+      let distance = FA && FB ? curS(x, y) - P.edge + 57 : 1000
       const gx = Math.floor(x / cellSize) + 4,
         gy = Math.floor(y / cellSize) + 4
       if (gx < 0 || gy < 0 || gx >= cgW || gy >= cgH) return distance

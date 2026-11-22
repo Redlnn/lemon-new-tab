@@ -1,4 +1,4 @@
-/** Capture the visible field in screen coordinates, including an interrupted transition. */
+/** Capture the visible field in screen coordinates. Field arrays are treated as read-only. */
 export function snapshotField(
   from: Float32Array,
   to: Float32Array,
@@ -10,6 +10,10 @@ export function snapshotField(
   empty: number,
   step: number,
 ): Float32Array {
+  if (oldWidth === width && oldHeight === height) {
+    if (mix === 0) return from
+    if (mix === 1) return to
+  }
   const result = new Float32Array(width * height)
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {

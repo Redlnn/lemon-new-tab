@@ -2,11 +2,6 @@ import { limitCanvasScale } from '../dynamic/viewport'
 
 import type { OceanWakeSubject } from './oceanMotion'
 
-function wakeRandom(seed: number, n: number) {
-  const value = Math.sin(seed + n * 19.3) * 43758.5453
-  return value - Math.floor(value)
-}
-
 // Foam particles use recorded world-space stern positions. The trail remains
 // behind when a boat turns or the viewport changes.
 export function createOceanWake(gl: WebGL2RenderingContext) {
@@ -122,29 +117,15 @@ void main() {
         const age = Math.max(0, now - point.time)
         const fade = Math.max(0, 1 - age / 8)
         const spread = (subject.kind === 0 ? 3 : 5) + age * 2.4
-        const normalX = -Math.sin(point.heading),
-          normalY = Math.cos(point.heading)
-        // Stable jitter is tied to each recorded position, rather than changing
-        // randomly every frame. The specks drift apart as the foam ages.
-        const seed = point.time * 31.7 + subject.phase * 13.1
-        for (let side = -1; side <= 1; side += 2) {
-          for (let i = 0; i < 3; i++) {
-            const offset = side * spread + (wakeRandom(seed, i + side * 5) - 0.5) * (3 + age * 0.5)
-            vertices[used++] = point.x + normalX * offset
-            vertices[used++] = point.y + normalY * offset
-            vertices[used++] = 0.22 * fade
-            vertices[used++] = 2.5 + wakeRandom(seed, i + 4) * 2.5
-          }
+        const sideDrift = 3 + age * 0.5
+        const propellerDrift = 4 + age * 1.2
+        for (const { side, jitter, size } of point.specks) {
+          const offset = side ? side * spread + jitter * sideDrift : jitter * propellerDrift
+          vertices[used++] = point.x + point.normalX * offset
+          vertices[used++] = point.y + point.normalY * offset
+          vertices[used++] = (side ? 0.22 : 0.14) * fade
+          vertices[used++] = size
         }
-        // A motor yacht also leaves a lighter stream of propeller bubbles.
-        if (subject.kind === 1)
-          for (let i = 0; i < 2; i++) {
-            const offset = (wakeRandom(seed, i + 17) - 0.5) * (4 + age * 1.2)
-            vertices[used++] = point.x + normalX * offset
-            vertices[used++] = point.y + normalY * offset
-            vertices[used++] = 0.14 * fade
-            vertices[used++] = 2 + wakeRandom(seed, i + 21) * 2
-          }
       }
     }
     if (used) {

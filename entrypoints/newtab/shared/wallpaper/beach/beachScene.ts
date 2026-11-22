@@ -504,14 +504,11 @@ function initializeBeachScene(
     lastTime = time
     const fromField = previous.s
     const toField = current.s
-    const fishCount = fish.update(
-      options.fishSchools,
-      W,
-      H,
-      dt,
-      (x, y) =>
-        sampleArr(fromField, x, y) * (1 - currentMix) + sampleArr(toField, x, y) * currentMix,
-    )
+    const fishCount = fish.update(options.fishSchools, W, H, dt, (x, y) => {
+      if (currentMix === 0) return sampleArr(fromField, x, y)
+      if (currentMix === 1) return sampleArr(toField, x, y)
+      return sampleArr(fromField, x, y) * (1 - currentMix) + sampleArr(toField, x, y) * currentMix
+    })
     kay.fill(0)
     while (agents.length < kayakCapacity + P.birds) agents.push(createAgent(true))
     agents.length = kayakCapacity + P.birds

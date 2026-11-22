@@ -379,7 +379,10 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
     }
     return true
   }
-  function landCell(p: Point) {
+  const landCells = new WeakMap<Place, number>()
+  function landCell(p: Place) {
+    const cached = landCells.get(p)
+    if (cached !== undefined) return cached
     const center = cell(p),
       cx = center % cols,
       cy = Math.floor(center / cols)
@@ -398,6 +401,7 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
           nearest = d
         }
       }
+    landCells.set(p, result)
     return result
   }
   // Cache grid edges and connected components once. In particular an island
@@ -449,12 +453,12 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
       return true
     }
     const start = landCell(from),
-      end = landCell(to),
-      costs = new Float32Array(count).fill(Infinity),
+      end = landCell(to)
+    if (start < 0 || end < 0 || components[start] !== components[end]) return []
+    const costs = new Float32Array(count).fill(Infinity),
       previous = new Int32Array(count).fill(-1)
     const open = new MinHeap(),
       closed = new Uint8Array(count)
-    if (start < 0 || end < 0 || components[start] !== components[end]) return []
     costs[start] = 0
     open.push(start, 0)
     while (open.size) {
@@ -604,9 +608,9 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
     if (rail.length < 2) continue
     groups.set(ga, gb)
     map.rails.push({ points: rail, from: link.a.id, to: link.b.id })
+    if (map.roads.some((r) => r.from === link.a.id && r.to === link.b.id)) continue
     const road = route(link.a, link.b, false)
-    if (road.length > 1 && !map.roads.some((r) => r.from === link.a.id && r.to === link.b.id))
-      map.roads.push({ points: road, from: link.a.id, to: link.b.id })
+    if (road.length > 1) map.roads.push({ points: road, from: link.a.id, to: link.b.id })
   }
   // A narrow neck may be walkable but too close to the coast for rails.
   // Keep the rail clearance and connect such districts by road instead.
@@ -649,7 +653,7 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
     }
 
   const lineIndices = new WeakMap<Point[][], LineIndex>()
-  function nearLines(p: Point, paths: Point[][], margin: number) {
+  const nearLines = (p: Point, paths: Point[][], margin: number) => {
     let index = lineIndices.get(paths)
     if (!index) {
       index = new LineIndex(paths)
@@ -722,13 +726,37 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
       height: navigation.height + 48,
     })
   occupied.push(...quiet)
-  function label(text: string, candidates: Point[], size: number, region = false) {
+  const symbolsNearY = function* (y: number, radius: number) {
+    const min = y - radius,
+      max = y + radius
+    let low = 0,
+      high = map.symbols.length
+    while (low < high) {
+      const mid = (low + high) >>> 1
+      if (map.symbols[mid]!.y < min) low = mid + 1
+      else high = mid
+    }
+    for (let i = low; i < map.symbols.length; i++) {
+      const symbol = map.symbols[i]!
+      if (symbol.y > max) break
+      if (Math.abs(symbol.y - y) < radius) yield symbol
+    }
+  }
+  const label = (text: string, candidates: Point[], size: number, region = false) => {
     if (map.labels.some((label) => label.text === text)) return
     const w = text.length * size * (region ? 0.66 : 0.53)
-    const density = (p: Point) =>
-      map.symbols.filter((s) => Math.abs(s.x - p.x) < w * 0.6 && Math.abs(s.y - p.y) < 40).length
-    if (region) candidates.sort((a, b) => density(a) - density(b))
-    for (const p of candidates) {
+    const placements = region
+      ? candidates
+          .map((p) => {
+            let density = 0
+            for (const symbol of symbolsNearY(p.y, 40))
+              if (Math.abs(symbol.x - p.x) < w * 0.6) density++
+            return { p, density }
+          })
+          .sort((a, b) => a.density - b.density)
+          .map(({ p }) => p)
+      : candidates
+    placement: for (const p of placements) {
       const box = { x: p.x - w / 2 - 3, y: p.y - size - 2, width: w + 6, height: size + 7 }
       if (
         box.x < 15 ||
@@ -748,13 +776,8 @@ export function generateMap(request: MapRequest, previous?: MapData): MapData {
       )
         continue
       if (nearLines(p, map.rivers, 12) || nearLines(p, routes, 12)) continue
-      if (
-        map.symbols.some(
-          (s) =>
-            s.kind === 'mountain' && Math.abs(s.x - p.x) < w / 2 + 12 && Math.abs(s.y - p.y) < 22,
-        )
-      )
-        continue
+      for (const symbol of symbolsNearY(p.y, 22))
+        if (symbol.kind === 'mountain' && Math.abs(symbol.x - p.x) < w / 2 + 12) continue placement
       occupied.push(box)
       map.labels.push({ ...p, text, size, region })
       return

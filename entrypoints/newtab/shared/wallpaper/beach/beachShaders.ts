@@ -8,6 +8,11 @@ uniform float uStep, uMix;
 float fieldS(sampler2D t, vec2 p) {
   vec2 edge = clamp(p, vec2(0.0), (uGrid - 1.0) * uStep);
   return texture(t, (edge / uStep + 0.5) / uGrid).r + length(p - edge);
+}
+float visibleFieldS(vec2 p) {
+  if (uMix == 0.0) return fieldS(uFA, p);
+  if (uMix == 1.0) return fieldS(uFB, p);
+  return mix(fieldS(uFA, p), fieldS(uFB, p), uMix);
 }`
 
 const fishShadowOffset = 'vec2(6., 10.)'
@@ -38,10 +43,10 @@ uniform bool uFishShadow;
 ${beachField}
 out vec4 o;
 void main() {
-  float depth = mix(fieldS(uFA, vPoint), fieldS(uFB, vPoint), uMix);
+  float depth = visibleFieldS(vPoint);
   if (uFishShadow) {
     vec2 source = vPoint - ${fishShadowOffset};
-    depth = min(depth, mix(fieldS(uFA, source), fieldS(uFB, source), uMix));
+    depth = min(depth, visibleFieldS(source));
   }
   vec2 p = vLocal;
   p.y += max(0., -p.x) * .19 * sin(uTime * (5.2 + vPhase * .2) + vPhase - p.x * .3);
@@ -167,7 +172,7 @@ void main() {
   float g1 = hash2(gp + 0.5), g2 = hash2(gp + 7.3);
   float gAmt = uGrain;
 
-  float s0 = mix(fieldS(uFA, p), fieldS(uFB, p), uMix);
+  float s0 = visibleFieldS(p);
   float s = s0 + (N(p, 700.0).r - 0.5) * 10.0;
 
   // 浪的时钟：沿岸只有大尺度的先后差异，一长段海岸整齐地涌上来
@@ -184,8 +189,8 @@ void main() {
     fu = fract(u);
     cyc = floor(u);
     // 向陆地和海面取样，削弱狭窄陆地和封闭水域的浪。
-    float sIn = mix(fieldS(uFA, p - nrm * 45.0), fieldS(uFB, p - nrm * 45.0), uMix);
-    float sOut = mix(fieldS(uFA, p + nrm * 70.0), fieldS(uFB, p + nrm * 70.0), uMix);
+    float sIn = visibleFieldS(p - nrm * 45.0);
+    float sOut = visibleFieldS(p + nrm * 70.0);
     energy = mix(ss(2.0, -18.0, sIn), 1.0, ss(15.0, 40.0, s)) * ss(25.0, 70.0, sOut);
   }
   // 沙滩上（冲上来的薄水、湿沙带）用"岸线处"的能量：沿法线回到岸线上再往两边探。
@@ -196,12 +201,12 @@ void main() {
   float shoreE = 0.0, sW = s;
   if (s < 4.0 && s > swashLimit) {                  // 只计算薄水能冲到的沙滩
     // 法线也用前后左右的差来算：dFdx 在场纹理每个 5px 格子边上会跳，拐角处探的位置跟着跳
-    #define SF(q) mix(fieldS(uFA, q), fieldS(uFB, q), uMix)
-    float fR = SF(p + vec2(10.0, 0.0)), fL = SF(p - vec2(10.0, 0.0)), fD = SF(p + vec2(0.0, 10.0)), fU = SF(p - vec2(0.0, 10.0));
+    float fR = visibleFieldS(p + vec2(10.0, 0.0)), fL = visibleFieldS(p - vec2(10.0, 0.0));
+    float fD = visibleFieldS(p + vec2(0.0, 10.0)), fU = visibleFieldS(p - vec2(0.0, 10.0));
     vec2 g10 = vec2(fR - fL, fD - fU);
     vec2 n10 = length(g10) > 1e-3 ? normalize(g10) : nrm;
     vec2 sp = p - n10 * s0;
-    float eIn = SF(sp - n10 * 45.0), eOut = SF(sp + n10 * 70.0);
+    float eIn = visibleFieldS(sp - n10 * 45.0), eOut = visibleFieldS(sp + n10 * 70.0);
     shoreE = ss(2.0, -18.0, eIn) * ss(25.0, 70.0, eOut);
     sW = mix(s, (fR + fL + fD + fU) * 0.25 + (s - s0), ss(-2.0, -16.0, s));
   }
