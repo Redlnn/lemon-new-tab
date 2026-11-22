@@ -6,7 +6,7 @@
 
 Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you need with smarter search. More to enjoy in a familiar place—let's turn a fresh page together.
 
-## 4.2.0 (Unreleased)
+## 4.2.0 (Nov 22, 2026)
 
 ### New Features✨
 
@@ -15,12 +15,12 @@ Lemon New Tab 4.x is here! Capture an idea, change the scenery, find what you ne
 
 ### Improvements⚡️
 
-- **Icons:** Some icons now load on demand, reducing startup time.
 - **Icons:** When adding a Bilibili link, the blue built-in icon is now used by default instead of the fetched app-style icon.
 - **Icons:** Updated the built-in Google icon.
 - **Quick Links:** Renamed “Unpin” to “Remove” in link context menus.
 - **Search:** Improved the clickable area of the search button in the search bar.
 - Removed the acknowledgment of the quote provider from the About page.
+- Improved overall new tab page performance.
 - Improved popup opening performance.
 
 ### Bug Fixes🐛
