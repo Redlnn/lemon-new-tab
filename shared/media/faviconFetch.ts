@@ -12,6 +12,7 @@ import {
   setFaviconCacheEntry,
   type FaviconCacheEntry,
 } from './faviconCache'
+import { createFaviconRequests } from './faviconRequests'
 
 const isChromium = import.meta.env.CHROME || import.meta.env.EDGE || import.meta.env.OPERA
 
@@ -112,6 +113,15 @@ const l1Cache = new Map<string, FaviconCacheEntry>()
 
 // 去重：防止对同一 origin 发起多个并发请求
 const pendingFetches = new Map<string, Promise<string | null>>()
+const requestOriginProbe = createFaviconRequests<string | null>(5000)
+
+function probeOrigin(origin: string, generation: number, strategy: 'direct' | 'image') {
+  return requestOriginProbe(`${generation}:${strategy}:${origin}`, (signal) =>
+    strategy === 'direct'
+      ? fetchViaDirectUrls(origin, signal)
+      : probeViaImageElement(origin, signal),
+  )
+}
 
 let activeFetches = 0
 const fetchWaiters = new Set<() => void>()
@@ -369,7 +379,7 @@ async function tryFetchIconFromDiscoveredLinkTags(
 }
 
 /** 使用 HTMLImageElement 试探给定 URL 是否可用（无需 CORS，基于加载结果判断）。 */
-function probeImageUrl(url: string, signal?: AbortSignal): Promise<boolean> {
+function probeImageUrl(url: string, signal: AbortSignal): Promise<boolean> {
   return new Promise((resolve) => {
     const img = new Image()
 
@@ -378,8 +388,7 @@ function probeImageUrl(url: string, signal?: AbortSignal): Promise<boolean> {
       if (settled) return
       settled = true
 
-      clearTimeout(timer)
-      signal?.removeEventListener('abort', onAbort)
+      signal.removeEventListener('abort', onAbort)
       img.onload = null
       img.onerror = null
 
@@ -390,10 +399,9 @@ function probeImageUrl(url: string, signal?: AbortSignal): Promise<boolean> {
     }
 
     const onAbort = () => done(false)
-    const timer = setTimeout(() => done(false), 5000)
-    if (signal?.aborted) return onAbort()
+    if (signal.aborted) return onAbort()
 
-    signal?.addEventListener('abort', onAbort, { once: true })
+    signal.addEventListener('abort', onAbort, { once: true })
 
     img.onload = () => done(true)
     img.onerror = () => done(false)
@@ -422,30 +430,41 @@ async function fetchViaChromeFaviconApi(pageUrl: string): Promise<string | null>
   }
 }
 
-/** 策略 B：尝试常见的 favicon 路径并获取 base64。
- *  需要授予泛域名主机权限（允许访问任意域名）。 */
-async function fetchViaDirectUrls(pageUrl: string): Promise<string | null> {
-  const { origin } = new URL(pageUrl)
-  const controllers = COMMON_FAVICON_PATHS.map(() => new AbortController())
-  const timers = controllers.map((controller) => setTimeout(() => controller.abort(), 5000))
+async function probeCommonPaths(
+  origin: string,
+  signal: AbortSignal,
+  probe: (url: string, signal: AbortSignal) => Promise<string | null>,
+): Promise<string | null> {
+  if (signal.aborted) return null
+  const controller = new AbortController()
+  const abort = () => controller.abort()
+  signal.addEventListener('abort', abort, { once: true })
   try {
     return await Promise.any(
-      COMMON_FAVICON_PATHS.map(async (path, index) => {
-        const resp = await fetch(origin + path, { signal: controllers[index]!.signal })
-        if (!resp.ok) throw new Error('not ok')
-        const contentType = resp.headers.get('content-type') ?? ''
-        if (contentType.startsWith('text/') || contentType.includes('html')) throw new Error('html')
-        const blob = await resp.blob()
-        if (blob.size === 0) throw new Error('empty')
-        return blobToDataURL(blob)
+      COMMON_FAVICON_PATHS.map(async (path) => {
+        const result = await probe(origin + path, controller.signal)
+        if (result) return result
+        throw new Error('probe failed')
       }),
     )
   } catch {
     return null
   } finally {
-    timers.forEach(clearTimeout)
-    controllers.forEach((controller) => controller.abort())
+    signal.removeEventListener('abort', abort)
+    abort()
   }
+}
+
+/** 策略 B：尝试常见的 favicon 路径并获取 base64，需要泛域名主机权限。 */
+function fetchViaDirectUrls(origin: string, signal: AbortSignal): Promise<string | null> {
+  return probeCommonPaths(origin, signal, async (url, probeSignal) => {
+    const resp = await fetch(url, { signal: probeSignal })
+    if (!resp.ok) return null
+    const contentType = resp.headers.get('content-type') ?? ''
+    if (contentType.startsWith('text/') || contentType.includes('html')) return null
+    const blob = await resp.blob()
+    return blob.size ? blobToDataURL(blob) : null
+  })
 }
 
 /** 策略 A：通过读取目标页面的 <link rel="icon"> 标签获取 favicon
@@ -494,22 +513,10 @@ async function fetchViaPageLinkIcon(pageUrl: string): Promise<string | null> {
 }
 
 /** 策略 C：通过 Image 元素探测常见路径（无需 CORS，仅返回 URL）。 */
-async function probeViaImageElement(pageUrl: string): Promise<string | null> {
-  const { origin } = new URL(pageUrl)
-  const controllers = COMMON_FAVICON_PATHS.map(() => new AbortController())
-  try {
-    return await Promise.any(
-      COMMON_FAVICON_PATHS.map(async (path, index) => {
-        const url = origin + path
-        if (await probeImageUrl(url, controllers[index]!.signal)) return url
-        throw new Error('probe failed')
-      }),
-    )
-  } catch {
-    return null
-  } finally {
-    controllers.forEach((controller) => controller.abort())
-  }
+function probeViaImageElement(origin: string, signal: AbortSignal): Promise<string | null> {
+  return probeCommonPaths(origin, signal, async (url, probeSignal) =>
+    (await probeImageUrl(url, probeSignal)) ? url : null,
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -587,6 +594,7 @@ async function doFetch(
     let data: string | null = null
     let type: 'base64' | 'url' = 'base64'
     let usedChromiumNativeFallback = false
+    let probeTimedOut = false
 
     // 缓存关闭时优先复用浏览器已经拥有的图标，避免每次新标签页都重新发起网络请求。
     if (!_cacheEnabled && isChromium) {
@@ -605,12 +613,16 @@ async function doFetch(
 
     // 策略 B：常见直接路径抓取（需要主机权限，适用于所有浏览器）
     if (!data && hasHostPerm) {
-      data = await fetchViaDirectUrls(pageUrl)
+      const result = await probeOrigin(origin, generationAtStart, 'direct')
+      probeTimedOut = result === undefined
+      data = result ?? null
     }
 
     // 策略 C：通过 Image 探测（无需 CORS，仅返回 URL）
     if (!data) {
-      data = await probeViaImageElement(pageUrl)
+      const result = await probeOrigin(origin, generationAtStart, 'image')
+      probeTimedOut ||= result === undefined
+      data = result ?? null
       if (data) type = 'url'
     }
 
@@ -624,7 +636,7 @@ async function doFetch(
     if (data && !usedChromiumNativeFallback && generationAtStart === cacheGeneration) {
       const entry: FaviconCacheEntry = { data, type, fetchedAt: Date.now() }
       await writeFaviconCacheEntry(origin, entry, generationAtStart)
-    } else if (!data && !usedChromiumNativeFallback) {
+    } else if (!data && !probeTimedOut && generationAtStart === cacheGeneration) {
       rememberFaviconFailure(origin, cacheEnabledAtStart)
     }
 

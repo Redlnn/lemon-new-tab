@@ -75,6 +75,7 @@ export function selectFaviconEntriesToDelete(
     else freshEntries.push(entry)
   }
 
+  if (freshEntries.length <= FAVICON_CACHE_MAX_ENTRIES) return keysToDelete
   freshEntries.sort((a, b) => b[1].fetchedAt - a[1].fetchedAt)
   keysToDelete.push(...freshEntries.slice(FAVICON_CACHE_MAX_ENTRIES).map(([key]) => key))
   return keysToDelete

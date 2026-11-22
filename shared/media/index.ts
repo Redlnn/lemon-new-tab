@@ -13,6 +13,7 @@ export {
 } from './faviconFetch'
 
 import { fetchFaviconWithCache, markFaviconFetchFailed, peekFaviconFromL1 } from './faviconFetch'
+import { createFaviconRequests } from './faviconRequests'
 
 export function getFaviconURL(url: string | Ref<string | null>): Ref<string> {
   const iconUrl = ref('/favicon.png')
@@ -66,7 +67,7 @@ export interface FaviconDisplay {
   state: FaviconDisplayState
 }
 
-const FAVICON_PRELOAD_TIMEOUT = 5_000
+const requestFaviconPreload = createFaviconRequests<boolean>(5_000)
 
 function waitForAnimationFrames(count: number): Promise<void> {
   return new Promise((resolve) => {
@@ -81,7 +82,7 @@ function waitForAnimationFrames(count: number): Promise<void> {
   })
 }
 
-function preloadFavicon(src: string): Promise<boolean> {
+function loadFaviconImage(src: string, signal: AbortSignal): Promise<boolean> {
   return new Promise((resolve) => {
     const image = new Image()
     let settled = false
@@ -89,14 +90,16 @@ function preloadFavicon(src: string): Promise<boolean> {
     const finish = (success: boolean) => {
       if (settled) return
       settled = true
-      clearTimeout(timeout)
+      signal.removeEventListener('abort', onAbort)
       image.onload = null
       image.onerror = null
       if (!success) image.src = ''
       resolve(success)
     }
 
-    const timeout = window.setTimeout(() => finish(false), FAVICON_PRELOAD_TIMEOUT)
+    const onAbort = () => finish(false)
+    if (signal.aborted) return onAbort()
+    signal.addEventListener('abort', onAbort, { once: true })
     image.onload = () => {
       try {
         const decodeTask = image.decode?.()
@@ -150,11 +153,13 @@ export function getFaviconDisplay(
       () => null,
     )
     if (currentSeq !== seq) return
-    if (!favicon || !(await preloadFavicon(favicon)) || currentSeq !== seq) {
-      if (currentSeq === seq) {
-        markFaviconFetchFailed(u)
-        display.value = { src: '/favicon.png', state: 'fallback' }
-      }
+    const loaded = favicon
+      ? await requestFaviconPreload(favicon, (signal) => loadFaviconImage(favicon, signal))
+      : undefined
+    if (currentSeq !== seq) return
+    if (!favicon || !loaded) {
+      if (loaded === false) markFaviconFetchFailed(u)
+      display.value = { src: '/favicon.png', state: 'fallback' }
       return
     }
 
