@@ -261,7 +261,7 @@
     "moveError": "移动失败",
     "moveLeft": "左移",
     "moveRight": "右移",
-    "pin": "置顶",
+    "pin": "固定",
     "remove": "移除",
     "removeMessage": "已移除该链接",
     "fetchingFavicon": "正在后台获取图标..."
