@@ -53,6 +53,7 @@ export function useVirtualQuickLinkDnd() {
       grid?.items().findIndex((item) => (data.id ? item.id === data.id : item.url === data.url)) ??
       -1
     preview.value = index < 0 ? null : { groupId: data.groupId, index }
+    if (keyboard) return
     const track = () => {
       locate()
       frame = requestAnimationFrame(track)
@@ -72,8 +73,8 @@ export function useVirtualQuickLinkDnd() {
     if (!(event.nativeEvent instanceof KeyboardEvent) || !preview.value) return
     const { key } = event.nativeEvent
     const next = { ...preview.value }
-    const enabled = [...grids.values()].filter((grid) => grid.enabled())
     if (event.nativeEvent.altKey && (key === 'ArrowLeft' || key === 'ArrowRight')) {
+      const enabled = [...grids.values()].filter((grid) => grid.enabled())
       const index = enabled.findIndex((grid) => grid.groupId === next.groupId)
       next.groupId =
         enabled[Math.max(0, Math.min(enabled.length - 1, index + (key === 'ArrowRight' ? 1 : -1)))]

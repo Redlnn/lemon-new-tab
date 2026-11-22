@@ -3,9 +3,10 @@ import type { TopSites } from 'webextension-polyfill'
 import { normalizeUrlForDedup } from '@/shared/url'
 
 export interface TopSitesMergeOptions {
-  quickLinks: { url: string }[]
+  quickLinks: readonly { url: string }[]
   columns?: number
   maxRows?: number
+  limit?: number
   /** 不截断结果，返回所有去重后的 top sites */
   noCap?: boolean
 }
@@ -30,7 +31,13 @@ export function mergeTopSites(
   options: TopSitesMergeOptions,
 ): TopSites.MostVisitedURL[] {
   // 构建 URL Set 用于快速去重
-  const { quickLinks } = options
+  const { quickLinks, columns, maxRows, noCap } = options
+  const limit =
+    options.limit ??
+    (!noCap && typeof columns === 'number' && typeof maxRows === 'number'
+      ? Math.max(0, Math.trunc(columns * maxRows - 1 - quickLinks.length))
+      : Infinity)
+  if (!limit || !topSites.length) return []
   const quickLinkUrlsSet = new Set<string>()
   for (let i = 0, len = quickLinks.length; i < len; i++) {
     quickLinkUrlsSet.add(normalizeUrlForDedup(quickLinks[i]!.url))
@@ -44,28 +51,7 @@ export function mergeTopSites(
     // 仅当 title 为空或全空白时才计算 fallback
     const title = rawTitle?.trim() ? rawTitle : getFallbackTitle(site.url)
     dedup.push({ ...site, title })
+    if (dedup.length >= limit) break
   }
-
-  // 如果启用 noCap，直接返回所有去重后的结果
-  if (options.noCap) {
-    return dedup
-  }
-
-  // 计算容量（优先使用 columns + maxRows，上限为列*行 - 1，预留"添加按钮"）
-  let remain = Infinity
-  const { columns, maxRows } = options
-  const hasCapacityInfo = typeof columns === 'number' && typeof maxRows === 'number'
-  if (hasCapacityInfo) {
-    const capacity = Math.max(0, columns * maxRows - 1)
-    remain = Math.max(0, capacity - options.quickLinks.length)
-    if (remain === 0) {
-      return []
-    }
-  }
-
-  if (remain === Infinity) {
-    return dedup
-  }
-
-  return dedup.slice(0, remain)
+  return dedup
 }

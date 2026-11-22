@@ -48,6 +48,7 @@ import {
   buildQuickLinkPages,
   buildQuickLinkScrollSections,
   type QuickLinkPage,
+  type QuickLinkViewItems,
   type QuickLinkScrollSection as ScrollSection,
   type QuickLinkViewItem as DisplayItem,
 } from './composables/quickLinksViewModel'
@@ -119,6 +120,15 @@ const topSiteDisplayItems = computed(() =>
 )
 
 const visibleCategoryGroups = computed(() => userGroups.value)
+const viewItems = computed<QuickLinkViewItems>(() =>
+  settings.quickLinks.grouping
+    ? {
+        grouping: true,
+        groups: visibleCategoryGroups.value,
+        topSiteItems: topSiteDisplayItems.value,
+      }
+    : { grouping: false, legacyItems: legacyItems.value },
+)
 
 const { maxFitCols, maxFitRows } = usePagedGridLayout()
 const slotsPerPage = computed(() => maxFitCols.value * maxFitRows.value)
@@ -127,10 +137,7 @@ const dndRenderKey = ref(0)
 
 const pages = computed<QuickLinkPage[]>(() => {
   return buildQuickLinkPages({
-    grouping: settings.quickLinks.grouping,
-    groups: visibleCategoryGroups.value,
-    legacyItems: legacyItems.value,
-    topSiteItems: topSiteDisplayItems.value,
+    ...viewItems.value,
     slotsPerPage: slotsPerPage.value,
     hideAddButton: settings.quickLinks.hideAddButton,
     defaultGroupId: DEFAULT_QUICK_LINK_GROUP_ID,
@@ -141,10 +148,7 @@ const pages = computed<QuickLinkPage[]>(() => {
 
 const scrollSections = computed<ScrollSection[]>(() => {
   return buildQuickLinkScrollSections({
-    grouping: settings.quickLinks.grouping,
-    groups: visibleCategoryGroups.value,
-    legacyItems: legacyItems.value,
-    topSiteItems: topSiteDisplayItems.value,
+    ...viewItems.value,
     topSitesTitle: topSitesGroupName,
     defaultGroupId: DEFAULT_QUICK_LINK_GROUP_ID,
     defaultGroupName: quickLinksStore.groups[0]?.name,
@@ -276,20 +280,18 @@ const showNextPageAddButton = computed(() => {
   return showAddButtonForPage(pageIndex)
 })
 
-const currentGroupPages = computed(() => {
-  const page = currentPageData.value
-  if (!page) return []
-  return pages.value.filter((item) => item.groupId === page.groupId)
-})
-
 const currentGroupPageIndex = computed(() => currentPageData.value?.pageInGroup ?? 0)
 
-function goToGroupPage(pageInGroup: number) {
+function getGroupPageIndex(pageInGroup: number) {
   const page = currentPageData.value
-  if (!page) return
-  const index = pages.value.findIndex(
-    (item) => item.groupId === page.groupId && item.pageInGroup === pageInGroup,
-  )
+  if (!page || pageInGroup < 0 || pageInGroup >= page.totalPagesInGroup) return -1
+  const index = currentPage.value - page.pageInGroup + pageInGroup
+  const target = getPage(index)
+  return target?.groupId === page.groupId && target.pageInGroup === pageInGroup ? index : -1
+}
+
+function goToGroupPage(pageInGroup: number) {
+  const index = getGroupPageIndex(pageInGroup)
   if (index >= 0) goToPage(index)
 }
 
@@ -754,16 +756,13 @@ watch(
   (pagingEnabled) => {
     if (!pagingEnabled) {
       // 关闭翻页时，重置到当前分组的首页，避免停留在组内中间页
-      const currentGroupId = currentPageData.value?.groupId
-      if (currentGroupId) {
-        const firstIdx = pages.value.findIndex((p) => p.groupId === currentGroupId)
-        if (firstIdx >= 0 && firstIdx !== currentPage.value) {
-          noTransition.value = true
-          currentPage.value = firstIdx
-          nextTick(() => {
-            noTransition.value = false
-          })
-        }
+      const firstIdx = getGroupPageIndex(0)
+      if (firstIdx >= 0 && firstIdx !== currentPage.value) {
+        noTransition.value = true
+        currentPage.value = firstIdx
+        nextTick(() => {
+          noTransition.value = false
+        })
       }
     }
   },
@@ -1251,7 +1250,7 @@ defineExpose({ refresh, getActiveGroupId })
         <quick-links-pagination-dots
           v-if="!settings.quickLinks.useScroll"
           :current-page="currentGroupPageIndex"
-          :total-pages="showPagination ? currentGroupPages.length : 1"
+          :total-pages="showPagination ? (currentPageData?.totalPagesInGroup ?? 0) : 1"
           @goto="goToGroupPage"
         />
       </div>

@@ -99,27 +99,24 @@ export async function collectSuggestions({
   }
 }
 
-export function browserHistorySuggestions(
+export function* browserHistorySuggestions(
   history: readonly { url?: string; title?: string; lastVisitTime?: number }[],
-): SearchSuggestion[] {
-  return [...history]
-    .sort((a, b) => (b.lastVisitTime ?? 0) - (a.lastVisitTime ?? 0))
-    .flatMap((item): SearchSuggestion[] => {
-      if (!item.url) return []
-      try {
-        const url = new URL(item.url)
-        if (!['http:', 'https:'].includes(url.protocol)) return []
-        return [
-          {
-            provider: 'browser-history',
-            action: 'navigate',
-            text: item.title?.trim() || url.href,
-            url: url.href,
-            inputText: url.href,
-          },
-        ]
-      } catch {
-        return []
+): Generator<SearchSuggestion> {
+  const ordered = [...history].sort((a, b) => (b.lastVisitTime ?? 0) - (a.lastVisitTime ?? 0))
+  for (const item of ordered) {
+    if (!item.url) continue
+    try {
+      const url = new URL(item.url)
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') continue
+      yield {
+        provider: 'browser-history',
+        action: 'navigate',
+        text: item.title?.trim() || url.href,
+        url: url.href,
+        inputText: url.href,
       }
-    })
+    } catch {
+      continue
+    }
+  }
 }

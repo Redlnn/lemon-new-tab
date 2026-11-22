@@ -92,17 +92,6 @@ const folderGroups = computed(() =>
     ? quickLinksStore.groups.filter((group) => group.id !== dockGroupId.value)
     : [],
 )
-const topSites = computed(() =>
-  settings.dock.topSites
-    ? mergeTopSites(rawTopSites.value, {
-        quickLinks:
-          settings.quickLinks.grouping && settings.dock.showOtherGroups
-            ? quickLinksStore.items.slice()
-            : quickLinks.value,
-        noCap: true,
-      })
-    : [],
-)
 
 async function refresh() {
   await refreshDockScaleLayout()
@@ -119,9 +108,17 @@ const linkSlots = computed(() =>
   folderCount.value === maxFitCols.value ? 0 : maxFitCols.value - visibleFolderGroups.value.length,
 )
 const visibleQuickLinksData = computed(() => quickLinks.value.slice(0, linkSlots.value))
-const visibleTopSites = computed(() =>
-  topSites.value.slice(0, Math.max(0, linkSlots.value - visibleQuickLinksData.value.length)),
-)
+const visibleTopSites = computed(() => {
+  const limit = linkSlots.value - visibleQuickLinksData.value.length
+  if (!settings.dock.topSites || limit <= 0) return []
+  return mergeTopSites(rawTopSites.value, {
+    quickLinks:
+      settings.quickLinks.grouping && settings.dock.showOtherGroups
+        ? quickLinksStore.items
+        : quickLinks.value,
+    limit,
+  })
+})
 
 watch([visibleQuickLinksData, visibleFolderGroups, visibleTopSites], refreshDebounced)
 

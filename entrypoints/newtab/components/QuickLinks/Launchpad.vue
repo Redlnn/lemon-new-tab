@@ -180,13 +180,12 @@ const isSearching = computed(() => query.value.trim().length > 0)
 
 const filteredItems = computed(() => {
   const q = query.value.trim().toLowerCase()
-  if (!q) return allItems.value
   return allItems.value.filter((item) => matchesQuery(item, q))
 })
 
 // 添加按钮占1个槽，纳入分页计算
 const pageCount = computed(() => {
-  const total = !isSearching.value ? allItems.value.length + 1 : allItems.value.length
+  const total = quickLinks.value.length + topSites.value.length + (isSearching.value ? 0 : 1)
   return Math.max(1, Math.ceil(total / pageSize.value))
 })
 
@@ -195,8 +194,8 @@ const currentItems = computed(() => {
   const start = page.value * pageSize.value
   const isLastPage = page.value === pageCount.value - 1
   // 最后一页留一个槽给添加按钮
-  const end = isLastPage && !isSearching.value ? start + pageSize.value - 1 : start + pageSize.value
-  return allItems.value.slice(start, end)
+  const end = start + pageSize.value - (isLastPage ? 1 : 0)
+  return buildQuickLinkDisplayItems(quickLinks.value, topSites.value, start, end)
 })
 
 const currentSortableStoreIndexes = computed(() => getSortableStoreIndexes(currentItems.value))

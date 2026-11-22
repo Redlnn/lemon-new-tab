@@ -17,14 +17,15 @@ export interface QuickLinkDisplayItem {
 export function buildQuickLinkDisplayItems(
   quickLinks: QuickLink[],
   topSites: TopSites.MostVisitedURL[],
+  start = 0,
+  end = quickLinks.length + topSites.length,
 ): QuickLinkDisplayItem[] {
   const quickLinksLen = quickLinks.length
-  const topSitesLen = topSites.length
-  const result: QuickLinkDisplayItem[] = Array.from({ length: quickLinksLen + topSitesLen })
+  const result: QuickLinkDisplayItem[] = []
 
-  for (let i = 0; i < quickLinksLen; i++) {
+  for (let i = start; i < Math.min(end, quickLinksLen); i++) {
     const site = quickLinks[i]!
-    result[i] = {
+    result.push({
       id: site.id,
       url: site.url,
       title: site.title,
@@ -33,18 +34,22 @@ export function buildQuickLinkDisplayItems(
       appId: site.appId,
       isPinned: true,
       originalIndex: i,
-    }
+    })
   }
 
-  for (let i = 0; i < topSitesLen; i++) {
+  for (
+    let i = Math.max(0, start - quickLinksLen);
+    i < Math.min(end - quickLinksLen, topSites.length);
+    i++
+  ) {
     const site = topSites[i]!
-    result[quickLinksLen + i] = {
+    result.push({
       url: site.url,
       title: site.title || '',
       favicon: site.favicon,
       isPinned: false,
       originalIndex: i,
-    }
+    })
   }
 
   return result

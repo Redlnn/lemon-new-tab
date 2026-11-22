@@ -8,6 +8,14 @@ import {
 
 export type QuickLinkViewItem = QuickLinkDisplayItem & { sortableIndex?: number }
 
+export type QuickLinkViewItems =
+  | { grouping: false; legacyItems: QuickLinkDisplayItem[] }
+  | {
+      grouping: true
+      groups: readonly QuickLinkGroup[]
+      topSiteItems: QuickLinkDisplayItem[]
+    }
+
 export type QuickLinkPage = {
   key: string
   groupId: string
@@ -58,17 +66,15 @@ export function splitQuickLinkPages(
   })
 }
 
-export function buildQuickLinkPages(options: {
-  grouping: boolean
-  groups: readonly QuickLinkGroup[]
-  legacyItems: QuickLinkDisplayItem[]
-  topSiteItems: QuickLinkDisplayItem[]
-  slotsPerPage: number
-  hideAddButton: boolean
-  defaultGroupId: string
-  flatGroupId: string
-  topSitesGroupId: string
-}): QuickLinkPage[] {
+export function buildQuickLinkPages(
+  options: QuickLinkViewItems & {
+    slotsPerPage: number
+    hideAddButton: boolean
+    defaultGroupId: string
+    flatGroupId: string
+    topSitesGroupId: string
+  },
+): QuickLinkPage[] {
   if (!options.grouping) {
     return splitQuickLinkPages(
       options.flatGroupId,
@@ -120,16 +126,14 @@ export function buildQuickLinkPages(options: {
       )
 }
 
-export function buildQuickLinkScrollSections(options: {
-  grouping: boolean
-  groups: readonly QuickLinkGroup[]
-  legacyItems: QuickLinkDisplayItem[]
-  topSiteItems: QuickLinkDisplayItem[]
-  topSitesTitle: string
-  defaultGroupId: string
-  defaultGroupName?: string
-  topSitesGroupId: string
-}): QuickLinkScrollSection[] {
+export function buildQuickLinkScrollSections(
+  options: QuickLinkViewItems & {
+    topSitesTitle: string
+    defaultGroupId: string
+    defaultGroupName?: string
+    topSitesGroupId: string
+  },
+): QuickLinkScrollSection[] {
   if (!options.grouping) {
     const legacyItems = withSortableIndexes(options.legacyItems)
     return [
