@@ -239,11 +239,7 @@ const bgTypeProviders: Record<BgType, () => Promise<BackgroundSource>> = {
     const variant = activeVariant.value
     const id = localLibrary.selected[variant]
     const items = localLibrary.library[variant].items
-    const candidates = [
-      ...items.filter((item) => item.id === id),
-      ...items.filter((item) => item.id !== id),
-    ]
-    for (const item of candidates) {
+    const tryLoad = async (item: (typeof items)[number]): Promise<BackgroundSource | undefined> => {
       try {
         const url = await localLibrary.getUrl(variant, item)
         if (localLibrary.displayed?.url !== url)
@@ -256,7 +252,18 @@ const bgTypeProviders: Record<BgType, () => Promise<BackgroundSource>> = {
         }
       } catch (error) {
         console.warn('[wallpaper] Could not load local wallpaper:', item.id, error)
+        return undefined
       }
+    }
+    const preferred = id ? items.find((item) => item.id === id) : undefined
+    if (preferred) {
+      const source = await tryLoad(preferred)
+      if (source) return source
+    }
+    for (const item of items) {
+      if (item === preferred) continue
+      const source = await tryLoad(item)
+      if (source) return source
     }
     if (items.length) throw new Error('No local wallpaper could be loaded')
     return { url: '', sourceKey: '', ownedObjectUrl: false }

@@ -13,38 +13,21 @@ import { rgba2Hex } from '@/shared/theme/utils'
 
 import { rgbaFromArgb } from './helper'
 
-const shadeCache = new WeakMap<Rgba, ReturnType<typeof buildColorShades>>()
-
-function getColorShades(base: Rgba) {
-  if (!shadeCache.has(base)) shadeCache.set(base, buildColorShades(base))
-  return shadeCache.get(base)!
-}
-
-/** 生成明/暗色调 */
-function buildColorShades(base: Rgba) {
+function buildColorShades(base: Rgba, lightMix: Rgba, darkMix: Rgba) {
   return {
-    light: {
-      3: rgba2Hex(mixLegacy(base, WHITE_COLOR, 70)),
-      5: rgba2Hex(mixLegacy(base, WHITE_COLOR, 50)),
-      7: rgba2Hex(mixLegacy(base, WHITE_COLOR, 30)),
-      8: rgba2Hex(mixLegacy(base, WHITE_COLOR, 20)),
-      9: rgba2Hex(mixLegacy(base, WHITE_COLOR, 10)),
-      dark2: rgba2Hex(mixLegacy(base, BLACK_COLOR, 70)),
-    },
-    dark: {
-      3: rgba2Hex(mixLegacy(base, EL_BG_COLOR_RGBA, 70)),
-      5: rgba2Hex(mixLegacy(base, EL_BG_COLOR_RGBA, 50)),
-      7: rgba2Hex(mixLegacy(base, EL_BG_COLOR_RGBA, 30)),
-      8: rgba2Hex(mixLegacy(base, EL_BG_COLOR_RGBA, 20)),
-      9: rgba2Hex(mixLegacy(base, EL_BG_COLOR_RGBA, 10)),
-      dark2: rgba2Hex(mixLegacy(base, WHITE_COLOR, 70)),
-    },
+    3: rgba2Hex(mixLegacy(base, lightMix, 70)),
+    5: rgba2Hex(mixLegacy(base, lightMix, 50)),
+    7: rgba2Hex(mixLegacy(base, lightMix, 30)),
+    8: rgba2Hex(mixLegacy(base, lightMix, 20)),
+    9: rgba2Hex(mixLegacy(base, lightMix, 10)),
+    dark2: rgba2Hex(mixLegacy(base, darkMix, 70)),
   }
 }
 
 /** 生成变量表 */
 function buildCssVars(scheme: Scheme, mode: 'light' | 'dark') {
   const textMix = mode === 'light' ? WHITE_COLOR : EL_BG_COLOR_RGBA
+  const darkMix = mode === 'light' ? BLACK_COLOR : WHITE_COLOR
 
   const pHex = hexFromArgb(scheme.primary)
   const sHex = hexFromArgb(scheme.tertiary)
@@ -56,10 +39,10 @@ function buildCssVars(scheme: Scheme, mode: 'light' | 'dark') {
   const error = rgbaFromArgb(scheme.error)
   const info = rgbaFromArgb(scheme.secondary)
 
-  const pShades = getColorShades(primary)[mode]
-  const sShades = getColorShades(success)[mode]
-  const eShades = getColorShades(error)[mode]
-  const iShades = getColorShades(info)[mode]
+  const pShades = buildColorShades(primary, textMix, darkMix)
+  const sShades = buildColorShades(success, textMix, darkMix)
+  const eShades = buildColorShades(error, textMix, darkMix)
+  const iShades = buildColorShades(info, textMix, darkMix)
 
   return {
     '--el-color-primary': pHex,

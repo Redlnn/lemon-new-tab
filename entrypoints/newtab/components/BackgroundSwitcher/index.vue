@@ -22,8 +22,8 @@ import {
 } from '@/shared/settings/constraints'
 import { idbGet } from '@/shared/storage/idb'
 import {
-  addWallpaper,
   clearWallpaperThumbnails,
+  prepareWallpaperImport,
   removeWallpapers,
   reorderWallpapers,
   updateWallpaperLibrary,
@@ -163,7 +163,7 @@ function currentSource(): Source {
 }
 const managing = ref(false)
 const expanded = ref(false)
-const selected = ref<string[]>([])
+const selected = reactive(new Set<string>())
 const busy = ref(false)
 const filesInput = useTemplateRef('filesInput')
 const grid = useTemplateRef('grid')
@@ -173,6 +173,14 @@ const items = computed(() => local.library[variant.value].items)
 const visibleItems = computed(() =>
   expanded.value || managing.value ? items.value : items.value.slice(0, columns.value * 2 - 1),
 )
+const visibleTiles = computed(() => {
+  const displayed = local.displayed
+  const displayedId = displayed?.variant === variant.value ? displayed?.item.id : undefined
+  return visibleItems.value.map((item) => ({
+    item,
+    pressed: managing.value ? selected.has(item.id) : item.id === displayedId,
+  }))
+})
 const thumbnails = reactive<Record<string, string>>({})
 const thumbnailHashes = new Map<string, string | undefined>()
 const thumbnailTasks = new Map<string, { promise: Promise<void>; version: number }>()
@@ -228,7 +236,7 @@ watch(
   { immediate: true },
 )
 watch(variant, () => {
-  selected.value = []
+  selected.clear()
   expanded.value = false
 })
 watch(
@@ -334,18 +342,15 @@ async function importFiles(files: File[]) {
         files.slice(index, index + 2).map(async (file) => {
           if (!/^(image|video)\//.test(file.type)) throw new Error('Unsupported media')
           const sha256 = await sha256Hex(await file.arrayBuffer())
-          const result = await readWallpaperMetadata(file).catch(() => ({
-            metadata: { metadataFailed: true },
-            thumbnail: undefined,
-          }))
           const item: WallpaperItem = {
             id: crypto.randomUUID(),
             mediaType: file.type.startsWith('video/') ? 'video' : 'image',
             size: file.size,
             sha256,
-            ...result.metadata,
           }
-          return { file, item, thumbnail: result.thumbnail }
+          return prepareWallpaperImport(group, item, file, () =>
+            readWallpaperMetadata(file).catch(() => ({ metadata: { metadataFailed: true } })),
+          )
         }),
       )
       for (const [offset, result] of results.entries()) {
@@ -354,7 +359,7 @@ async function importFiles(files: File[]) {
           continue
         }
         try {
-          await addWallpaper(group, result.value.item, result.value.file, result.value.thumbnail)
+          await result.value()
           imported = true
         } catch {
           failures.push(files[index + offset]!.name)
@@ -380,16 +385,14 @@ function dropFiles(event: DragEvent) {
 }
 async function clickItem(item: WallpaperItem) {
   if (managing.value) {
-    selected.value = selected.value.includes(item.id)
-      ? selected.value.filter((id) => id !== item.id)
-      : [...selected.value, item.id]
+    if (!selected.delete(item.id)) selected.add(item.id)
     return
   }
   await local.select(variant.value, item.id)
 }
 async function removeSelected() {
   const group = variant.value
-  const ids = [...selected.value]
+  const ids = [...selected]
   try {
     await ElMessageBox.confirm(
       t('background.library.confirmRemove', { count: ids.length }),
@@ -400,7 +403,7 @@ async function removeSelected() {
     return
   }
   await removeWallpapers(group, ids)
-  selected.value = []
+  selected.clear()
   await local.changed()
 }
 function dragEnd(event: DragEndEvent) {
@@ -430,7 +433,7 @@ async function clearPreviews() {
 }
 function toggleManaging() {
   managing.value = !managing.value
-  selected.value = []
+  selected.clear()
 }
 function solid() {
   settings.background.bgType = BgType.None
@@ -577,7 +580,7 @@ function open(url: string) {
           <DragDropProvider @dragend="dragEnd">
             <div ref="grid" class="bg-switcher-grid" :style="{ '--wallpaper-columns': columns }">
               <WallpaperSortableItem
-                v-for="(item, index) in visibleItems"
+                v-for="({ item, pressed }, index) in visibleTiles"
                 :id="item.id"
                 :key="`${variant}:${item.id}`"
                 :index="index"
@@ -586,18 +589,9 @@ function open(url: string) {
               >
                 <button
                   class="bg-switcher-tile"
-                  :class="{
-                    selected: managing
-                      ? selected.includes(item.id)
-                      : local.displayed?.item.id === item.id &&
-                        local.displayed?.variant === variant,
-                  }"
+                  :class="{ selected: pressed }"
                   :aria-label="`${label(item.mediaType)} · ${metadata(item)}`"
-                  :aria-pressed="
-                    managing
-                      ? selected.includes(item.id)
-                      : local.displayed?.item.id === item.id && local.displayed?.variant === variant
-                  "
+                  :aria-pressed="pressed"
                   @click="clickItem(item)"
                 >
                   <img
@@ -609,17 +603,7 @@ function open(url: string) {
                   />
                   <span v-else class="bg-switcher-placeholder">{{ label(item.mediaType) }}</span>
                   <span v-if="item.mediaType === 'video'" class="bg-switcher-video">▶</span>
-                  <span
-                    v-if="
-                      managing
-                        ? selected.includes(item.id)
-                        : local.displayed?.item.id === item.id &&
-                          local.displayed?.variant === variant
-                    "
-                    class="bg-switcher-check"
-                  >
-                    ✓
-                  </span>
+                  <span v-if="pressed" class="bg-switcher-check">✓</span>
                 </button>
                 <div class="bg-switcher-meta">{{ metadata(item) }}</div>
               </WallpaperSortableItem>
@@ -642,8 +626,8 @@ function open(url: string) {
               </el-button>
               <template v-if="managing">
                 <el-button text @click="clearPreviews">{{ label('clearPreviews') }}</el-button>
-                <el-button type="danger" text :disabled="!selected.length" @click="removeSelected">
-                  {{ label('remove') }} ({{ selected.length }})
+                <el-button type="danger" text :disabled="!selected.size" @click="removeSelected">
+                  {{ label('remove') }} ({{ selected.size }})
                 </el-button>
               </template>
             </el-space>

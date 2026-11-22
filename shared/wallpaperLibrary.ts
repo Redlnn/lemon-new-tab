@@ -92,40 +92,61 @@ export async function migrateWallpaperLibrary(legacy: {
   })
 }
 
-export async function addWallpaper(
+/** Prepare media outside IndexedDB; callers can commit multiple imports in selection order. */
+export async function prepareWallpaperImport(
   variant: WallpaperVariant,
   item: WallpaperItem,
   blob: Blob,
-  thumbnail?: Blob,
+  describe: () => Promise<{ metadata: Partial<WallpaperItem>; thumbnail?: Blob }>,
 ) {
-  // 旧单图尚未补齐哈希时，在导入路径补齐；不增加新标签页的启动读取。
-  const hashes = new Map<string, string>()
-  if (item.sha256) {
-    for (const existing of (await readWallpaperLibrary())[variant].items) {
+  const readItems = async () => (item.sha256 ? (await readWallpaperLibrary())[variant].items : [])
+  const findDuplicate = (items: readonly WallpaperItem[]) =>
+    item.sha256 && items.every((existing) => existing.sha256)
+      ? items.find((existing) => existing.sha256 === item.sha256)
+      : undefined
+  const prepareMedia = async (items: readonly WallpaperItem[]) => {
+    // 旧单图尚未补齐哈希时，在导入路径补齐。
+    const hashes = new Map<string, string>()
+    for (const existing of items) {
       if (existing.sha256) continue
       const original = await idbGet(wallpaperStore(variant), existing.id)
       if (original) hashes.set(existing.id, await sha256Hex(await original.arrayBuffer()))
     }
+    return { hashes, ...(await describe()) }
   }
-  let { id } = item
-  await updateWallpaperLibrary(async (library, tx) => {
-    for (const existing of library[variant].items) existing.sha256 ??= hashes.get(existing.id)
+  const initialItems = await readItems()
+  const prepared = findDuplicate(initialItems) ? undefined : await prepareMedia(initialItems)
 
-    const duplicate =
-      item.sha256 && library[variant].items.find((existing) => existing.sha256 === item.sha256)
-    if (duplicate) {
-      id = duplicate.id
-      return
+  return async () => {
+    let media = prepared
+    if (!media) {
+      // 其他标签页可能在同批文件解码期间移除了重复项。
+      const currentItems = await readItems()
+      const duplicate = findDuplicate(currentItems)
+      if (duplicate) return duplicate.id
+      media = await prepareMedia(currentItems)
     }
-    if (library[variant].items.some((existing) => existing.id === item.id))
-      throw new Error('Wallpaper ID already exists')
-    await tx.objectStore(wallpaperStore(variant)).put(blob, item.id)
-    if (thumbnail)
-      await tx.objectStore('wallpaperLibrary').put(thumbnail, `thumbnail:${variant}:${item.id}`)
-    library[variant].items.push({ ...item, size: blob.size, mimeType: blob.type })
-    library[variant].fixedId ||= item.id
-  })
-  return id
+    const { hashes, metadata, thumbnail } = media
+    let { id } = item
+    await updateWallpaperLibrary(async (library, tx) => {
+      for (const existing of library[variant].items) existing.sha256 ??= hashes.get(existing.id)
+
+      const duplicate =
+        item.sha256 && library[variant].items.find((existing) => existing.sha256 === item.sha256)
+      if (duplicate) {
+        id = duplicate.id
+        return
+      }
+      if (library[variant].items.some((existing) => existing.id === item.id))
+        throw new Error('Wallpaper ID already exists')
+      await tx.objectStore(wallpaperStore(variant)).put(blob, item.id)
+      if (thumbnail)
+        await tx.objectStore('wallpaperLibrary').put(thumbnail, `thumbnail:${variant}:${item.id}`)
+      library[variant].items.push({ ...metadata, ...item, size: blob.size, mimeType: blob.type })
+      library[variant].fixedId ||= item.id
+    })
+    return id
+  }
 }
 
 export async function removeWallpapers(variant: WallpaperVariant, ids: readonly string[]) {
