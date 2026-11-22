@@ -238,9 +238,9 @@ function getSortedTree(mode: SortMode): BookmarkTreeNode[] {
 
 function filter(query: string, mode: SortMode) {
   const q = query.trim().toLowerCase()
-  const source = getSortedTree(mode)
 
   if (!q) {
+    const source = getSortedTree(mode)
     // 如果没有查询，返回完整排序树并默认展开第一个有内容的顶层目录
     let firstMatchPath: string[] = []
     for (let i = 0; i < source.length; i++) {
@@ -259,7 +259,7 @@ function filter(query: string, mode: SortMode) {
 
   // 1) 确定候选 id 集（若为前缀查询则使用上次缓存减少扫描）
   let candidateIds: string[] = cachedAllIds
-  if (lastQuery && q.startsWith(lastQuery) && lastResultIds?.length) {
+  if (lastQuery && q.startsWith(lastQuery)) {
     candidateIds = lastResultIds
   }
 
@@ -320,6 +320,7 @@ function filter(query: string, mode: SortMode) {
 
   const rebuild = createRebuild(matchedIds, keepIds, onFirstPath)
 
+  const source = getSortedTree(mode)
   const result: BookmarkTreeNode[] = []
   for (let i = 0; i < source.length; i++) {
     const n = rebuild(source[i]!, [])

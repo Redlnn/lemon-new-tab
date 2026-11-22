@@ -19,6 +19,7 @@ const NODE_OVERHEAD_BYTES = 192
 type BookmarkTreeNode = Browser.bookmarks.BookmarkTreeNode
 
 let pendingLoad: Promise<BookmarkTreeNode[]> | null = null
+let pendingMetadata: { generation: number; task: Promise<BookmarkCacheMetadata | null> } | undefined
 let generation = 0
 let cacheInvalidated = false
 let importing = false
@@ -91,9 +92,7 @@ function invalidateBookmarkCache() {
   void clearSnapshot()
 }
 
-async function getCacheMetadata() {
-  if (cacheInvalidated) return null
-
+async function readCacheMetadata() {
   try {
     const value = await idbGet('bookmarkCache', CACHE_METADATA_KEY)
     if (value === undefined || isCacheMetadata(value)) return value ?? null
@@ -105,6 +104,16 @@ async function getCacheMetadata() {
     await clearSnapshot()
     return null
   }
+}
+
+function getCacheMetadata(): Promise<BookmarkCacheMetadata | null> {
+  if (cacheInvalidated) return Promise.resolve(null)
+  if (pendingMetadata?.generation === generation) return pendingMetadata.task
+  const task = readCacheMetadata().finally(() => {
+    if (pendingMetadata?.task === task) pendingMetadata = undefined
+  })
+  pendingMetadata = { generation, task }
+  return task
 }
 
 async function hasEnoughStorage(estimatedBytes: number) {
@@ -182,10 +191,11 @@ async function readBrowserTree() {
   }
 }
 
-async function loadBookmarkTree(): Promise<BookmarkTreeNode[]> {
+async function loadBookmarkTree(missedGeneration?: number): Promise<BookmarkTreeNode[]> {
   while (true) {
     const generationAtStart = generation
-    const metadata = await getCacheMetadata()
+    const metadata = missedGeneration === generationAtStart ? null : await getCacheMetadata()
+    missedGeneration = undefined
     if (generationAtStart !== generation) continue
 
     if (metadata?.state === 'ready') {
@@ -212,9 +222,9 @@ async function loadBookmarkTree(): Promise<BookmarkTreeNode[]> {
   }
 }
 
-function getBookmarkTree() {
+function getBookmarkTree(missedGeneration?: number) {
   if (!pendingLoad) {
-    const task = loadBookmarkTree()
+    const task = loadBookmarkTree(missedGeneration)
     pendingLoad = task
     void task
       .finally(() => {
@@ -226,9 +236,14 @@ function getBookmarkTree() {
 }
 
 async function warmBookmarkCache() {
+  if (pendingLoad) {
+    await pendingLoad
+    return
+  }
+  const generationAtStart = generation
   const metadata = await getCacheMetadata()
-  if (metadata) return
-  await getBookmarkTree()
+  if (metadata && generationAtStart === generation) return
+  await getBookmarkTree(metadata ? undefined : generationAtStart)
 }
 
 function registerBookmarkCacheListeners() {

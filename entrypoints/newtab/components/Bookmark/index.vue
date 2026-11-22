@@ -214,13 +214,18 @@ const virtualRange = computed(() =>
     virtualViewportHeight.value,
   ),
 )
+const draggedRow = computed(() => {
+  const id = draggedNodeId.value
+  return id ? virtualRows.value.find((row) => row.node.id === id) : undefined
+})
 const renderedRows = computed(() => {
-  const rows = virtualRows.value.slice(virtualRange.value.start, virtualRange.value.end)
-  const draggedId = draggedNodeId.value
-  if (!draggedId || rows.some((row) => row.node.id === draggedId)) return rows
-
-  const draggedRow = virtualRows.value.find((row) => row.node.id === draggedId)
-  return draggedRow ? [...rows, draggedRow].sort((a, b) => a.index - b.index) : rows
+  const { start, end } = virtualRange.value
+  const rows = virtualRows.value.slice(start, end)
+  const dragged = draggedRow.value
+  if (!dragged) return rows
+  if (dragged.index < start) rows.unshift(dragged)
+  else if (dragged.index >= end) rows.push(dragged)
+  return rows
 })
 
 watch(
