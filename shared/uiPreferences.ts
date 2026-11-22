@@ -1,6 +1,6 @@
 import { storage } from '#imports'
 
-import { coordinateStorage } from '@/shared/storage/syncWrite'
+import { coordinateStorage, withSyncWriteLock } from '@/shared/storage/syncWrite'
 
 import type { ColorModePreference } from './webdavSync/types.ts'
 
@@ -24,9 +24,16 @@ export function getUiPreferences(): Promise<UiPreferencesV1> {
 
 export function patchUiPreferences(patch: Partial<Omit<UiPreferencesV1, 'version'>>) {
   const changes = structuredClone(patch)
-  return uiPreferencesStorage.updateValue((current) => ({
-    ...current,
-    ...changes,
-    version: 1 as const,
-  }))
+  return withSyncWriteLock(async () => {
+    const current = await rawStorage.getValue()
+    const next: UiPreferencesV1 = { ...current, ...changes, version: 1 }
+    if (
+      next.version !== current.version ||
+      next.language !== current.language ||
+      next.colorMode !== current.colorMode
+    ) {
+      await rawStorage.setValue(next)
+    }
+    return next
+  })
 }

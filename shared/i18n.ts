@@ -6,7 +6,12 @@ import I18NextVue from 'i18next-vue'
 
 import { browser } from 'wxt/browser'
 
-import { getUiPreferences, patchUiPreferences, uiPreferencesStorage } from './uiPreferences'
+import {
+  getUiPreferences,
+  patchUiPreferences,
+  type UiPreferencesV1,
+  uiPreferencesStorage,
+} from './uiPreferences'
 
 export const getLang = () => i18next.language || browser.i18n.getUILanguage()
 export const isChinese = ref(getLang().startsWith('zh'))
@@ -45,8 +50,8 @@ const resourceBackend: BackendModule = {
   },
 }
 
-export async function initI18n() {
-  const uiPreferences = await getUiPreferences()
+export async function initI18n(initialPreferences?: UiPreferencesV1) {
+  const uiPreferences = initialPreferences ?? (await getUiPreferences())
   // 检测用户语言
   // 参考: https://github.com/i18next/i18next-browser-languageDetector
   await i18next

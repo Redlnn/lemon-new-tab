@@ -15,13 +15,20 @@ async function bootstrapNewtab() {
     },
   )
   // 模块加载与本地恢复并行；读取偏好及检查设置前，先等恢复提交完成。
-  const [{ initI18n }, { shouldStartApp }, { initColorModePreference }] = await Promise.all([
-    import('@/shared/i18n'),
-    import('@/shared/settings/bootstrap'),
-    import('./shared/colorMode'),
-    syncStartupTask,
+  const [{ initI18n }, { shouldStartApp }, { initColorModePreference }, { getUiPreferences }] =
+    await Promise.all([
+      import('@/shared/i18n'),
+      import('@/shared/settings/bootstrap'),
+      import('./shared/colorMode'),
+      import('@/shared/uiPreferences'),
+      syncStartupTask,
+    ])
+  const preferences = getUiPreferences()
+  const [, startup] = await Promise.all([
+    preferences.then(initI18n),
+    shouldStartApp(),
+    preferences.then(initColorModePreference),
   ])
-  const [, startup] = await Promise.all([initI18n(), shouldStartApp(), initColorModePreference()])
   if (!startup.canStart) {
     return
   }

@@ -1,6 +1,11 @@
 import { useColorMode, useStorage } from '@vueuse/core'
 
-import { getUiPreferences, patchUiPreferences, uiPreferencesStorage } from '@/shared/uiPreferences'
+import {
+  getUiPreferences,
+  patchUiPreferences,
+  type UiPreferencesV1,
+  uiPreferencesStorage,
+} from '@/shared/uiPreferences'
 import type { ColorModePreference } from '@/shared/webdavSync/types'
 
 function isColorMode(value: string): value is ColorModePreference {
@@ -38,11 +43,11 @@ export function setColorMode(value: ColorModePreference) {
 
 let initialized = false
 
-export async function initColorModePreference() {
+export async function initColorModePreference(initialPreferences?: UiPreferencesV1) {
   if (initialized) return
   initialized = true
 
-  const stored = await getUiPreferences()
+  const stored = initialPreferences ?? (await getUiPreferences())
   if (stored.colorMode) {
     preference.value = stored.colorMode
   } else {
