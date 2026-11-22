@@ -41,24 +41,21 @@ const timeNow = ref(new Date())
 const documentVisibility = useDocumentVisibility()
 let clockTimer: ReturnType<typeof setTimeout> | undefined
 
-function scheduleClockTick() {
+function updateClock() {
   if (clockTimer) clearTimeout(clockTimer)
   if (documentVisibility.value !== 'visible') return
 
+  const now = Date.now()
+  timeNow.value = new Date(now)
   const interval = settings.clock.showSeconds || settings.clock.newStyle ? 1000 : 60 * 1000
-  const delay = interval - (Date.now() % interval) + 10
-  clockTimer = setTimeout(() => {
-    timeNow.value = new Date()
-    scheduleClockTick()
-  }, delay)
+  // Align with the next wall clock boundary, including after reopening the tab.
+  const delay = interval - (now % interval) + 10
+  clockTimer = setTimeout(updateClock, delay)
 }
 
 watch(
   [() => settings.clock.showSeconds, () => settings.clock.newStyle, documentVisibility],
-  () => {
-    if (documentVisibility.value === 'visible') timeNow.value = new Date()
-    scheduleClockTick()
-  },
+  updateClock,
   { immediate: true },
 )
 
@@ -66,25 +63,30 @@ onUnmounted(() => {
   if (clockTimer) clearTimeout(clockTimer)
 })
 
+const currentMinute = computed(() => Math.floor(timeNow.value.getTime() / 60_000) * 60_000)
+const minuteTime = computed(() => {
+  void dayjsLanguage.value
+  return dayjs(currentMinute.value)
+})
 const formattedTime = computed(() => {
-  void dayjsLanguage.value // 日期语言加载完成后重新格式化。
-  const now = dayjs(timeNow.value)
+  const now = minuteTime.value
   return {
-    hour: now.format('HH'),
-    hourMeridiem: now.format('h'),
+    hour: now.format(settings.clock.hour12 ? 'h' : 'HH'),
     minute: now.format('mm'),
-    second: now.format('ss'),
-    meridiem: now.format('A'),
   }
 })
-
-const currentMinute = computed(() => Math.floor(timeNow.value.getTime() / 60_000))
-
+const formattedSecond = computed(() => {
+  void dayjsLanguage.value
+  return dayjs(timeNow.value).format('ss')
+})
+const currentHour = computed(() => minuteTime.value.hour())
+const meridiemZH = computed(() => customMeridiem(currentHour.value))
+const meridiem = computed(() => minuteTime.value.format('A'))
+const currentDate = computed(() => minuteTime.value.startOf('day').valueOf())
 const formattedDate = computed(() => {
   void dayjsLanguage.value
-  const now = dayjs(currentMinute.value * 60_000)
+  const now = dayjs(currentDate.value)
   return {
-    meridiemZH: customMeridiem(now.hour()),
     weekday: now.format('dddd'),
     date: now.format('LL'),
     lunar: showLunar.value && lunarReady.value ? now.format('LMLD') : '',
@@ -138,11 +140,11 @@ const dateStyle = computed(() => {
           class="clock__meridiem"
           :class="[settings.clock.meridiem.followSize ? undefined : 'clock__meridiem-small']"
         >
-          {{ isChinese ? formattedDate.meridiemZH : formattedTime.meridiem }}
+          {{ isChinese ? meridiemZH : meridiem }}
         </span>
         <span class="clock__time">
           <span class="clock__hour">
-            {{ settings.clock.hour12 ? formattedTime.hourMeridiem : formattedTime.hour }}
+            {{ formattedTime.hour }}
           </span>
           <span
             class="clock__colon"
@@ -167,15 +169,15 @@ const dateStyle = computed(() => {
             <span
               class="clock__second"
               :class="[settings.clock.colorfulNum ? 'colorful' : undefined]"
-              >{{ formattedTime.second }}</span
+              >{{ formattedSecond }}</span
             >
           </template>
         </span>
       </div>
       <div class="clock__new-container" v-if="settings.clock.newStyle">
-        <span class="clock__second">{{ formattedTime.second }}</span>
+        <span class="clock__second">{{ formattedSecond }}</span>
         <span style="grid-area: meridiem">
-          {{ isChinese ? formattedDate.meridiemZH : formattedTime.meridiem }}
+          {{ isChinese ? meridiemZH : meridiem }}
         </span>
       </div>
     </div>
