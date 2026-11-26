@@ -3,7 +3,8 @@
 <div align="center">
 
 [Simplified Chinese](README.md) | English\
-[Terms of Service](docs/TERMS_OF_SERVICE_en.md) | [Privacy Policy](docs/PRIVACY_POLICY_en.md)
+[Terms of Service](docs/TERMS_OF_SERVICE_en.md) | [Privacy Policy](docs/PRIVACY_POLICY_en.md) |
+[BiliBili](https://www.bilibili.com/video/BV1iEx46KE8M)
 
 </div>
 
@@ -84,6 +85,42 @@ Lemon New Tab is a local-first, open-source browser extension with no additional
 
 </details>
 
+### Comparison with Lime Start Page
+
+> [!NOTE]\
+> This extension imitates parts of Lime Start Page's appearance and was developed for personal needs. Many features are missing; PRs are welcome, though issues may not always be implemented.
+
+| Feature | Lemon New Tab | Lime Start Page |
+| :--- | :---: | :---: |
+| Most-visited sites | ✅ | ❌ |
+| Search browser bookmarks | ✅ | ❌ |
+| Custom wallpaper | ✅ | ✅ |
+| Dynamic theme colors (Monet) | ✅ | ❌ |
+| Dark mode | ✅ | ✅ |
+| Video wallpaper | ✅ | ✅ |
+| Quotes | ✅ | ✅ |
+| Custom quick links | ✅ | ✅ (account required) |
+| Custom search engines | ✅ | ✅ (account required) |
+| Notes | ✅ | ✅ |
+| Weather | ❌ | ✅ |
+| Personal project promotion | ❌ | ✅ |
+
+## Why this extension?
+
+<details>
+<summary>There are several reasons (rambling ahead):</summary>
+<br />
+
+1. Chrome's new tab page loses its search bar and wallpaper when the default search engine is not Google.
+2. With Bing as the default search engine, Chrome's new tab page becomes the Bing homepage, like Edge's, with unwanted buttons and news. The search bar and quick links are also positioned too high for my taste.
+3. I like the look of Lime Start Page, but it is a webpage that makes an HTTP request whenever it opens. It is more accurately a navigation page than a start page, and I don't understand why it needs to be hosted on a server.
+4. Lime is not a native browser extension and cannot show frequently visited sites, which I prefer to open directly.
+5. Lime puts quick links on a secondary page. I prefer to open favorite sites directly from the new tab; opening the secondary page by default hides the search bar.
+6. Lime is not open source and is difficult to customize, so I decided to create something similar for my own needs.
+7. I don't understand why adding quick links or search engines to a new tab page should require an account.
+
+</details>
+
 ## Development
 
 This project is built with Vue 3 (TypeScript) + Element Plus.
@@ -133,6 +170,8 @@ pnpm zip:firefox    # Package Firefox extension
    [Experiments](chrome://flags/#use-angle) can help.
    > - Likely caused by GPU driver or system issues.
    > - Chromium discourages rendering via OpenGL API, but other settings may also help (might reduce stutter but risk frame drops).
+
+2. Edge on some Windows devices may show a black screen when using a video wallpaper. Disabling hardware acceleration does not resolve it, but setting the wallpaper container's `filter` to `none` restores the video. In the investigated case, the browser installation was found to be damaged; reinstalling the browser can help.
 
 ## Credits
 

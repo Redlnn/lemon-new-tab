@@ -162,6 +162,9 @@ pnpm zip:firefox  # 打包 Firefox 扩展
    **Choose ANGLE graphics backend** 更改为 `OpenGL` 后可缓解
    > - 考虑是因为显卡驱动 / 系统问题等原因造成
    > - Chromium 不推荐使用 OpenGL API 渲染，改成其他也可能会有效（可能会不卡但掉帧）
+2. 部分 Windows 设备的 Edge 浏览器在使用视频壁纸时可能会黑屏，
+   禁用硬件加速无解，把壁纸容器的 filter 设为 `none` 后恢复，
+   排查后确认为浏览器安装文件损坏，重装浏览器后可缓解
 
 ## 鸣谢
 

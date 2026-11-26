@@ -65,7 +65,13 @@ export const useLocalWallpaperStore = defineStore('localWallpaperLibrary', () =>
         )
         if (!selected.value[group]) selected.value = { ...selected.value, [group]: id }
       }),
-    ).then(() => {})
+    ).then(
+      () => {},
+      (error) => {
+        selectionTask = undefined
+        throw error
+      },
+    )
     await selectionTask
     const group = library.value[variant]
     if (!advance && group.items.some((item) => item.id === selected.value[variant]))
@@ -131,7 +137,15 @@ export async function prepareWallpaper(url: string, video: boolean): Promise<voi
   }
   await new Promise<void>((resolve, reject) => {
     const element = document.createElement('video')
-    const timer = window.setTimeout(() => finish(new Error('Video preview timed out')), 15000)
+    const timer = window.setTimeout(
+      () =>
+        finish(
+          new Error(
+            `Video preview timed out (readyState: ${element.readyState}, networkState: ${element.networkState})`,
+          ),
+        ),
+      15000,
+    )
     const finish = (error?: Error) => {
       clearTimeout(timer)
       element.onloadeddata = null
@@ -144,7 +158,12 @@ export async function prepareWallpaper(url: string, video: boolean): Promise<voi
     element.muted = true
     element.preload = 'auto'
     element.onloadeddata = () => finish()
-    element.onerror = () => finish(new Error('Video could not be decoded'))
+    element.onerror = () =>
+      finish(
+        new Error(
+          `Video could not be decoded (code: ${element.error?.code}, message: ${element.error?.message})`,
+        ),
+      )
     element.src = url
   })
 }

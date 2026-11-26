@@ -110,6 +110,16 @@ function reportVideoPlaybackError(action: 'pause' | 'play', error: unknown) {
   console.warn(`[background] Failed to ${action} wallpaper video:`, error)
 }
 
+function reportVideoLoadError(event: Event) {
+  const video = event.currentTarget as HTMLVideoElement
+  console.error('[background] Failed to load wallpaper video:', {
+    code: video.error?.code,
+    message: video.error?.message,
+    readyState: video.readyState,
+    networkState: video.networkState,
+  })
+}
+
 function updateVideoPlayback() {
   const vid = videoRef.value
   if (!vid) return
@@ -619,6 +629,10 @@ onUnmounted(() => {
       '--mask-color__light': settings.background.mask.light,
       '--mask-color__night': settings.background.mask.night,
       '--blur-intensity': `${isDynamicBgType(renderedType) ? 0 : settings.background.blur}px`,
+      '--background-filter':
+        !isDynamicBgType(renderedType) && settings.background.blur > 0
+          ? `blur(${settings.background.blur}px)`
+          : 'none',
       '--bg-opacity-duration': bgOpacityDuration,
     }"
   >
@@ -691,6 +705,7 @@ onUnmounted(() => {
           loop
           playsinline
           @loadeddata="updateVideoPlayback"
+          @error="reportVideoLoadError"
         ></video>
         <img
           v-else-if="bgURL"
@@ -734,7 +749,7 @@ html.dark .background-wrapper {
   position: absolute;
   inset: calc(var(--blur-intensity) * -2 - var(--parallax-inset, 0px));
   z-index: -2;
-  filter: blur(var(--blur-intensity));
+  filter: var(--background-filter);
   transition:
     scale var(--el-transition-duration-fast) cubic-bezier(0.65, 0.05, 0.1, 1),
     filter var(--el-transition-duration-fast) cubic-bezier(0.65, 0.05, 0.1, 1),
