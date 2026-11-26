@@ -90,20 +90,20 @@ Lemon New Tab is a local-first, open-source browser extension with no additional
 > [!NOTE]\
 > This extension imitates parts of Lime Start Page's appearance and was developed for personal needs. Many features are missing; PRs are welcome, though issues may not always be implemented.
 
-| Feature | Lemon New Tab | Lime Start Page |
-| :--- | :---: | :---: |
-| Most-visited sites | ✅ | ❌ |
-| Search browser bookmarks | ✅ | ❌ |
-| Custom wallpaper | ✅ | ✅ |
-| Dynamic theme colors (Monet) | ✅ | ❌ |
-| Dark mode | ✅ | ✅ |
-| Video wallpaper | ✅ | ✅ |
-| Quotes | ✅ | ✅ |
-| Custom quick links | ✅ | ✅ (account required) |
-| Custom search engines | ✅ | ✅ (account required) |
-| Notes | ✅ | ✅ |
-| Weather | ❌ | ✅ |
-| Personal project promotion | ❌ | ✅ |
+| Feature                      | Lemon New Tab |    Lime Start Page    |
+| :--------------------------- | :-----------: | :-------------------: |
+| Most-visited sites           |      ✅       |          ❌           |
+| Search browser bookmarks     |      ✅       |          ❌           |
+| Custom wallpaper             |      ✅       |          ✅           |
+| Dynamic theme colors (Monet) |      ✅       |          ❌           |
+| Dark mode                    |      ✅       |          ✅           |
+| Video wallpaper              |      ✅       |          ✅           |
+| Quotes                       |      ✅       |          ✅           |
+| Custom quick links           |      ✅       | ✅ (account required) |
+| Custom search engines        |      ✅       | ✅ (account required) |
+| Notes                        |      ✅       |          ✅           |
+| Weather                      |      ❌       |          ✅           |
+| Personal project promotion   |      ❌       |          ✅           |
 
 ## Why this extension?
 
@@ -168,6 +168,7 @@ pnpm zip:firefox    # Package Firefox extension
    Disabling **GPU hardware acceleration** or switching
    **Choose ANGLE graphics backend** to `OpenGL` in
    [Experiments](chrome://flags/#use-angle) can help.
+
    > - Likely caused by GPU driver or system issues.
    > - Chromium discourages rendering via OpenGL API, but other settings may also help (might reduce stutter but risk frame drops).
 

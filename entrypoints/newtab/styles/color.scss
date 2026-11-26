@@ -34,8 +34,16 @@ $semantic-overlay-roles: (
 );
 
 :root {
-  --le-bg-color-overlay-opacity-60: color-mix(in oklch, var(--el-bg-color-overlay), transparent 60%);
-  --le-text-color-primary-opacity-65: color-mix(in oklch, var(--el-text-color-primary), transparent 65%);
+  --le-bg-color-overlay-opacity-60: color-mix(
+    in oklch,
+    var(--el-bg-color-overlay),
+    transparent 60%
+  );
+  --le-text-color-primary-opacity-65: color-mix(
+    in oklch,
+    var(--el-text-color-primary),
+    transparent 65%
+  );
   --le-bg-color-page-opacity-60: color-mix(in oklch, var(--el-bg-color-page), transparent 60%);
   --le-fill-color-dark-opacity-20: color-mix(in oklch, var(--el-fill-color-dark), transparent 20%);
 
