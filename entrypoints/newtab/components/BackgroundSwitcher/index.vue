@@ -35,6 +35,7 @@ import {
 import { useImeAwareDialog } from '@newtab/composables/useImeAwareDialog'
 import { isDark } from '@newtab/shared/colorMode'
 import { bingWallpaperURLGetter, useLocalWallpaperStore } from '@newtab/shared/wallpaper'
+import { useDynamicSelection } from '@newtab/shared/wallpaper/dynamic/selection'
 import { readWallpaperMetadata } from '@newtab/shared/wallpaper/thumbnail'
 
 import useBackgroundSwitcher from './useBackgroundSwitcher'
@@ -45,7 +46,21 @@ const { width: windowWidth } = useWindowSize({ type: 'visual' })
 const { isComposing } = useImeAwareDialog()
 const { t } = useTranslation('settings')
 const settings = useSettingsStore()
-const dynamicActive = computed(() => isDynamicBgType(settings.background.bgType))
+const dynamicSelection = useDynamicSelection()
+const effectiveDynamicType = dynamicSelection.current
+const dynamicActive = computed(() => isDynamicBgType(effectiveDynamicType.value))
+function onDynamicRandomChange(enabled: boolean | string | number) {
+  const switchedFromOtherWallpaper = Boolean(enabled) && !dynamicActive.value
+  if (enabled) dynamicSelection.enableRandom()
+  else settings.background.dynamic.random = false
+  if (switchedFromOtherWallpaper) {
+    ;(initialDraft.dynamic as typeof settings.background.dynamic).random = true
+    void settings.save().catch((error: unknown) => {
+      console.error('[background] Failed to save random wallpaper setting:', error)
+    })
+  }
+}
+
 const draftKeys = [
   'solid',
   'dynamic',
@@ -96,9 +111,12 @@ async function beforeClose(done: () => void) {
   }
 }
 function resetDynamicSettings() {
-  const type = settings.background.bgType
+  const type = effectiveDynamicType.value
   if (!isDynamicBgType(type)) return
-  settings.background.dynamic = structuredClone(defaultSettings.background.dynamic)
+  settings.background.dynamic = {
+    ...structuredClone(defaultSettings.background.dynamic),
+    random: settings.background.dynamic.random,
+  }
   if (type === BgType.Meadow)
     settings.background.meadow = structuredClone(defaultSettings.background.meadow)
   else if (type === BgType.Beach)
@@ -109,9 +127,12 @@ function resetDynamicSettings() {
 }
 // 只有当前动态壁纸的通用设置或它自己的设置偏离默认值时，才需要“恢复默认”。
 const dynamicSettingsChanged = computed(() => {
-  const type = settings.background.bgType
+  const type = effectiveDynamicType.value
   if (!isDynamicBgType(type)) return false
-  return !jsonEquals(settings.background.dynamic, defaultSettings.background.dynamic)
+  return !jsonEquals(settings.background.dynamic, {
+    ...defaultSettings.background.dynamic,
+    random: settings.background.dynamic.random,
+  })
 })
 const vignetteEnabled = computed({
   get: () => settings.background.vignette,
@@ -149,6 +170,7 @@ const sources = [
 ] as const
 function selectSource(value: Source) {
   source.value = value
+  if (value !== 'dynamic') dynamicSelection.clearOverride()
   if (value === 'bing') useBing()
   else if (value === 'local') settings.background.bgType = BgType.Local
   else if (value === 'solid') solid()
@@ -702,234 +724,251 @@ function open(url: string) {
               class="bg-switcher-dynamic-card"
               :class="[
                 `bg-switcher-dynamic-card--${item.name}`,
-                { active: settings.background.bgType === item.type },
+                { active: effectiveDynamicType === item.type },
               ]"
-              :aria-pressed="settings.background.bgType === item.type"
-              @click="settings.background.bgType = item.type"
+              :aria-pressed="effectiveDynamicType === item.type"
+              @click="dynamicSelection.select(item.type)"
             >
               <span class="bg-switcher-dynamic-name">{{ t(`background.${item.name}.name`) }}</span>
               <span class="bg-switcher-dynamic-art" aria-hidden="true"></span>
               <span class="bg-switcher-dynamic-using" aria-hidden="true">使用中</span>
             </button>
           </div>
-          <div v-if="dynamicActive" class="bg-switcher-settings">
+          <div class="bg-switcher-settings">
             <p class="bg-switcher-hint">
               {{ t('background.dynamicPerformanceHint') }}
             </p>
             <label>
-              <span>{{ t('background.meadow.fps') }}</span>
-              <el-select
-                v-model="settings.background.dynamic.fps"
-                :aria-label="t('background.meadow.fps')"
-              >
-                <el-option
-                  v-for="fps in [25, 30, 45, 60, 120]"
-                  :key="fps"
-                  :label="`${fps} FPS`"
-                  :value="fps"
-                />
-              </el-select>
-            </label>
-            <label>
-              <span>{{ t('background.disableEntrance') }}</span>
+              <span>{{ t('background.dynamicRandom') }}</span>
               <el-switch
-                v-model="settings.background.dynamic.disableEntrance"
-                :aria-label="t('background.disableEntrance')"
+                :model-value="settings.background.dynamic.random"
+                :aria-label="t('background.dynamicRandom')"
+                @update:model-value="onDynamicRandomChange"
               />
             </label>
-            <template
-              v-if="
-                settings.background.bgType === BgType.Meadow ||
-                settings.background.bgType === BgType.Beach ||
-                settings.background.bgType === BgType.Ocean
-              "
-            >
+            <template v-if="dynamicActive">
               <label>
-                <span>{{ t('background.dynamicAutoNightTheme') }}</span>
-                <el-switch
-                  v-model="settings.background.dynamic.autoNightTheme"
-                  :aria-label="t('background.dynamicAutoNightTheme')"
-                />
-              </label>
-              <label>
-                <span>{{ t('background.dynamicNightMode') }}</span>
-                <el-switch
-                  v-model="settings.background.dynamic.nightByTime"
-                  :disabled="!settings.background.dynamic.autoNightTheme"
-                  :active-text="t('background.dynamicNightByTime')"
-                  :inactive-text="t('background.dynamicNightByDarkMode')"
-                />
-              </label>
-            </template>
-            <template
-              v-if="
-                settings.background.bgType === BgType.Meadow ||
-                settings.background.bgType === BgType.Ocean
-              "
-            >
-              <label>
-                <span>{{ t('background.meadow.navigationCloudSize') }}</span>
-                <el-slider
-                  v-model="settings.background.dynamic.navigationCloudSize"
-                  :min="40"
-                  :max="150"
-                />
-              </label>
-              <label>
-                <span>{{ t('background.meadow.showNavigationCloud') }}</span>
-                <el-switch
-                  v-model="settings.background[settings.background.bgType].showNavigationCloud"
-                />
-              </label>
-            </template>
-            <template v-if="settings.background.bgType === BgType.Map">
-              <label v-for="key in mapCountKeys" :key="key">
-                <span>{{ t(`background.map.${key}`) }}</span>
-                <span class="bg-switcher-settings-count">
-                  <el-slider
-                    v-model="settings.background.map[key]"
-                    :min="0"
-                    :max="10"
-                    :aria-label="t(`background.map.${key}`)"
+                <span>{{ t('background.meadow.fps') }}</span>
+                <el-select
+                  v-model="settings.background.dynamic.fps"
+                  :aria-label="t('background.meadow.fps')"
+                >
+                  <el-option
+                    v-for="fps in [25, 30, 45, 60, 120]"
+                    :key="fps"
+                    :label="`${fps} FPS`"
+                    :value="fps"
                   />
-                </span>
+                </el-select>
               </label>
               <label>
-                <span>{{ t('background.map.showNavigationLake') }}</span>
-                <el-switch v-model="settings.background.map.showNavigationLake" />
-              </label>
-              <label>
-                <span>{{ t('background.map.navigationLakeSize') }}</span>
-                <el-slider
-                  v-model="settings.background.map.navigationLakeSize"
-                  :min="40"
-                  :max="200"
-                />
-              </label>
-            </template>
-            <template v-if="settings.background.bgType === BgType.Ocean">
-              <label>
-                <span>{{ t('background.meadow.cloudSize') }}</span>
-                <el-slider v-model="settings.background.ocean.cloudSize" :min="40" :max="200" />
-              </label>
-              <label>
-                <span>{{ t('background.meadow.cloudCover') }}</span>
-                <el-slider
-                  v-model="settings.background.ocean.cloudCover"
-                  :min="0"
-                  :max="1"
-                  :step="0.05"
-                />
-              </label>
-              <label>
-                <span>{{ t('background.meadow.flow') }}</span>
-                <el-slider v-model="settings.background.ocean.flow" :min="0" :max="3" :step="0.1" />
-              </label>
-              <label>
-                <span>{{ t('background.ocean.glints') }}</span>
+                <span>{{ t('background.disableEntrance') }}</span>
                 <el-switch
-                  v-model="settings.background.ocean.waterCaustics"
-                  :aria-label="t('background.ocean.glints')"
+                  v-model="settings.background.dynamic.disableEntrance"
+                  :aria-label="t('background.disableEntrance')"
                 />
               </label>
-              <label>
-                <span>{{ t('background.ocean.glintDensity') }}</span>
-                <el-slider
-                  v-model="settings.background.ocean.glintDensity"
-                  :min="OCEAN_GLINT_DENSITY_RANGE[0]"
-                  :max="OCEAN_GLINT_DENSITY_RANGE[1]"
-                  :disabled="!settings.background.ocean.waterCaustics"
-                  :aria-label="t('background.ocean.glintDensity')"
-                />
-              </label>
-              <label v-for="control in oceanControls" :key="control.key">
-                <span>{{ t(`background.ocean.${control.key}`) }}</span>
-                <el-slider
-                  v-model="settings.background.ocean[control.key]"
-                  :min="0"
-                  :max="control.max"
-                  :aria-label="t(`background.ocean.${control.key}`)"
-                />
-              </label>
-            </template>
-            <template v-if="settings.background.bgType === BgType.Meadow">
-              <label>
-                <span>{{ t('background.meadow.navigationCloudSize') }}</span>
-                <el-slider
-                  v-model="settings.background.dynamic.navigationCloudSize"
-                  :min="40"
-                  :max="150"
-                />
-              </label>
-              <label>
-                <span>{{ t('background.meadow.cloudCover') }}</span>
-                <el-slider
-                  v-model="settings.background.meadow.cloudCover"
-                  :min="0"
-                  :max="1"
-                  :step="0.05"
-                />
-              </label>
-              <label>
-                <span>{{ t('background.meadow.flow') }}</span>
-                <el-slider
-                  v-model="settings.background.meadow.flow"
-                  :min="0"
-                  :max="3"
-                  :step="0.1"
-                />
-              </label>
-              <label>
-                <span>{{ t('background.meadow.showBoy') }}</span>
-                <el-switch v-model="settings.background.meadow.showBoy" />
-              </label>
-              <label>
-                <span>{{ t('background.meadow.clickToMove') }}</span>
-                <el-switch
-                  v-model="settings.background.meadow.clickToMove"
-                  :disabled="!settings.background.meadow.showBoy"
-                />
-              </label>
-              <label>
-                <span>{{ t('background.meadow.showCat') }}</span>
-                <el-switch v-model="settings.background.meadow.showCat" />
-              </label>
-              <label
-                ><span>{{ t('background.meadow.catCount') }}</span
-                ><el-slider v-model="settings.background.meadow.catCount" :min="0" :max="3"
-              /></label>
-            </template>
-            <template v-if="settings.background.bgType === BgType.Beach">
-              <label
-                ><span>{{ t('background.beach.showMainIsland') }}</span
-                ><el-switch v-model="settings.background.beach.showMainIsland"
-              /></label>
-              <label>
-                <span>{{ t('background.waterCaustics') }}</span>
-                <el-switch
-                  v-model="settings.background.beach.waterCaustics"
-                  :aria-label="t('background.waterCaustics')"
-                />
-              </label>
-              <label v-for="control in beachWaterControls" :key="control.key">
-                <span>{{ t(`background.beach.${control.key}`) }}</span>
-                <el-slider
-                  v-model="settings.background.beach[control.key]"
-                  :min="control.min"
-                  :max="control.max"
-                  :disabled="!settings.background.beach.waterCaustics"
-                  :aria-label="t(`background.beach.${control.key}`)"
-                />
-              </label>
-              <label v-for="control in beachControls" :key="control.key">
-                <span>{{ t(`background.beach.${control.key}`) }}</span>
-                <el-slider
-                  v-model="settings.background.beach[control.key]"
-                  :min="control.min"
-                  :max="control.max"
-                  :aria-label="t(`background.beach.${control.key}`)"
-                />
-              </label>
+              <template
+                v-if="
+                  effectiveDynamicType === BgType.Meadow ||
+                  effectiveDynamicType === BgType.Beach ||
+                  effectiveDynamicType === BgType.Ocean
+                "
+              >
+                <label>
+                  <span>{{ t('background.dynamicAutoNightTheme') }}</span>
+                  <el-switch
+                    v-model="settings.background.dynamic.autoNightTheme"
+                    :aria-label="t('background.dynamicAutoNightTheme')"
+                  />
+                </label>
+                <label>
+                  <span>{{ t('background.dynamicNightMode') }}</span>
+                  <el-switch
+                    v-model="settings.background.dynamic.nightByTime"
+                    :disabled="!settings.background.dynamic.autoNightTheme"
+                    :active-text="t('background.dynamicNightByTime')"
+                    :inactive-text="t('background.dynamicNightByDarkMode')"
+                  />
+                </label>
+              </template>
+              <template
+                v-if="
+                  effectiveDynamicType === BgType.Meadow || effectiveDynamicType === BgType.Ocean
+                "
+              >
+                <label>
+                  <span>{{ t('background.meadow.navigationCloudSize') }}</span>
+                  <el-slider
+                    v-model="settings.background.dynamic.navigationCloudSize"
+                    :min="40"
+                    :max="150"
+                  />
+                </label>
+                <label>
+                  <span>{{ t('background.meadow.showNavigationCloud') }}</span>
+                  <el-switch
+                    v-model="
+                      settings.background[effectiveDynamicType as 'meadow' | 'ocean']
+                        .showNavigationCloud
+                    "
+                  />
+                </label>
+              </template>
+              <template v-if="effectiveDynamicType === BgType.Map">
+                <label v-for="key in mapCountKeys" :key="key">
+                  <span>{{ t(`background.map.${key}`) }}</span>
+                  <span class="bg-switcher-settings-count">
+                    <el-slider
+                      v-model="settings.background.map[key]"
+                      :min="0"
+                      :max="10"
+                      :aria-label="t(`background.map.${key}`)"
+                    />
+                  </span>
+                </label>
+                <label>
+                  <span>{{ t('background.map.showNavigationLake') }}</span>
+                  <el-switch v-model="settings.background.map.showNavigationLake" />
+                </label>
+                <label>
+                  <span>{{ t('background.map.navigationLakeSize') }}</span>
+                  <el-slider
+                    v-model="settings.background.map.navigationLakeSize"
+                    :min="40"
+                    :max="200"
+                  />
+                </label>
+              </template>
+              <template v-if="effectiveDynamicType === BgType.Ocean">
+                <label>
+                  <span>{{ t('background.meadow.cloudSize') }}</span>
+                  <el-slider v-model="settings.background.ocean.cloudSize" :min="40" :max="200" />
+                </label>
+                <label>
+                  <span>{{ t('background.meadow.cloudCover') }}</span>
+                  <el-slider
+                    v-model="settings.background.ocean.cloudCover"
+                    :min="0"
+                    :max="1"
+                    :step="0.05"
+                  />
+                </label>
+                <label>
+                  <span>{{ t('background.meadow.flow') }}</span>
+                  <el-slider
+                    v-model="settings.background.ocean.flow"
+                    :min="0"
+                    :max="3"
+                    :step="0.1"
+                  />
+                </label>
+                <label>
+                  <span>{{ t('background.ocean.glints') }}</span>
+                  <el-switch
+                    v-model="settings.background.ocean.waterCaustics"
+                    :aria-label="t('background.ocean.glints')"
+                  />
+                </label>
+                <label>
+                  <span>{{ t('background.ocean.glintDensity') }}</span>
+                  <el-slider
+                    v-model="settings.background.ocean.glintDensity"
+                    :min="OCEAN_GLINT_DENSITY_RANGE[0]"
+                    :max="OCEAN_GLINT_DENSITY_RANGE[1]"
+                    :disabled="!settings.background.ocean.waterCaustics"
+                    :aria-label="t('background.ocean.glintDensity')"
+                  />
+                </label>
+                <label v-for="control in oceanControls" :key="control.key">
+                  <span>{{ t(`background.ocean.${control.key}`) }}</span>
+                  <el-slider
+                    v-model="settings.background.ocean[control.key]"
+                    :min="0"
+                    :max="control.max"
+                    :aria-label="t(`background.ocean.${control.key}`)"
+                  />
+                </label>
+              </template>
+              <template v-if="effectiveDynamicType === BgType.Meadow">
+                <label>
+                  <span>{{ t('background.meadow.navigationCloudSize') }}</span>
+                  <el-slider
+                    v-model="settings.background.dynamic.navigationCloudSize"
+                    :min="40"
+                    :max="150"
+                  />
+                </label>
+                <label>
+                  <span>{{ t('background.meadow.cloudCover') }}</span>
+                  <el-slider
+                    v-model="settings.background.meadow.cloudCover"
+                    :min="0"
+                    :max="1"
+                    :step="0.05"
+                  />
+                </label>
+                <label>
+                  <span>{{ t('background.meadow.flow') }}</span>
+                  <el-slider
+                    v-model="settings.background.meadow.flow"
+                    :min="0"
+                    :max="3"
+                    :step="0.1"
+                  />
+                </label>
+                <label>
+                  <span>{{ t('background.meadow.showBoy') }}</span>
+                  <el-switch v-model="settings.background.meadow.showBoy" />
+                </label>
+                <label>
+                  <span>{{ t('background.meadow.clickToMove') }}</span>
+                  <el-switch
+                    v-model="settings.background.meadow.clickToMove"
+                    :disabled="!settings.background.meadow.showBoy"
+                  />
+                </label>
+                <label>
+                  <span>{{ t('background.meadow.showCat') }}</span>
+                  <el-switch v-model="settings.background.meadow.showCat" />
+                </label>
+                <label
+                  ><span>{{ t('background.meadow.catCount') }}</span
+                  ><el-slider v-model="settings.background.meadow.catCount" :min="0" :max="3"
+                /></label>
+              </template>
+              <template v-if="effectiveDynamicType === BgType.Beach">
+                <label
+                  ><span>{{ t('background.beach.showMainIsland') }}</span
+                  ><el-switch v-model="settings.background.beach.showMainIsland"
+                /></label>
+                <label>
+                  <span>{{ t('background.waterCaustics') }}</span>
+                  <el-switch
+                    v-model="settings.background.beach.waterCaustics"
+                    :aria-label="t('background.waterCaustics')"
+                  />
+                </label>
+                <label v-for="control in beachWaterControls" :key="control.key">
+                  <span>{{ t(`background.beach.${control.key}`) }}</span>
+                  <el-slider
+                    v-model="settings.background.beach[control.key]"
+                    :min="control.min"
+                    :max="control.max"
+                    :disabled="!settings.background.beach.waterCaustics"
+                    :aria-label="t(`background.beach.${control.key}`)"
+                  />
+                </label>
+                <label v-for="control in beachControls" :key="control.key">
+                  <span>{{ t(`background.beach.${control.key}`) }}</span>
+                  <el-slider
+                    v-model="settings.background.beach[control.key]"
+                    :min="control.min"
+                    :max="control.max"
+                    :aria-label="t(`background.beach.${control.key}`)"
+                  />
+                </label>
+              </template>
             </template>
           </div>
         </template>

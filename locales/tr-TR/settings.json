@@ -14,6 +14,7 @@
     "dynamicAutoNightTheme": "Otomatik gece",
     "dynamicNightByTime": "Zaman",
     "dynamicNightByDarkMode": "Koyu mod",
+    "dynamicRandom": "Yeni sekmede rastgele değiştir",
     "dynamicPerformanceHint": "Canlı duvar kağıdı kullanırken kaynak tüketimini azaltmak için Ayarlar > Performans ve Efektler bölümündeki bulanıklık efektlerini kapatın.",
     "dynamicDisabledNote": "Dinamik arka plan kullanılırken bazı özellikler devre dışı bırakılır",
     "waterCaustics": "Su ışık yansımaları",

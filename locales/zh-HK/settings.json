@@ -14,6 +14,7 @@
     "dynamicAutoNightTheme": "自動夜間主題",
     "dynamicNightByTime": "隨時間",
     "dynamicNightByDarkMode": "跟隨深色",
+    "dynamicRandom": "新分頁隨機切換",
     "dynamicPerformanceHint": "使用動態桌布時，建議在「設定－效能與效果」中停用所有模糊效果，以降低效能消耗。",
     "dynamicDisabledNote": "使用動態背景時部分功能將被停用",
     "waterCaustics": "水面波光",

@@ -14,6 +14,7 @@
     "dynamicAutoNightTheme": "Auto night theme",
     "dynamicNightByTime": "Time",
     "dynamicNightByDarkMode": "Dark mode",
+    "dynamicRandom": "Randomize on new tab",
     "dynamicPerformanceHint": "When using a live wallpaper, disable blur effects in Settings > Performance & Effects to reduce resource usage.",
     "dynamicDisabledNote": "Some features will be disabled when using a dynamic background",
     "waterCaustics": "Water caustics",

@@ -14,6 +14,7 @@
     "dynamicAutoNightTheme": "自动夜间主题",
     "dynamicNightByTime": "随时间",
     "dynamicNightByDarkMode": "跟随深色",
+    "dynamicRandom": "新标签页随机切换",
     "dynamicPerformanceHint": "使用动态壁纸时建议在“设置-性能与效果”中禁用所有模糊效果以减少性能消耗。",
     "dynamicDisabledNote": "使用动态背景时部分功能将被禁用",
     "waterCaustics": "水面波光",

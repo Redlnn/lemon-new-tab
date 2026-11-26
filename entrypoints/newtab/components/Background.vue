@@ -12,7 +12,7 @@ import { useTranslation } from 'i18next-vue'
 
 import { browser } from '#imports'
 
-import { BgType, isDynamicBgType } from '@/shared/enums'
+import { BgType, isDynamicBgType, type DynamicBgType } from '@/shared/enums'
 import { useSettingsStore } from '@/shared/settings'
 
 import { useBackgroundMonet } from '@newtab/composables/useBackgroundMonet'
@@ -29,6 +29,7 @@ import {
   useLocalWallpaperStore,
   prepareWallpaper,
 } from '@newtab/shared/wallpaper'
+import { useDynamicSelection } from '@newtab/shared/wallpaper/dynamic/selection'
 import { useDynamicWallpaperNightTheme } from '@newtab/shared/wallpaper/dynamic/useDynamicWallpaperTheme'
 
 let animationDuration = 1250
@@ -40,6 +41,8 @@ const MapBackground = defineAsyncComponent(() => import('./MapBackground.vue'))
 
 const focusStore = useFocusState()
 const settings = useSettingsStore()
+const dynamicSelection = useDynamicSelection()
+const effectiveBgType = dynamicSelection.current
 defineProps<{ quickLinksReady: boolean }>()
 const { t } = useTranslation()
 const dynamicWallpaperNight = useDynamicWallpaperNightTheme()
@@ -56,7 +59,7 @@ const activeVariant = computed(() =>
   isDark.value && localLibrary.library.dark.items.length ? 'dark' : 'light',
 )
 const renderedVideo = ref(false)
-const renderedType = ref(settings.background.bgType)
+const renderedType = ref(effectiveBgType.value)
 const solidColor = computed(
   () => settings.background.solid[isDark.value ? 'dark' : 'light'] || 'var(--el-bg-color-page)',
 )
@@ -497,7 +500,7 @@ async function updateBackgroundURL(type: BgType): Promise<void> {
 }
 
 const backgroundSource = computed(() => {
-  const type = settings.background.bgType
+  const type = effectiveBgType.value
   if (type === BgType.Local) {
     const variant = activeVariant.value
     return JSON.stringify([
@@ -523,7 +526,7 @@ let backgroundTask = Promise.resolve()
 function requestBackgroundUpdate(force = false) {
   if (!force && requestedSource === backgroundSource.value) return backgroundTask
   requestedSource = backgroundSource.value
-  backgroundTask = updateBackgroundURL(settings.background.bgType)
+  backgroundTask = updateBackgroundURL(effectiveBgType.value)
   return backgroundTask
 }
 
@@ -535,28 +538,15 @@ const { invalidate: invalidateMonet, onImageLoaded: onImgLoaded } = useBackgroun
   refreshOnline: () => requestBackgroundUpdate(true),
 })
 
-function handleBeachError() {
-  if (settings.background.bgType !== BgType.Beach) return
-  ElMessage.error(t('settings:background.beach.error'))
-  settings.background.bgType = BgType.None
-}
-
-function handleOceanError() {
-  if (settings.background.bgType !== BgType.Ocean) return
-  ElMessage.error(t('settings:background.ocean.error'))
-  settings.background.bgType = BgType.None
-}
-
-function handleMapError() {
-  if (settings.background.bgType !== BgType.Map) return
-  ElMessage.error(t('settings:background.map.error'))
-  settings.background.bgType = BgType.None
-}
-
-function handleMeadowError() {
-  if (settings.background.bgType !== BgType.Meadow) return
-  ElMessage.error(t('settings:background.meadow.error'))
-  settings.background.bgType = BgType.None
+function handleDynamicError(type: DynamicBgType) {
+  if (effectiveBgType.value !== type) return
+  if (settings.background.dynamic.random) {
+    if (dynamicSelection.retry(type)) return
+  } else {
+    dynamicSelection.clearOverride()
+    settings.background.bgType = BgType.None
+  }
+  ElMessage.error(t(`settings:background.${type}.error`))
 }
 
 watch(backgroundSource, () => void requestBackgroundUpdate())
@@ -567,7 +557,7 @@ onMounted(async () => {
 
 // 暴露刷新方法，供父组件调用
 async function refreshBackground() {
-  const type = settings.background.bgType
+  const type = effectiveBgType.value
   try {
     if (type === BgType.Bing) {
       await bingWallpaperURLGetter.refresh(true)
@@ -678,22 +668,22 @@ onUnmounted(() => {
         <MeadowBackground
           v-if="renderedType === BgType.Meadow"
           ref="meadow"
-          @error="handleMeadowError"
+          @error="handleDynamicError(BgType.Meadow)"
         />
         <BeachBackground
           v-else-if="renderedType === BgType.Beach"
           ref="beach"
-          @error="handleBeachError"
+          @error="handleDynamicError(BgType.Beach)"
         />
         <OceanBackground
           v-else-if="renderedType === BgType.Ocean"
           ref="ocean"
-          @error="handleOceanError"
+          @error="handleDynamicError(BgType.Ocean)"
         />
         <MapBackground
           v-else-if="renderedType === BgType.Map"
           :quick-links-ready="quickLinksReady"
-          @error="handleMapError"
+          @error="handleDynamicError(BgType.Map)"
         />
         <video
           v-else-if="isVideoWallpaper"

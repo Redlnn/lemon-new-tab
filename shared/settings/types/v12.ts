@@ -44,6 +44,7 @@ export interface SettingsSchemaV12 extends Omit<
     solid: { light: string; dark: string }
     rotation: { enabled: boolean; order: 'random' | 'ordered' }
     dynamic: {
+      random: boolean
       fps: 25 | 30 | 45 | 60 | 120
       navigationCloudSize: number
       autoNightTheme: boolean
